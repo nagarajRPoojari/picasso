@@ -3,6 +3,7 @@ package compiler
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 )
@@ -24,26 +25,14 @@ const (
 
 	DOUBLE Type = "double"
 
-	STRING Type = "string"
-	NULL   Type = "null"
+	NULL Type = "null"
 )
 
 type TypeHandler struct {
-	udts map[string]*Class
 }
 
 func NewTypeHandler() *TypeHandler {
-	return &TypeHandler{
-		udts: map[string]*Class{},
-	}
-}
-
-func (t *TypeHandler) AddUDT(name string, c *Class) {
-	t.udts[name] = c
-}
-
-func (t *TypeHandler) GetUDT(name string) {
-
+	return &TypeHandler{}
 }
 
 func (t *TypeHandler) GetPrimitiveVar(block *ir.Block, _type Type, init value.Value) Var {
@@ -146,7 +135,8 @@ func (t *TypeHandler) GetPrimitiveVar(block *ir.Block, _type Type, init value.Va
 	}
 }
 
-func (t *TypeHandler) GetVarType(_type Type) types.Type {
+// GetLLVMType accepts native Type & returns llvm compatible types.Type
+func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	switch _type {
 	case BOOLEAN:
 		return types.I1
@@ -164,17 +154,101 @@ func (t *TypeHandler) GetVarType(_type Type) types.Type {
 		return types.Float
 	case FLOAT64, DOUBLE:
 		return types.Double
-	case STRING:
-		return types.NewPointer(types.I8)
 	default:
 		return nil
 	}
 }
 
-// helper: bool → int64
-func btoi(b bool) int64 {
-	if b {
-		return 1
+// CastToType takes a target type name (e.g. "float64", "int8")
+// and a value, and emits the appropriate cast instruction in `block`.
+func (t *TypeHandler) CastToType(block *ir.Block, target string, v value.Value) value.Value {
+	switch target {
+	case "boolean", "bool", "i1":
+		if v.Type().Equal(types.I1) {
+			return v
+		}
+		switch v.Type().(type) {
+		case *types.IntType:
+			zero := constant.NewInt(v.Type().(*types.IntType), 0)
+			return block.NewICmp(enum.IPredNE, v, zero)
+		case *types.FloatType:
+			zero := constant.NewFloat(v.Type().(*types.FloatType), 0.0)
+			return block.NewFCmp(enum.FPredONE, v, zero)
+		default:
+			panic("cannot cast to boolean from type " + v.Type().String())
+		}
+
+	case "int8", "i8":
+		return t.intCast(block, v, types.I8)
+	case "int16", "i16":
+		return t.intCast(block, v, types.I16)
+	case "int32", "i32":
+		return t.intCast(block, v, types.I32)
+	case "int", "int64", "i64":
+		return t.intCast(block, v, types.I64)
+
+	case "float16", "half":
+		return t.floatCast(block, v, types.Half)
+	case "float32", "float":
+		return t.floatCast(block, v, types.Float)
+	case "float64", "double":
+		return t.floatCast(block, v, types.Double)
+
+	default:
+		panic("unsupported target type: " + target)
 	}
-	return 0
+}
+
+func (t *TypeHandler) intCast(block *ir.Block, v value.Value, dst *types.IntType) value.Value {
+	src, ok := v.Type().(*types.IntType)
+	if !ok {
+		// int ← float
+		if _, ok := v.Type().(*types.FloatType); ok {
+			return block.NewFPToSI(v, dst)
+		}
+		panic("cannot intCast from " + v.Type().String())
+	}
+	if src.BitSize > dst.BitSize {
+		return block.NewTrunc(v, dst)
+	} else if src.BitSize < dst.BitSize {
+		return block.NewSExt(v, dst)
+	}
+	return v
+}
+
+func (t *TypeHandler) floatCast(block *ir.Block, v value.Value, dst *types.FloatType) value.Value {
+	switch src := v.Type().(type) {
+	case *types.FloatType:
+		if src.Kind == dst.Kind {
+			return v
+		}
+		// Promote/demote based on known float kinds
+		if floatRank(src.Kind) < floatRank(dst.Kind) {
+			return block.NewFPExt(v, dst) // promote
+		}
+		return block.NewFPTrunc(v, dst) // demote
+
+	case *types.IntType:
+		return block.NewSIToFP(v, dst) // signed int to float
+
+	default:
+		panic("cannot floatCast from " + v.Type().String())
+	}
+}
+
+func floatRank(k types.FloatKind) int {
+	switch k {
+	case types.FloatKindHalf:
+		return 16
+	case types.FloatKindFloat:
+		return 32
+	case types.FloatKindDouble:
+		return 64
+	case types.FloatKindX86_FP80:
+		return 80
+	case types.FloatKindFP128, types.FloatKindPPC_FP128:
+		return 128
+	default:
+		return 0
+	}
 }
