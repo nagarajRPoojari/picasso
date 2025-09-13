@@ -5,7 +5,6 @@ import (
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 )
@@ -17,9 +16,9 @@ type Var interface {
 	Constant() constant.Constant
 	Slot() *ir.InstAlloca
 	Cast(block *ir.Block, v value.Value) value.Value
+	Type() types.Type
 }
 
-/*** BOOLEAN ***/
 type Boolean struct {
 	NativeType *types.IntType
 	Value      *ir.InstAlloca // pointer to i1
@@ -58,6 +57,7 @@ func (b *Boolean) Cast(block *ir.Block, v value.Value) value.Value {
 		panic(fmt.Sprintf("cannot cast %s to boolean", v.Type()))
 	}
 }
+func (c *Boolean) Type() types.Type { return c.NativeType }
 
 /*** INT8 ***/
 type Int8 struct {
@@ -91,6 +91,7 @@ func (i *Int8) Cast(block *ir.Block, v value.Value) value.Value {
 		panic(fmt.Sprintf("cannot cast %s to int8", v.Type()))
 	}
 }
+func (c *Int8) Type() types.Type { return c.NativeType }
 
 /*** INT16 ***/
 type Int16 struct {
@@ -124,6 +125,7 @@ func (i *Int16) Cast(block *ir.Block, v value.Value) value.Value {
 		panic(fmt.Sprintf("cannot cast %s to int16", v.Type()))
 	}
 }
+func (c *Int16) Type() types.Type { return c.NativeType }
 
 /*** INT32 ***/
 type Int32 struct {
@@ -157,6 +159,7 @@ func (i *Int32) Cast(block *ir.Block, v value.Value) value.Value {
 		panic(fmt.Sprintf("cannot cast %s to int32", v.Type()))
 	}
 }
+func (c *Int32) Type() types.Type { return c.NativeType }
 
 /*** INT64 ***/
 type Int64 struct {
@@ -190,6 +193,7 @@ func (i *Int64) Cast(block *ir.Block, v value.Value) value.Value {
 		panic(fmt.Sprintf("cannot cast %s to int64", v.Type()))
 	}
 }
+func (c *Int64) Type() types.Type { return c.NativeType }
 
 /*** FLOAT16 (half) ***/
 type Float16 struct {
@@ -226,8 +230,8 @@ func (f *Float16) Cast(block *ir.Block, v value.Value) value.Value {
 	}
 	panic(fmt.Sprintf("cannot cast %s to float16", v.Type()))
 }
+func (c *Float16) Type() types.Type { return c.NativeType }
 
-/*** FLOAT32 ***/
 type Float32 struct {
 	NativeType *types.FloatType
 	Value      *ir.InstAlloca
@@ -262,6 +266,7 @@ func (f *Float32) Cast(block *ir.Block, v value.Value) value.Value {
 	}
 	panic(fmt.Sprintf("cannot cast %s to float32", v.Type()))
 }
+func (c *Float32) Type() types.Type { return c.NativeType }
 
 /*** FLOAT64 (double) ***/
 type Float64 struct {
@@ -296,36 +301,7 @@ func (f *Float64) Cast(block *ir.Block, v value.Value) value.Value {
 	}
 	panic(fmt.Sprintf("cannot cast %s to float64", v.Type()))
 }
-
-/*** STRING (as i8*) ***/
-// Note: this treats the variable as an i8* pointer. You may want a more
-// elaborate representation (global char array + GEP) for literals.
-type String struct {
-	NativeType *types.PointerType
-	Value      *ir.InstAlloca // pointer to i8*
-	GoVal      string
-}
-
-func NewStringVar(block *ir.Block, init string) *String {
-	ptrTy := types.NewPointer(types.I8)
-	slot := block.NewAlloca(ptrTy)
-	// For simplicity we store a null pointer if no initializer is desired.
-	// To initialize with a literal you'd normally create a global char array and store its pointer.
-	if init != "" {
-		// Not initializing to the literal pointer here; caller should set after creating a global literal.
-		block.NewStore(constant.NewNull(ptrTy), slot)
-	} else {
-		block.NewStore(constant.NewNull(ptrTy), slot)
-	}
-	return &String{NativeType: ptrTy, Value: slot, GoVal: init}
-}
-
-func (s *String) Update(block *ir.Block, v value.Value) { block.NewStore(v, s.Value) }
-func (s *String) Load(block *ir.Block) value.Value      { return block.NewLoad(s.NativeType, s.Value) }
-func (s *String) Constant() constant.Constant {
-	return constant.NewCharArrayFromString(s.GoVal)
-}
-func (s *String) Slot() *ir.InstAlloca { return s.Value }
+func (c *Float64) Type() types.Type { return c.NativeType }
 
 type Class struct {
 	Name  string
@@ -334,9 +310,7 @@ type Class struct {
 }
 
 func NewClass(block *ir.Block, name string, udt types.Type) *Class {
-	// Define struct type
 	ptr := block.NewAlloca(udt)
-
 	return &Class{
 		Name:  name,
 		UDT:   udt,
@@ -380,96 +354,4 @@ func (f *Class) Constant() constant.Constant {
 }
 func (s *Class) Slot() *ir.InstAlloca { return s.Value }
 
-// CastToType takes a target type name (e.g. "float64", "int8")
-// and a value, and emits the appropriate cast instruction in `block`.
-func CastToType(block *ir.Block, target string, v value.Value) value.Value {
-	switch target {
-	case "boolean", "bool", "i1":
-		if v.Type().Equal(types.I1) {
-			return v
-		}
-		switch v.Type().(type) {
-		case *types.IntType:
-			zero := constant.NewInt(v.Type().(*types.IntType), 0)
-			return block.NewICmp(enum.IPredNE, v, zero)
-		case *types.FloatType:
-			zero := constant.NewFloat(v.Type().(*types.FloatType), 0.0)
-			return block.NewFCmp(enum.FPredONE, v, zero)
-		default:
-			panic("cannot cast to boolean from type " + v.Type().String())
-		}
-
-	case "int8", "i8":
-		return intCast(block, v, types.I8)
-	case "int16", "i16":
-		return intCast(block, v, types.I16)
-	case "int32", "i32":
-		return intCast(block, v, types.I32)
-	case "int", "int64", "i64":
-		return intCast(block, v, types.I64)
-
-	case "float16", "half":
-		return floatCast(block, v, types.Half)
-	case "float32", "float":
-		return floatCast(block, v, types.Float)
-	case "float64", "double":
-		return floatCast(block, v, types.Double)
-
-	default:
-		panic("unsupported target type: " + target)
-	}
-}
-
-func intCast(block *ir.Block, v value.Value, dst *types.IntType) value.Value {
-	src, ok := v.Type().(*types.IntType)
-	if !ok {
-		// int ← float
-		if _, ok := v.Type().(*types.FloatType); ok {
-			return block.NewFPToSI(v, dst)
-		}
-		panic("cannot intCast from " + v.Type().String())
-	}
-	if src.BitSize > dst.BitSize {
-		return block.NewTrunc(v, dst)
-	} else if src.BitSize < dst.BitSize {
-		return block.NewSExt(v, dst)
-	}
-	return v
-}
-
-func floatCast(block *ir.Block, v value.Value, dst *types.FloatType) value.Value {
-	switch src := v.Type().(type) {
-	case *types.FloatType:
-		if src.Kind == dst.Kind {
-			return v
-		}
-		// Promote/demote based on known float kinds
-		if floatRank(src.Kind) < floatRank(dst.Kind) {
-			return block.NewFPExt(v, dst) // promote
-		}
-		return block.NewFPTrunc(v, dst) // demote
-
-	case *types.IntType:
-		return block.NewSIToFP(v, dst) // signed int to float
-
-	default:
-		panic("cannot floatCast from " + v.Type().String())
-	}
-}
-
-func floatRank(k types.FloatKind) int {
-	switch k {
-	case types.FloatKindHalf:
-		return 16
-	case types.FloatKindFloat:
-		return 32
-	case types.FloatKindDouble:
-		return 64
-	case types.FloatKindX86_FP80:
-		return 80
-	case types.FloatKindFP128, types.FloatKindPPC_FP128:
-		return 128
-	default:
-		return 0
-	}
-}
+func (c *Class) Type() types.Type { return c.UDT }

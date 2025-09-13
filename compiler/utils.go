@@ -79,19 +79,25 @@ func (t *LLVM) print(block *ir.Block, format string, args ...interface{}) {
 	block.NewCall(printf, callArgs...)
 }
 
-type BridgeIdentifier struct {
-	val string
+type IdentifierBuilder struct {
+	module string
 }
 
-func NewBridgeIdentifier() *BridgeIdentifier {
-	return &BridgeIdentifier{val: ""}
+func NewIdentifierBuilder(module string) *IdentifierBuilder {
+	return &IdentifierBuilder{module}
 }
 
-func (t *BridgeIdentifier) Attach(name string) *BridgeIdentifier {
-	t.val += "." + name
-	return t
+func (t *IdentifierBuilder) Attach(name ...string) string {
+	res := t.module
+	for _, n := range name {
+		res += "." + n
+	}
+	return res
 }
 
-func (t *BridgeIdentifier) Ret() string {
-	return t.val
+func btoi(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
 }

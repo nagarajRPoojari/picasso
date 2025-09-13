@@ -35,7 +35,8 @@ func NewMetaClass() *MetaClass {
 type LLVM struct {
 	module *ir.Module
 
-	typeHandler *TypeHandler
+	typeHandler       *TypeHandler
+	identifierBuilder *IdentifierBuilder
 
 	vars    map[string]Var
 	methods map[string]*ir.Func
@@ -47,11 +48,12 @@ type LLVM struct {
 func NewLLVM() *LLVM {
 	m := ir.NewModule()
 	i := &LLVM{
-		module:      m,
-		typeHandler: NewTypeHandler(),
-		vars:        make(map[string]Var),
-		methods:     make(map[string]*ir.Func),
-		classes:     make(map[string]*MetaClass),
+		module:            m,
+		typeHandler:       NewTypeHandler(),
+		vars:              make(map[string]Var),
+		methods:           make(map[string]*ir.Func),
+		classes:           make(map[string]*MetaClass),
+		identifierBuilder: NewIdentifierBuilder(MAIN),
 	}
 	return i
 }
@@ -91,18 +93,13 @@ func (t *LLVM) ParseAST(tree *ast.BlockStatement) {
 	for _, stI := range tree.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDeclarationStatement:
-			if st.Name == "main" {
-				f := t.module.NewFunc("main", types.I32)
-				t.methods["main"] = f
+			if st.Name == MAIN {
+				f := t.module.NewFunc(MAIN, types.I32)
+				t.methods[MAIN] = f
 				t.defineMain(&st)
 			}
 		}
 	}
-
-	fmt.Printf("vars: %v\n", t.vars)
-	fmt.Printf("classes: %v\n", t.classes)
-	fmt.Printf("methods: %v\n", t.classes)
-
 }
 
 func (t *LLVM) initClass(class ast.ClassDeclarationStatement) {
@@ -110,9 +107,10 @@ func (t *LLVM) initClass(class ast.ClassDeclarationStatement) {
 	tps := make([]types.Type, 0)
 	for _, stI := range class.Body {
 		switch st := stI.(type) {
+		// @todo: casting constant.Constant type
 		case ast.VariableDeclarationStatement:
 			if !st.IsStatic {
-				name := NewBridgeIdentifier().Attach(class.Name).Attach(st.Identifier).Ret()
+				name := t.identifierBuilder.Attach(class.Name, st.Identifier)
 				t.classes[class.Name].nonStaticVarsIndices[name] = i
 				i++
 
@@ -136,34 +134,24 @@ func (t *LLVM) declareStaticFields(class ast.ClassDeclarationStatement) {
 				if st.AssignedValue == nil {
 					panic("static varables should be initialized")
 				}
-				name := NewBridgeIdentifier().Attach(class.Name).Attach(st.Identifier).Ret()
+				name := t.identifierBuilder.Attach(class.Name, st.Identifier)
 				t.module.NewGlobalDef(name, t.processStaticExpression(st.AssignedValue))
 			}
 		case ast.FunctionDeclarationStatement:
+			params := make([]*ir.Param, 0)
+			for _, p := range st.Parameters {
+				params = append(params, ir.NewParam(p.Name, t.typeHandler.GetLLVMType(Type(p.Type.Get()))))
+			}
+			if !st.IsStatic {
+				params = append(params, ir.NewParam("this", t.classes[class.Name].udt))
+			}
+			name := t.identifierBuilder.Attach(class.Name, st.Name)
+			b := t.typeHandler.GetLLVMType(Type(st.ReturnType.Get()))
+			f := t.module.NewFunc(name, b, params...)
+			t.methods[name] = f
 			if st.IsStatic {
-				params := make([]*ir.Param, 0)
-				for _, p := range st.Parameters {
-					params = append(params, ir.NewParam(p.Name, t.typeHandler.GetVarType(Type(p.Type.Get()))))
-				}
-				name := NewBridgeIdentifier().Attach(class.Name).Attach(st.Name).Ret()
-				b := t.typeHandler.GetVarType(Type(st.ReturnType.Get()))
-				f := t.module.NewFunc(name, b, params...)
-				t.methods[name] = f
 				t.classes[class.Name].staticMethods[name] = f
 			} else {
-				params := make([]*ir.Param, 0)
-				for _, p := range st.Parameters {
-					params = append(params, ir.NewParam(p.Name, t.typeHandler.GetVarType(Type(p.Type.Get()))))
-				}
-				params = append(params, ir.NewParam("this", t.classes[class.Name].udt))
-
-				fmt.Println("function params - ", params)
-
-				name := NewBridgeIdentifier().Attach(class.Name).Attach(st.Name).Ret()
-				f := t.module.NewFunc(name, t.typeHandler.GetVarType(Type(st.ReturnType.Get())), params...)
-
-				t.methods[name] = f
-				t.classes[class.Name].staticMethods[name] = f
 				t.classes[class.Name].nonStaticMethods[name] = f
 			}
 		}
@@ -201,11 +189,7 @@ func (t *LLVM) processStaticExpression(expI ast.Expression) constant.Constant {
 		default:
 			return nil
 		}
-
-	case ast.StringExpression:
-		return nil
 	}
-
 	return nil
 }
 
@@ -220,8 +204,8 @@ func (t *LLVM) defineClass(class ast.ClassDeclarationStatement) {
 
 func (t *LLVM) defineMain(fn *ast.FunctionDeclarationStatement) {
 	vars := make(map[string]Var, 0)
-	f := t.methods["main"]
-	entry := f.NewBlock("entry")
+	f := t.methods[MAIN]
+	entry := f.NewBlock(ENTRY)
 
 	for _, stI := range fn.Body {
 		switch st := stI.(type) {
@@ -264,7 +248,7 @@ func (t *LLVM) defineMain(fn *ast.FunctionDeclarationStatement) {
 
 func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement) {
 	vars := make(map[string]Var, 0)
-	name := NewBridgeIdentifier().Attach(className).Attach(fn.Name).Ret()
+	name := t.identifierBuilder.Attach(className, fn.Name)
 	f := t.methods[name]
 	entry := f.NewBlock("entry")
 
@@ -276,9 +260,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 			break
 		}
 		paramType := Type(fn.Parameters[i].Type.Get())
-		fmt.Println("param type. ", paramType)
 		vars[p.LocalName] = t.typeHandler.GetPrimitiveVar(entry, paramType, p)
-		t.print(entry, "param = %f, %s", p, p.Name())
 	}
 
 	for _, stI := range fn.Body {
@@ -289,7 +271,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 				panic("variable already exists")
 			}
 			if st.ExplicitType != nil {
-				casted := CastToType(entry, st.ExplicitType.Get(), v.Load(entry))
+				casted := t.typeHandler.CastToType(entry, st.ExplicitType.Get(), v.Load(entry))
 				v = t.typeHandler.GetPrimitiveVar(entry, Type(st.ExplicitType.Get()), casted)
 			}
 
@@ -319,7 +301,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 			}
 		case ast.ReturnStatement:
 			v := t.processExpression(entry, vars, st.Value.Expression)
-			entry.NewRet(CastToType(entry, fn.ReturnType.Get(), v.Load(entry)))
+			entry.NewRet(t.typeHandler.CastToType(entry, fn.ReturnType.Get(), v.Load(entry)))
 		}
 	}
 
@@ -343,9 +325,6 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 		// produce a runtime mutable var for the literal (double)
 		return t.typeHandler.GetPrimitiveVar(block, FLOAT64, constant.NewFloat(types.Double, ex.Value))
 
-	case ast.StringExpression:
-		// TODO: create global string constant + store pointer into local slot
-
 	case ast.NewExpression:
 		// instantiate class and initialize fields from arguments
 		meth := ex.Instantiation.Method.(ast.SymbolExpression)
@@ -357,7 +336,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 		for i, v := range t.classes[meth.Value].nonStaticVars {
 			if st, ok := classMeta.udt.(*types.StructType); ok {
 				fieldTy := st.Fields[i]
-				argCast := CastToType(block, fieldTy.String(), v)
+				argCast := t.typeHandler.CastToType(block, fieldTy.String(), v)
 				instance.UpdateField(block, i, argCast)
 			} else {
 				instance.UpdateField(block, i, v)
@@ -382,7 +361,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 			panic("unknown class metadata: " + cls.Name)
 		}
 
-		property := NewBridgeIdentifier().Attach(cls.Name).Attach(ex.Property).Ret()
+		property := t.identifierBuilder.Attach(cls.Name, ex.Property)
 		idx, ok := classMeta.nonStaticVarsIndices[property]
 		if !ok {
 			panic(fmt.Sprintf("unknown field %s on class %s", ex.Property, cls.Name))
@@ -494,7 +473,7 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast
 			panic("unknown class metadata: " + cls.Name)
 		}
 
-		methodKey := NewBridgeIdentifier().Attach(cls.Name).Attach(m.Property).Ret()
+		methodKey := t.identifierBuilder.Attach(cls.Name, m.Property)
 
 		// Instance method
 		if fn, ok := classMeta.nonStaticMethods[methodKey]; ok {
@@ -508,7 +487,7 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast
 				// Cast arg to expected param type
 				if i < len(fn.Sig.Params) {
 					expected := fn.Sig.Params[i]
-					raw = CastToType(block, expected.String(), raw)
+					raw = t.typeHandler.CastToType(block, expected.String(), raw)
 				}
 				args = append(args, raw)
 			}
@@ -539,7 +518,7 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast
 				// Cast to expected param type
 				if i < len(fn.Sig.Params) {
 					expected := fn.Sig.Params[i]
-					raw = CastToType(block, expected.String(), raw)
+					raw = t.typeHandler.CastToType(block, expected.String(), raw)
 				}
 				args = append(args, raw)
 			}
