@@ -8,6 +8,7 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/x-lang/error"
 )
 
 type Type string
@@ -110,6 +111,20 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		}
 		return &Int64{NativeType: types.I64, Value: ptr, GoVal: 0}
 
+	case FLOAT16:
+		ptr := block.NewAlloca(types.Half)
+		block.NewStore(init, ptr)
+
+		if cf, ok := init.(*constant.Float); ok {
+			f, _ := cf.X.Float64()
+			return &Float16{
+				NativeType: types.Half,
+				Value:      ptr,
+				GoVal:      float32(f),
+			}
+		}
+		return &Float16{NativeType: types.Float, Value: ptr, GoVal: 0}
+
 	case FLOAT32:
 		ptr := block.NewAlloca(types.Float)
 		block.NewStore(init, ptr)
@@ -145,24 +160,22 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		)
 	}
 
-	panic("invalid type")
+	error.RaiseCompileError("invalid primitive type: %s", _type)
+	return nil
 }
 
 func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Value) Var {
 	llvmType := t.GetLLVMType(paramType)
 	if llvmType == nil {
-		panic("GetVarForParam: nil llvm type")
+		error.RaiseCompileError("invalid LLVM tiype: %s", paramType)
 	}
 
-	// Primitive/Scalar path: delegate to GetPrimitiveVar which allocates & stores
 	switch llvmType.(type) {
 	case *types.IntType, *types.FloatType:
 		return t.getPrimitiveVar(block, paramType, param)
 	}
 
-	// If parameter is a pointer type (e.g. pointer-to-struct), wrap it as Class without allocating.
 	if pt, ok := llvmType.(*types.PointerType); ok {
-		// find class name for the element type (if available)
 		cname := ""
 		for name, meta := range t.Udts {
 			if meta.UDT.Equal(pt) {
@@ -170,18 +183,16 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 				break
 			}
 		}
-		// If we didn't find a mapping, cname can be empty; still return Class with Ptr set.
 		return &Class{
 			Name: cname,
 			UDT:  pt,
-			Ptr:  param, // param is expected to be pointer-to-elem
+			Ptr:  param,
 		}
 	}
 
 	if st, ok := llvmType.(*types.StructType); ok {
 		ptr := block.NewAlloca(st)
 		block.NewStore(param, ptr)
-		// find a class name if available
 		cname := ""
 		for name, meta := range t.Udts {
 			if meta.UDT.Equal(st) {
@@ -196,7 +207,6 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 		}
 	}
 
-	// fallback: if it's something else (arrays, vectors) -- try to alloca & store
 	ptr := block.NewAlloca(llvmType)
 	block.NewStore(param, ptr)
 	return &Class{

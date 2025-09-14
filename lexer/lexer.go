@@ -1,8 +1,9 @@
 package lexer
 
 import (
-	"fmt"
 	"regexp"
+
+	"github.com/nagarajRPoojari/x-lang/error"
 )
 
 type RegexPattern struct {
@@ -33,7 +34,7 @@ func Tokenize(source string) []Token {
 		}
 
 		if !matched {
-			panic(fmt.Sprintf("lexer error: unrecognized token near '%v'", lex.remainder()))
+			error.RaiseLexerError("lexer error: unrecognized token near '%v'", lex.remainder())
 		}
 	}
 	return lex.Tokens
