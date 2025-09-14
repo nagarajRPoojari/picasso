@@ -4,24 +4,13 @@ ast.BlockStatement{
       Name: "DirectoryReader",
       Body: []ast.Statement{
         ast.VariableDeclarationStatement{
-          Identifier: "x",
-          Constant: false,
-          AssignedValue: ast.NumberExpression{
-            Value: 200.0,
-          },
-          ExplicitType: ast.SymbolType{
-            Value: "float32",
-          },
-          IsStatic: true,
-        },
-        ast.VariableDeclarationStatement{
           Identifier: "y",
           Constant: false,
           AssignedValue: ast.NumberExpression{
-            Value: 1.0,
+            Value: 112.0,
           },
           ExplicitType: ast.SymbolType{
-            Value: "float64",
+            Value: "int",
           },
           IsStatic: false,
         },
@@ -34,21 +23,38 @@ ast.BlockStatement{
               },
             },
           },
-          Name: "DirectoryReader",
+          Name: "sum",
           Body: []ast.Statement{
             ast.VariableDeclarationStatement{
-              Identifier: "y",
+              Identifier: "n",
               Constant: false,
-              AssignedValue: ast.NumberExpression{
-                Value: 100.0,
+              AssignedValue: ast.MemberExpression{
+                Member: ast.SymbolExpression{
+                  Value: "this",
+                },
+                Property: "y",
               },
-              ExplicitType: nil,
+              ExplicitType: ast.SymbolType{
+                Value: "int",
+              },
               IsStatic: false,
             },
             ast.ReturnStatement{
               Value: ast.ExpressionStatement{
-                Expression: ast.SymbolExpression{
-                  Value: "y",
+                Expression: ast.BinaryExpression{
+                  Left: ast.MemberExpression{
+                    Member: ast.SymbolExpression{
+                      Value: "this",
+                    },
+                    Property: "y",
+                  },
+                  Operator: lexer.Token{
+                    Kind: 33,
+                    Value: "+",
+                  },
+                  Right: ast.SymbolExpression{
+                    Value: "x",
+                  },
                 },
               },
             },
@@ -56,43 +62,20 @@ ast.BlockStatement{
           ReturnType: ast.SymbolType{
             Value: "int",
           },
-          IsStatic: true,
+          IsStatic: false,
         },
-        ast.FunctionDeclarationStatement{
-          Parameters: []ast.Parameter{
-            ast.Parameter{
-              Name: "x",
-              Type: ast.SymbolType{
-                Value: "int",
-              },
-            },
-            ast.Parameter{
-              Name: "y",
-              Type: ast.SymbolType{
-                Value: "int",
-              },
-            },
+      },
+    },
+    ast.ClassDeclarationStatement{
+      Name: "Math",
+      Body: []ast.Statement{
+        ast.VariableDeclarationStatement{
+          Identifier: "pi",
+          Constant: false,
+          AssignedValue: ast.NumberExpression{
+            Value: 100.0,
           },
-          Name: "sum",
-          Body: []ast.Statement{
-            ast.ReturnStatement{
-              Value: ast.ExpressionStatement{
-                Expression: ast.BinaryExpression{
-                  Left: ast.SymbolExpression{
-                    Value: "x",
-                  },
-                  Operator: lexer.Token{
-                    Kind: 33,
-                    Value: "+",
-                  },
-                  Right: ast.SymbolExpression{
-                    Value: "y",
-                  },
-                },
-              },
-            },
-          },
-          ReturnType: ast.SymbolType{
+          ExplicitType: ast.SymbolType{
             Value: "int",
           },
           IsStatic: false,
@@ -104,18 +87,14 @@ ast.BlockStatement{
       Name: "main",
       Body: []ast.Statement{
         ast.VariableDeclarationStatement{
-          Identifier: "x",
+          Identifier: "a",
           Constant: false,
           AssignedValue: ast.NewExpression{
             Instantiation: ast.CallExpression{
               Method: ast.SymbolExpression{
                 Value: "DirectoryReader",
               },
-              Arguments: []ast.Expression{
-                ast.NumberExpression{
-                  Value: 200.0,
-                },
-              },
+              Arguments: []ast.Expression{},
             },
           },
           ExplicitType: ast.SymbolType{
@@ -123,11 +102,13 @@ ast.BlockStatement{
           },
           IsStatic: false,
         },
-        ast.ExpressionStatement{
-          Expression: ast.CallExpression{
+        ast.VariableDeclarationStatement{
+          Identifier: "z",
+          Constant: false,
+          AssignedValue: ast.CallExpression{
             Method: ast.MemberExpression{
               Member: ast.SymbolExpression{
-                Value: "x",
+                Value: "a",
               },
               Property: "sum",
             },
@@ -135,34 +116,6 @@ ast.BlockStatement{
               ast.NumberExpression{
                 Value: 10.0,
               },
-              ast.NumberExpression{
-                Value: 10.0,
-              },
-            },
-          },
-        },
-        ast.VariableDeclarationStatement{
-          Identifier: "z",
-          Constant: false,
-          AssignedValue: ast.BinaryExpression{
-            Left: ast.BinaryExpression{
-              Left: ast.NumberExpression{
-                Value: 10.0,
-              },
-              Operator: lexer.Token{
-                Kind: 36,
-                Value: "*",
-              },
-              Right: ast.NumberExpression{
-                Value: 10.0,
-              },
-            },
-            Operator: lexer.Token{
-              Kind: 33,
-              Value: "+",
-            },
-            Right: ast.NumberExpression{
-              Value: 10.0,
             },
           },
           ExplicitType: ast.SymbolType{
@@ -170,13 +123,35 @@ ast.BlockStatement{
           },
           IsStatic: false,
         },
+        ast.ReturnStatement{
+          Value: ast.ExpressionStatement{
+            Expression: ast.NumberExpression{
+              Value: 0.0,
+            },
+          },
+        },
       },
-      ReturnType: nil,
+      ReturnType: ast.SymbolType{
+        Value: "int32",
+      },
       IsStatic: false,
     },
   },
 }
-Duration: 503.917µs
-vars: map[]
-classes: map[DirectoryReader:0x14000122cd0]
-methods: map[DirectoryReader:0x14000122cd0]
+Duration: 310.125µs
+property -  y
+assigning  &{i64 i64* %0 0}
+property -  y
+instance ---  &{DirectoryReader %DirectoryReader %DirectoryReader* %0}
+assigning  &{DirectoryReader %DirectoryReader %DirectoryReader* %0}
+assigning  &{i64 i64* %0 0}
+instance - DirectoryReader
+assigining - 112.000000 to  
+ - a  
+assigining - 0.000000 to  
+ - n  
+assigining - 0.000000 to  
+ - z  
+return z = 0.000000 1073741834
+ran succesfully..
+0

@@ -29,10 +29,16 @@ const (
 )
 
 type TypeHandler struct {
+	udts   map[string]*MetaClass
+	module *ir.Module
 }
 
 func NewTypeHandler() *TypeHandler {
-	return &TypeHandler{}
+	return &TypeHandler{udts: make(map[string]*MetaClass)}
+}
+
+func (t *TypeHandler) Register(meta *MetaClass) {
+	t.udts[meta.udt.Name()] = meta
 }
 
 func (t *TypeHandler) GetPrimitiveVar(block *ir.Block, _type Type, init value.Value) Var {
@@ -154,9 +160,14 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 		return types.Float
 	case FLOAT64, DOUBLE:
 		return types.Double
-	default:
-		return nil
 	}
+
+	// Check if already registered
+	if k, ok := t.udts[string(_type)]; ok {
+		return k.udt
+	}
+
+	panic("forawrd declaration error")
 }
 
 // CastToType takes a target type name (e.g. "float64", "int8")

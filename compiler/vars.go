@@ -14,14 +14,14 @@ type Var interface {
 	Update(block *ir.Block, v value.Value)
 	Load(block *ir.Block) value.Value
 	Constant() constant.Constant
-	Slot() *ir.InstAlloca
+	Slot() value.Value
 	Cast(block *ir.Block, v value.Value) value.Value
 	Type() types.Type
 }
 
 type Boolean struct {
 	NativeType *types.IntType
-	Value      *ir.InstAlloca // pointer to i1
+	Value      value.Value // pointer to i1
 	GoVal      bool
 }
 
@@ -43,7 +43,7 @@ func (b *Boolean) Constant() constant.Constant {
 	return constant.NewInt(types.I1, btoi(b.GoVal))
 }
 
-func (b *Boolean) Slot() *ir.InstAlloca { return b.Value }
+func (b *Boolean) Slot() value.Value { return b.Value }
 
 func (b *Boolean) Cast(block *ir.Block, v value.Value) value.Value {
 	switch v.Type().(type) {
@@ -62,7 +62,7 @@ func (c *Boolean) Type() types.Type { return c.NativeType }
 /*** INT8 ***/
 type Int8 struct {
 	NativeType *types.IntType
-	Value      *ir.InstAlloca
+	Value      value.Value
 	GoVal      int8
 }
 
@@ -75,7 +75,7 @@ func NewInt8Var(block *ir.Block, init int8) *Int8 {
 func (i *Int8) Update(block *ir.Block, v value.Value) { block.NewStore(v, i.Value) }
 func (i *Int8) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I8, i.Value) }
 func (i *Int8) Constant() constant.Constant           { return constant.NewInt(types.I8, int64(i.GoVal)) }
-func (i *Int8) Slot() *ir.InstAlloca                  { return i.Value }
+func (i *Int8) Slot() value.Value                     { return i.Value }
 func (i *Int8) Cast(block *ir.Block, v value.Value) value.Value {
 	switch t := v.Type().(type) {
 	case *types.IntType:
@@ -96,7 +96,7 @@ func (c *Int8) Type() types.Type { return c.NativeType }
 /*** INT16 ***/
 type Int16 struct {
 	NativeType *types.IntType
-	Value      *ir.InstAlloca
+	Value      value.Value
 	GoVal      int16
 }
 
@@ -109,7 +109,7 @@ func NewInt16Var(block *ir.Block, init int16) *Int16 {
 func (i *Int16) Update(block *ir.Block, v value.Value) { block.NewStore(v, i.Value) }
 func (i *Int16) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I16, i.Value) }
 func (i *Int16) Constant() constant.Constant           { return constant.NewInt(types.I16, int64(i.GoVal)) }
-func (i *Int16) Slot() *ir.InstAlloca                  { return i.Value }
+func (i *Int16) Slot() value.Value                     { return i.Value }
 func (i *Int16) Cast(block *ir.Block, v value.Value) value.Value {
 	switch t := v.Type().(type) {
 	case *types.IntType:
@@ -130,7 +130,7 @@ func (c *Int16) Type() types.Type { return c.NativeType }
 /*** INT32 ***/
 type Int32 struct {
 	NativeType *types.IntType
-	Value      *ir.InstAlloca
+	Value      value.Value
 	GoVal      int32
 }
 
@@ -143,7 +143,7 @@ func NewInt32Var(block *ir.Block, init int32) *Int32 {
 func (i *Int32) Update(block *ir.Block, v value.Value) { block.NewStore(v, i.Value) }
 func (i *Int32) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I32, i.Value) }
 func (i *Int32) Constant() constant.Constant           { return constant.NewInt(types.I32, int64(i.GoVal)) }
-func (i *Int32) Slot() *ir.InstAlloca                  { return i.Value }
+func (i *Int32) Slot() value.Value                     { return i.Value }
 func (i *Int32) Cast(block *ir.Block, v value.Value) value.Value {
 	switch t := v.Type().(type) {
 	case *types.IntType:
@@ -164,7 +164,7 @@ func (c *Int32) Type() types.Type { return c.NativeType }
 /*** INT64 ***/
 type Int64 struct {
 	NativeType *types.IntType
-	Value      *ir.InstAlloca
+	Value      value.Value
 	GoVal      int64
 }
 
@@ -177,7 +177,7 @@ func NewInt64Var(block *ir.Block, init int64) *Int64 {
 func (i *Int64) Update(block *ir.Block, v value.Value) { block.NewStore(v, i.Value) }
 func (i *Int64) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I64, i.Value) }
 func (i *Int64) Constant() constant.Constant           { return constant.NewInt(types.I64, i.GoVal) }
-func (i *Int64) Slot() *ir.InstAlloca                  { return i.Value }
+func (i *Int64) Slot() value.Value                     { return i.Value }
 func (i *Int64) Cast(block *ir.Block, v value.Value) value.Value {
 	switch t := v.Type().(type) {
 	case *types.IntType:
@@ -198,7 +198,7 @@ func (c *Int64) Type() types.Type { return c.NativeType }
 /*** FLOAT16 (half) ***/
 type Float16 struct {
 	NativeType *types.FloatType
-	Value      *ir.InstAlloca
+	Value      value.Value
 	GoVal      float32
 }
 
@@ -213,7 +213,7 @@ func (f *Float16) Load(block *ir.Block) value.Value      { return block.NewLoad(
 func (f *Float16) Constant() constant.Constant {
 	return constant.NewFloat(types.Half, float64(f.GoVal))
 }
-func (f *Float16) Slot() *ir.InstAlloca { return f.Value }
+func (f *Float16) Slot() value.Value { return f.Value }
 func (f *Float16) Cast(block *ir.Block, v value.Value) value.Value {
 	switch v.Type().(type) {
 	case *types.IntType:
@@ -234,7 +234,7 @@ func (c *Float16) Type() types.Type { return c.NativeType }
 
 type Float32 struct {
 	NativeType *types.FloatType
-	Value      *ir.InstAlloca
+	Value      value.Value
 	GoVal      float32
 }
 
@@ -249,7 +249,7 @@ func (f *Float32) Load(block *ir.Block) value.Value      { return block.NewLoad(
 func (f *Float32) Constant() constant.Constant {
 	return constant.NewFloat(types.Float, float64(f.GoVal))
 }
-func (f *Float32) Slot() *ir.InstAlloca { return f.Value }
+func (f *Float32) Slot() value.Value { return f.Value }
 func (f *Float32) Cast(block *ir.Block, v value.Value) value.Value {
 	switch v.Type().(type) {
 	case *types.IntType:
@@ -271,7 +271,7 @@ func (c *Float32) Type() types.Type { return c.NativeType }
 /*** FLOAT64 (double) ***/
 type Float64 struct {
 	NativeType *types.FloatType
-	Value      *ir.InstAlloca
+	Value      value.Value
 	GoVal      float64
 }
 
@@ -284,7 +284,7 @@ func NewFloat64Var(block *ir.Block, init float64) *Float64 {
 func (f *Float64) Update(block *ir.Block, v value.Value) { block.NewStore(v, f.Value) }
 func (f *Float64) Load(block *ir.Block) value.Value      { return block.NewLoad(types.Double, f.Value) }
 func (f *Float64) Constant() constant.Constant           { return constant.NewFloat(types.Double, f.GoVal) }
-func (f *Float64) Slot() *ir.InstAlloca                  { return f.Value }
+func (f *Float64) Slot() value.Value                     { return f.Value }
 func (f *Float64) Cast(block *ir.Block, v value.Value) value.Value {
 	switch v.Type().(type) {
 	case *types.IntType:
@@ -306,7 +306,7 @@ func (c *Float64) Type() types.Type { return c.NativeType }
 type Class struct {
 	Name  string
 	UDT   types.Type
-	Value *ir.InstAlloca
+	Value value.Value
 }
 
 func NewClass(block *ir.Block, name string, udt types.Type) *Class {
@@ -334,9 +334,10 @@ func (s *Class) FieldPtr(block *ir.Block, idx int) value.Value {
 }
 
 // Update a single field
-func (s *Class) UpdateField(block *ir.Block, idx int, v value.Value) {
+func (s *Class) UpdateField(block *ir.Block, idx int, v value.Value, expected types.Type) {
+	val := ensureType(block, v, expected)
 	fieldPtr := s.FieldPtr(block, idx)
-	block.NewStore(v, fieldPtr)
+	block.NewStore(val, fieldPtr)
 }
 
 // Load a single field
@@ -352,6 +353,74 @@ func (f *Class) Cast(block *ir.Block, v value.Value) value.Value {
 func (f *Class) Constant() constant.Constant {
 	return nil
 }
-func (s *Class) Slot() *ir.InstAlloca { return s.Value }
+func (s *Class) Slot() value.Value { return s.Value }
 
 func (c *Class) Type() types.Type { return c.UDT }
+
+func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
+	if v.Type().Equal(target) {
+		return v
+	}
+
+	switch src := v.Type().(type) {
+	case *types.IntType:
+		dst, ok := target.(*types.IntType)
+		if !ok {
+			break
+		}
+		if src.BitSize < dst.BitSize {
+			return block.NewZExt(v, dst) // or NewSExt if signed
+		} else if src.BitSize > dst.BitSize {
+			return block.NewTrunc(v, dst)
+		}
+		return v
+
+	case *types.FloatType:
+		dst, ok := target.(*types.FloatType)
+		if !ok {
+			break
+		}
+		if src.Kind == dst.Kind {
+			return v
+		}
+		// Promote/demote based on known float kinds
+		if floatRank(src.Kind) < floatRank(dst.Kind) {
+			return block.NewFPExt(v, dst) // promote
+		}
+	}
+
+	// fallback: bitcast (pointers etc.)
+	return block.NewBitCast(v, target)
+}
+
+type Null struct {
+	Target types.Type
+	Value  *ir.InstAlloca
+}
+
+func NewNull() *Null {
+	return &Null{}
+}
+
+func (n *Null) Load(block *ir.Block) value.Value {
+	return block.NewLoad(n.Target, n.Value)
+}
+
+func (n *Null) Update(block *ir.Block, v value.Value) {
+	if !v.Type().Equal(n.Target) {
+		panic(fmt.Sprintf("cannot assign %s to null of type %s", v.Type(), n.Target))
+	}
+	block.NewStore(v, n.Value)
+}
+
+func (n *Null) Type() types.Type {
+	return n.Target
+}
+
+func (n *Null) Cast(block *ir.Block, v value.Value) value.Value {
+	panic(fmt.Sprintf("cannot cast %s to null type %s", v.Type(), n.Target))
+}
+
+func (n *Null) GoValue() interface{} {
+	return nil
+}
