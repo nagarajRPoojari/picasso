@@ -285,7 +285,8 @@ func (t *TypeHandler) CastToType(block *ir.Block, target string, v value.Value) 
 	if k, ok := t.Udts[target]; ok {
 		return ensureType(block, v, k.UDT)
 	}
-	panic(fmt.Sprintf("unexpected target type: %s", target))
+	errorsx.PanicCompilationError(fmt.Sprintf("unexpected target type: %s", target))
+	return nil
 }
 
 func (t *TypeHandler) intCast(block *ir.Block, v value.Value, dst *types.IntType) value.Value {

@@ -268,6 +268,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 	switch ex := expI.(type) {
 
 	case ast.SymbolExpression:
+		// search for variable locally then gloablly
 		if v, ok := vars[ex.Value]; ok {
 			return v
 		}
@@ -278,9 +279,11 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 
 	case ast.NumberExpression:
 		// produce a runtime mutable var for the literal (double)
+		// by default number will be wrapped up with float64
 		return t.typeHandler.BuildVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value))
 
 	case ast.NewExpression:
+		// @todo: make constructor call
 		meth := ex.Instantiation.Method.(ast.SymbolExpression)
 		classMeta := t.classes[meth.Value]
 		if classMeta == nil {

@@ -20,7 +20,7 @@ class Math {
 
 fn main(): int32 {
     say a: DirectoryReader = new DirectoryReader();
-    say z: int = PI;
+    say z: int = a.sum(new Math());
 
 
 
