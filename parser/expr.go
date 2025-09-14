@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/nagarajRPoojari/x-lang/ast"
-	"github.com/nagarajRPoojari/x-lang/error"
+	errorsx "github.com/nagarajRPoojari/x-lang/error"
 	"github.com/nagarajRPoojari/x-lang/lexer"
 )
 
@@ -14,7 +14,7 @@ func parse_expr(p *Parser, bp BindingPower) ast.Expression {
 	nud_fn, exists := nud_table[tokenKind]
 
 	if !exists {
-		error.RaiseParserError("NUD Handler expected for token %s\n", lexer.TokenKindString(tokenKind))
+		errorsx.PanicParserError(fmt.Sprintf("NUD Handler expected for token %s\n", lexer.TokenKindString(tokenKind)))
 	}
 
 	left := nud_fn(p)
@@ -23,7 +23,7 @@ func parse_expr(p *Parser, bp BindingPower) ast.Expression {
 		led_fn, exists := led_table[tokenKind]
 
 		if !exists {
-			error.RaiseParserError("LED Handler expected for token %s\n", lexer.TokenKindString(tokenKind))
+			errorsx.PanicParserError(fmt.Sprintf("LED Handler expected for token %s\n", lexer.TokenKindString(tokenKind)))
 		}
 
 		left = led_fn(p, left, bp)

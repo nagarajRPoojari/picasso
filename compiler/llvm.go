@@ -10,6 +10,7 @@ import (
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
 type LLVM struct {
@@ -387,8 +388,14 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 		rv := right.Load(block)
 
 		f := &tf.Float64{}
-		lvf := f.Cast(block, lv)
-		rvf := f.Cast(block, rv)
+		lvf, err := f.Cast(block, lv)
+		if err != nil {
+			errorsx.PanicCompilationError((fmt.Sprintf("failed to cast %s to float", lv)))
+		}
+		rvf, err := f.Cast(block, rv)
+		if err != nil {
+			errorsx.PanicCompilationError((fmt.Sprintf("failed to cast %s to float", rv)))
+		}
 
 		var res value.Value
 		switch ex.Operator.Value {

@@ -8,18 +8,30 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/compiler/utils"
+
+	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
-// Var is a mutable variable (backed by an alloca slot).
+// Var is a holder for all native variables
+// It holds mutable slot suporting runtime update and load operations
 type Var interface {
 	Update(block *ir.Block, v value.Value)
 	Load(block *ir.Block) value.Value
+
+	// Constant is depricated, used to build compile time constants
 	Constant() constant.Constant
+
+	// mutable slot holding the value
 	Slot() value.Value
-	Cast(block *ir.Block, v value.Value) value.Value
+
+	// Cast casts given value to self type if possible
+	Cast(block *ir.Block, v value.Value) (value.Value, error)
+
+	// Type returns llvm compatibe type
 	Type() types.Type
 }
 
+// Boolean hold single bit of information
 type Boolean struct {
 	NativeType *types.IntType
 	Value      value.Value // pointer to i1
@@ -31,36 +43,26 @@ func NewBooleanVar(block *ir.Block, init bool) *Boolean {
 	block.NewStore(constant.NewInt(types.I1, utils.BtoI(init)), slot)
 	return &Boolean{NativeType: types.I1, Value: slot, GoVal: init}
 }
-
-func (b *Boolean) Update(block *ir.Block, v value.Value) {
-	block.NewStore(v, b.Value)
-}
-
-func (b *Boolean) Load(block *ir.Block) value.Value {
-	return block.NewLoad(types.I1, b.Value)
-}
-
-func (b *Boolean) Constant() constant.Constant {
-	return constant.NewInt(types.I1, utils.BtoI(b.GoVal))
-}
-
-func (b *Boolean) Slot() value.Value { return b.Value }
-
-func (b *Boolean) Cast(block *ir.Block, v value.Value) value.Value {
+func (b *Boolean) Update(block *ir.Block, v value.Value) { block.NewStore(v, b.Value) }
+func (b *Boolean) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I1, b.Value) }
+func (b *Boolean) Constant() constant.Constant           { return constant.NewInt(types.I1, utils.BtoI(b.GoVal)) }
+func (b *Boolean) Slot() value.Value                     { return b.Value }
+func (c *Boolean) Type() types.Type                      { return c.NativeType }
+func (b *Boolean) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	switch v.Type().(type) {
 	case *types.IntType:
 		// cast any int to i1
 		if v.Type().(*types.IntType).BitSize == 1 {
-			return v
+			return v, nil
 		}
-		return block.NewTrunc(v, types.I1)
+		// if incoming int type is other than types.I1, truncate it to single bit
+		return block.NewTrunc(v, types.I1), nil
 	default:
-		panic(fmt.Sprintf("cannot cast %s to boolean", v.Type()))
+		return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to booolean", v))
 	}
 }
-func (c *Boolean) Type() types.Type { return c.NativeType }
 
-/*** INT8 ***/
+// Int8 hold 1 byte of information
 type Int8 struct {
 	NativeType *types.IntType
 	Value      value.Value
@@ -77,24 +79,25 @@ func (i *Int8) Update(block *ir.Block, v value.Value) { block.NewStore(v, i.Valu
 func (i *Int8) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I8, i.Value) }
 func (i *Int8) Constant() constant.Constant           { return constant.NewInt(types.I8, int64(i.GoVal)) }
 func (i *Int8) Slot() value.Value                     { return i.Value }
-func (i *Int8) Cast(block *ir.Block, v value.Value) value.Value {
+func (c *Int8) Type() types.Type                      { return c.NativeType }
+func (i *Int8) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	switch t := v.Type().(type) {
 	case *types.IntType:
+		// truncate to 1 byte if byte size if greater
 		if t.BitSize > 8 {
-			return block.NewTrunc(v, types.I8)
+			return block.NewTrunc(v, types.I8), nil
 		} else if t.BitSize < 8 {
-			return block.NewSExt(v, types.I8)
+			return block.NewSExt(v, types.I8), nil
 		}
-		return v
+		return v, nil
 	case *types.FloatType:
-		return block.NewFPToSI(v, types.I8)
+		return block.NewFPToSI(v, types.I8), nil
 	default:
-		panic(fmt.Sprintf("cannot cast %s to int8", v.Type()))
+		return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to int7", v))
 	}
 }
-func (c *Int8) Type() types.Type { return c.NativeType }
 
-/*** INT16 ***/
+// Int16 store 2 bytes of information
 type Int16 struct {
 	NativeType *types.IntType
 	Value      value.Value
@@ -111,24 +114,24 @@ func (i *Int16) Update(block *ir.Block, v value.Value) { block.NewStore(v, i.Val
 func (i *Int16) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I16, i.Value) }
 func (i *Int16) Constant() constant.Constant           { return constant.NewInt(types.I16, int64(i.GoVal)) }
 func (i *Int16) Slot() value.Value                     { return i.Value }
-func (i *Int16) Cast(block *ir.Block, v value.Value) value.Value {
+func (c *Int16) Type() types.Type                      { return c.NativeType }
+func (i *Int16) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	switch t := v.Type().(type) {
 	case *types.IntType:
 		if t.BitSize > 16 {
-			return block.NewTrunc(v, types.I16)
+			return block.NewTrunc(v, types.I16), nil
 		} else if t.BitSize < 16 {
-			return block.NewSExt(v, types.I16)
+			return block.NewSExt(v, types.I16), nil
 		}
-		return v
+		return v, nil
 	case *types.FloatType:
-		return block.NewFPToSI(v, types.I16)
+		return block.NewFPToSI(v, types.I16), nil
 	default:
-		panic(fmt.Sprintf("cannot cast %s to int16", v.Type()))
+		return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to int16", v))
+
 	}
 }
-func (c *Int16) Type() types.Type { return c.NativeType }
 
-/*** INT32 ***/
 type Int32 struct {
 	NativeType *types.IntType
 	Value      value.Value
@@ -145,24 +148,24 @@ func (i *Int32) Update(block *ir.Block, v value.Value) { block.NewStore(v, i.Val
 func (i *Int32) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I32, i.Value) }
 func (i *Int32) Constant() constant.Constant           { return constant.NewInt(types.I32, int64(i.GoVal)) }
 func (i *Int32) Slot() value.Value                     { return i.Value }
-func (i *Int32) Cast(block *ir.Block, v value.Value) value.Value {
+func (i *Int32) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	switch t := v.Type().(type) {
 	case *types.IntType:
 		if t.BitSize > 32 {
-			return block.NewTrunc(v, types.I32)
+			return block.NewTrunc(v, types.I32), nil
 		} else if t.BitSize < 32 {
-			return block.NewSExt(v, types.I32)
+			return block.NewSExt(v, types.I32), nil
 		}
-		return v
+		return v, nil
 	case *types.FloatType:
-		return block.NewFPToSI(v, types.I32)
+		return block.NewFPToSI(v, types.I32), nil
 	default:
-		panic(fmt.Sprintf("cannot cast %s to int32", v.Type()))
+		return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to int32", v))
 	}
 }
 func (c *Int32) Type() types.Type { return c.NativeType }
 
-/*** INT64 ***/
+// Int64 stores 8 bytes int value
 type Int64 struct {
 	NativeType *types.IntType
 	Value      value.Value
@@ -179,24 +182,24 @@ func (i *Int64) Update(block *ir.Block, v value.Value) { block.NewStore(v, i.Val
 func (i *Int64) Load(block *ir.Block) value.Value      { return block.NewLoad(types.I64, i.Value) }
 func (i *Int64) Constant() constant.Constant           { return constant.NewInt(types.I64, i.GoVal) }
 func (i *Int64) Slot() value.Value                     { return i.Value }
-func (i *Int64) Cast(block *ir.Block, v value.Value) value.Value {
+func (i *Int64) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	switch t := v.Type().(type) {
 	case *types.IntType:
 		if t.BitSize > 64 {
-			return block.NewTrunc(v, types.I64)
+			return block.NewTrunc(v, types.I64), nil
 		} else if t.BitSize < 64 {
-			return block.NewSExt(v, types.I64)
+			return block.NewSExt(v, types.I64), nil
 		}
-		return v
+		return v, nil
 	case *types.FloatType:
-		return block.NewFPToSI(v, types.I64)
+		return block.NewFPToSI(v, types.I64), nil
 	default:
-		panic(fmt.Sprintf("cannot cast %s to int64", v.Type()))
+		return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to int64", v))
 	}
 }
 func (c *Int64) Type() types.Type { return c.NativeType }
 
-/*** FLOAT16 (half) ***/
+// Float16/Half stores 2 byte floating point value
 type Float16 struct {
 	NativeType *types.FloatType
 	Value      value.Value
@@ -215,24 +218,25 @@ func (f *Float16) Constant() constant.Constant {
 	return constant.NewFloat(types.Half, float64(f.GoVal))
 }
 func (f *Float16) Slot() value.Value { return f.Value }
-func (f *Float16) Cast(block *ir.Block, v value.Value) value.Value {
+func (f *Float16) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	switch v.Type().(type) {
 	case *types.IntType:
-		return block.NewSIToFP(v, types.Half)
+		return block.NewSIToFP(v, types.Half), nil
 	case *types.FloatType:
 		switch v.Type() {
 		case types.Double:
-			return block.NewFPTrunc(v, types.Half)
+			return block.NewFPTrunc(v, types.Half), nil
 		case types.Half:
-			return block.NewFPExt(v, types.Half)
+			return block.NewFPExt(v, types.Half), nil
 		case types.Float:
-			return v
+			return v, nil
 		}
 	}
-	panic(fmt.Sprintf("cannot cast %s to float16", v.Type()))
+	return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to int64", v))
 }
 func (c *Float16) Type() types.Type { return c.NativeType }
 
+// Floa32 stores 4 byte floating point value
 type Float32 struct {
 	NativeType *types.FloatType
 	Value      value.Value
@@ -251,25 +255,25 @@ func (f *Float32) Constant() constant.Constant {
 	return constant.NewFloat(types.Float, float64(f.GoVal))
 }
 func (f *Float32) Slot() value.Value { return f.Value }
-func (f *Float32) Cast(block *ir.Block, v value.Value) value.Value {
+func (c *Float32) Type() types.Type  { return c.NativeType }
+func (f *Float32) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	switch v.Type().(type) {
 	case *types.IntType:
-		return block.NewSIToFP(v, types.Float)
+		return block.NewSIToFP(v, types.Float), nil
 	case *types.FloatType:
 		switch v.Type() {
 		case types.Double:
-			return block.NewFPTrunc(v, types.Float)
+			return block.NewFPTrunc(v, types.Float), nil
 		case types.Half:
-			return block.NewFPExt(v, types.Float)
+			return block.NewFPExt(v, types.Float), nil
 		case types.Float:
-			return v
+			return v, nil
 		}
 	}
-	panic(fmt.Sprintf("cannot cast %s to float32", v.Type()))
+	return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to float32", v))
 }
-func (c *Float32) Type() types.Type { return c.NativeType }
 
-/*** FLOAT64 (double) ***/
+// Float64 stores 8 byte floating point value
 type Float64 struct {
 	NativeType *types.FloatType
 	Value      value.Value
@@ -286,24 +290,25 @@ func (f *Float64) Update(block *ir.Block, v value.Value) { block.NewStore(v, f.V
 func (f *Float64) Load(block *ir.Block) value.Value      { return block.NewLoad(types.Double, f.Value) }
 func (f *Float64) Constant() constant.Constant           { return constant.NewFloat(types.Double, f.GoVal) }
 func (f *Float64) Slot() value.Value                     { return f.Value }
-func (f *Float64) Cast(block *ir.Block, v value.Value) value.Value {
+func (c *Float64) Type() types.Type                      { return c.NativeType }
+func (f *Float64) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	switch v.Type().(type) {
 	case *types.IntType:
-		return block.NewSIToFP(v, types.Double)
+		return block.NewSIToFP(v, types.Double), nil
 	case *types.FloatType:
 		switch v.Type() {
 		case types.Float:
-			return block.NewFPExt(v, types.Double)
+			return block.NewFPExt(v, types.Double), nil
 		case types.Half:
-			return block.NewFPExt(v, types.Double)
+			return block.NewFPExt(v, types.Double), nil
 		case types.Double:
-			return v
+			return v, nil
 		}
 	}
-	panic(fmt.Sprintf("cannot cast %s to float64", v.Type()))
+	return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to float64", v))
 }
-func (c *Float64) Type() types.Type { return c.NativeType }
 
+// Class is a custom user defined data type
 type Class struct {
 	Name string      // class name (for lookup)
 	UDT  types.Type  // the struct type
@@ -366,27 +371,27 @@ func (s *Class) LoadField(block *ir.Block, idx int, fieldType types.Type) value.
 	return block.NewLoad(fieldType, fieldPtr)
 }
 
-func (s *Class) Cast(block *ir.Block, v value.Value) value.Value {
+func (s *Class) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	if v == nil {
 		panic("Class.Cast: nil value")
 	}
 
 	// If already the struct value
 	if v.Type().Equal(s.UDT) {
-		return v
+		return v, nil
 	}
 
 	// If pointer to struct, load value
 	if ptrT, ok := v.Type().(*types.PointerType); ok && ptrT.Equal(s.UDT) {
-		return block.NewLoad(s.UDT, v)
+		return block.NewLoad(s.UDT, v), nil
 	}
 
 	if _, ok := v.Type().(*types.PointerType); ok {
 		ptrToUDT := types.NewPointer(s.UDT)
-		return block.NewBitCast(v, ptrToUDT)
+		return block.NewBitCast(v, ptrToUDT), nil
 	}
 
-	return ensureType(block, v, s.UDT)
+	return ensureType(block, v, s.UDT), nil
 }
 
 func (s *Class) Constant() constant.Constant {

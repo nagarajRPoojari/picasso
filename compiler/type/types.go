@@ -8,7 +8,7 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/x-lang/error"
+	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
 type Type string
@@ -160,14 +160,14 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		)
 	}
 
-	error.RaiseCompileError("invalid primitive type: %s", _type)
+	errorsx.PanicCompilationError((fmt.Sprintf("invalid primitive type: %s", _type)))
 	return nil
 }
 
 func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Value) Var {
 	llvmType := t.GetLLVMType(paramType)
 	if llvmType == nil {
-		error.RaiseCompileError("invalid LLVM tiype: %s", paramType)
+		errorsx.PanicCompilationError((fmt.Sprintf("invalid LLVM type: %s", paramType)))
 	}
 
 	switch llvmType.(type) {

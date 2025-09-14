@@ -1,22 +1,63 @@
-package error
+// Package errorsx provides custom error types for compilation,
+// lexer, and parser phases of the compiler.
+package errorsx
 
-import "fmt"
+import (
+	"fmt"
+)
 
-type CompileTimeError string
-type LexerError string
-type ParserError string
+// Phase represents the stage of compilation where an error occurred.
+type Phase string
 
-func RaiseCompileError(msg string, args ...any) {
-	m := "CompilerError: " + fmt.Sprintf(msg, args...)
-	panic(m)
+const (
+	PhaseCompilation Phase = "Compilation"
+	PhaseLexer       Phase = "Lexer"
+	PhaseParser      Phase = "Parser"
+)
+
+// Error represents a structured compiler error.
+type Error struct {
+	Phase   Phase  // Lexer / Parser / Compilation
+	Message string // Human-readable error message
+	Line    int    // Source line number (if available)
+	Column  int    // Source column number (if available)
 }
 
-func RaiseLexerError(msg string, args ...any) {
-	m := "LexerError: " + fmt.Sprintf(msg, args...)
-	panic(m)
+// Error implements the built-in error interface.
+func (e *Error) Error() string {
+	loc := ""
+	if e.Line > 0 {
+		loc = fmt.Sprintf(" (line %d, col %d)", e.Line, e.Column)
+	}
+	return fmt.Sprintf("[%s Error]%s: %s", e.Phase, loc, e.Message)
 }
 
-func RaiseParserError(msg string, args ...any) {
-	m := "ParserError: " + fmt.Sprintf(msg, args...)
-	panic(m)
+// NewCompilationError returns a compilation error.
+func NewCompilationError(msg string, l ...int) *Error {
+	return &Error{Phase: PhaseCompilation, Message: msg, Line: l[0], Column: l[1]}
+}
+
+// NewLexerError returns a lexer error with position.
+func NewLexerError(msg string, l ...int) *Error {
+	return &Error{Phase: PhaseLexer, Message: msg, Line: l[0], Column: l[1]}
+}
+
+// NewParserError returns a parser error with position.
+func NewParserError(msg string, l ...int) *Error {
+	return &Error{Phase: PhaseParser, Message: msg, Line: l[0], Column: l[1]}
+}
+
+// PanicCompilationError panics with a compilation error.
+func PanicCompilationError(msg string, l ...int) {
+	panic(NewCompilationError(msg, l[0], l[1]))
+}
+
+// PanicLexerError panics with a lexer error.
+func PanicLexerError(msg string, l ...int) {
+	panic(NewLexerError(msg, l[0], l[1]))
+}
+
+// PanicParserError panics with a parser error.
+func PanicParserError(msg string, l ...int) {
+	panic(NewParserError(msg, l[0], l[1]))
 }
