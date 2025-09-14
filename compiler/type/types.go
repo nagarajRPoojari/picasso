@@ -1,4 +1,4 @@
-package compiler
+package typedef
 
 import (
 	"fmt"
@@ -31,16 +31,16 @@ const (
 )
 
 type TypeHandler struct {
-	udts   map[string]*MetaClass
+	Udts   map[string]*MetaClass
 	module *ir.Module
 }
 
 func NewTypeHandler() *TypeHandler {
-	return &TypeHandler{udts: make(map[string]*MetaClass)}
+	return &TypeHandler{Udts: make(map[string]*MetaClass)}
 }
 
 func (t *TypeHandler) Register(meta *MetaClass) {
-	t.udts[meta.udt.Name()] = meta
+	t.Udts[meta.UDT.Name()] = meta
 }
 
 func (t *TypeHandler) GetPrimitiveVar(block *ir.Block, _type Type, init value.Value) Var {
@@ -139,7 +139,7 @@ func (t *TypeHandler) GetPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		return &Float64{NativeType: types.Double, Value: ptr, GoVal: 0}
 	}
 
-	if _, ok := t.udts[string(_type)]; ok {
+	if _, ok := t.Udts[string(_type)]; ok {
 		return NewClass(
 			block, string(_type), init.Type(),
 		)
@@ -164,8 +164,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 	if pt, ok := llvmType.(*types.PointerType); ok {
 		// find class name for the element type (if available)
 		cname := ""
-		for name, meta := range t.udts {
-			if meta.udt.Equal(pt) {
+		for name, meta := range t.Udts {
+			if meta.UDT.Equal(pt) {
 				cname = name
 				break
 			}
@@ -183,8 +183,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 		block.NewStore(param, ptr)
 		// find a class name if available
 		cname := ""
-		for name, meta := range t.udts {
-			if meta.udt.Equal(st) {
+		for name, meta := range t.Udts {
+			if meta.UDT.Equal(st) {
 				cname = name
 				break
 			}
@@ -228,8 +228,8 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	}
 
 	// Check if already registered
-	if k, ok := t.udts[string(_type)]; ok {
-		return k.udt
+	if k, ok := t.Udts[string(_type)]; ok {
+		return k.UDT
 	}
 
 	panic("forawrd declaration error")
@@ -271,8 +271,8 @@ func (t *TypeHandler) CastToType(block *ir.Block, target string, v value.Value) 
 		return t.floatCast(block, v, types.Double)
 	}
 
-	if k, ok := t.udts[target]; ok {
-		return ensureType(block, v, k.udt)
+	if k, ok := t.Udts[target]; ok {
+		return ensureType(block, v, k.UDT)
 	}
 	panic(fmt.Sprintf("unexpected target type: %s", target))
 }

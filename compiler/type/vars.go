@@ -1,4 +1,4 @@
-package compiler
+package typedef
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/x-lang/compiler/utils"
 )
 
 // Var is a mutable variable (backed by an alloca slot).
@@ -27,7 +28,7 @@ type Boolean struct {
 
 func NewBooleanVar(block *ir.Block, init bool) *Boolean {
 	slot := block.NewAlloca(types.I1)
-	block.NewStore(constant.NewInt(types.I1, btoi(init)), slot)
+	block.NewStore(constant.NewInt(types.I1, utils.BtoI(init)), slot)
 	return &Boolean{NativeType: types.I1, Value: slot, GoVal: init}
 }
 
@@ -40,7 +41,7 @@ func (b *Boolean) Load(block *ir.Block) value.Value {
 }
 
 func (b *Boolean) Constant() constant.Constant {
-	return constant.NewInt(types.I1, btoi(b.GoVal))
+	return constant.NewInt(types.I1, utils.BtoI(b.GoVal))
 }
 
 func (b *Boolean) Slot() value.Value { return b.Value }

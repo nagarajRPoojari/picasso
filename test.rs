@@ -5,6 +5,10 @@ class DirectoryReader {
   fn sum(m: Math): int {
     return m.pi;
   }
+
+  fn math(): Math {
+    return this.x;
+  }
 }
 
 class Math {
@@ -13,6 +17,9 @@ class Math {
 
 fn main(): int32 {
     say a: DirectoryReader = new DirectoryReader();
-    say z: int = a.sum(new Math());
+    say z: int = a.math().pi;
+
+
+
     return 0;
 }

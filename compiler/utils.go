@@ -94,10 +94,3 @@ func (t *IdentifierBuilder) Attach(name ...string) string {
 	}
 	return res
 }
-
-func btoi(b bool) int64 {
-	if b {
-		return 1
-	}
-	return 0
-}

@@ -9,37 +9,18 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
-
-type MetaClass struct {
-	varIndexMap map[string]int
-	varAST      map[string]*ast.VariableDeclarationStatement
-
-	methods map[string]*ir.Func
-
-	udt types.Type
-}
-
-func NewMetaClass() *MetaClass {
-	return &MetaClass{
-		varIndexMap: make(map[string]int),
-		varAST:      make(map[string]*ast.VariableDeclarationStatement),
-		methods:     make(map[string]*ir.Func),
-	}
-}
-func (m *MetaClass) FieldType(idx int) types.Type {
-	return m.udt.(*types.StructType).Fields[idx]
-}
 
 type LLVM struct {
 	module *ir.Module
 
-	typeHandler       *TypeHandler
+	typeHandler       *tf.TypeHandler
 	identifierBuilder *IdentifierBuilder
 
-	vars    map[string]Var
+	vars    map[string]tf.Var
 	methods map[string]*ir.Func
-	classes map[string]*MetaClass
+	classes map[string]*tf.MetaClass
 
 	classLookUp map[string]struct{}
 
@@ -50,10 +31,10 @@ func NewLLVM() *LLVM {
 	m := ir.NewModule()
 	i := &LLVM{
 		module:            m,
-		typeHandler:       NewTypeHandler(),
-		vars:              make(map[string]Var),
+		typeHandler:       tf.NewTypeHandler(),
+		vars:              make(map[string]tf.Var),
 		methods:           make(map[string]*ir.Func),
-		classes:           make(map[string]*MetaClass),
+		classes:           make(map[string]*tf.MetaClass),
 		identifierBuilder: NewIdentifierBuilder(MAIN),
 	}
 	return i
@@ -115,11 +96,11 @@ func (t *LLVM) predeclareClass(class ast.ClassDeclarationStatement) {
 	}
 	udt := types.NewStruct() // opaque
 	t.module.NewTypeDef(class.Name, udt)
-	mc := &MetaClass{
-		varIndexMap: make(map[string]int),
-		varAST:      make(map[string]*ast.VariableDeclarationStatement),
-		methods:     make(map[string]*ir.Func),
-		udt:         udt,
+	mc := &tf.MetaClass{
+		VarIndexMap: make(map[string]int),
+		VarAST:      make(map[string]*ast.VariableDeclarationStatement),
+		Methods:     make(map[string]*ir.Func),
+		UDT:         udt,
 	}
 	t.classes[class.Name] = mc
 	t.typeHandler.Register(mc)
@@ -133,16 +114,16 @@ func (t *LLVM) defineClassVars(class ast.ClassDeclarationStatement) {
 	for _, stI := range class.Body {
 		if st, ok := stI.(ast.VariableDeclarationStatement); ok {
 			fqName := t.identifierBuilder.Attach(class.Name, st.Identifier)
-			mc.varIndexMap[fqName] = i
-			mc.varAST[fqName] = &st
+			mc.VarIndexMap[fqName] = i
+			mc.VarAST[fqName] = &st
 
-			fieldType := t.typeHandler.GetLLVMType(Type(st.ExplicitType.Get()))
+			fieldType := t.typeHandler.GetLLVMType(tf.Type(st.ExplicitType.Get()))
 			fieldTypes = append(fieldTypes, fieldType)
 			i++
 		}
 	}
 
-	mc.udt.(*types.StructType).Fields = fieldTypes
+	mc.UDT.(*types.StructType).Fields = fieldTypes
 }
 
 func (t *LLVM) declareFunctions(class ast.ClassDeclarationStatement) {
@@ -151,18 +132,18 @@ func (t *LLVM) declareFunctions(class ast.ClassDeclarationStatement) {
 		case ast.FunctionDeclarationStatement:
 			params := make([]*ir.Param, 0)
 			for _, p := range st.Parameters {
-				params = append(params, ir.NewParam(p.Name, t.typeHandler.GetLLVMType(Type(p.Type.Get()))))
+				params = append(params, ir.NewParam(p.Name, t.typeHandler.GetLLVMType(tf.Type(p.Type.Get()))))
 			}
 
-			udt := t.classes[class.Name].udt
+			udt := t.classes[class.Name].UDT
 			thisParamType := types.NewPointer(udt)
 			params = append(params, ir.NewParam(THIS, thisParamType))
 
 			name := t.identifierBuilder.Attach(class.Name, st.Name)
-			retType := t.typeHandler.GetLLVMType(Type(st.ReturnType.Get()))
+			retType := t.typeHandler.GetLLVMType(tf.Type(st.ReturnType.Get()))
 			f := t.module.NewFunc(name, retType, params...)
 			t.methods[name] = f
-			t.classes[class.Name].methods[name] = f
+			t.classes[class.Name].Methods[name] = f
 		}
 	}
 }
@@ -177,7 +158,7 @@ func (t *LLVM) defineClass(class ast.ClassDeclarationStatement) {
 }
 
 func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement) {
-	vars := make(map[string]Var, 0)
+	vars := make(map[string]tf.Var, 0)
 	name := t.identifierBuilder.Attach(className, fn.Name)
 	if className == "" { // indicates classless function: main
 		name = fn.Name
@@ -191,7 +172,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 
 	for i, p := range f.Params {
 		if i < len(fn.Parameters) {
-			paramType := Type(fn.Parameters[i].Type.Get())
+			paramType := tf.Type(fn.Parameters[i].Type.Get())
 			vars[p.LocalName] = t.typeHandler.BuildVar(entry, paramType, p)
 			continue
 		}
@@ -200,9 +181,9 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 		if clsMeta == nil {
 			panic("defineFunc: unknown class when binding this")
 		}
-		vars[p.LocalName] = &Class{
+		vars[p.LocalName] = &tf.Class{
 			Name: className,
-			UDT:  clsMeta.udt,
+			UDT:  clsMeta.UDT,
 			Ptr:  p,
 		}
 		break
@@ -218,7 +199,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 
 			if st.ExplicitType != nil {
 				casted := t.typeHandler.CastToType(entry, st.ExplicitType.Get(), v.Load(entry))
-				v = t.typeHandler.BuildVar(entry, Type(st.ExplicitType.Get()), casted)
+				v = t.typeHandler.BuildVar(entry, tf.Type(st.ExplicitType.Get()), casted)
 			}
 
 			vars[st.Identifier] = v
@@ -226,8 +207,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 		case ast.ExpressionStatement:
 			switch exp := st.Expression.(type) {
 			case ast.AssignmentExpression:
-				// @todo: type casting Var
-				// @todo: handle member assignments. e.g, this.x = 100;
+
 				assigneeExp, _ := exp.Assignee.(ast.SymbolExpression)
 				assignee := assigneeExp.Value
 				v, ok := vars[assignee]
@@ -240,8 +220,8 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 					}
 				}
 				rhs := t.processExpression(entry, vars, exp.AssignedValue)
-				fmt.Println("assigning ", rhs)
 				v.Update(entry, rhs.Load(entry))
+
 			case ast.CallExpression:
 				// will be routed CallExpression
 				t.processExpression(entry, vars, exp)
@@ -263,7 +243,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 
 // processExpression: handles symbols, numbers, new, member, call, binary etc.
 // Supports chaining like a.b().c().d()
-func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.Expression) Var {
+func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI ast.Expression) tf.Var {
 	switch ex := expI.(type) {
 
 	case ast.SymbolExpression:
@@ -277,7 +257,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 
 	case ast.NumberExpression:
 		// produce a runtime mutable var for the literal (double)
-		return t.typeHandler.GetPrimitiveVar(block, FLOAT64, constant.NewFloat(types.Double, ex.Value))
+		return t.typeHandler.GetPrimitiveVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value))
 
 	case ast.NewExpression:
 		meth := ex.Instantiation.Method.(ast.SymbolExpression)
@@ -286,12 +266,12 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 			panic(fmt.Sprintf("unknown class: %s", meth.Value))
 		}
 
-		instance := NewClass(block, meth.Value, classMeta.udt)
-		structType := classMeta.udt.(*types.StructType)
+		instance := tf.NewClass(block, meth.Value, classMeta.UDT)
+		structType := classMeta.UDT.(*types.StructType)
 		meta := t.classes[meth.Value]
 
-		for name, index := range meta.varIndexMap {
-			exp := meta.varAST[name]
+		for name, index := range meta.VarIndexMap {
+			exp := meta.VarAST[name]
 			x := t.processExpression(block, vars, exp.AssignedValue)
 
 			fieldType := structType.Fields[index]
@@ -310,7 +290,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 		}
 
 		// Base must be a class instance
-		cls, ok := baseVar.(*Class)
+		cls, ok := baseVar.(*tf.Class)
 		if !ok {
 			panic(fmt.Sprintf("member access base is not a class instance, got %T", baseVar))
 		}
@@ -323,13 +303,13 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 
 		// Compute field name in identifier map
 		fieldID := t.identifierBuilder.Attach(cls.Name, ex.Property)
-		idx, ok := classMeta.varIndexMap[fieldID]
+		idx, ok := classMeta.VarIndexMap[fieldID]
 		if !ok {
 			panic(fmt.Sprintf("unknown field %s on class %s", ex.Property, cls.Name))
 		}
 
 		// Get field type from struct UDT
-		st, ok := classMeta.udt.(*types.StructType)
+		st, ok := classMeta.UDT.(*types.StructType)
 		if !ok {
 			panic(fmt.Sprintf("class %s does not have a struct UDT", cls.Name))
 		}
@@ -341,12 +321,12 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 		// Determine the class name if the field is a struct
 		getClassName := func(tt types.Type) string {
 			for cname, meta := range t.classes {
-				if meta.udt == tt {
+				if meta.UDT == tt {
 					return cname
 				}
 			}
-			for cname, meta := range t.typeHandler.udts {
-				if meta.udt == tt {
+			for cname, meta := range t.typeHandler.Udts {
+				if meta.UDT == tt {
 					return cname
 				}
 			}
@@ -358,15 +338,15 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 		case *types.IntType:
 			switch ft.BitSize {
 			case 1:
-				return &Boolean{NativeType: types.I1, Value: fieldPtr}
+				return &tf.Boolean{NativeType: types.I1, Value: fieldPtr}
 			case 8:
-				return &Int8{NativeType: types.I8, Value: fieldPtr}
+				return &tf.Int8{NativeType: types.I8, Value: fieldPtr}
 			case 16:
-				return &Int16{NativeType: types.I16, Value: fieldPtr}
+				return &tf.Int16{NativeType: types.I16, Value: fieldPtr}
 			case 32:
-				return &Int32{NativeType: types.I32, Value: fieldPtr}
+				return &tf.Int32{NativeType: types.I32, Value: fieldPtr}
 			case 64:
-				return &Int64{NativeType: types.I64, Value: fieldPtr}
+				return &tf.Int64{NativeType: types.I64, Value: fieldPtr}
 			default:
 				panic(fmt.Sprintf("unsupported int size %d", ft.BitSize))
 			}
@@ -374,17 +354,17 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 		case *types.FloatType:
 			switch ft.Kind {
 			case types.FloatKindHalf:
-				return &Float16{NativeType: types.Half, Value: fieldPtr}
+				return &tf.Float16{NativeType: types.Half, Value: fieldPtr}
 			case types.FloatKindFloat:
-				return &Float32{NativeType: types.Float, Value: fieldPtr}
+				return &tf.Float32{NativeType: types.Float, Value: fieldPtr}
 			case types.FloatKindDouble:
-				return &Float64{NativeType: types.Double, Value: fieldPtr}
+				return &tf.Float64{NativeType: types.Double, Value: fieldPtr}
 			default:
 				panic(fmt.Sprintf("unsupported float kind %v", ft.Kind))
 			}
 
 		case *types.StructType:
-			return &Class{
+			return &tf.Class{
 				Name: getClassName(fieldType),
 				UDT:  fieldType,
 				Ptr:  fieldPtr,
@@ -406,7 +386,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 		lv := left.Load(block)
 		rv := right.Load(block)
 
-		f := &Float64{}
+		f := &tf.Float64{}
 		lvf := f.Cast(block, lv)
 		rvf := f.Cast(block, rv)
 
@@ -426,13 +406,13 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 
 		ptr := block.NewAlloca(types.Double)
 		block.NewStore(res, ptr)
-		return &Float64{NativeType: types.Double, Value: ptr}
+		return &tf.Float64{NativeType: types.Double, Value: ptr}
 	}
 
 	return nil
 }
 
-func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast.CallExpression) Var {
+func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]tf.Var, ex ast.CallExpression) tf.Var {
 	switch m := ex.Method.(type) {
 	case ast.SymbolExpression:
 		panic("method call should be on instance")
@@ -444,7 +424,7 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast
 			panic("handleCallExpression: nil baseVar for member expression")
 		}
 
-		cls, ok := baseVar.(*Class)
+		cls, ok := baseVar.(*tf.Class)
 		if !ok {
 			panic(fmt.Sprintf("handleCallExpression: member access base is not Class (got %T)", baseVar))
 		}
@@ -458,7 +438,7 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast
 		}
 
 		methodKey := t.identifierBuilder.Attach(cls.Name, m.Property)
-		fn, ok := classMeta.methods[methodKey]
+		fn, ok := classMeta.Methods[methodKey]
 		if !ok || fn == nil {
 			panic(fmt.Sprintf("handleCallExpression: unknown method %s on class %s", m.Property, cls.Name))
 		}
@@ -520,31 +500,30 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast
 	return nil
 }
 
-func (t *LLVM) wrapReturn(slot *ir.InstAlloca, rt types.Type, className string) Var {
+func (t *LLVM) wrapReturn(slot *ir.InstAlloca, rt types.Type, className string) tf.Var {
 	switch v := rt.(type) {
 	case *types.IntType:
 		switch v.BitSize {
 		case 1:
-			return &Boolean{NativeType: types.I1, Value: slot}
+			return &tf.Boolean{NativeType: types.I1, Value: slot}
 		case 8:
-			return &Int8{NativeType: types.I8, Value: slot}
+			return &tf.Int8{NativeType: types.I8, Value: slot}
 		case 16:
-			return &Int16{NativeType: types.I16, Value: slot}
+			return &tf.Int16{NativeType: types.I16, Value: slot}
 		case 32:
-			return &Int32{NativeType: types.I32, Value: slot}
+			return &tf.Int32{NativeType: types.I32, Value: slot}
 		case 64:
-			return &Int64{NativeType: types.I64, Value: slot}
+			return &tf.Int64{NativeType: types.I64, Value: slot}
 		}
 	case *types.FloatType:
 		switch v.Kind {
 		case types.FloatKindFloat:
-			return &Float32{NativeType: types.Float, Value: slot}
+			return &tf.Float32{NativeType: types.Float, Value: slot}
 		case types.FloatKindDouble:
-			return &Float64{NativeType: types.Double, Value: slot}
+			return &tf.Float64{NativeType: types.Double, Value: slot}
 		}
 	case *types.StructType:
-		return &Class{Name: className, UDT: v, Ptr: slot}
+		return &tf.Class{Name: v.Name(), UDT: v, Ptr: slot}
 	}
-	// fallback
-	return &Class{Name: className, UDT: rt, Ptr: slot}
+	return &tf.Class{Name: className, UDT: rt, Ptr: slot}
 }
