@@ -43,7 +43,7 @@ func (t *TypeHandler) Register(meta *MetaClass) {
 	t.Udts[meta.UDT.Name()] = meta
 }
 
-func (t *TypeHandler) GetPrimitiveVar(block *ir.Block, _type Type, init value.Value) Var {
+func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Value) Var {
 	switch _type {
 	case BOOLEAN:
 		ptr := block.NewAlloca(types.I1)
@@ -157,7 +157,7 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 	// Primitive/Scalar path: delegate to GetPrimitiveVar which allocates & stores
 	switch llvmType.(type) {
 	case *types.IntType, *types.FloatType:
-		return t.GetPrimitiveVar(block, paramType, param)
+		return t.getPrimitiveVar(block, paramType, param)
 	}
 
 	// If parameter is a pointer type (e.g. pointer-to-struct), wrap it as Class without allocating.

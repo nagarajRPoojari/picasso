@@ -257,7 +257,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 
 	case ast.NumberExpression:
 		// produce a runtime mutable var for the literal (double)
-		return t.typeHandler.GetPrimitiveVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value))
+		return t.typeHandler.BuildVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value))
 
 	case ast.NewExpression:
 		meth := ex.Instantiation.Method.(ast.SymbolExpression)
