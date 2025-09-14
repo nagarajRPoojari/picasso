@@ -13,18 +13,25 @@ import (
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
+// LLVM parses abstract syntax tree to generate llvm IR
 type LLVM struct {
+
+	// llvm module
 	module *ir.Module
 
-	typeHandler       *tf.TypeHandler
+	typeHandler *tf.TypeHandler
+	// utility tool to build consistent identifier names
 	identifierBuilder *IdentifierBuilder
 
-	vars    map[string]tf.Var
+	// all global vars
+	vars map[string]tf.Var
+	// all methods including class methods & top level functions
 	methods map[string]*ir.Func
+	// custom classes defined by user
 	classes map[string]*tf.MetaClass
 
-	classLookUp map[string]struct{}
-
+	// global string counter
+	// @todo: move this to separate string module
 	strCounter int
 }
 
@@ -91,6 +98,8 @@ func (t *LLVM) ParseAST(tree *ast.BlockStatement) {
 	}
 }
 
+// predeclareClass creates an opaque struct for all classes defined by user
+// and registers it with typehandler for identfying forward declaration
 func (t *LLVM) predeclareClass(class ast.ClassDeclarationStatement) {
 	if _, ok := t.classes[class.Name]; ok {
 		return
@@ -107,10 +116,13 @@ func (t *LLVM) predeclareClass(class ast.ClassDeclarationStatement) {
 	t.typeHandler.Register(mc)
 }
 
+// defineClassVars stores corresponding ast for all var declaration
+// which will be used to instantiate them on constructor call, i.e, new MyClass()
 func (t *LLVM) defineClassVars(class ast.ClassDeclarationStatement) {
 	mc := t.classes[class.Name]
 	fieldTypes := make([]types.Type, 0)
 
+	// map each fields with corresponding udt struct index
 	i := 0
 	for _, stI := range class.Body {
 		if st, ok := stI.(ast.VariableDeclarationStatement); ok {
@@ -124,9 +136,12 @@ func (t *LLVM) defineClassVars(class ast.ClassDeclarationStatement) {
 		}
 	}
 
+	// update opaque udt with concreate struct
 	mc.UDT.(*types.StructType).Fields = fieldTypes
 }
 
+// declareFunctions loops over all functions inside Class & creates
+// a header declaration
 func (t *LLVM) declareFunctions(class ast.ClassDeclarationStatement) {
 	for _, stI := range class.Body {
 		switch st := stI.(type) {
@@ -136,11 +151,14 @@ func (t *LLVM) declareFunctions(class ast.ClassDeclarationStatement) {
 				params = append(params, ir.NewParam(p.Name, t.typeHandler.GetLLVMType(tf.Type(p.Type.Get()))))
 			}
 
+			// at the end pass `this` parameter representing current object
 			udt := t.classes[class.Name].UDT
 			thisParamType := types.NewPointer(udt)
 			params = append(params, ir.NewParam(THIS, thisParamType))
 
 			name := t.identifierBuilder.Attach(class.Name, st.Name)
+
+			// @todo: handle no return type case
 			retType := t.typeHandler.GetLLVMType(tf.Type(st.ReturnType.Get()))
 			f := t.module.NewFunc(name, retType, params...)
 			t.methods[name] = f
@@ -149,6 +167,7 @@ func (t *LLVM) declareFunctions(class ast.ClassDeclarationStatement) {
 	}
 }
 
+// defineClass similar to declareClass but does function concrete declaration
 func (t *LLVM) defineClass(class ast.ClassDeclarationStatement) {
 	for _, stI := range class.Body {
 		switch st := stI.(type) {
@@ -158,6 +177,7 @@ func (t *LLVM) defineClass(class ast.ClassDeclarationStatement) {
 	}
 }
 
+// defineFunc does concrete function declaration
 func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement) {
 	vars := make(map[string]tf.Var, 0)
 	name := t.identifierBuilder.Attach(className, fn.Name)
@@ -168,7 +188,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 	entry := f.NewBlock(ENTRY)
 
 	if name == MAIN && len(fn.Parameters) != 0 {
-		panic("parameters are not allowed in main function")
+		errorsx.PanicCompilationError("parameters are not allowed in main function")
 	}
 
 	for i, p := range f.Params {
@@ -180,7 +200,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 
 		clsMeta := t.classes[className]
 		if clsMeta == nil {
-			panic("defineFunc: unknown class when binding this")
+			errorsx.PanicCompilationError("defineFunc: unknown class when binding this")
 		}
 		vars[p.LocalName] = &tf.Class{
 			Name: className,
@@ -195,7 +215,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 		case ast.VariableDeclarationStatement:
 			v := t.processExpression(entry, vars, st.AssignedValue)
 			if _, ok := vars[st.Identifier]; ok {
-				panic("variable already exists")
+				errorsx.PanicCompilationError("variable already exists")
 			}
 
 			if st.ExplicitType != nil {
@@ -227,7 +247,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 				// will be routed CallExpression
 				t.processExpression(entry, vars, exp)
 			default:
-				panic("invalid statement")
+				errorsx.PanicCompilationError("invalid statement")
 			}
 		case ast.ReturnStatement:
 			v := t.processExpression(entry, vars, st.Value.Expression)
@@ -235,6 +255,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 		}
 	}
 
+	// @todo: remove this debug statement
 	if name == MAIN {
 		x := vars["z"].Load(entry)
 		t.print(entry, "return z = %f %d", x, x)
@@ -242,8 +263,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 
 }
 
-// processExpression: handles symbols, numbers, new, member, call, binary etc.
-// Supports chaining like a.b().c().d()
+// processExpression handles binary expressions, function calls, member operations etc..
 func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI ast.Expression) tf.Var {
 	switch ex := expI.(type) {
 
@@ -254,7 +274,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 		if gv, ok := t.vars[ex.Value]; ok {
 			return gv
 		}
-		panic(fmt.Sprintf("undefined: %s", ex.Value))
+		errorsx.PanicCompilationError(fmt.Sprintf("undefined var: %s", ex.Value))
 
 	case ast.NumberExpression:
 		// produce a runtime mutable var for the literal (double)
@@ -264,7 +284,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 		meth := ex.Instantiation.Method.(ast.SymbolExpression)
 		classMeta := t.classes[meth.Value]
 		if classMeta == nil {
-			panic(fmt.Sprintf("unknown class: %s", meth.Value))
+			errorsx.PanicCompilationError(fmt.Sprintf("unknown class: %s", meth.Value))
 		}
 
 		instance := tf.NewClass(block, meth.Value, classMeta.UDT)
@@ -278,41 +298,38 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 			fieldType := structType.Fields[index]
 			instance.UpdateField(block, index, x.Load(block), fieldType)
 		}
-
-		t.print(block, "instance - %s", instance.Name)
-		fmt.Println("instance --- ", instance)
 		return instance
 
 	case ast.MemberExpression:
 		// Evaluate the base expression
 		baseVar := t.processExpression(block, vars, ex.Member)
 		if baseVar == nil {
-			panic(fmt.Sprintf("nil base in member expression: %v %v", ex.Member, vars))
+			errorsx.PanicCompilationError(fmt.Sprintf("nil base in member expression: %v %v", ex.Member, vars))
 		}
 
 		// Base must be a class instance
 		cls, ok := baseVar.(*tf.Class)
 		if !ok {
-			panic(fmt.Sprintf("member access base is not a class instance, got %T", baseVar))
+			errorsx.PanicCompilationError(fmt.Sprintf("member access base is not a class instance, got %T", baseVar))
 		}
 
 		// Get metadata for base class
 		classMeta, ok := t.classes[cls.Name]
 		if !ok {
-			panic(fmt.Sprintf("unknown class metadata: %s", cls.Name))
+			errorsx.PanicCompilationError(fmt.Sprintf("unknown class metadata: %s", cls.Name))
 		}
 
 		// Compute field name in identifier map
 		fieldID := t.identifierBuilder.Attach(cls.Name, ex.Property)
 		idx, ok := classMeta.VarIndexMap[fieldID]
 		if !ok {
-			panic(fmt.Sprintf("unknown field %s on class %s", ex.Property, cls.Name))
+			errorsx.PanicCompilationError(fmt.Sprintf("unknown field %s on class %s", ex.Property, cls.Name))
 		}
 
 		// Get field type from struct UDT
 		st, ok := classMeta.UDT.(*types.StructType)
 		if !ok {
-			panic(fmt.Sprintf("class %s does not have a struct UDT", cls.Name))
+			errorsx.PanicCompilationError(fmt.Sprintf("class %s does not have a struct UDT", cls.Name))
 		}
 		fieldType := st.Fields[idx]
 
@@ -372,7 +389,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 			}
 
 		default:
-			panic(fmt.Sprintf("unsupported field type %T in member expression", fieldType))
+			errorsx.PanicCompilationError(fmt.Sprintf("unsupported field type %T in member expression", fieldType))
 		}
 
 	case ast.CallExpression:
@@ -382,7 +399,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 		left := t.processExpression(block, vars, ex.Left)
 		right := t.processExpression(block, vars, ex.Right)
 		if left == nil || right == nil {
-			panic("nil operand in binary expression")
+			errorsx.PanicCompilationError("nil operand in binary expression")
 		}
 		lv := left.Load(block)
 		rv := right.Load(block)
@@ -422,32 +439,32 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]tf.Var, ex ast.CallExpression) tf.Var {
 	switch m := ex.Method.(type) {
 	case ast.SymbolExpression:
-		panic("method call should be on instance")
+		errorsx.PanicCompilationError("method call should be on instance")
 
 	case ast.MemberExpression:
 		// Evaluate the base expression
 		baseVar := t.processExpression(block, vars, m.Member)
 		if baseVar == nil {
-			panic("handleCallExpression: nil baseVar for member expression")
+			errorsx.PanicCompilationError("handleCallExpression: nil baseVar for member expression")
 		}
 
 		cls, ok := baseVar.(*tf.Class)
 		if !ok {
-			panic(fmt.Sprintf("handleCallExpression: member access base is not Class (got %T)", baseVar))
+			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: member access base is not Class (got %T)", baseVar))
 		}
 		if cls == nil || cls.Ptr == nil {
-			panic(fmt.Sprintf("handleCallExpression: class or class.Ptr is nil for class %v", cls))
+			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: class or class.Ptr is nil for class %v", cls))
 		}
 
 		classMeta := t.classes[cls.Name]
 		if classMeta == nil {
-			panic("handleCallExpression: unknown class metadata: " + cls.Name)
+			errorsx.PanicCompilationError("handleCallExpression: unknown class metadata: " + cls.Name)
 		}
 
 		methodKey := t.identifierBuilder.Attach(cls.Name, m.Property)
 		fn, ok := classMeta.Methods[methodKey]
 		if !ok || fn == nil {
-			panic(fmt.Sprintf("handleCallExpression: unknown method %s on class %s", m.Property, cls.Name))
+			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: unknown method %s on class %s", m.Property, cls.Name))
 		}
 
 		// Build args for the user parameters (do not append `this` yet)
@@ -455,18 +472,18 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]tf.Var, ex 
 		for i, argExp := range ex.Arguments {
 			v := t.processExpression(block, vars, argExp)
 			if v == nil {
-				panic(fmt.Sprintf("handleCallExpression: nil arg %d for %s.%s", i, cls.Name, m.Property))
+				errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: nil arg %d for %s.%s", i, cls.Name, m.Property))
 			}
 			raw := v.Load(block)
 			if raw == nil {
-				panic(fmt.Sprintf("handleCallExpression: loaded nil arg %d for %s.%s", i, cls.Name, m.Property))
+				errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: loaded nil arg %d for %s.%s", i, cls.Name, m.Property))
 			}
 
 			// If the callee expects a certain param type, cast to it
 			expected := fn.Sig.Params[i]
 			raw = t.typeHandler.CastToType(block, expected.Name(), raw)
 			if raw == nil {
-				panic(fmt.Sprintf("handleCallExpression: CastToType returned nil for arg %d -> %s", i, expected.String()))
+				errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: CastToType returned nil for arg %d -> %s", i, expected.String()))
 			}
 			args = append(args, raw)
 		}
@@ -474,7 +491,7 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]tf.Var, ex 
 		// Pass `this` as a pointer-to-struct (Slot returns pointer)
 		thisPtr := cls.Slot()
 		if thisPtr == nil {
-			panic(fmt.Sprintf("handleCallExpression: this pointer is nil for %s", cls.Name))
+			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: this pointer is nil for %s", cls.Name))
 		}
 
 		// Check function expected param count: we declared 'this' last when creating fn,
@@ -483,7 +500,7 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]tf.Var, ex 
 
 		// ensure function is non-nil
 		if fn == nil {
-			panic(fmt.Sprintf("handleCallExpression: function pointer nil for %s.%s", cls.Name, m.Property))
+			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: function pointer nil for %s.%s", cls.Name, m.Property))
 		}
 
 		// Now call
@@ -494,11 +511,11 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]tf.Var, ex 
 
 		// allocate slot for return, store and wrap
 		if ret == nil {
-			panic(fmt.Sprintf("handleCallExpression: call returned nil for %s.%s", cls.Name, m.Property))
+			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: call returned nil for %s.%s", cls.Name, m.Property))
 		}
 		slot := block.NewAlloca(fn.Sig.RetType)
 		if slot == nil {
-			panic("handleCallExpression: failed to alloca for return")
+			errorsx.PanicCompilationError("handleCallExpression: failed to alloca for return")
 		}
 		block.NewStore(ret, slot)
 
