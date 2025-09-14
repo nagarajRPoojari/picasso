@@ -1,6 +1,8 @@
 package compiler
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -135,9 +137,72 @@ func (t *TypeHandler) GetPrimitiveVar(block *ir.Block, _type Type, init value.Va
 			}
 		}
 		return &Float64{NativeType: types.Double, Value: ptr, GoVal: 0}
+	}
 
-	default:
-		return nil
+	if _, ok := t.udts[string(_type)]; ok {
+		return NewClass(
+			block, string(_type), init.Type(),
+		)
+	}
+
+	panic("invalid type")
+}
+
+func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Value) Var {
+	llvmType := t.GetLLVMType(paramType)
+	if llvmType == nil {
+		panic("GetVarForParam: nil llvm type")
+	}
+
+	// Primitive/Scalar path: delegate to GetPrimitiveVar which allocates & stores
+	switch llvmType.(type) {
+	case *types.IntType, *types.FloatType:
+		return t.GetPrimitiveVar(block, paramType, param)
+	}
+
+	// If parameter is a pointer type (e.g. pointer-to-struct), wrap it as Class without allocating.
+	if pt, ok := llvmType.(*types.PointerType); ok {
+		// find class name for the element type (if available)
+		cname := ""
+		for name, meta := range t.udts {
+			if meta.udt.Equal(pt) {
+				cname = name
+				break
+			}
+		}
+		// If we didn't find a mapping, cname can be empty; still return Class with Ptr set.
+		return &Class{
+			Name: cname,
+			UDT:  pt,
+			Ptr:  param, // param is expected to be pointer-to-elem
+		}
+	}
+
+	if st, ok := llvmType.(*types.StructType); ok {
+		ptr := block.NewAlloca(st)
+		block.NewStore(param, ptr)
+		// find a class name if available
+		cname := ""
+		for name, meta := range t.udts {
+			if meta.udt.Equal(st) {
+				cname = name
+				break
+			}
+		}
+		return &Class{
+			Name: cname,
+			UDT:  st,
+			Ptr:  ptr,
+		}
+	}
+
+	// fallback: if it's something else (arrays, vectors) -- try to alloca & store
+	ptr := block.NewAlloca(llvmType)
+	block.NewStore(param, ptr)
+	return &Class{
+		Name: "",
+		UDT:  llvmType,
+		Ptr:  ptr,
 	}
 }
 
@@ -204,10 +269,12 @@ func (t *TypeHandler) CastToType(block *ir.Block, target string, v value.Value) 
 		return t.floatCast(block, v, types.Float)
 	case "float64", "double":
 		return t.floatCast(block, v, types.Double)
-
-	default:
-		panic("unsupported target type: " + target)
 	}
+
+	if k, ok := t.udts[target]; ok {
+		return ensureType(block, v, k.udt)
+	}
+	panic(fmt.Sprintf("unexpected target type: %s", target))
 }
 
 func (t *TypeHandler) intCast(block *ir.Block, v value.Value, dst *types.IntType) value.Value {

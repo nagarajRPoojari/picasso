@@ -10,8 +10,6 @@ import (
 	"github.com/sanity-io/litter"
 )
 
-// "github.com/nagarajRPoojari/x-lang/compiler"
-
 func main() {
 	sourceBytes, _ := os.ReadFile("test.rs")
 	source := string(sourceBytes)
@@ -24,7 +22,3 @@ func main() {
 
 	compiler.NewCompiler().Compile(ast)
 }
-
-// func main() {
-// 	fmt.Println(base64.StdEncoding.EncodeToString([]byte("abcd")))
-// }

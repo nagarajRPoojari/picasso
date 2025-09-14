@@ -1,10 +1,10 @@
 #!/bin/bash
 
 go run main.go
-llvm-as output.ll -o output.bc
-llc -filetype=obj output.bc -o output.o
-clang output.o -o output
-./output
+llvm-as bin/output.ll -o bin/output.bc
+llc -filetype=obj bin/output.bc -o bin/output.o
+clang bin/output.o -o bin/output
+./bin/output
 
 echo "ran succesfully.."
 echo $?

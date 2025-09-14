@@ -60,7 +60,7 @@ func NewLLVM() *LLVM {
 }
 
 func (t *LLVM) Dump() {
-	f, err := os.Create("output.ll")
+	f, err := os.Create("bin/output.ll")
 	if err != nil {
 		panic(err)
 	}
@@ -153,10 +153,10 @@ func (t *LLVM) declareFunctions(class ast.ClassDeclarationStatement) {
 			for _, p := range st.Parameters {
 				params = append(params, ir.NewParam(p.Name, t.typeHandler.GetLLVMType(Type(p.Type.Get()))))
 			}
-			// this should be a POINTER to the struct UDT (not the struct value)
+
 			udt := t.classes[class.Name].udt
 			thisParamType := types.NewPointer(udt)
-			params = append(params, ir.NewParam("this", thisParamType))
+			params = append(params, ir.NewParam(THIS, thisParamType))
 
 			name := t.identifierBuilder.Attach(class.Name, st.Name)
 			retType := t.typeHandler.GetLLVMType(Type(st.ReturnType.Get()))
@@ -190,28 +190,21 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 	}
 
 	for i, p := range f.Params {
-		// if there are still user parameters, map them normally
 		if i < len(fn.Parameters) {
 			paramType := Type(fn.Parameters[i].Type.Get())
-			// Here p is the Param value (the passed-in value). For primitives,
-			// we want a mutable Var backed by an alloca whose initial value is p.
-			// Keep using GetPrimitiveVar but give it p as the init value.
-			vars[p.LocalName] = t.typeHandler.GetPrimitiveVar(entry, paramType, p)
+			vars[p.LocalName] = t.typeHandler.BuildVar(entry, paramType, p)
 			continue
 		}
 
-		// else: this param (the last one). p is the function param for "this"
-		// p.Type should be pointer-to-struct; bind it directly to a Class Var.
 		clsMeta := t.classes[className]
 		if clsMeta == nil {
 			panic("defineFunc: unknown class when binding this")
 		}
 		vars[p.LocalName] = &Class{
 			Name: className,
-			UDT:  clsMeta.udt, // struct type
-			Ptr:  p,           // p is the param value (pointer-to-struct)
+			UDT:  clsMeta.udt,
+			Ptr:  p,
 		}
-		// we do NOT allocate a new alloca for this; use the incoming pointer directly
 		break
 	}
 
@@ -222,13 +215,11 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 			if _, ok := vars[st.Identifier]; ok {
 				panic("variable already exists")
 			}
-			// if st.ExplicitType != nil {
-			// 	casted := t.typeHandler.CastToType(entry, st.ExplicitType.Get(), v.Load(entry))
-			// 	v = t.typeHandler.GetPrimitiveVar(entry, Type(st.ExplicitType.Get()), casted)
-			// }
-			fmt.Println("assigning ", v)
-			t.print(entry, "assigining - %f to  ", v.Load(entry))
-			t.print(entry, " - %s  ", st.Identifier)
+
+			if st.ExplicitType != nil {
+				casted := t.typeHandler.CastToType(entry, st.ExplicitType.Get(), v.Load(entry))
+				v = t.typeHandler.BuildVar(entry, Type(st.ExplicitType.Get()), casted)
+			}
 
 			vars[st.Identifier] = v
 
@@ -315,7 +306,7 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 		// Evaluate the base expression
 		baseVar := t.processExpression(block, vars, ex.Member)
 		if baseVar == nil {
-			panic("nil base in member expression")
+			panic(fmt.Sprintf("nil base in member expression: %v %v", ex.Member, vars))
 		}
 
 		// Base must be a class instance
@@ -485,12 +476,10 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast
 			}
 
 			// If the callee expects a certain param type, cast to it
-			if i < len(fn.Sig.Params) {
-				expected := fn.Sig.Params[i]
-				raw = t.typeHandler.CastToType(block, expected.String(), raw)
-				if raw == nil {
-					panic(fmt.Sprintf("handleCallExpression: CastToType returned nil for arg %d -> %s", i, expected.String()))
-				}
+			expected := fn.Sig.Params[i]
+			raw = t.typeHandler.CastToType(block, expected.Name(), raw)
+			if raw == nil {
+				panic(fmt.Sprintf("handleCallExpression: CastToType returned nil for arg %d -> %s", i, expected.String()))
 			}
 			args = append(args, raw)
 		}

@@ -2,17 +2,17 @@ class DirectoryReader {
   say y: double = 112;
   say x: Math = new Math();
 
-  fn sum(x: int): int {
-    return this.y + this.x.pi;
+  fn sum(m: Math): int {
+    return m.pi;
   }
 }
 
 class Math {
-  say pi: double = 100;
+  say pi: double = 123;
 }
 
 fn main(): int32 {
     say a: DirectoryReader = new DirectoryReader();
-    say z: int = a.sum(10);
+    say z: int = a.sum(new Math());
     return 0;
 }
