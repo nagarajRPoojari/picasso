@@ -153,10 +153,14 @@ func (t *LLVM) declareFunctions(class ast.ClassDeclarationStatement) {
 			for _, p := range st.Parameters {
 				params = append(params, ir.NewParam(p.Name, t.typeHandler.GetLLVMType(Type(p.Type.Get()))))
 			}
-			params = append(params, ir.NewParam("this", t.classes[class.Name].udt))
+			// this should be a POINTER to the struct UDT (not the struct value)
+			udt := t.classes[class.Name].udt
+			thisParamType := types.NewPointer(udt)
+			params = append(params, ir.NewParam("this", thisParamType))
+
 			name := t.identifierBuilder.Attach(class.Name, st.Name)
-			b := t.typeHandler.GetLLVMType(Type(st.ReturnType.Get()))
-			f := t.module.NewFunc(name, b, params...)
+			retType := t.typeHandler.GetLLVMType(Type(st.ReturnType.Get()))
+			f := t.module.NewFunc(name, retType, params...)
 			t.methods[name] = f
 			t.classes[class.Name].methods[name] = f
 		}
@@ -186,14 +190,29 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 	}
 
 	for i, p := range f.Params {
-		if i >= len(fn.Parameters) {
-			this := f.Params[len(f.Params)-1]
-			cls := t.classes[className]
-			vars[this.LocalName] = NewClass(entry, className, cls.udt)
-			break
+		// if there are still user parameters, map them normally
+		if i < len(fn.Parameters) {
+			paramType := Type(fn.Parameters[i].Type.Get())
+			// Here p is the Param value (the passed-in value). For primitives,
+			// we want a mutable Var backed by an alloca whose initial value is p.
+			// Keep using GetPrimitiveVar but give it p as the init value.
+			vars[p.LocalName] = t.typeHandler.GetPrimitiveVar(entry, paramType, p)
+			continue
 		}
-		paramType := Type(fn.Parameters[i].Type.Get())
-		vars[p.LocalName] = t.typeHandler.GetPrimitiveVar(entry, paramType, p)
+
+		// else: this param (the last one). p is the function param for "this"
+		// p.Type should be pointer-to-struct; bind it directly to a Class Var.
+		clsMeta := t.classes[className]
+		if clsMeta == nil {
+			panic("defineFunc: unknown class when binding this")
+		}
+		vars[p.LocalName] = &Class{
+			Name: className,
+			UDT:  clsMeta.udt, // struct type
+			Ptr:  p,           // p is the param value (pointer-to-struct)
+		}
+		// we do NOT allocate a new alloca for this; use the incoming pointer directly
+		break
 	}
 
 	for _, stI := range fn.Body {
@@ -375,9 +394,9 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]Var, expI ast.
 
 		case *types.StructType:
 			return &Class{
-				Name:  getClassName(fieldType),
-				UDT:   fieldType,
-				Value: fieldPtr,
+				Name: getClassName(fieldType),
+				UDT:  fieldType,
+				Ptr:  fieldPtr,
 			}
 
 		default:
@@ -428,86 +447,87 @@ func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]Var, ex ast
 		panic("method call should be on instance")
 
 	case ast.MemberExpression:
-		// First evaluate the base
+		// Evaluate the base expression
 		baseVar := t.processExpression(block, vars, m.Member)
 		if baseVar == nil {
-			panic("nil base in member expression")
+			panic("handleCallExpression: nil baseVar for member expression")
 		}
 
 		cls, ok := baseVar.(*Class)
 		if !ok {
-			panic(fmt.Sprintf("member access base is not a class instance (got %T)", baseVar))
+			panic(fmt.Sprintf("handleCallExpression: member access base is not Class (got %T)", baseVar))
+		}
+		if cls == nil || cls.Ptr == nil {
+			panic(fmt.Sprintf("handleCallExpression: class or class.Ptr is nil for class %v", cls))
 		}
 
 		classMeta := t.classes[cls.Name]
 		if classMeta == nil {
-			panic("unknown class metadata: " + cls.Name)
+			panic("handleCallExpression: unknown class metadata: " + cls.Name)
 		}
 
 		methodKey := t.identifierBuilder.Attach(cls.Name, m.Property)
-
-		// Instance method
-		if fn, ok := classMeta.methods[methodKey]; ok {
-			args := make([]value.Value, 0, len(ex.Arguments)+1)
-
-			// user args
-			for i, argExp := range ex.Arguments {
-				v := t.processExpression(block, vars, argExp)
-				raw := v.Load(block)
-
-				// Cast arg to expected param type
-				if i < len(fn.Sig.Params) {
-					expected := fn.Sig.Params[i]
-					raw = t.typeHandler.CastToType(block, expected.String(), raw)
-				}
-				args = append(args, raw)
-			}
-
-			// "this" pointer goes last
-			thisVal := cls.Load(block)
-			args = append(args, thisVal)
-
-			ret := block.NewCall(fn, args...)
-
-			if fn.Sig.RetType == types.Void {
-				return nil
-			}
-
-			slot := block.NewAlloca(fn.Sig.RetType)
-			block.NewStore(ret, slot)
-
-			return t.wrapReturn(slot, fn.Sig.RetType, cls.Name)
+		fn, ok := classMeta.methods[methodKey]
+		if !ok || fn == nil {
+			panic(fmt.Sprintf("handleCallExpression: unknown method %s on class %s", m.Property, cls.Name))
 		}
 
-		// Static method
-		if fn, ok := classMeta.methods[methodKey]; ok {
-			args := make([]value.Value, 0, len(ex.Arguments))
-			for i, argExp := range ex.Arguments {
-				v := t.processExpression(block, vars, argExp)
-				raw := v.Load(block)
+		// Build args for the user parameters (do not append `this` yet)
+		args := make([]value.Value, 0, len(ex.Arguments)+1)
+		for i, argExp := range ex.Arguments {
+			v := t.processExpression(block, vars, argExp)
+			if v == nil {
+				panic(fmt.Sprintf("handleCallExpression: nil arg %d for %s.%s", i, cls.Name, m.Property))
+			}
+			raw := v.Load(block)
+			if raw == nil {
+				panic(fmt.Sprintf("handleCallExpression: loaded nil arg %d for %s.%s", i, cls.Name, m.Property))
+			}
 
-				// Cast to expected param type
-				if i < len(fn.Sig.Params) {
-					expected := fn.Sig.Params[i]
-					raw = t.typeHandler.CastToType(block, expected.String(), raw)
+			// If the callee expects a certain param type, cast to it
+			if i < len(fn.Sig.Params) {
+				expected := fn.Sig.Params[i]
+				raw = t.typeHandler.CastToType(block, expected.String(), raw)
+				if raw == nil {
+					panic(fmt.Sprintf("handleCallExpression: CastToType returned nil for arg %d -> %s", i, expected.String()))
 				}
-				args = append(args, raw)
 			}
-
-			ret := block.NewCall(fn, args...)
-			if fn.Sig.RetType == types.Void {
-				return nil
-			}
-
-			slot := block.NewAlloca(fn.Sig.RetType)
-			block.NewStore(ret, slot)
-
-			return t.wrapReturn(slot, fn.Sig.RetType, cls.Name)
+			args = append(args, raw)
 		}
 
-		panic(fmt.Sprintf("unknown method %s on class %s", m.Property, cls.Name))
+		// Pass `this` as a pointer-to-struct (Slot returns pointer)
+		thisPtr := cls.Slot()
+		if thisPtr == nil {
+			panic(fmt.Sprintf("handleCallExpression: this pointer is nil for %s", cls.Name))
+		}
+
+		// Check function expected param count: we declared 'this' last when creating fn,
+		// adjust order according to how the function was declared.
+		args = append(args, thisPtr)
+
+		// ensure function is non-nil
+		if fn == nil {
+			panic(fmt.Sprintf("handleCallExpression: function pointer nil for %s.%s", cls.Name, m.Property))
+		}
+
+		// Now call
+		ret := block.NewCall(fn, args...)
+		if fn.Sig.RetType == types.Void {
+			return nil
+		}
+
+		// allocate slot for return, store and wrap
+		if ret == nil {
+			panic(fmt.Sprintf("handleCallExpression: call returned nil for %s.%s", cls.Name, m.Property))
+		}
+		slot := block.NewAlloca(fn.Sig.RetType)
+		if slot == nil {
+			panic("handleCallExpression: failed to alloca for return")
+		}
+		block.NewStore(ret, slot)
+
+		return t.wrapReturn(slot, fn.Sig.RetType, cls.Name)
 	}
-
 	return nil
 }
 
@@ -534,8 +554,8 @@ func (t *LLVM) wrapReturn(slot *ir.InstAlloca, rt types.Type, className string) 
 			return &Float64{NativeType: types.Double, Value: slot}
 		}
 	case *types.StructType:
-		return &Class{Name: className, UDT: v, Value: slot}
+		return &Class{Name: className, UDT: v, Ptr: slot}
 	}
 	// fallback
-	return &Class{Name: className, UDT: rt, Value: slot}
+	return &Class{Name: className, UDT: rt, Ptr: slot}
 }

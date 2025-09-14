@@ -138,10 +138,9 @@ ast.BlockStatement{
     },
   },
 }
-Duration: 310.125µs
-property -  y
+Duration: 347.458µs
+UDT - [i64]
 assigning  &{i64 i64* %0 0}
-property -  y
 instance ---  &{DirectoryReader %DirectoryReader %DirectoryReader* %0}
 assigning  &{DirectoryReader %DirectoryReader %DirectoryReader* %0}
 assigning  &{i64 i64* %0 0}

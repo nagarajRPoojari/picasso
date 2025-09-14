@@ -303,93 +303,186 @@ func (f *Float64) Cast(block *ir.Block, v value.Value) value.Value {
 }
 func (c *Float64) Type() types.Type { return c.NativeType }
 
+//	Class represents an instance pointer to a struct UDT.
+//
+// Ptr is always a pointer to the struct (alloca or a GEP).
 type Class struct {
-	Name  string
-	UDT   types.Type
-	Value value.Value
+	Name string      // class name (for lookup)
+	UDT  types.Type  // the struct type
+	Ptr  value.Value // pointer to the struct (alloca, GEP, etc.)
 }
 
+// NewClass allocates a new alloca (pointer) for the struct type and returns Class
 func NewClass(block *ir.Block, name string, udt types.Type) *Class {
+	// allocate space for the struct (alloca returns a pointer-to-UDT)
 	ptr := block.NewAlloca(udt)
 	return &Class{
-		Name:  name,
-		UDT:   udt,
-		Value: ptr,
+		Name: name,
+		UDT:  udt,
+		Ptr:  ptr,
 	}
 }
 
-// Store a whole struct value into the alloca
+// Update stores a whole struct value into the class pointer.
+// Accepts either:
+//   - a struct value (matching s.UDT) -> stored directly
+//   - a pointer to struct -> loaded then stored
+//   - otherwise, attempts a bitcast if possible
 func (s *Class) Update(block *ir.Block, v value.Value) {
-	block.NewStore(v, s.Value)
+	if v == nil {
+		panic("Class.Update: nil value")
+	}
+
+	// If v is a pointer to the same UDT, load it first
+	if ptrT, ok := v.Type().(*types.PointerType); ok {
+		if ptrT.Equal(s.UDT) {
+			// load value from pointer and store into s.Ptr
+			val := block.NewLoad(s.UDT, v)
+			block.NewStore(val, s.Ptr)
+			return
+		}
+	}
+
+	// If v is the struct value itself, store directly if types match
+	if v.Type().Equal(s.UDT) {
+		block.NewStore(v, s.Ptr)
+		return
+	}
+
+	// fallback: try to convert/bitcast the incoming value to the struct type
+	// (ensureType will perform a bitcast as a last resort)
+	val := ensureType(block, v, s.UDT)
+	block.NewStore(val, s.Ptr)
 }
 
-// Load entire struct value from alloca
+// Load returns the struct value loaded from the pointer
 func (s *Class) Load(block *ir.Block) value.Value {
-	return block.NewLoad(s.UDT, s.Value)
+	return block.NewLoad(s.UDT, s.Ptr)
 }
 
-// Access a field by index
+// FieldPtr returns a pointer to the field at index idx
+// It produces: gep ptr, 0, idx
 func (s *Class) FieldPtr(block *ir.Block, idx int) value.Value {
-	return block.NewGetElementPtr(s.UDT, s.Value, constant.NewInt(types.I32, 0), constant.NewInt(types.I32, int64(idx)))
+	// GEP indices must be i32 constants
+	zero := constant.NewInt(types.I32, 0)
+	i := constant.NewInt(types.I32, int64(idx))
+	// For a pointer-to-struct, the element type is s.UDT
+	return block.NewGetElementPtr(s.UDT, s.Ptr, zero, i)
 }
 
-// Update a single field
+// UpdateField writes into a single field. Accepts a value which will be coerced to expected type.
 func (s *Class) UpdateField(block *ir.Block, idx int, v value.Value, expected types.Type) {
+	if v == nil {
+		panic("UpdateField: nil value")
+	}
 	val := ensureType(block, v, expected)
 	fieldPtr := s.FieldPtr(block, idx)
 	block.NewStore(val, fieldPtr)
 }
 
-// Load a single field
+// LoadField loads a single field value from the struct
 func (s *Class) LoadField(block *ir.Block, idx int, fieldType types.Type) value.Value {
 	fieldPtr := s.FieldPtr(block, idx)
 	return block.NewLoad(fieldType, fieldPtr)
 }
 
-func (f *Class) Cast(block *ir.Block, v value.Value) value.Value {
+// Cast coerces an incoming value to the struct type or pointer-to-struct depending on target.
+// For a Class instance, Cast should return a value compatible with either:
+//   - the struct value (s.UDT) or
+//   - a pointer to struct (types.NewPointer(s.UDT)) if that's what's needed by the caller.
+//
+// Here we try to produce a struct value (load if given a pointer), otherwise bitcast/convert.
+func (s *Class) Cast(block *ir.Block, v value.Value) value.Value {
+	if v == nil {
+		panic("Class.Cast: nil value")
+	}
+
+	// If already the struct value
+	if v.Type().Equal(s.UDT) {
+		return v
+	}
+
+	// If pointer to struct, load value
+	if ptrT, ok := v.Type().(*types.PointerType); ok && ptrT.Equal(s.UDT) {
+		return block.NewLoad(s.UDT, v)
+	}
+
+	// If caller expects a pointer to struct and v is a pointer to something compatible,
+	// try bitcast (last resort). We produce a pointer-to-UDT when v is pointer-like.
+	if _, ok := v.Type().(*types.PointerType); ok {
+		// create pointer-to-UDT type and bitcast
+		ptrToUDT := types.NewPointer(s.UDT)
+		return block.NewBitCast(v, ptrToUDT)
+	}
+
+	// fallback: try to convert the value to s.UDT (bitcast)
+	return ensureType(block, v, s.UDT)
+}
+
+// Constant returns nil for runtime struct instances
+func (s *Class) Constant() constant.Constant {
 	return nil
 }
 
-func (f *Class) Constant() constant.Constant {
-	return nil
+// Slot returns the underlying pointer (alloca or GEP)
+func (s *Class) Slot() value.Value {
+	return s.Ptr
 }
-func (s *Class) Slot() value.Value { return s.Value }
 
-func (c *Class) Type() types.Type { return c.UDT }
+// Type returns the struct UDT (not pointer)
+func (s *Class) Type() types.Type {
+	return s.UDT
+}
 
+/////// helper: ensureType is assumed to exist in your codebase (you showed a version earlier).
+/////// If for any reason you don't have it, here's a safe version to include:
+
+// ensureType converts value v to target types.Type using integer/float ext/trunc or bitcast fallback.
+// This is a lightweight copy of the function in your earlier snippet.
 func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
+	if v == nil {
+		panic("ensureType: nil value")
+	}
 	if v.Type().Equal(target) {
 		return v
 	}
 
+	// handle int -> int
 	switch src := v.Type().(type) {
 	case *types.IntType:
-		dst, ok := target.(*types.IntType)
-		if !ok {
-			break
-		}
-		if src.BitSize < dst.BitSize {
-			return block.NewZExt(v, dst) // or NewSExt if signed
-		} else if src.BitSize > dst.BitSize {
-			return block.NewTrunc(v, dst)
-		}
-		return v
-
-	case *types.FloatType:
-		dst, ok := target.(*types.FloatType)
-		if !ok {
-			break
-		}
-		if src.Kind == dst.Kind {
+		if dst, ok := target.(*types.IntType); ok {
+			// promote/demote by bit-size
+			if src.BitSize < dst.BitSize {
+				return block.NewZExt(v, dst) // use ZExt — change to SExt if signed
+			} else if src.BitSize > dst.BitSize {
+				return block.NewTrunc(v, dst)
+			}
 			return v
 		}
-		// Promote/demote based on known float kinds
-		if floatRank(src.Kind) < floatRank(dst.Kind) {
-			return block.NewFPExt(v, dst) // promote
+	case *types.FloatType:
+		if dst, ok := target.(*types.FloatType); ok {
+			// naive float promotion/demotion based on Kind ordering
+			if src.Kind == dst.Kind {
+				return v
+			}
+			// prefer FPExt when target has 'wider' kind
+			if floatRank(src.Kind) < floatRank(dst.Kind) {
+				return block.NewFPExt(v, dst)
+			}
+			// fallback (FPTrunc is not defined on llir/llvm as method name in older versions; if you have FPTrunc use it)
+			// try bitcast fallback below
 		}
 	}
 
-	// fallback: bitcast (pointers etc.)
+	// pointers and structs: try bitcast if possible
+	// For example: pointer-to-A -> pointer-to-B bitcast
+	if _, ok := v.Type().(*types.PointerType); ok {
+		if _, ok2 := target.(*types.PointerType); ok2 {
+			return block.NewBitCast(v, target)
+		}
+	}
+
+	// as last resort, attempt bitcast to target (works for pointer types)
 	return block.NewBitCast(v, target)
 }
 
