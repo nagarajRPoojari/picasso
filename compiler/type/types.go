@@ -47,7 +47,7 @@ func (t *TypeHandler) Register(meta *MetaClass) {
 
 func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Value) Var {
 	switch _type {
-	case BOOLEAN:
+	case BOOLEAN, "i1":
 		ptr := block.NewAlloca(types.I1)
 		block.NewStore(init, ptr)
 
@@ -60,7 +60,7 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		}
 		return &Boolean{NativeType: types.I1, Value: ptr, GoVal: false}
 
-	case INT8:
+	case INT8, "i8":
 		ptr := block.NewAlloca(types.I8)
 		block.NewStore(init, ptr)
 
@@ -73,7 +73,7 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		}
 		return &Int8{NativeType: types.I8, Value: ptr, GoVal: 0}
 
-	case INT16:
+	case INT16, "i16":
 		ptr := block.NewAlloca(types.I16)
 		block.NewStore(init, ptr)
 
@@ -86,7 +86,7 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		}
 		return &Int16{NativeType: types.I16, Value: ptr, GoVal: 0}
 
-	case INT32:
+	case INT32, "i32":
 		ptr := block.NewAlloca(types.I32)
 		block.NewStore(init, ptr)
 
@@ -99,7 +99,7 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		}
 		return &Int32{NativeType: types.I32, Value: ptr, GoVal: 0}
 
-	case INT64, INT:
+	case INT64, INT, "i64":
 		ptr := block.NewAlloca(types.I64)
 		block.NewStore(init, ptr)
 
@@ -112,7 +112,7 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		}
 		return &Int64{NativeType: types.I64, Value: ptr, GoVal: 0}
 
-	case FLOAT16:
+	case FLOAT16, "half":
 		ptr := block.NewAlloca(types.Half)
 		block.NewStore(init, ptr)
 
@@ -126,7 +126,7 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		}
 		return &Float16{NativeType: types.Float, Value: ptr, GoVal: 0}
 
-	case FLOAT32:
+	case FLOAT32, "float":
 		ptr := block.NewAlloca(types.Float)
 		block.NewStore(init, ptr)
 
@@ -219,24 +219,81 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 	}
 }
 
+func (t *TypeHandler) BuildDefaultVar(block *ir.Block, paramType Type) Var {
+	llvmType := t.GetLLVMType(paramType)
+	if llvmType == nil {
+		errorsx.PanicCompilationError(fmt.Sprintf("invalid LLVM type: %s", paramType))
+	}
+
+	switch typ := llvmType.(type) {
+	case *types.IntType:
+		return t.getPrimitiveVar(block, paramType, constant.NewInt(typ, 0))
+
+	case *types.FloatType:
+		return t.getPrimitiveVar(block, paramType, constant.NewFloat(typ, 0.0))
+
+	case *types.PointerType:
+		ptr := block.NewAlloca(typ)
+		block.NewStore(constant.NewNull(typ), ptr)
+		cname := ""
+		for name, meta := range t.Udts {
+			if meta.UDT.Equal(typ) {
+				cname = name
+				break
+			}
+		}
+		return &Class{
+			Name: cname,
+			UDT:  typ,
+			Ptr:  ptr,
+		}
+
+	case *types.StructType:
+		ptr := block.NewAlloca(typ)
+		// store zero-initialized struct
+		block.NewStore(constant.NewZeroInitializer(typ), ptr)
+		cname := ""
+		for name, meta := range t.Udts {
+			if meta.UDT.Equal(typ) {
+				cname = name
+				break
+			}
+		}
+		return &Class{
+			Name: cname,
+			UDT:  typ,
+			Ptr:  ptr,
+		}
+	}
+
+	// fallback: zero-init everything else
+	ptr := block.NewAlloca(llvmType)
+	block.NewStore(constant.NewZeroInitializer(llvmType), ptr)
+	return &Class{
+		Name: "",
+		UDT:  llvmType,
+		Ptr:  ptr,
+	}
+}
+
 // GetLLVMType accepts native Type & returns llvm compatible types.Type
 func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	switch _type {
 	case NULL, VOID:
 		return types.NewPointer(types.NewStruct())
-	case BOOLEAN:
+	case BOOLEAN, "i1":
 		return types.I1
-	case INT8:
+	case INT8, "i8":
 		return types.I8
-	case INT16:
+	case INT16, "i16":
 		return types.I16
-	case INT32:
+	case INT32, "132":
 		return types.I32
-	case INT64, INT:
+	case INT64, INT, "i64":
 		return types.I64
-	case FLOAT16:
+	case FLOAT16, "half":
 		return types.Half
-	case FLOAT32:
+	case FLOAT32, "float":
 		return types.Float
 	case FLOAT64, DOUBLE:
 		return types.Double

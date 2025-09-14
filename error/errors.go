@@ -34,30 +34,51 @@ func (e *Error) Error() string {
 
 // NewCompilationError returns a compilation error.
 func NewCompilationError(msg string, l ...int) *Error {
-	return &Error{Phase: PhaseCompilation, Message: msg, Line: l[0], Column: l[1]}
+	var line, col int
+	if len(l) > 0 {
+		line = l[0]
+	}
+	if len(l) > 1 {
+		col = l[1]
+	}
+	return &Error{Phase: PhaseCompilation, Message: msg, Line: line, Column: col}
 }
 
 // NewLexerError returns a lexer error with position.
 func NewLexerError(msg string, l ...int) *Error {
-	return &Error{Phase: PhaseLexer, Message: msg, Line: l[0], Column: l[1]}
+	var line, col int
+	if len(l) > 0 {
+		line = l[0]
+	}
+	if len(l) > 1 {
+		col = l[1]
+	}
+	return &Error{Phase: PhaseLexer, Message: msg, Line: line, Column: col}
 }
 
 // NewParserError returns a parser error with position.
 func NewParserError(msg string, l ...int) *Error {
-	return &Error{Phase: PhaseParser, Message: msg, Line: l[0], Column: l[1]}
+	var line, col int
+	if len(l) > 0 {
+		line = l[0]
+	}
+	if len(l) > 1 {
+		col = l[1]
+	}
+	return &Error{Phase: PhaseParser, Message: msg, Line: line, Column: col}
 }
 
 // PanicCompilationError panics with a compilation error.
 func PanicCompilationError(msg string, l ...int) {
-	panic(NewCompilationError(msg, l[0], l[1]))
+	panic(NewCompilationError(msg, l...))
 }
 
 // PanicLexerError panics with a lexer error.
 func PanicLexerError(msg string, l ...int) {
-	panic(NewLexerError(msg, l[0], l[1]))
+	panic(NewLexerError(msg, l...))
 }
 
 // PanicParserError panics with a parser error.
 func PanicParserError(msg string, l ...int) {
-	panic(NewParserError(msg, l[0], l[1]))
+	panic(NewParserError(msg, l...))
 }

@@ -3,11 +3,12 @@ say PI: double = 3.14;
 
 class DirectoryReader {
   say y: double = 112;
-  say x: Math = new Math();
+  // say x: Math = new Math();
 
-  fn sum(m: Math): int {
-    return m.pi;
-  }
+  // fn sum(m: Math): DirectoryReader {
+    
+  //   return null;
+  // }
 
   fn math() {
     
@@ -20,9 +21,9 @@ class Math {
 
 fn main(): int32 {
     say a: DirectoryReader = new DirectoryReader();
-    say z: int = a.sum(new Math());
-
-    a.math();
-
+    say n: int;
+    n = 278;
+    // // a.math();
+    say z: double = 78;
     return 0;
 }

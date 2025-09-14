@@ -218,17 +218,19 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 	for _, stI := range fn.Body {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
-			v := t.processExpression(entry, vars, st.AssignedValue)
-			if _, ok := vars[st.Identifier]; ok {
-				errorsx.PanicCompilationError("variable already exists")
-			}
-
-			if st.ExplicitType != nil {
+			var v tf.Var
+			if st.AssignedValue == nil {
+				v = t.typeHandler.BuildDefaultVar(entry, tf.Type(st.ExplicitType.Get()))
+				vars[st.Identifier] = v
+			} else {
+				v = t.processExpression(entry, vars, st.AssignedValue)
+				if _, ok := vars[st.Identifier]; ok {
+					errorsx.PanicCompilationError("variable already exists")
+				}
 				casted := t.typeHandler.CastToType(entry, st.ExplicitType.Get(), v.Load(entry))
 				v = t.typeHandler.BuildVar(entry, tf.Type(st.ExplicitType.Get()), casted)
+				vars[st.Identifier] = v
 			}
-
-			vars[st.Identifier] = v
 
 		case ast.ExpressionStatement:
 			switch exp := st.Expression.(type) {
@@ -246,7 +248,13 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 					}
 				}
 				rhs := t.processExpression(entry, vars, exp.AssignedValue)
-				v.Update(entry, rhs.Load(entry))
+				typeName := v.Type().Name()
+				if typeName == "" {
+					typeName = v.Type().String()
+				}
+				casted := t.typeHandler.CastToType(entry, typeName, rhs.Load(entry))
+				c := t.typeHandler.BuildVar(entry, tf.Type(typeName), casted)
+				v.Update(entry, c.Load(entry))
 
 			case ast.CallExpression:
 				// will be routed CallExpression
@@ -273,6 +281,10 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 
 // processExpression handles binary expressions, function calls, member operations etc..
 func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI ast.Expression) tf.Var {
+	if expI == nil {
+		return tf.NewNullVar(types.NewPointer(types.NewStruct()))
+	}
+
 	switch ex := expI.(type) {
 
 	case ast.SymbolExpression:
