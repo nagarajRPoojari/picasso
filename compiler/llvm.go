@@ -159,7 +159,12 @@ func (t *LLVM) declareFunctions(class ast.ClassDeclarationStatement) {
 			name := t.identifierBuilder.Attach(class.Name, st.Name)
 
 			// @todo: handle no return type case
-			retType := t.typeHandler.GetLLVMType(tf.Type(st.ReturnType.Get()))
+			var retType types.Type
+			if st.ReturnType != nil {
+				retType = t.typeHandler.GetLLVMType(tf.Type(st.ReturnType.Get()))
+			} else {
+				retType = t.typeHandler.GetLLVMType(tf.Type(tf.NULL))
+			}
 			f := t.module.NewFunc(name, retType, params...)
 			t.methods[name] = f
 			t.classes[class.Name].Methods[name] = f
@@ -261,6 +266,9 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 		t.print(entry, "return z = %f %d", x, x)
 	}
 
+	if fn.ReturnType == nil {
+		entry.NewRet(constant.NewNull(types.NewPointer(types.NewStruct())))
+	}
 }
 
 // processExpression handles binary expressions, function calls, member operations etc..

@@ -29,6 +29,7 @@ const (
 	DOUBLE Type = "double"
 
 	NULL Type = "null"
+	VOID Type = "void"
 )
 
 type TypeHandler struct {
@@ -152,6 +153,8 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 			}
 		}
 		return &Float64{NativeType: types.Double, Value: ptr, GoVal: 0}
+	case NULL, VOID:
+		return NewNullVar(types.NewPointer(init.Type()))
 	}
 
 	if _, ok := t.Udts[string(_type)]; ok {
@@ -219,6 +222,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 // GetLLVMType accepts native Type & returns llvm compatible types.Type
 func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	switch _type {
+	case NULL, VOID:
+		return types.NewPointer(types.NewStruct())
 	case BOOLEAN:
 		return types.I1
 	case INT8:

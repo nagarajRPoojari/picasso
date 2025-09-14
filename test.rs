@@ -9,8 +9,8 @@ class DirectoryReader {
     return m.pi;
   }
 
-  fn math(): Math {
-    return this.x;
+  fn math() {
+    
   }
 }
 
@@ -22,7 +22,7 @@ fn main(): int32 {
     say a: DirectoryReader = new DirectoryReader();
     say z: int = a.sum(new Math());
 
-
+    a.math();
 
     return 0;
 }

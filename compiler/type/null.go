@@ -1,41 +1,49 @@
 package typedef
 
 import (
-	"fmt"
-
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 )
 
-type Null struct {
-	Target types.Type
-	Value  *ir.InstAlloca
+// NullVar represents a null variable (used for uninitialized or placeholder values).
+type NullVar struct {
+	typ *types.PointerType
 }
 
-func NewNull() *Null {
-	return &Null{}
+func NewNullVar(typ *types.PointerType) *NullVar {
+	return &NullVar{typ: typ}
 }
 
-func (n *Null) Load(block *ir.Block) value.Value {
-	return block.NewLoad(n.Target, n.Value)
+func (n *NullVar) Update(block *ir.Block, v value.Value) {
+	// Null cannot be updated, silently ignore or panic depending on your design choice
+	// panic("cannot update null variable")
 }
 
-func (n *Null) Update(block *ir.Block, v value.Value) {
-	if !v.Type().Equal(n.Target) {
-		panic(fmt.Sprintf("cannot assign %s to null of type %s", v.Type(), n.Target))
-	}
-	block.NewStore(v, n.Value)
+func (n *NullVar) Load(block *ir.Block) value.Value {
+	// Always return a null constant for its type
+	return constant.NewNull(n.typ)
 }
 
-func (n *Null) Type() types.Type {
-	return n.Target
+func (n *NullVar) Constant() constant.Constant {
+	return constant.NewNull(n.typ)
 }
 
-func (n *Null) Cast(block *ir.Block, v value.Value) value.Value {
-	panic(fmt.Sprintf("cannot cast %s to null type %s", v.Type(), n.Target))
-}
-
-func (n *Null) GoValue() interface{} {
+func (n *NullVar) Slot() value.Value {
+	// Null has no slot, return nil
 	return nil
+}
+
+func (n *NullVar) Cast(block *ir.Block, v value.Value) (value.Value, error) {
+	// If v already matches the type, return as is
+	if v.Type().Equal(n.typ) {
+		return v, nil
+	}
+	// Else try casting null (only valid for pointer types usually)
+	return constant.NewNull(n.typ), nil
+}
+
+func (n *NullVar) Type() types.Type {
+	return n.typ
 }
