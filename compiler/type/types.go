@@ -242,7 +242,8 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 		return k.UDT
 	}
 
-	panic("forawrd declaration error")
+	errorsx.PanicCompilationError((fmt.Sprintf("invalid LLVM type: %s", _type)))
+	return nil
 }
 
 // CastToType takes a target type name (e.g. "float64", "int8")
