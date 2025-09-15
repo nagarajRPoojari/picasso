@@ -5,11 +5,6 @@ class DirectoryReader {
   say y: double = 112;
   // say x: Math = new Math();
 
-  // fn sum(m: Math): DirectoryReader {
-    
-  //   return null;
-  // }
-
   fn math() {
     //  io.printf("this is inside math");
   }
@@ -28,6 +23,11 @@ fn main(): int32 {
 
     io.printf("hello world %s \n", z);
 
+    // if n > 10 {
+    //   io.printf("hello world %s \n", z);
+    // } else {
+    //   say n: int = 200;
+    // }
     
     return 0;
 }

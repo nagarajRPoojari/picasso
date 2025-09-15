@@ -66,7 +66,7 @@ ast.BlockStatement{
               Method: ast.SymbolExpression{
                 Value: "DirectoryReader",
               },
-              Arguments: []ast.Expression{},
+              Arguments: []ast.Expression{}, // p1
             },
           },
           ExplicitType: ast.SymbolType{
@@ -93,11 +93,22 @@ ast.BlockStatement{
             },
           },
         },
+        ast.ExpressionStatement{
+          Expression: ast.CallExpression{
+            Method: ast.MemberExpression{
+              Member: ast.SymbolExpression{
+                Value: "a",
+              },
+              Property: "math",
+            },
+            Arguments: p1,
+          },
+        },
         ast.VariableDeclarationStatement{
           Identifier: "z",
           Constant: false,
           AssignedValue: ast.StringExpression{
-            Value: "\"hello world\"",
+            Value: "hello world",
           },
           ExplicitType: ast.SymbolType{
             Value: "string",
@@ -114,7 +125,61 @@ ast.BlockStatement{
             },
             Arguments: []ast.Expression{
               ast.StringExpression{
-                Value: "\"hello world\"",
+                Value: "hello world %s \\n",
+              },
+              ast.SymbolExpression{
+                Value: "z",
+              },
+            },
+          },
+        },
+        ast.IfStatement{
+          Condition: ast.BinaryExpression{
+            Left: ast.SymbolExpression{
+              Value: "n",
+            },
+            Operator: lexer.Token{
+              Kind: 19,
+              Value: ">",
+            },
+            Right: ast.NumberExpression{
+              Value: 10.0,
+            },
+          },
+          Consequent: ast.BlockStatement{
+            Body: []ast.Statement{
+              ast.ExpressionStatement{
+                Expression: ast.CallExpression{
+                  Method: ast.MemberExpression{
+                    Member: ast.SymbolExpression{
+                      Value: "io",
+                    },
+                    Property: "printf",
+                  },
+                  Arguments: []ast.Expression{
+                    ast.StringExpression{
+                      Value: "hello world %s \\n",
+                    },
+                    ast.SymbolExpression{
+                      Value: "z",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          Alternate: ast.BlockStatement{
+            Body: []ast.Statement{
+              ast.VariableDeclarationStatement{
+                Identifier: "n",
+                Constant: false,
+                AssignedValue: ast.NumberExpression{
+                  Value: 200.0,
+                },
+                ExplicitType: ast.SymbolType{
+                  Value: "int",
+                },
+                IsStatic: false,
               },
             },
           },
@@ -134,4 +199,5 @@ ast.BlockStatement{
     },
   },
 }
-Duration: 188.042µs
+Duration: 243.25µs
+hello world hello world \n0

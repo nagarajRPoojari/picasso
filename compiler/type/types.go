@@ -177,8 +177,6 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 		errorsx.PanicCompilationError((fmt.Sprintf("invalid LLVM type: %s", paramType)))
 	}
 
-	fmt.Println("type: ", paramType, llvmType)
-
 	switch llvmType.(type) {
 	case *types.IntType, *types.FloatType:
 		return t.getPrimitiveVar(block, paramType, param)
