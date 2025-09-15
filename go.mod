@@ -19,6 +19,7 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
+	github.com/google/uuid v1.6.0
 	github.com/llir/llvm v0.3.6 // indirect
 	github.com/mewmew/float v0.0.0-20201204173432-505706aa38fa // indirect
 	github.com/onsi/ginkgo/v2 v2.25.3 // indirect

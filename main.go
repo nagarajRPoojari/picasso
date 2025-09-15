@@ -20,5 +20,7 @@ func main() {
 	litter.Dump(ast)
 	fmt.Printf("Duration: %v\n", duration)
 
-	compiler.NewCompiler().Compile(ast)
+	c := compiler.NewCompiler()
+	c.Compile(ast)
+	c.Dump("bin/output.ll")
 }

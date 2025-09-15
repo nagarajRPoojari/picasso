@@ -48,8 +48,8 @@ func NewLLVM() *LLVM {
 	return i
 }
 
-func (t *LLVM) Dump() {
-	f, err := os.Create("bin/output.ll")
+func (t *LLVM) Dump(file string) {
+	f, err := os.Create(file)
 	if err != nil {
 		panic(err)
 	}
@@ -271,7 +271,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 	// @todo: remove this debug statement
 	if name == MAIN {
 		x := vars["z"].Load(entry)
-		t.print(entry, "return z = %f %d", x, x)
+		t.print(entry, "return z = %s", x)
 	}
 
 	if fn.ReturnType == nil {
@@ -301,6 +301,20 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 		// produce a runtime mutable var for the literal (double)
 		// by default number will be wrapped up with float64
 		return t.typeHandler.BuildVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value))
+
+	case ast.StringExpression:
+		formatStr := ex.Value
+		strConst := constant.NewCharArrayFromString(formatStr + "\x00")
+		global := t.module.NewGlobalDef("", strConst)
+
+		gep := block.NewGetElementPtr(
+			global.ContentType,
+			global,
+			constant.NewInt(types.I32, 0),
+			constant.NewInt(types.I32, 0),
+		)
+
+		return tf.NewString(block, gep)
 
 	case ast.NewExpression:
 		// @todo: make constructor call

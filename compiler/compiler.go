@@ -16,5 +16,8 @@ func NewCompiler() *Compiler {
 
 func (t *Compiler) Compile(tree ast.BlockStatement) {
 	t.llvm.ParseAST(&tree)
-	t.llvm.Dump()
+}
+
+func (t *Compiler) Dump(file string) {
+	t.llvm.Dump(file)
 }

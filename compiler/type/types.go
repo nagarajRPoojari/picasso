@@ -28,6 +28,8 @@ const (
 
 	DOUBLE Type = "double"
 
+	STRING Type = "string"
+
 	NULL Type = "null"
 	VOID Type = "void"
 )
@@ -153,6 +155,8 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 			}
 		}
 		return &Float64{NativeType: types.Double, Value: ptr, GoVal: 0}
+	case STRING:
+		return NewString(block, init)
 	case NULL, VOID:
 		return NewNullVar(types.NewPointer(init.Type()))
 	}
@@ -233,6 +237,12 @@ func (t *TypeHandler) BuildDefaultVar(block *ir.Block, paramType Type) Var {
 		return t.getPrimitiveVar(block, paramType, constant.NewFloat(typ, 0.0))
 
 	case *types.PointerType:
+		if typ.ElemType.Equal(types.I8) { // string
+			ptr := block.NewAlloca(types.I8Ptr)
+			block.NewStore(constant.NewNull(types.I8Ptr), ptr)
+			return &String{NativeType: types.I8Ptr, Value: ptr, GoVal: ""}
+		}
+
 		ptr := block.NewAlloca(typ)
 		block.NewStore(constant.NewNull(typ), ptr)
 		cname := ""
@@ -297,6 +307,8 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 		return types.Float
 	case FLOAT64, DOUBLE:
 		return types.Double
+	case STRING:
+		return types.I8Ptr
 	}
 
 	// Check if already registered
@@ -342,6 +354,16 @@ func (t *TypeHandler) CastToType(block *ir.Block, target string, v value.Value) 
 		return t.floatCast(block, v, types.Float)
 	case "float64", "double":
 		return t.floatCast(block, v, types.Double)
+	case "string":
+		switch v.Type().(type) {
+		case *types.PointerType:
+			// already a pointer (likely i8*), just ensure it's i8*
+			return block.NewBitCast(v, types.I8Ptr)
+		default:
+			errorsx.PanicCompilationError(fmt.Sprintf(
+				"cannot cast %s to string", v.Type().String(),
+			))
+		}
 	}
 
 	if k, ok := t.Udts[target]; ok {

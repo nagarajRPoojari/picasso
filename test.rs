@@ -24,6 +24,6 @@ fn main(): int32 {
     say n: int;
     n = 278;
     // // a.math();
-    say z: double = 78;
+    say z: string = "hello world";
     return 0;
 }
