@@ -367,9 +367,6 @@ func (t *LLVM) processSymbolExpression(ex ast.SymbolExpression) tf.Var {
 	if v, ok := t.vars.Search(ex.Value); ok {
 		return v
 	}
-	if gv, ok := t.vars.Search(ex.Value); ok {
-		return gv
-	}
 	errorsx.PanicCompilationError(fmt.Sprintf("undefined var: %s", ex.Value))
 	return nil
 }
