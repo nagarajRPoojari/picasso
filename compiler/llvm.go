@@ -239,8 +239,12 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 					errorsx.PanicCompilationError("variable already exists")
 				}
 				casted := t.typeHandler.CastToType(entry, st.ExplicitType.Get(), v.Load(entry))
-				v = t.typeHandler.BuildVar(entry, tf.Type(st.ExplicitType.Get()), casted)
-				vars[st.Identifier] = v
+				vv := t.typeHandler.BuildVar(entry, tf.Type(st.ExplicitType.Get()), casted)
+
+				fmt.Printf("for: %s=%v\n", st.Identifier, st.AssignedValue)
+				fmt.Printf("previous=%T, %v , now=%T, %v \n", v, v, vv, vv)
+
+				vars[st.Identifier] = vv
 			}
 
 		case ast.ExpressionStatement:

@@ -11,7 +11,7 @@ class DirectoryReader {
   // }
 
   fn math() {
-     io.printf("this is inside math");
+    //  io.printf("this is inside math");
   }
 }
 
@@ -26,7 +26,7 @@ fn main(): int32 {
     a.math();
     say z: string = "hello world";
 
-    io.printf("hello world %f\n", 18);
+    io.printf("hello world %s \n", z);
 
     
     return 0;

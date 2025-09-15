@@ -45,7 +45,7 @@ func (s *String) Update(block *ir.Block, v value.Value) {
 	block.NewStore(v, s.Value)
 }
 
-// return i8**
+// return i8*
 func (s *String) Load(block *ir.Block) value.Value {
 	return block.NewLoad(types.I8Ptr, s.Value)
 }

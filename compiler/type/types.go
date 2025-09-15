@@ -177,12 +177,20 @@ func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Valu
 		errorsx.PanicCompilationError((fmt.Sprintf("invalid LLVM type: %s", paramType)))
 	}
 
+	fmt.Println("type: ", paramType, llvmType)
+
 	switch llvmType.(type) {
 	case *types.IntType, *types.FloatType:
 		return t.getPrimitiveVar(block, paramType, param)
 	}
 
 	if pt, ok := llvmType.(*types.PointerType); ok {
+
+		if pt.ElemType == types.I8Ptr {
+			// i8** represents a string
+			return NewString(block, param)
+		}
+
 		cname := ""
 		for name, meta := range t.Udts {
 			if meta.UDT.Equal(pt) {
@@ -308,7 +316,7 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	case FLOAT64, DOUBLE:
 		return types.Double
 	case STRING:
-		return types.I8Ptr
+		return types.NewPointer(types.I8Ptr)
 	}
 
 	// Check if already registered
@@ -357,8 +365,7 @@ func (t *TypeHandler) CastToType(block *ir.Block, target string, v value.Value) 
 	case "string":
 		switch v.Type().(type) {
 		case *types.PointerType:
-			// already a pointer (likely i8*), just ensure it's i8*
-			return block.NewBitCast(v, types.I8Ptr)
+			return v
 		default:
 			errorsx.PanicCompilationError(fmt.Sprintf(
 				"cannot cast %s to string", v.Type().String(),

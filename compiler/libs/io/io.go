@@ -2,12 +2,8 @@ package io
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/google/uuid"
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
@@ -73,7 +69,7 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Bl
 				promoted := block.NewFPExt(loaded, types.Double)
 				callArgs = append(callArgs, promoted)
 			} else {
-				callArgs = append(callArgs, loaded) // already double/half/etc.
+				callArgs = append(callArgs, loaded)
 			}
 
 		case *types.PointerType:
@@ -89,61 +85,4 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Bl
 
 	// Wrap result in a Var (since printf returns int)
 	return typeHandler.BuildVar(block, typedef.INT32, result)
-}
-
-func (t *IO) printfUtil(module *ir.Module, block *ir.Block, format string, args ...interface{}) {
-	printf := t.ensurePrintf(module)
-
-	if !strings.HasSuffix(format, "\n") {
-		format += "\n"
-	}
-	if !strings.HasSuffix(format, "\x00") {
-		format += "\x00"
-	}
-
-	strConst := constant.NewCharArrayFromString(format)
-	x := uuid.NewString()
-	global := module.NewGlobalDef(fmt.Sprintf(".str%s", x), strConst)
-	global.Linkage = enum.LinkagePrivate
-
-	zero := constant.NewInt(types.I64, 0)
-	ptr := block.NewGetElementPtr(strConst.Typ, global, zero, zero)
-
-	var callArgs []value.Value
-	callArgs = append(callArgs, ptr)
-
-	for _, a := range args {
-		switch v := a.(type) {
-		case value.Value:
-			// Already an LLVM value (float, int, etc.)
-			callArgs = append(callArgs, v)
-
-		case string:
-			// Turn Go string into global char array + pointer
-			str := v + "\x00"
-			strConst := constant.NewCharArrayFromString(str)
-
-			x := uuid.NewString()
-			g := module.NewGlobalDef(fmt.Sprintf(".str%s", x), strConst)
-			g.Linkage = enum.LinkagePrivate
-
-			zero := constant.NewInt(types.I64, 0)
-			p := block.NewGetElementPtr(strConst.Typ, g, zero, zero)
-			callArgs = append(callArgs, p)
-
-		case int:
-			callArgs = append(callArgs, constant.NewInt(types.I32, int64(v)))
-
-		case float64:
-			callArgs = append(callArgs, constant.NewFloat(types.Double, v))
-
-		case float32:
-			callArgs = append(callArgs, constant.NewFloat(types.Float, float64(v)))
-
-		default:
-			panic(fmt.Sprintf("unsupported print arg type: %T", v))
-		}
-	}
-
-	block.NewCall(printf, callArgs...)
 }

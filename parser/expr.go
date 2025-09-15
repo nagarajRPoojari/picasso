@@ -81,8 +81,9 @@ func parse_primary_expr(p *Parser) ast.Expression {
 			Value: number,
 		}
 	case lexer.STRING:
+		str := p.move().Value
 		return ast.StringExpression{
-			Value: p.move().Value,
+			Value: str[1 : len(str)-1],
 		}
 	case lexer.IDENTIFIER:
 		return ast.SymbolExpression{
