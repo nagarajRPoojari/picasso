@@ -233,14 +233,17 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 		break
 	}
 
-	t.processBlock(entry, fn.Body, fn.ReturnType)
+	t.processBlock(f, entry, fn.Body)
 
 	if fn.ReturnType == nil {
 		entry.NewRet(constant.NewNull(types.NewPointer(types.NewStruct())))
 	}
 }
 
-func (t *LLVM) processBlock(entry *ir.Block, sts []ast.Statement, rt ...ast.Type) {
+func (t *LLVM) processBlock(fn *ir.Func, entry *ir.Block, sts []ast.Statement) *ir.Block {
+	// add new block
+	t.vars.AddLevel()
+
 	for _, stI := range sts {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
@@ -256,10 +259,16 @@ func (t *LLVM) processBlock(entry *ir.Block, sts []ast.Statement, rt ...ast.Type
 			default:
 				errorsx.PanicCompilationError("invalid statement")
 			}
+
+		case ast.IfStatement:
+			entry = t.processIfElseStatement(fn, entry, &st)
 		case ast.ReturnStatement:
-			t.returnStatement(entry, &st, rt[0].Get())
+			t.returnStatement(entry, &st, fn.Sig.RetType.LLString())
 		}
 	}
+
+	t.vars.RemoveLevel()
+	return entry
 }
 
 func (t *LLVM) declareVariable(block *ir.Block, st *ast.VariableDeclarationStatement) {
@@ -269,7 +278,7 @@ func (t *LLVM) declareVariable(block *ir.Block, st *ast.VariableDeclarationState
 		t.vars.AddNewVar(st.Identifier, v)
 	} else {
 		v = t.processExpression(block, st.AssignedValue)
-		if _, ok := t.vars.Search(st.Identifier); ok {
+		if t.vars.Exists(st.Identifier) {
 			errorsx.PanicCompilationError("variable already exists")
 		}
 		casted := t.typeHandler.CastToType(block, st.ExplicitType.Get(), v.Load(block))
@@ -283,12 +292,7 @@ func (t *LLVM) assignVariable(block *ir.Block, st *ast.AssignmentExpression) {
 	assignee := assigneeExp.Value
 	v, ok := t.vars.Search(assignee)
 	if !ok {
-		globalV, ok := t.vars.Search(assignee)
-		if !ok {
-			panic(fmt.Sprintf("undefined: %s", assignee))
-		} else {
-			v = globalV
-		}
+		panic(fmt.Sprintf("undefined: %s", assignee))
 	}
 	rhs := t.processExpression(block, st.AssignedValue)
 	typeName := v.Type().Name()
@@ -352,15 +356,32 @@ func (t *LLVM) processExpression(block *ir.Block, expI ast.Expression) tf.Var {
 	return nil
 }
 
-func (t *LLVM) processIfElseStatement(fn *ir.Func, entry *ir.Block, st *ast.IfStatement) {
-	ifBlock := fn.NewBlock("if.then")
-	elseBlock := fn.NewBlock("if.else")
+func (t *LLVM) processIfElseStatement(fn *ir.Func, entry *ir.Block, st *ast.IfStatement) *ir.Block {
+	ifBlock := fn.NewBlock("")
+	elseBlock := fn.NewBlock("")
+	endBlock := fn.NewBlock("")
 
-	cond := entry.NewICmp(enum.IPredSLT,
-		constant.NewInt(types.I32, 1),
-		constant.NewInt(types.I32, 2),
-	)
-	entry.NewCondBr(cond, ifBlock, elseBlock)
+	// condition
+	res := t.processExpression(entry, st.Condition)
+	casted := t.typeHandler.CastToType(entry, string(tf.BOOLEAN), res.Load(entry))
+	cond := t.typeHandler.BuildVar(entry, tf.Type(tf.BOOLEAN), casted)
+	entry.NewCondBr(cond.Load(entry), ifBlock, elseBlock)
+
+	// process consequent
+	conseq := st.Consequent.(ast.BlockStatement)
+	end := t.processBlock(fn, ifBlock, conseq.Body)
+	if end.Term == nil {
+		end.NewBr(endBlock)
+	}
+
+	// process alternate
+	alternate := st.Alternate.(ast.BlockStatement)
+	end = t.processBlock(fn, elseBlock, alternate.Body)
+	if end.Term == nil {
+		end.NewBr(endBlock)
+	}
+
+	return endBlock
 }
 
 func (t *LLVM) processSymbolExpression(ex ast.SymbolExpression) tf.Var {
@@ -492,21 +513,24 @@ func (t *LLVM) processBinaryExpression(block *ir.Block, ex ast.BinaryExpression)
 	if left == nil || right == nil {
 		errorsx.PanicCompilationError("nil operand in binary expression")
 	}
+
 	lv := left.Load(block)
 	rv := right.Load(block)
 
+	// For arithmetic and comparison, cast to float
 	f := &tf.Float64{}
 	lvf, err := f.Cast(block, lv)
 	if err != nil {
-		errorsx.PanicCompilationError((fmt.Sprintf("failed to cast %s to float", lv)))
+		errorsx.PanicCompilationError(fmt.Sprintf("failed to cast %s to float", lv))
 	}
 	rvf, err := f.Cast(block, rv)
 	if err != nil {
-		errorsx.PanicCompilationError((fmt.Sprintf("failed to cast %s to float", rv)))
+		errorsx.PanicCompilationError(fmt.Sprintf("failed to cast %s to float", rv))
 	}
 
 	var res value.Value
 	switch ex.Operator.Value {
+	// Arithmetic
 	case "+":
 		res = block.NewFAdd(lvf, rvf)
 	case "-":
@@ -515,13 +539,41 @@ func (t *LLVM) processBinaryExpression(block *ir.Block, ex ast.BinaryExpression)
 		res = block.NewFMul(lvf, rvf)
 	case "/":
 		res = block.NewFDiv(lvf, rvf)
+
+	// Comparisons (return i1 bools)
+	case "==":
+		res = block.NewFCmp(enum.FPredOEQ, lvf, rvf)
+	case "!=":
+		res = block.NewFCmp(enum.FPredONE, lvf, rvf)
+	case "<":
+		res = block.NewFCmp(enum.FPredOLT, lvf, rvf)
+	case "<=":
+		res = block.NewFCmp(enum.FPredOLE, lvf, rvf)
+	case ">":
+		res = block.NewFCmp(enum.FPredOGT, lvf, rvf)
+	case ">=":
+		res = block.NewFCmp(enum.FPredOGE, lvf, rvf)
+
+	// Boolean (assume operands already i1)
+	case "&&":
+		res = block.NewAnd(lv, rv)
+	case "||":
+		res = block.NewOr(lv, rv)
+
 	default:
 		panic(fmt.Sprintf("unsupported operator: %s", ex.Operator.Value))
 	}
 
-	ptr := block.NewAlloca(types.Double)
-	block.NewStore(res, ptr)
-	return &tf.Float64{NativeType: types.Double, Value: ptr}
+	switch res.Type().Equal(types.I1) {
+	case true:
+		ptr := block.NewAlloca(types.I1)
+		block.NewStore(res, ptr)
+		return &tf.Boolean{NativeType: types.I1, Value: ptr}
+	default:
+		ptr := block.NewAlloca(types.Double)
+		block.NewStore(res, ptr)
+		return &tf.Float64{NativeType: types.Double, Value: ptr}
+	}
 }
 
 func (t *LLVM) handleCallExpression(block *ir.Block, ex ast.CallExpression) tf.Var {

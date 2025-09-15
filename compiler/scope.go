@@ -39,3 +39,8 @@ func (t *VarTree) Search(v string) (tf.Var, bool) {
 	}
 	return nil, false
 }
+
+func (t *VarTree) Exists(v string) bool {
+	_, ok := t.tree[len(t.tree)-1][v]
+	return ok
+}

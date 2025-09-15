@@ -21,13 +21,16 @@ fn main(): int32 {
     a.math();
     say z: string = "hello world";
 
-    io.printf("hello world %s \n", z);
-
-    // if n > 10 {
-    //   io.printf("hello world %s \n", z);
-    // } else {
-    //   say n: int = 200;
-    // }
+    if n > 10 {
+      say y: int = 800;
+      if 100 > 20 {
+          io.printf("value = %d ", y);
+      } else {
+          
+      }
+    } else {
+      say ni: int = 200;
+    }
     
     return 0;
 }
