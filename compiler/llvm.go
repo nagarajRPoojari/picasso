@@ -9,6 +9,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
@@ -33,6 +34,8 @@ type LLVM struct {
 	// global string counter
 	// @todo: move this to separate string module
 	strCounter int
+
+	LibMethods map[string]function.Func
 }
 
 func NewLLVM() *LLVM {
@@ -44,6 +47,7 @@ func NewLLVM() *LLVM {
 		methods:           make(map[string]*ir.Func),
 		classes:           make(map[string]*tf.MetaClass),
 		identifierBuilder: NewIdentifierBuilder(MAIN),
+		LibMethods:        make(map[string]function.Func),
 	}
 	return i
 }
@@ -58,6 +62,13 @@ func (t *LLVM) Dump(file string) {
 }
 
 func (t *LLVM) ParseAST(tree *ast.BlockStatement) {
+	for _, stI := range tree.Body {
+		switch st := stI.(type) {
+		case ast.ImportStatement:
+			t.importer(t.LibMethods, st.Name)
+		}
+	}
+
 	for _, stI := range tree.Body {
 		switch st := stI.(type) {
 		case ast.ClassDeclarationStatement:
@@ -269,10 +280,10 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 	}
 
 	// @todo: remove this debug statement
-	if name == MAIN {
-		x := vars["z"].Load(entry)
-		t.print(entry, "return z = %s", x)
-	}
+	// if name == MAIN {
+	// 	x := vars["z"].Load(entry)
+	// 	t.print(entry, "return z = %s", x)
+	// }
 
 	if fn.ReturnType == nil {
 		entry.NewRet(constant.NewNull(types.NewPointer(types.NewStruct())))
@@ -474,6 +485,18 @@ func (t *LLVM) processExpression(block *ir.Block, vars map[string]tf.Var, expI a
 }
 
 func (t *LLVM) handleCallExpression(block *ir.Block, vars map[string]tf.Var, ex ast.CallExpression) tf.Var {
+	// check if imported modules
+	if m, ok := ex.Method.(ast.MemberExpression); ok {
+		fName := fmt.Sprintf("%s.%s", m.Member.(ast.SymbolExpression).Value, m.Property)
+		if f, ok := t.LibMethods[fName]; ok {
+			args := make([]tf.Var, 0)
+			for _, v := range ex.Arguments {
+				args = append(args, t.processExpression(block, vars, v))
+			}
+			return f(t.typeHandler, t.module, block, args)
+		}
+	}
+
 	switch m := ex.Method.(type) {
 	case ast.SymbolExpression:
 		errorsx.PanicCompilationError("method call should be on instance")

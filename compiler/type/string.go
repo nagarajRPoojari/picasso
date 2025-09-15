@@ -47,7 +47,7 @@ func (s *String) Update(block *ir.Block, v value.Value) {
 
 // return i8**
 func (s *String) Load(block *ir.Block) value.Value {
-	return s.Value
+	return block.NewLoad(types.I8Ptr, s.Value)
 }
 
 func (s *String) Constant() constant.Constant {

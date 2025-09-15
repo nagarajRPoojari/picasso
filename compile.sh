@@ -6,5 +6,5 @@ llc -filetype=obj bin/output.bc -o bin/output.o
 clang bin/output.o -o bin/output
 ./bin/output
 
-echo "ran succesfully.."
+
 echo $?

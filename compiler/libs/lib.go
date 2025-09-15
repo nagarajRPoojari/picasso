@@ -1,15 +1,16 @@
 package libs
 
 import (
-	"github.com/llir/llvm/ir"
-	"github.com/nagarajRPoojari/x-lang/ast"
-	"github.com/nagarajRPoojari/x-lang/compiler"
-	typedef "github.com/nagarajRPoojari/x-lang/compiler/type"
+	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
+	"github.com/nagarajRPoojari/x-lang/compiler/libs/io"
 )
 
-type Func func(llvm *compiler.LLVM, block *ir.Block, args []*ast.Expression) typedef.Var
+type Module interface {
+	ListAllFuncs() map[string]function.Func
+}
 
-type Module struct {
-	Name  string
-	Funcs map[string]Func
+var ModuleList = make(map[string]Module)
+
+func init() {
+	ModuleList["io"] = io.NewIO()
 }
