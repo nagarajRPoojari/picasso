@@ -252,7 +252,7 @@ func (t *LLVM) processBlock(fn *ir.Func, entry *ir.Block, sts []ast.Statement) *
 		case ast.ExpressionStatement:
 			switch exp := st.Expression.(type) {
 			case ast.AssignmentExpression:
-				t.assignVariable(entry, &exp)
+				t.processExpression(entry, exp)
 			case ast.CallExpression:
 				// will be routed CallExpression
 				t.processExpression(entry, exp)
@@ -288,20 +288,29 @@ func (t *LLVM) declareVariable(block *ir.Block, st *ast.VariableDeclarationState
 }
 
 func (t *LLVM) assignVariable(block *ir.Block, st *ast.AssignmentExpression) {
-	assigneeExp, _ := st.Assignee.(ast.SymbolExpression)
-	assignee := assigneeExp.Value
-	v, ok := t.vars.Search(assignee)
-	if !ok {
-		panic(fmt.Sprintf("undefined: %s", assignee))
+
+	switch m := st.Assignee.(type) {
+	case ast.SymbolExpression:
+		assignee := m.Value
+		v, ok := t.vars.Search(assignee)
+		if !ok {
+			panic(fmt.Sprintf("undefined: %s", st))
+		}
+		rhs := t.processExpression(block, st.AssignedValue)
+		typeName := v.Type().Name()
+		if typeName == "" {
+			typeName = v.Type().String()
+		}
+		casted := t.typeHandler.CastToType(block, typeName, rhs.Load(block))
+		c := t.typeHandler.BuildVar(block, tf.Type(typeName), casted)
+		v.Update(block, c.Load(block))
+
+	case ast.MemberExpression:
+		lhs := t.processExpression(block, m)
+		rhs := t.processExpression(block, st.AssignedValue)
+		lhs.Update(block, rhs.Load(block))
 	}
-	rhs := t.processExpression(block, st.AssignedValue)
-	typeName := v.Type().Name()
-	if typeName == "" {
-		typeName = v.Type().String()
-	}
-	casted := t.typeHandler.CastToType(block, typeName, rhs.Load(block))
-	c := t.typeHandler.BuildVar(block, tf.Type(typeName), casted)
-	v.Update(block, c.Load(block))
+
 }
 
 func (t *LLVM) returnStatement(block *ir.Block, st *ast.ReturnStatement, rt string) {
@@ -345,6 +354,9 @@ func (t *LLVM) processExpression(block *ir.Block, expI ast.Expression) tf.Var {
 
 	case ast.MemberExpression:
 		return t.processMemberExpression(block, ex)
+
+	case ast.AssignmentExpression:
+		t.assignVariable(block, &ex)
 
 	case ast.CallExpression:
 		return t.handleCallExpression(block, ex)
@@ -410,11 +422,15 @@ func (t *LLVM) processNewExpression(block *ir.Block, ex ast.NewExpression) tf.Va
 		fieldType := structType.Fields[index]
 		instance.UpdateField(block, index, x.Load(block), fieldType)
 	}
+
+	t.handleConstructorCall(block, instance, ex.Instantiation)
 	return instance
 }
 
 func (t *LLVM) processMemberExpression(block *ir.Block, ex ast.MemberExpression) tf.Var {
 	// Evaluate the base expression
+	fmt.Printf("PROCESSING === %v \n", ex)
+
 	baseVar := t.processExpression(block, ex.Member)
 	if baseVar == nil {
 		errorsx.PanicCompilationError(fmt.Sprintf("nil base in member expression: %v", ex.Member))
@@ -505,6 +521,44 @@ func (t *LLVM) processMemberExpression(block *ir.Block, ex ast.MemberExpression)
 		errorsx.PanicCompilationError(fmt.Sprintf("unsupported field type %T in member expression", fieldType))
 	}
 	return nil
+}
+
+func (t *LLVM) handleConstructorCall(block *ir.Block, cls *tf.Class, ex ast.CallExpression) {
+	m := ex.Method.(ast.SymbolExpression)
+	meth := t.identifierBuilder.Attach(m.Value, m.Value)
+	fn := t.methods[meth]
+
+	args := make([]value.Value, 0, len(ex.Arguments)+1)
+	for i, argExp := range ex.Arguments {
+		v := t.processExpression(block, argExp)
+		if v == nil {
+			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: nil arg %d for %s", i, m.Value))
+		}
+		raw := v.Load(block)
+		if raw == nil {
+			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: loaded nil arg %d for %s", i, m.Value))
+		}
+
+		// If the callee expects a certain param type, cast to it
+		expected := fn.Sig.Params[i]
+		raw = t.typeHandler.CastToType(block, expected.Name(), raw)
+		if raw == nil {
+			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: CastToType returned nil for arg %d -> %s", i, expected.String()))
+		}
+		args = append(args, raw)
+	}
+
+	// Pass `this` as a pointer-to-struct (Slot returns pointer)
+	thisPtr := cls.Slot()
+	if thisPtr == nil {
+		errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: this pointer is nil for %s", cls.Name))
+	}
+
+	// Check function expected param count: we declared 'this' last when creating fn,
+	// adjust order according to how the function was declared.
+	args = append(args, thisPtr)
+
+	block.NewCall(fn, args...)
 }
 
 func (t *LLVM) processBinaryExpression(block *ir.Block, ex ast.BinaryExpression) tf.Var {

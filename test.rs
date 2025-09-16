@@ -3,15 +3,30 @@ say PI: double = 3.14;
 
 class DirectoryReader {
   say y: double = 112;
-  // say x: Math = new Math();
+  say x: Math = new Math();
+
+  fn DirectoryReader() {
+    this.y = 100;
+    this.x.pi = 98;
+}
 
   fn math() {
-    //  io.printf("this is inside math");
+     io.printf("this.y = %f  ", this.x.pi);
+     this.add();
+
+  }
+
+  fn add() {
+     io.printf("this is inside math");
+     
   }
 }
 
 class Math {
   say pi: double = 123;
+  fn Math() {
+
+  }
 }
 
 fn main(): int32 {

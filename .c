@@ -29,10 +29,108 @@ ast.BlockStatement{
           },
           IsStatic: false,
         },
+        ast.VariableDeclarationStatement{
+          Identifier: "x",
+          Constant: false,
+          AssignedValue: ast.NewExpression{
+            Instantiation: ast.CallExpression{
+              Method: ast.SymbolExpression{
+                Value: "Math",
+              },
+              Arguments: []ast.Expression{}, // p0
+            },
+          },
+          ExplicitType: ast.SymbolType{
+            Value: "Math",
+          },
+          IsStatic: false,
+        },
         ast.FunctionDeclarationStatement{
-          Parameters: []ast.Parameter{}, // p0
+          Parameters: []ast.Parameter{}, // p1
+          Name: "DirectoryReader",
+          Body: []ast.Statement{
+            ast.ExpressionStatement{
+              Expression: ast.AssignmentExpression{
+                Assignee: ast.MemberExpression{
+                  Member: ast.SymbolExpression{
+                    Value: "this",
+                  },
+                  Property: "y",
+                },
+                AssignedValue: ast.NumberExpression{
+                  Value: 100.0,
+                },
+              },
+            },
+            ast.ExpressionStatement{
+              Expression: ast.CallExpression{
+                Method: ast.MemberExpression{
+                  Member: ast.SymbolExpression{
+                    Value: "this",
+                  },
+                  Property: "math",
+                },
+                Arguments: p0,
+              },
+            },
+          },
+          ReturnType: nil,
+          IsStatic: false,
+        },
+        ast.FunctionDeclarationStatement{
+          Parameters: p1,
           Name: "math",
-          Body: []ast.Statement{},
+          Body: []ast.Statement{
+            ast.ExpressionStatement{
+              Expression: ast.CallExpression{
+                Method: ast.MemberExpression{
+                  Member: ast.SymbolExpression{
+                    Value: "io",
+                  },
+                  Property: "printf",
+                },
+                Arguments: []ast.Expression{
+                  ast.StringExpression{
+                    Value: "this is inside math",
+                  },
+                },
+              },
+            },
+            ast.ExpressionStatement{
+              Expression: ast.CallExpression{
+                Method: ast.MemberExpression{
+                  Member: ast.SymbolExpression{
+                    Value: "this",
+                  },
+                  Property: "add",
+                },
+                Arguments: p0,
+              },
+            },
+          },
+          ReturnType: nil,
+          IsStatic: false,
+        },
+        ast.FunctionDeclarationStatement{
+          Parameters: p1,
+          Name: "add",
+          Body: []ast.Statement{
+            ast.ExpressionStatement{
+              Expression: ast.CallExpression{
+                Method: ast.MemberExpression{
+                  Member: ast.SymbolExpression{
+                    Value: "io",
+                  },
+                  Property: "printf",
+                },
+                Arguments: []ast.Expression{
+                  ast.StringExpression{
+                    Value: "this is inside math",
+                  },
+                },
+              },
+            },
+          },
           ReturnType: nil,
           IsStatic: false,
         },
@@ -52,10 +150,17 @@ ast.BlockStatement{
           },
           IsStatic: false,
         },
+        ast.FunctionDeclarationStatement{
+          Parameters: p1,
+          Name: "Math",
+          Body: []ast.Statement{}, // p2
+          ReturnType: nil,
+          IsStatic: false,
+        },
       },
     },
     ast.FunctionDeclarationStatement{
-      Parameters: p0,
+      Parameters: p1,
       Name: "main",
       Body: []ast.Statement{
         ast.VariableDeclarationStatement{
@@ -66,7 +171,7 @@ ast.BlockStatement{
               Method: ast.SymbolExpression{
                 Value: "DirectoryReader",
               },
-              Arguments: []ast.Expression{}, // p1
+              Arguments: p0,
             },
           },
           ExplicitType: ast.SymbolType{
@@ -101,7 +206,7 @@ ast.BlockStatement{
               },
               Property: "math",
             },
-            Arguments: p1,
+            Arguments: p0,
           },
         },
         ast.VariableDeclarationStatement{
@@ -114,24 +219,6 @@ ast.BlockStatement{
             Value: "string",
           },
           IsStatic: false,
-        },
-        ast.ExpressionStatement{
-          Expression: ast.CallExpression{
-            Method: ast.MemberExpression{
-              Member: ast.SymbolExpression{
-                Value: "io",
-              },
-              Property: "printf",
-            },
-            Arguments: []ast.Expression{
-              ast.StringExpression{
-                Value: "hello world %s \\n",
-              },
-              ast.SymbolExpression{
-                Value: "z",
-              },
-            },
-          },
         },
         ast.IfStatement{
           Condition: ast.BinaryExpression{
@@ -148,22 +235,54 @@ ast.BlockStatement{
           },
           Consequent: ast.BlockStatement{
             Body: []ast.Statement{
-              ast.ExpressionStatement{
-                Expression: ast.CallExpression{
-                  Method: ast.MemberExpression{
-                    Member: ast.SymbolExpression{
-                      Value: "io",
-                    },
-                    Property: "printf",
+              ast.VariableDeclarationStatement{
+                Identifier: "y",
+                Constant: false,
+                AssignedValue: ast.NumberExpression{
+                  Value: 800.0,
+                },
+                ExplicitType: ast.SymbolType{
+                  Value: "int",
+                },
+                IsStatic: false,
+              },
+              ast.IfStatement{
+                Condition: ast.BinaryExpression{
+                  Left: ast.NumberExpression{
+                    Value: 100.0,
                   },
-                  Arguments: []ast.Expression{
-                    ast.StringExpression{
-                      Value: "hello world %s \\n",
-                    },
-                    ast.SymbolExpression{
-                      Value: "z",
+                  Operator: lexer.Token{
+                    Kind: 19,
+                    Value: ">",
+                  },
+                  Right: ast.NumberExpression{
+                    Value: 20.0,
+                  },
+                },
+                Consequent: ast.BlockStatement{
+                  Body: []ast.Statement{
+                    ast.ExpressionStatement{
+                      Expression: ast.CallExpression{
+                        Method: ast.MemberExpression{
+                          Member: ast.SymbolExpression{
+                            Value: "io",
+                          },
+                          Property: "printf",
+                        },
+                        Arguments: []ast.Expression{
+                          ast.StringExpression{
+                            Value: "value = %d ",
+                          },
+                          ast.SymbolExpression{
+                            Value: "y",
+                          },
+                        },
+                      },
                     },
                   },
+                },
+                Alternate: ast.BlockStatement{
+                  Body: p2,
                 },
               },
             },
@@ -171,7 +290,7 @@ ast.BlockStatement{
           Alternate: ast.BlockStatement{
             Body: []ast.Statement{
               ast.VariableDeclarationStatement{
-                Identifier: "n",
+                Identifier: "ni",
                 Constant: false,
                 AssignedValue: ast.NumberExpression{
                   Value: 200.0,
@@ -199,5 +318,5 @@ ast.BlockStatement{
     },
   },
 }
-Duration: 243.25µs
-hello world hello world \n0
+Duration: 360.333µs
+this is inside maththis is inside maththis is inside maththis is inside mathvalue = 800 0
