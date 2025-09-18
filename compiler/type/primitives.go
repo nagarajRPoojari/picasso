@@ -12,25 +12,6 @@ import (
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
-// Var is a holder for all native variables
-// It holds mutable slot suporting runtime update and load operations
-type Var interface {
-	Update(block *ir.Block, v value.Value)
-	Load(block *ir.Block) value.Value
-
-	// Constant is depricated, used to build compile time constants
-	Constant() constant.Constant
-
-	// mutable slot holding the value
-	Slot() value.Value
-
-	// Cast casts given value to self type if possible
-	Cast(block *ir.Block, v value.Value) (value.Value, error)
-
-	// Type returns llvm compatibe type
-	Type() types.Type
-}
-
 // Boolean hold single bit of information
 type Boolean struct {
 	NativeType *types.IntType

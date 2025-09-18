@@ -21,7 +21,7 @@ require (
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
 	github.com/google/uuid v1.6.0
 	github.com/llir/llvm v0.3.6 // indirect
-	github.com/mewmew/float v0.0.0-20201204173432-505706aa38fa // indirect
+	github.com/mewmew/float v0.0.0-20211212214546-4fe539893335 // indirect
 	github.com/onsi/ginkgo/v2 v2.25.3 // indirect
 	github.com/onsi/gomega v1.38.2
 	github.com/pkg/errors v0.9.1 // indirect

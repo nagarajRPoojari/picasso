@@ -30,6 +30,9 @@ class Math {
 }
 
 fn main(): int32 {
+   say arr: [10][2]string = [["1,", "2", "3"],["1,", "2", "3"]];
+  //  say xxx: string = arr[0][1][3];
+
     say a: DirectoryReader = new DirectoryReader();
     say n: int;
     n = 278;

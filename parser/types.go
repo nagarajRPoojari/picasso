@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/lexer"
@@ -38,11 +39,24 @@ func BuildTypeTokensTable() {
 
 	type_nud(lexer.OPEN_BRACKET, member, func(p *Parser) ast.Type {
 		p.move()
+		token := p.currentToken()
+		var size int
+		if token.Kind != lexer.NUMBER {
+			panic("expected size of array")
+		} else {
+			num, err := strconv.Atoi(token.Value)
+			if err != nil {
+				panic("unable to parse size of array")
+			}
+			size = num
+			p.move()
+		}
 		p.expect(lexer.CLOSE_BRACKET)
 		insideType := parse_type(p, default_bp)
 
 		return ast.ListType{
 			Underlying: insideType,
+			Length:     size,
 		}
 	})
 }

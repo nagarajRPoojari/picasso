@@ -63,14 +63,19 @@ ast.BlockStatement{
               },
             },
             ast.ExpressionStatement{
-              Expression: ast.CallExpression{
-                Method: ast.MemberExpression{
-                  Member: ast.SymbolExpression{
-                    Value: "this",
+              Expression: ast.AssignmentExpression{
+                Assignee: ast.MemberExpression{
+                  Member: ast.MemberExpression{
+                    Member: ast.SymbolExpression{
+                      Value: "this",
+                    },
+                    Property: "x",
                   },
-                  Property: "math",
+                  Property: "pi",
                 },
-                Arguments: p0,
+                AssignedValue: ast.NumberExpression{
+                  Value: 98.0,
+                },
               },
             },
           },
@@ -91,7 +96,16 @@ ast.BlockStatement{
                 },
                 Arguments: []ast.Expression{
                   ast.StringExpression{
-                    Value: "this is inside math",
+                    Value: "this.y = %f  ",
+                  },
+                  ast.MemberExpression{
+                    Member: ast.MemberExpression{
+                      Member: ast.SymbolExpression{
+                        Value: "this",
+                      },
+                      Property: "x",
+                    },
+                    Property: "pi",
                   },
                 },
               },
@@ -163,6 +177,50 @@ ast.BlockStatement{
       Parameters: p1,
       Name: "main",
       Body: []ast.Statement{
+        ast.VariableDeclarationStatement{
+          Identifier: "arr",
+          Constant: false,
+          AssignedValue: ast.ListExpression{
+            Constants: []ast.Expression{
+              ast.ListExpression{
+                Constants: []ast.Expression{
+                  ast.StringExpression{
+                    Value: "1,",
+                  },
+                  ast.StringExpression{
+                    Value: "2",
+                  },
+                  ast.StringExpression{
+                    Value: "3",
+                  },
+                },
+              },
+              ast.ListExpression{
+                Constants: []ast.Expression{
+                  ast.StringExpression{
+                    Value: "1,",
+                  },
+                  ast.StringExpression{
+                    Value: "2",
+                  },
+                  ast.StringExpression{
+                    Value: "3",
+                  },
+                },
+              },
+            },
+          },
+          ExplicitType: ast.ListType{
+            Length: 10,
+            Underlying: ast.ListType{
+              Length: 2,
+              Underlying: ast.SymbolType{
+                Value: "string",
+              },
+            },
+          },
+          IsStatic: false,
+        },
         ast.VariableDeclarationStatement{
           Identifier: "a",
           Constant: false,
@@ -318,5 +376,9 @@ ast.BlockStatement{
     },
   },
 }
-Duration: 360.333µs
-this is inside maththis is inside maththis is inside maththis is inside mathvalue = 800 0
+Duration: 771.75µs
+PROCESSING === {{this} y} 
+PROCESSING === {{{this} x} pi} 
+PROCESSING === {{this} x} 
+PROCESSING === {{{this} x} pi} 
+PROCESSING === {{this} x} 

@@ -254,7 +254,6 @@ func (t *LLVM) processBlock(fn *ir.Func, entry *ir.Block, sts []ast.Statement) *
 			case ast.AssignmentExpression:
 				t.processExpression(entry, exp)
 			case ast.CallExpression:
-				// will be routed CallExpression
 				t.processExpression(entry, exp)
 			default:
 				errorsx.PanicCompilationError("invalid statement")
@@ -429,8 +428,6 @@ func (t *LLVM) processNewExpression(block *ir.Block, ex ast.NewExpression) tf.Va
 
 func (t *LLVM) processMemberExpression(block *ir.Block, ex ast.MemberExpression) tf.Var {
 	// Evaluate the base expression
-	fmt.Printf("PROCESSING === %v \n", ex)
-
 	baseVar := t.processExpression(block, ex.Member)
 	if baseVar == nil {
 		errorsx.PanicCompilationError(fmt.Sprintf("nil base in member expression: %v", ex.Member))
