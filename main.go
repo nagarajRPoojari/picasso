@@ -7,7 +7,6 @@ import (
 
 	"github.com/nagarajRPoojari/x-lang/compiler"
 	"github.com/nagarajRPoojari/x-lang/parser"
-	"github.com/sanity-io/litter"
 )
 
 func main() {
@@ -17,7 +16,6 @@ func main() {
 	ast := parser.Parse(source)
 	duration := time.Since(start)
 
-	litter.Dump(ast)
 	fmt.Printf("Duration: %v\n", duration)
 
 	c := compiler.NewCompiler()
