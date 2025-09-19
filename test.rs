@@ -4,6 +4,7 @@ say PI: double = 3.14;
 class DirectoryReader {
   say y: double = 112;
   say x: Math = new Math();
+  say s: string = "nagaraj";
 
   fn DirectoryReader() {
     // this.y = 100;
@@ -11,21 +12,21 @@ class DirectoryReader {
     // io.printf("this.x.y = %f          ", this.y);
   }
 
-  fn math(intern: Math): Math {
+  fn math(intern: Math, inn: string): Math {
     say a: Math = new Math();
-    io.printf("this.x.pi = %f  %f %f  , ", this.x.pi, a.pi, intern.pi);
+    io.printf("this.x.pi = %f  %f %f  %s, ", this.x.pi, a.pi, intern.pi, inn);
     // this.add();
-    // this.x.greet();
+    this.x.greet();
     return a;
   }
 
   fn add(): double {
-    //  say a: Math = new Math();
-     return this.y;
+    // say a: Math = new Math();
+     return 90.0;
   }
 
   fn str(): string {
-    return "hello";
+    return this.s;
   }
 }
 
@@ -44,7 +45,7 @@ fn main(): int32 {
     say a: DirectoryReader = new DirectoryReader();
     say n: int;
     n = 278;
-    say m: Math = a.math(new Math());
+    say m: Math = a.math(new Math(), "hosad");
   
     m.greet();
     say z: string = a.str();

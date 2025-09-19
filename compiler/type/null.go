@@ -47,3 +47,4 @@ func (n *NullVar) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 func (n *NullVar) Type() types.Type {
 	return n.typ
 }
+func (f *NullVar) NativeTypeString() string { return "null" }

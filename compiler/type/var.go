@@ -20,4 +20,6 @@ type Var interface {
 
 	// Type returns llvm compatibe type
 	Type() types.Type
+
+	NativeTypeString() string
 }

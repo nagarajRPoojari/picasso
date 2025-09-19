@@ -67,8 +67,6 @@ func (s *Class) Update(block *ir.Block, v value.Value) {
 	// Case: v is pointer-to-struct and matches s.UDT
 	if pv, ok := v.Type().(*types.PointerType); ok && pv.Equal(sPtr) {
 		// load the struct value from v and store the struct into the object's address (s.Ptr)
-		// structVal := block.NewLoad(sPtr.ElemType, v)
-		// block.NewStore(structVal, s.Ptr)
 		s.Ptr = v
 		return
 	}
@@ -209,3 +207,5 @@ func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
 
 	return block.NewBitCast(v, target)
 }
+
+func (f *Class) NativeTypeString() string { return f.Name }

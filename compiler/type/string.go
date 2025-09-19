@@ -74,3 +74,4 @@ func (s *String) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 			fmt.Sprintf("cannot cast %v to string", v.Type()))
 	}
 }
+func (f *String) NativeTypeString() string { return "string" }

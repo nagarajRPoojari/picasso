@@ -12,6 +12,9 @@ import (
 	"github.com/nagarajRPoojari/x-lang/ast"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
+	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
+	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/ints"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
@@ -256,7 +259,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 	t.processBlock(f, entry, fn.Body)
 
 	if fn.ReturnType == nil {
-		entry.NewRet(constant.NewNull(types.NewPointer(types.NewStruct())))
+		entry.NewRet(nil)
 	}
 }
 
@@ -336,14 +339,9 @@ func (t *LLVM) assignVariable(block *ir.Block, st *ast.AssignmentExpression) {
 func (t *LLVM) returnStatement(block *ir.Block, st *ast.ReturnStatement, rt types.Type) {
 	v := t.processExpression(block, st.Value.Expression)
 	val := v.Load(block)
-
-	if _, ok := rt.(*types.PointerType); ok {
-		block.NewRet(v.Slot())
-		return
-	}
-
-	// Otherwise, cast to expected type
-	r := t.typeHandler.CastToType(block, rt.String(), val)
+	tp := GetTypeString(rt)
+	r := t.typeHandler.CastToType(block, tp, val)
+	fmt.Println("RETURN:    ", r)
 	block.NewRet(r)
 }
 
@@ -494,6 +492,7 @@ func (t *LLVM) processMemberExpression(block *ir.Block, ex ast.MemberExpression)
 
 	// Get pointer to the field
 	fieldPtr := cls.FieldPtr(block, idx)
+	// return t.typeHandler.BuildVar(block, "", fieldPtr)
 
 	// Determine the class name if the field is a struct
 	getClassName := func(tt types.Type) string {
@@ -515,15 +514,15 @@ func (t *LLVM) processMemberExpression(block *ir.Block, ex ast.MemberExpression)
 	case *types.IntType:
 		switch ft.BitSize {
 		case 1:
-			return &tf.Boolean{NativeType: types.I1, Value: fieldPtr}
+			return &boolean.Boolean{NativeType: types.I1, Value: fieldPtr}
 		case 8:
-			return &tf.Int8{NativeType: types.I8, Value: fieldPtr}
+			return &ints.Int8{NativeType: types.I8, Value: fieldPtr}
 		case 16:
-			return &tf.Int16{NativeType: types.I16, Value: fieldPtr}
+			return &ints.Int16{NativeType: types.I16, Value: fieldPtr}
 		case 32:
-			return &tf.Int32{NativeType: types.I32, Value: fieldPtr}
+			return &ints.Int32{NativeType: types.I32, Value: fieldPtr}
 		case 64:
-			return &tf.Int64{NativeType: types.I64, Value: fieldPtr}
+			return &ints.Int64{NativeType: types.I64, Value: fieldPtr}
 		default:
 			panic(fmt.Sprintf("unsupported int size %d", ft.BitSize))
 		}
@@ -531,21 +530,25 @@ func (t *LLVM) processMemberExpression(block *ir.Block, ex ast.MemberExpression)
 	case *types.FloatType:
 		switch ft.Kind {
 		case types.FloatKindHalf:
-			return &tf.Float16{NativeType: types.Half, Value: fieldPtr}
+			return &floats.Float16{NativeType: types.Half, Value: fieldPtr}
 		case types.FloatKindFloat:
-			return &tf.Float32{NativeType: types.Float, Value: fieldPtr}
+			return &floats.Float32{NativeType: types.Float, Value: fieldPtr}
 		case types.FloatKindDouble:
-			return &tf.Float64{NativeType: types.Double, Value: fieldPtr}
+			return &floats.Float64{NativeType: types.Double, Value: fieldPtr}
 		default:
 			panic(fmt.Sprintf("unsupported float kind %v", ft.Kind))
 		}
 
 	case *types.PointerType:
-		c := tf.NewClass(
-			block, getClassName(fieldType), ft, langAlloc,
-		)
-		c.Update(block, block.NewLoad(fieldType, fieldPtr))
-		return c
+		if _, ok := ft.ElemType.(*types.StructType); ok {
+			c := tf.NewClass(
+				block, getClassName(fieldType), ft, langAlloc,
+			)
+			c.Update(block, block.NewLoad(fieldType, fieldPtr))
+			return c
+		} else {
+			return tf.NewString(block, block.NewLoad(types.I8Ptr, fieldPtr))
+		}
 
 	default:
 		errorsx.PanicCompilationError(fmt.Sprintf("unsupported field type %T in member expression", fieldType))
@@ -570,20 +573,7 @@ func (t *LLVM) handleConstructorCall(block *ir.Block, cls *tf.Class, ex ast.Call
 		}
 
 		expected := fn.Sig.Params[i]
-		var target string
-		switch et := expected.(type) {
-		case *types.PointerType:
-			if st, ok := et.ElemType.(*types.StructType); ok {
-				target = st.Name()
-			} else {
-				target = expected.String()
-			}
-		case *types.StructType:
-			target = et.Name()
-		default:
-			target = expected.String()
-		}
-
+		target := GetTypeString(expected)
 		raw = t.typeHandler.CastToType(block, target, raw)
 		if raw == nil {
 			errorsx.PanicCompilationError(fmt.Sprintf(
@@ -617,7 +607,7 @@ func (t *LLVM) processBinaryExpression(block *ir.Block, ex ast.BinaryExpression)
 	rv := right.Load(block)
 
 	// For arithmetic and comparison, cast to float
-	f := &tf.Float64{}
+	f := &floats.Float64{}
 	lvf, err := f.Cast(block, lv)
 	if err != nil {
 		errorsx.PanicCompilationError(fmt.Sprintf("failed to cast %s to float", lv))
@@ -667,11 +657,11 @@ func (t *LLVM) processBinaryExpression(block *ir.Block, ex ast.BinaryExpression)
 	case true:
 		ptr := block.NewAlloca(types.I1)
 		block.NewStore(res, ptr)
-		return &tf.Boolean{NativeType: types.I1, Value: ptr}
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
 	default:
 		ptr := block.NewAlloca(types.Double)
 		block.NewStore(res, ptr)
-		return &tf.Float64{NativeType: types.Double, Value: ptr}
+		return &floats.Float64{NativeType: types.Double, Value: ptr}
 	}
 }
 
@@ -736,21 +726,7 @@ func (t *LLVM) handleCallExpression(block *ir.Block, ex ast.CallExpression) tf.V
 
 			// If the callee expects a certain param type, cast to it
 			expected := fn.Sig.Params[i]
-
-			var target string
-			switch et := expected.(type) {
-			case *types.PointerType:
-				if st, ok := et.ElemType.(*types.StructType); ok {
-					target = st.Name() // "Math"
-				} else {
-					target = expected.String()
-				}
-			case *types.StructType:
-				target = et.Name() // struct by value
-			default:
-				target = expected.String() // ints, floats, etc.
-			}
-
+			target := GetTypeString(expected)
 			raw = t.typeHandler.CastToType(block, target, raw)
 			if raw == nil {
 				errorsx.PanicCompilationError(fmt.Sprintf(
@@ -781,26 +757,28 @@ func (t *LLVM) handleCallExpression(block *ir.Block, ex ast.CallExpression) tf.V
 			return nil
 		}
 
-		switch rt := fn.Sig.RetType.(type) {
-		case *types.PointerType:
-			if st, ok := rt.ElemType.(*types.StructType); ok {
-				// Function returned a pointer-to-struct (%Math*)
-				c := tf.NewClass(block, st.Name(), ret.Type(), langAlloc)
-				c.Update(block, ret)
-				return c
-			}
-			// might be string
-			if _, ok := rt.ElemType.(*types.PointerType); ok {
-				// Function returned a pointer-to-struct (%Math*)
-				return tf.NewString(block, block.NewLoad(types.I8Ptr, ret))
-			}
+		tp := GetTypeString(fn.Sig.RetType)
+		fmt.Println(fn.Name(), tp)
+		return t.typeHandler.BuildVar(block, tf.Type(tp), ret)
 
-		default:
-			// Scalars, ints, floats, etc.
-			slot := block.NewAlloca(rt)
-			block.NewStore(ret, slot)
-			return t.wrapReturn(slot, rt, cls.Name)
-		}
+		// switch rt := fn.Sig.RetType.(type) {
+		// case *types.PointerType:
+		// 	if st, ok := rt.ElemType.(*types.StructType); ok {
+		// 		c := tf.NewClass(block, st.Name(), ret.Type(), langAlloc)
+		// 		c.Update(block, ret)
+		// 		return c
+		// 	}
+		// 	// might be string
+		// 	if _, ok := rt.ElemType.(*types.PointerType); ok {
+		// 		return tf.NewString(block, block.NewLoad(types.I8Ptr, ret))
+		// 	}
+
+		// default:
+		// 	// Scalars, ints, floats, etc.
+		// 	slot := block.NewAlloca(rt)
+		// 	block.NewStore(ret, slot)
+		// 	return t.wrapReturn(slot, rt, cls.Name)
+		// }
 
 	}
 	return nil
@@ -811,22 +789,22 @@ func (t *LLVM) wrapReturn(slot *ir.InstAlloca, rt types.Type, className string) 
 	case *types.IntType:
 		switch v.BitSize {
 		case 1:
-			return &tf.Boolean{NativeType: types.I1, Value: slot}
+			return &boolean.Boolean{NativeType: types.I1, Value: slot}
 		case 8:
-			return &tf.Int8{NativeType: types.I8, Value: slot}
+			return &ints.Int8{NativeType: types.I8, Value: slot}
 		case 16:
-			return &tf.Int16{NativeType: types.I16, Value: slot}
+			return &ints.Int16{NativeType: types.I16, Value: slot}
 		case 32:
-			return &tf.Int32{NativeType: types.I32, Value: slot}
+			return &ints.Int32{NativeType: types.I32, Value: slot}
 		case 64:
-			return &tf.Int64{NativeType: types.I64, Value: slot}
+			return &ints.Int64{NativeType: types.I64, Value: slot}
 		}
 	case *types.FloatType:
 		switch v.Kind {
 		case types.FloatKindFloat:
-			return &tf.Float32{NativeType: types.Float, Value: slot}
+			return &floats.Float32{NativeType: types.Float, Value: slot}
 		case types.FloatKindDouble:
-			return &tf.Float64{NativeType: types.Double, Value: slot}
+			return &floats.Float64{NativeType: types.Double, Value: slot}
 		}
 	case *types.StructType:
 		return &tf.Class{Name: v.Name(), UDT: v, Ptr: slot}

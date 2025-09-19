@@ -8,6 +8,9 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
+	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
+	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/ints"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
@@ -61,13 +64,13 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		block.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
-			return &Boolean{
+			return &boolean.Boolean{
 				NativeType: types.I1,
 				Value:      ptr,
 				GoVal:      ci.X.Sign() != 0, // true if nonzero
 			}
 		}
-		return &Boolean{NativeType: types.I1, Value: ptr, GoVal: false}
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr, GoVal: false}
 
 	case INT8, "i8":
 		if init == nil {
@@ -77,13 +80,13 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		block.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
-			return &Int8{
+			return &ints.Int8{
 				NativeType: types.I8,
 				Value:      ptr,
 				GoVal:      int8(ci.X.Int64()),
 			}
 		}
-		return &Int8{NativeType: types.I8, Value: ptr, GoVal: 0}
+		return &ints.Int8{NativeType: types.I8, Value: ptr, GoVal: 0}
 
 	case INT16, "i16":
 		if init == nil {
@@ -93,13 +96,13 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		block.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
-			return &Int16{
+			return &ints.Int16{
 				NativeType: types.I16,
 				Value:      ptr,
 				GoVal:      int16(ci.X.Int64()),
 			}
 		}
-		return &Int16{NativeType: types.I16, Value: ptr, GoVal: 0}
+		return &ints.Int16{NativeType: types.I16, Value: ptr, GoVal: 0}
 
 	case INT32, "i32":
 		if init == nil {
@@ -109,13 +112,13 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		block.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
-			return &Int32{
+			return &ints.Int32{
 				NativeType: types.I32,
 				Value:      ptr,
 				GoVal:      int32(ci.X.Int64()),
 			}
 		}
-		return &Int32{NativeType: types.I32, Value: ptr, GoVal: 0}
+		return &ints.Int32{NativeType: types.I32, Value: ptr, GoVal: 0}
 
 	case INT64, INT, "i64":
 		if init == nil {
@@ -125,13 +128,13 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		block.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
-			return &Int64{
+			return &ints.Int64{
 				NativeType: types.I64,
 				Value:      ptr,
 				GoVal:      ci.X.Int64(),
 			}
 		}
-		return &Int64{NativeType: types.I64, Value: ptr, GoVal: 0}
+		return &ints.Int64{NativeType: types.I64, Value: ptr, GoVal: 0}
 
 	case FLOAT16, "half":
 		if init == nil {
@@ -142,13 +145,13 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 
 		if cf, ok := init.(*constant.Float); ok {
 			f, _ := cf.X.Float64()
-			return &Float16{
+			return &floats.Float16{
 				NativeType: types.Half,
 				Value:      ptr,
 				GoVal:      float32(f),
 			}
 		}
-		return &Float16{NativeType: types.Float, Value: ptr, GoVal: 0}
+		return &floats.Float16{NativeType: types.Float, Value: ptr, GoVal: 0}
 
 	case FLOAT32, "float":
 		if init == nil {
@@ -159,13 +162,13 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 
 		if cf, ok := init.(*constant.Float); ok {
 			f, _ := cf.X.Float64()
-			return &Float32{
+			return &floats.Float32{
 				NativeType: types.Float,
 				Value:      ptr,
 				GoVal:      float32(f),
 			}
 		}
-		return &Float32{NativeType: types.Float, Value: ptr, GoVal: 0}
+		return &floats.Float32{NativeType: types.Float, Value: ptr, GoVal: 0}
 
 	case FLOAT64, DOUBLE:
 		if init == nil {
@@ -176,14 +179,14 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 
 		if cf, ok := init.(*constant.Float); ok {
 			f, _ := cf.X.Float64()
-			return &Float64{
+			return &floats.Float64{
 				NativeType: types.Double,
 				Value:      ptr,
 				GoVal:      f,
 			}
 		}
-		return &Float64{NativeType: types.Double, Value: ptr, GoVal: 0}
-	case STRING:
+		return &floats.Float64{NativeType: types.Double, Value: ptr, GoVal: 0}
+	case STRING, "i8*":
 		if init == nil {
 			init = constant.NewNull(types.I8Ptr)
 		}
@@ -203,7 +206,7 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		return c
 	}
 
-	errorsx.PanicCompilationError(fmt.Sprintf("invalid primitive type: %s , %s", _type, t.Udts))
+	errorsx.PanicCompilationError(fmt.Sprintf("invalid primitive type: %s , %v", _type, t.Udts))
 	return nil
 }
 
@@ -211,7 +214,7 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	switch _type {
 	case NULL, VOID:
-		return types.NewPointer(types.NewStruct())
+		return types.Void
 	case BOOLEAN, "i1":
 		return types.I1
 	case INT8, "i8":
@@ -229,7 +232,7 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	case FLOAT64, DOUBLE:
 		return types.Double
 	case STRING:
-		return types.NewPointer(types.I8Ptr)
+		return types.I8Ptr
 	case ARRAY:
 		// return
 	}
@@ -277,7 +280,7 @@ func (t *TypeHandler) CastToType(block *ir.Block, target string, v value.Value) 
 		return t.floatCast(block, v, types.Float)
 	case "float64", "double":
 		return t.floatCast(block, v, types.Double)
-	case "string":
+	case "string", "i8*":
 		switch v.Type().(type) {
 		case *types.PointerType:
 			return v
