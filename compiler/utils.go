@@ -7,7 +7,7 @@ func GetTypeString(t types.Type) string {
 	switch et := t.(type) {
 	case *types.PointerType:
 		if st, ok := et.ElemType.(*types.StructType); ok {
-			target = st.Name() // "Math"
+			target = st.Name()
 		} else {
 			target = t.String()
 		}

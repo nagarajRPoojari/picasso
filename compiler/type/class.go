@@ -7,6 +7,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/x-lang/compiler/gc"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
@@ -17,7 +18,7 @@ type Class struct {
 	Ptr  value.Value // pointer value (pointer-to-struct, i.e. the object address)
 }
 
-func NewClass(block *ir.Block, name string, udt types.Type, langAlloc *ir.Func) *Class {
+func NewClass(block *ir.Block, name string, udt types.Type) *Class {
 	// Normalize udt so s.UDT is always *types.PointerType (pointer-to-struct)
 	var ptrType *types.PointerType
 	switch t := udt.(type) {
@@ -41,7 +42,7 @@ func NewClass(block *ir.Block, name string, udt types.Type, langAlloc *ir.Func) 
 	size := constant.NewPtrToInt(gep, types.I64)
 
 	// Call GC allocator
-	mem := block.NewCall(langAlloc, size)
+	mem := block.NewCall(gc.Instance.Alloc(), size)
 
 	// Bitcast to your struct pointer type
 	ptr := block.NewBitCast(mem, ptrType)

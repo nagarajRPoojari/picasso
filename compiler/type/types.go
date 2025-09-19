@@ -46,8 +46,8 @@ type TypeHandler struct {
 	langAlloc *ir.Func
 }
 
-func NewTypeHandler(l *ir.Func) *TypeHandler {
-	return &TypeHandler{Udts: make(map[string]*MetaClass), langAlloc: l}
+func NewTypeHandler() *TypeHandler {
+	return &TypeHandler{Udts: make(map[string]*MetaClass)}
 }
 
 func (t *TypeHandler) Register(name string, meta *MetaClass) {
@@ -200,7 +200,7 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 			constant.NewZeroInitializer(udt.UDT)
 		}
 		c := NewClass(
-			block, string(_type), udt.UDT, t.langAlloc,
+			block, string(_type), udt.UDT,
 		)
 		c.Update(block, init)
 		return c

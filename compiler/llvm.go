@@ -10,6 +10,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	"github.com/nagarajRPoojari/x-lang/compiler/gc"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
@@ -40,29 +41,24 @@ type LLVM struct {
 	strCounter int
 
 	LibMethods map[string]function.Func
-}
 
-var langAlloc *ir.Func
-var runtimeInit *ir.Func
+	GC *gc.GC
+}
 
 func NewLLVM() *LLVM {
 	m := ir.NewModule()
 	tree := NewVarTree()
-
-	// once per module
-	langAlloc = m.NewFunc("lang_alloc", types.I8Ptr, ir.NewParam("", types.I64))
-	runtimeInit = m.NewFunc("runtime_init", types.Void)
-
 	tree.AddLevel()
 
 	i := &LLVM{
 		module:            m,
-		typeHandler:       tf.NewTypeHandler(langAlloc),
+		typeHandler:       tf.NewTypeHandler(),
 		vars:              tree,
 		methods:           make(map[string]*ir.Func),
 		classes:           make(map[string]*tf.MetaClass),
 		identifierBuilder: NewIdentifierBuilder(MAIN),
 		LibMethods:        make(map[string]function.Func),
+		GC:                gc.GetGC(m),
 	}
 	return i
 }
@@ -230,7 +226,7 @@ func (t *LLVM) defineFunc(className string, fn *ast.FunctionDeclarationStatement
 	entry := f.NewBlock(ENTRY)
 
 	if className == "" {
-		entry.NewCall(runtimeInit)
+		entry.NewCall(t.GC.Init())
 	}
 
 	if name == MAIN && len(fn.Parameters) != 0 {
@@ -444,7 +440,7 @@ func (t *LLVM) processNewExpression(block *ir.Block, ex ast.NewExpression) tf.Va
 		errorsx.PanicCompilationError(fmt.Sprintf("unknown class: %s", meth.Value))
 	}
 
-	instance := tf.NewClass(block, meth.Value, classMeta.UDT, langAlloc)
+	instance := tf.NewClass(block, meth.Value, classMeta.UDT)
 	structType := classMeta.StructType()
 	meta := t.classes[meth.Value]
 
@@ -542,7 +538,7 @@ func (t *LLVM) processMemberExpression(block *ir.Block, ex ast.MemberExpression)
 	case *types.PointerType:
 		if _, ok := ft.ElemType.(*types.StructType); ok {
 			c := tf.NewClass(
-				block, getClassName(fieldType), ft, langAlloc,
+				block, getClassName(fieldType), ft,
 			)
 			c.Update(block, block.NewLoad(fieldType, fieldPtr))
 			return c
@@ -751,63 +747,14 @@ func (t *LLVM) handleCallExpression(block *ir.Block, ex ast.CallExpression) tf.V
 			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: function pointer nil for %s.%s", cls.Name, m.Property))
 		}
 
-		// Now call
+		// make function call
 		ret := block.NewCall(fn, args...)
 		if fn.Sig.RetType == types.Void {
 			return nil
 		}
 
 		tp := GetTypeString(fn.Sig.RetType)
-		fmt.Println(fn.Name(), tp)
 		return t.typeHandler.BuildVar(block, tf.Type(tp), ret)
-
-		// switch rt := fn.Sig.RetType.(type) {
-		// case *types.PointerType:
-		// 	if st, ok := rt.ElemType.(*types.StructType); ok {
-		// 		c := tf.NewClass(block, st.Name(), ret.Type(), langAlloc)
-		// 		c.Update(block, ret)
-		// 		return c
-		// 	}
-		// 	// might be string
-		// 	if _, ok := rt.ElemType.(*types.PointerType); ok {
-		// 		return tf.NewString(block, block.NewLoad(types.I8Ptr, ret))
-		// 	}
-
-		// default:
-		// 	// Scalars, ints, floats, etc.
-		// 	slot := block.NewAlloca(rt)
-		// 	block.NewStore(ret, slot)
-		// 	return t.wrapReturn(slot, rt, cls.Name)
-		// }
-
 	}
 	return nil
-}
-
-func (t *LLVM) wrapReturn(slot *ir.InstAlloca, rt types.Type, className string) tf.Var {
-	switch v := rt.(type) {
-	case *types.IntType:
-		switch v.BitSize {
-		case 1:
-			return &boolean.Boolean{NativeType: types.I1, Value: slot}
-		case 8:
-			return &ints.Int8{NativeType: types.I8, Value: slot}
-		case 16:
-			return &ints.Int16{NativeType: types.I16, Value: slot}
-		case 32:
-			return &ints.Int32{NativeType: types.I32, Value: slot}
-		case 64:
-			return &ints.Int64{NativeType: types.I64, Value: slot}
-		}
-	case *types.FloatType:
-		switch v.Kind {
-		case types.FloatKindFloat:
-			return &floats.Float32{NativeType: types.Float, Value: slot}
-		case types.FloatKindDouble:
-			return &floats.Float64{NativeType: types.Double, Value: slot}
-		}
-	case *types.StructType:
-		return &tf.Class{Name: v.Name(), UDT: v, Ptr: slot}
-	}
-	return &tf.Class{Name: className, UDT: rt, Ptr: slot}
 }
