@@ -483,7 +483,6 @@ func (t *LLVM) processMemberExpression(block *ir.Block, ex ast.MemberExpression)
 
 	// Compute field name in identifier map
 	fieldID := t.identifierBuilder.Attach(cls.Name, ex.Property)
-	fmt.Println("FOR PROPERTY: ", ex.Property)
 	idx, ok := classMeta.VarIndexMap[fieldID]
 	if !ok {
 		errorsx.PanicCompilationError(fmt.Sprintf("unknown field %s on class %s", ex.Property, cls.Name))
@@ -791,7 +790,10 @@ func (t *LLVM) handleCallExpression(block *ir.Block, ex ast.CallExpression) tf.V
 				return c
 			}
 			// might be string
-			// @todo: handle string returning
+			if _, ok := rt.ElemType.(*types.PointerType); ok {
+				// Function returned a pointer-to-struct (%Math*)
+				return tf.NewString(block, block.NewLoad(types.I8Ptr, ret))
+			}
 
 		default:
 			// Scalars, ints, floats, etc.
