@@ -19,10 +19,11 @@ type Array struct {
 
 func NewArray(block *ir.Block, t types.Type, size int) *Array {
 	arrType := types.NewArray(uint64(size), t)
-	arr := block.NewAlloca(arrType)
+	slot := block.NewAlloca(arrType)
+
 	return &Array{
 		NativeType: arrType,
-		Value:      arr,
+		Value:      slot,
 		EleType:    &t,
 	}
 }

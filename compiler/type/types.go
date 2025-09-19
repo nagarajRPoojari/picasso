@@ -30,6 +30,8 @@ const (
 
 	STRING Type = "string"
 
+	ARRAY Type = "array"
+
 	NULL Type = "null"
 	VOID Type = "void"
 )
@@ -37,19 +39,24 @@ const (
 type TypeHandler struct {
 	Udts   map[string]*MetaClass
 	module *ir.Module
+
+	langAlloc *ir.Func
 }
 
-func NewTypeHandler() *TypeHandler {
-	return &TypeHandler{Udts: make(map[string]*MetaClass)}
+func NewTypeHandler(l *ir.Func) *TypeHandler {
+	return &TypeHandler{Udts: make(map[string]*MetaClass), langAlloc: l}
 }
 
-func (t *TypeHandler) Register(meta *MetaClass) {
-	t.Udts[meta.UDT.Name()] = meta
+func (t *TypeHandler) Register(name string, meta *MetaClass) {
+	t.Udts[name] = meta
 }
 
-func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Value) Var {
+func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Var {
 	switch _type {
 	case BOOLEAN, "i1":
+		if init == nil {
+			init = constant.NewInt(types.I1, 0)
+		}
 		ptr := block.NewAlloca(types.I1)
 		block.NewStore(init, ptr)
 
@@ -63,6 +70,9 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		return &Boolean{NativeType: types.I1, Value: ptr, GoVal: false}
 
 	case INT8, "i8":
+		if init == nil {
+			init = constant.NewInt(types.I8, 0)
+		}
 		ptr := block.NewAlloca(types.I8)
 		block.NewStore(init, ptr)
 
@@ -76,6 +86,9 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		return &Int8{NativeType: types.I8, Value: ptr, GoVal: 0}
 
 	case INT16, "i16":
+		if init == nil {
+			init = constant.NewInt(types.I16, 0)
+		}
 		ptr := block.NewAlloca(types.I16)
 		block.NewStore(init, ptr)
 
@@ -89,6 +102,9 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		return &Int16{NativeType: types.I16, Value: ptr, GoVal: 0}
 
 	case INT32, "i32":
+		if init == nil {
+			init = constant.NewInt(types.I32, 0)
+		}
 		ptr := block.NewAlloca(types.I32)
 		block.NewStore(init, ptr)
 
@@ -102,6 +118,9 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		return &Int32{NativeType: types.I32, Value: ptr, GoVal: 0}
 
 	case INT64, INT, "i64":
+		if init == nil {
+			init = constant.NewInt(types.I64, 0)
+		}
 		ptr := block.NewAlloca(types.I64)
 		block.NewStore(init, ptr)
 
@@ -115,6 +134,9 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		return &Int64{NativeType: types.I64, Value: ptr, GoVal: 0}
 
 	case FLOAT16, "half":
+		if init == nil {
+			init = constant.NewFloat(types.Half, 0.0)
+		}
 		ptr := block.NewAlloca(types.Half)
 		block.NewStore(init, ptr)
 
@@ -129,6 +151,9 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		return &Float16{NativeType: types.Float, Value: ptr, GoVal: 0}
 
 	case FLOAT32, "float":
+		if init == nil {
+			init = constant.NewFloat(types.Float, 0.0)
+		}
 		ptr := block.NewAlloca(types.Float)
 		block.NewStore(init, ptr)
 
@@ -143,6 +168,9 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		return &Float32{NativeType: types.Float, Value: ptr, GoVal: 0}
 
 	case FLOAT64, DOUBLE:
+		if init == nil {
+			init = constant.NewFloat(types.Double, 0.0)
+		}
 		ptr := block.NewAlloca(types.Double)
 		block.NewStore(init, ptr)
 
@@ -156,140 +184,27 @@ func (t *TypeHandler) getPrimitiveVar(block *ir.Block, _type Type, init value.Va
 		}
 		return &Float64{NativeType: types.Double, Value: ptr, GoVal: 0}
 	case STRING:
+		if init == nil {
+			init = constant.NewNull(types.I8Ptr)
+		}
 		return NewString(block, init)
 	case NULL, VOID:
 		return NewNullVar(types.NewPointer(init.Type()))
 	}
 
-	if _, ok := t.Udts[string(_type)]; ok {
-		return NewClass(
-			block, string(_type), init.Type(),
+	if udt, ok := t.Udts[string(_type)]; ok {
+		if init == nil {
+			constant.NewZeroInitializer(udt.UDT)
+		}
+		c := NewClass(
+			block, string(_type), udt.UDT, t.langAlloc,
 		)
+		c.Update(block, init)
+		return c
 	}
 
-	errorsx.PanicCompilationError((fmt.Sprintf("invalid primitive type: %s", _type)))
+	errorsx.PanicCompilationError(fmt.Sprintf("invalid primitive type: %s , %s", _type, t.Udts))
 	return nil
-}
-
-func (t *TypeHandler) BuildVar(block *ir.Block, paramType Type, param value.Value) Var {
-	llvmType := t.GetLLVMType(paramType)
-	if llvmType == nil {
-		errorsx.PanicCompilationError((fmt.Sprintf("invalid LLVM type: %s", paramType)))
-	}
-
-	switch llvmType.(type) {
-	case *types.IntType, *types.FloatType:
-		return t.getPrimitiveVar(block, paramType, param)
-	}
-
-	if pt, ok := llvmType.(*types.PointerType); ok {
-
-		if pt.ElemType == types.I8Ptr {
-			// i8** represents a string
-			return NewString(block, param)
-		}
-
-		cname := ""
-		for name, meta := range t.Udts {
-			if meta.UDT.Equal(pt) {
-				cname = name
-				break
-			}
-		}
-		return &Class{
-			Name: cname,
-			UDT:  pt,
-			Ptr:  param,
-		}
-	}
-
-	if st, ok := llvmType.(*types.StructType); ok {
-		ptr := block.NewAlloca(st)
-		block.NewStore(param, ptr)
-		cname := ""
-		for name, meta := range t.Udts {
-			if meta.UDT.Equal(st) {
-				cname = name
-				break
-			}
-		}
-		return &Class{
-			Name: cname,
-			UDT:  st,
-			Ptr:  ptr,
-		}
-	}
-
-	ptr := block.NewAlloca(llvmType)
-	block.NewStore(param, ptr)
-	return &Class{
-		Name: "",
-		UDT:  llvmType,
-		Ptr:  ptr,
-	}
-}
-
-func (t *TypeHandler) BuildDefaultVar(block *ir.Block, paramType Type) Var {
-	llvmType := t.GetLLVMType(paramType)
-	if llvmType == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("invalid LLVM type: %s", paramType))
-	}
-
-	switch typ := llvmType.(type) {
-	case *types.IntType:
-		return t.getPrimitiveVar(block, paramType, constant.NewInt(typ, 0))
-
-	case *types.FloatType:
-		return t.getPrimitiveVar(block, paramType, constant.NewFloat(typ, 0.0))
-
-	case *types.PointerType:
-		if typ.ElemType.Equal(types.I8) { // string
-			ptr := block.NewAlloca(types.I8Ptr)
-			block.NewStore(constant.NewNull(types.I8Ptr), ptr)
-			return &String{NativeType: types.I8Ptr, Value: ptr, GoVal: ""}
-		}
-
-		ptr := block.NewAlloca(typ)
-		block.NewStore(constant.NewNull(typ), ptr)
-		cname := ""
-		for name, meta := range t.Udts {
-			if meta.UDT.Equal(typ) {
-				cname = name
-				break
-			}
-		}
-		return &Class{
-			Name: cname,
-			UDT:  typ,
-			Ptr:  ptr,
-		}
-
-	case *types.StructType:
-		ptr := block.NewAlloca(typ)
-		// store zero-initialized struct
-		block.NewStore(constant.NewZeroInitializer(typ), ptr)
-		cname := ""
-		for name, meta := range t.Udts {
-			if meta.UDT.Equal(typ) {
-				cname = name
-				break
-			}
-		}
-		return &Class{
-			Name: cname,
-			UDT:  typ,
-			Ptr:  ptr,
-		}
-	}
-
-	// fallback: zero-init everything else
-	ptr := block.NewAlloca(llvmType)
-	block.NewStore(constant.NewZeroInitializer(llvmType), ptr)
-	return &Class{
-		Name: "",
-		UDT:  llvmType,
-		Ptr:  ptr,
-	}
 }
 
 // GetLLVMType accepts native Type & returns llvm compatible types.Type
@@ -315,6 +230,8 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 		return types.Double
 	case STRING:
 		return types.NewPointer(types.I8Ptr)
+	case ARRAY:
+		// return
 	}
 
 	// Check if already registered

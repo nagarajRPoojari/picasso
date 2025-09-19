@@ -6,49 +6,59 @@ class DirectoryReader {
   say x: Math = new Math();
 
   fn DirectoryReader() {
-    this.y = 100;
-    this.x.pi = 98;
-}
-
-  fn math() {
-     io.printf("this.y = %f  ", this.x.pi);
-     this.add();
-
+    // this.y = 100;
+    // this.x.pi = 98;
+    // io.printf("this.x.y = %f          ", this.y);
   }
 
-  fn add() {
-     io.printf("this is inside math");
-     
+  fn math(intern: Math): Math {
+    say a: Math = new Math();
+    io.printf("this.x.pi = %f  %f %f  , ", this.x.pi, a.pi, intern.pi);
+    // this.add();
+    // this.x.greet();
+    return a;
+  }
+
+  fn add(): double {
+    //  say a: Math = new Math();
+     return this.y;
+  }
+
+  fn str(): string {
+    return "hello";
   }
 }
 
 class Math {
   say pi: double = 123;
   fn Math() {
+    // io.printf("printing pi:  %f -- ", this.pi);
+  } 
 
+  fn greet() {
+    // io.printf("I am inside greet method.   ");
   }
 }
 
 fn main(): int32 {
-   say arr: [10][2]string = [["1,", "2", "3"],["1,", "2", "3"]];
-  //  say xxx: string = arr[0][1][3];
-
     say a: DirectoryReader = new DirectoryReader();
     say n: int;
     n = 278;
-    a.math();
-    say z: string = "hello world";
-
-    if n > 10 {
-      say y: int = 800;
-      if 100 > 20 {
-          io.printf("value = %d ", y);
-      } else {
+    say m: Math = a.math(new Math());
+  
+    m.greet();
+    say z: string = a.str();
+    io.printf("last:   %f   ", m.pi);
+    // if a.add()  > 10 {
+    //   say y: int = 800;
+    //   if 100 > 20 {
+    //       io.printf("value = %d ", y);
+    //   } else {
           
-      }
-    } else {
-      say ni: int = 200;
-    }
+    //   }
+    // } else {
+    //   say ni: int = 200;
+    // }
     
     return 0;
 }
