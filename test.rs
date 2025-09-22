@@ -66,13 +66,13 @@
                 import io;
                 class Test {
                     fn Test() {}
-                    fn pi(): float {
-                        return 3.14;
+                    fn printer(x: int, y: double) {
+                        io.printf("x=%d, y=%f", x, y);
                     }
                 }
                 fn main(): int32 {
-                    say t: Test = new Test();
-                    say a: int = (2 + 3) * 4 * t.pi();
-                    io.printf("%d", a);
+                    say a: Test = new Test();
+                    a.printer(10,20);
+                    a.printer(10);
                     return 0;
                 }
