@@ -4,297 +4,52 @@ ast.BlockStatement{
       Name: "io",
       From: "io",
     },
-    ast.VariableDeclarationStatement{
-      Identifier: "PI",
-      Constant: false,
-      AssignedValue: ast.NumberExpression{
-        Value: 3.14,
-      },
-      ExplicitType: ast.SymbolType{
-        Value: "double",
-      },
-      IsStatic: false,
-    },
     ast.ClassDeclarationStatement{
-      Name: "DirectoryReader",
+      Name: "Test",
       Body: []ast.Statement{
-        ast.VariableDeclarationStatement{
-          Identifier: "y",
-          Constant: false,
-          AssignedValue: ast.NumberExpression{
-            Value: 112.0,
-          },
-          ExplicitType: ast.SymbolType{
-            Value: "double",
-          },
-          IsStatic: false,
-        },
         ast.VariableDeclarationStatement{
           Identifier: "x",
           Constant: false,
-          AssignedValue: ast.NewExpression{
-            Instantiation: ast.CallExpression{
-              Method: ast.SymbolExpression{
-                Value: "Math",
-              },
-              Arguments: []ast.Expression{}, // p0
+          AssignedValue: ast.PrefixExpression{
+            Operator: lexer.Token{
+              Kind: 34,
+              Value: "-",
+            },
+            Operand: ast.NumberExpression{
+              Value: 42.0,
             },
           },
           ExplicitType: ast.SymbolType{
-            Value: "Math",
+            Value: "int",
           },
           IsStatic: false,
         },
         ast.FunctionDeclarationStatement{
-          Parameters: []ast.Parameter{}, // p1
-          Name: "DirectoryReader",
-          Body: []ast.Statement{
-            ast.ExpressionStatement{
-              Expression: ast.AssignmentExpression{
-                Assignee: ast.MemberExpression{
-                  Member: ast.SymbolExpression{
-                    Value: "this",
-                  },
-                  Property: "y",
-                },
-                AssignedValue: ast.NumberExpression{
-                  Value: 100.0,
-                },
-              },
-            },
-            ast.ExpressionStatement{
-              Expression: ast.AssignmentExpression{
-                Assignee: ast.MemberExpression{
-                  Member: ast.MemberExpression{
-                    Member: ast.SymbolExpression{
-                      Value: "this",
-                    },
-                    Property: "x",
-                  },
-                  Property: "pi",
-                },
-                AssignedValue: ast.NumberExpression{
-                  Value: 98.0,
-                },
-              },
-            },
-            ast.ExpressionStatement{
-              Expression: ast.CallExpression{
-                Method: ast.MemberExpression{
-                  Member: ast.SymbolExpression{
-                    Value: "io",
-                  },
-                  Property: "printf",
-                },
-                Arguments: []ast.Expression{
-                  ast.StringExpression{
-                    Value: "this.x.y = %f          ",
-                  },
-                  ast.MemberExpression{
-                    Member: ast.SymbolExpression{
-                      Value: "this",
-                    },
-                    Property: "y",
-                  },
-                },
-              },
-            },
-          },
-          ReturnType: nil,
-          IsStatic: false,
-        },
-        ast.FunctionDeclarationStatement{
-          Parameters: p1,
-          Name: "math",
-          Body: []ast.Statement{
-            ast.ExpressionStatement{
-              Expression: ast.CallExpression{
-                Method: ast.MemberExpression{
-                  Member: ast.SymbolExpression{
-                    Value: "io",
-                  },
-                  Property: "printf",
-                },
-                Arguments: []ast.Expression{
-                  ast.StringExpression{
-                    Value: "this.x.pi = %f  ",
-                  },
-                  ast.MemberExpression{
-                    Member: ast.MemberExpression{
-                      Member: ast.SymbolExpression{
-                        Value: "this",
-                      },
-                      Property: "x",
-                    },
-                    Property: "pi",
-                  },
-                },
-              },
-            },
-            ast.ExpressionStatement{
-              Expression: ast.CallExpression{
-                Method: ast.MemberExpression{
-                  Member: ast.SymbolExpression{
-                    Value: "this",
-                  },
-                  Property: "add",
-                },
-                Arguments: p0,
-              },
-            },
-            ast.ExpressionStatement{
-              Expression: ast.CallExpression{
-                Method: ast.MemberExpression{
-                  Member: ast.MemberExpression{
-                    Member: ast.SymbolExpression{
-                      Value: "this",
-                    },
-                    Property: "x",
-                  },
-                  Property: "greet",
-                },
-                Arguments: p0,
-              },
-            },
-            ast.ReturnStatement{
-              Value: ast.ExpressionStatement{
-                Expression: ast.NewExpression{
-                  Instantiation: ast.CallExpression{
-                    Method: ast.SymbolExpression{
-                      Value: "Math",
-                    },
-                    Arguments: p0,
-                  },
-                },
-              },
-            },
-          },
-          ReturnType: ast.SymbolType{
-            Value: "Math",
-          },
-          IsStatic: false,
-        },
-        ast.FunctionDeclarationStatement{
-          Parameters: p1,
-          Name: "add",
-          Body: []ast.Statement{
-            ast.VariableDeclarationStatement{
-              Identifier: "a",
-              Constant: false,
-              AssignedValue: ast.NewExpression{
-                Instantiation: ast.CallExpression{
-                  Method: ast.SymbolExpression{
-                    Value: "Math",
-                  },
-                  Arguments: p0,
-                },
-              },
-              ExplicitType: ast.SymbolType{
-                Value: "Math",
-              },
-              IsStatic: false,
-            },
-            ast.ReturnStatement{
-              Value: ast.ExpressionStatement{
-                Expression: ast.MemberExpression{
-                  Member: ast.SymbolExpression{
-                    Value: "this",
-                  },
-                  Property: "y",
-                },
-              },
-            },
-          },
-          ReturnType: ast.SymbolType{
-            Value: "double",
-          },
-          IsStatic: false,
-        },
-      },
-    },
-    ast.ClassDeclarationStatement{
-      Name: "Math",
-      Body: []ast.Statement{
-        ast.VariableDeclarationStatement{
-          Identifier: "pi",
-          Constant: false,
-          AssignedValue: ast.NumberExpression{
-            Value: 123.0,
-          },
-          ExplicitType: ast.SymbolType{
-            Value: "double",
-          },
-          IsStatic: false,
-        },
-        ast.FunctionDeclarationStatement{
-          Parameters: p1,
-          Name: "Math",
-          Body: []ast.Statement{}, // p2
-          ReturnType: nil,
-          IsStatic: false,
-        },
-        ast.FunctionDeclarationStatement{
-          Parameters: p1,
-          Name: "greet",
-          Body: p2,
+          Parameters: []ast.Parameter{}, // p0
+          Name: "Test",
+          Body: []ast.Statement{},
           ReturnType: nil,
           IsStatic: false,
         },
       },
     },
     ast.FunctionDeclarationStatement{
-      Parameters: p1,
+      Parameters: p0,
       Name: "main",
       Body: []ast.Statement{
         ast.VariableDeclarationStatement{
-          Identifier: "a",
+          Identifier: "t",
           Constant: false,
           AssignedValue: ast.NewExpression{
             Instantiation: ast.CallExpression{
               Method: ast.SymbolExpression{
-                Value: "DirectoryReader",
+                Value: "Test",
               },
-              Arguments: p0,
+              Arguments: []ast.Expression{},
             },
           },
           ExplicitType: ast.SymbolType{
-            Value: "DirectoryReader",
-          },
-          IsStatic: false,
-        },
-        ast.VariableDeclarationStatement{
-          Identifier: "n",
-          Constant: false,
-          AssignedValue: nil,
-          ExplicitType: ast.SymbolType{
-            Value: "int",
-          },
-          IsStatic: false,
-        },
-        ast.ExpressionStatement{
-          Expression: ast.AssignmentExpression{
-            Assignee: ast.SymbolExpression{
-              Value: "n",
-            },
-            AssignedValue: ast.NumberExpression{
-              Value: 278.0,
-            },
-          },
-        },
-        ast.VariableDeclarationStatement{
-          Identifier: "m",
-          Constant: false,
-          AssignedValue: ast.CallExpression{
-            Method: ast.MemberExpression{
-              Member: ast.SymbolExpression{
-                Value: "a",
-              },
-              Property: "math",
-            },
-            Arguments: p0,
-          },
-          ExplicitType: ast.SymbolType{
-            Value: "Math",
+            Value: "Test",
           },
           IsStatic: false,
         },
@@ -302,109 +57,19 @@ ast.BlockStatement{
           Expression: ast.CallExpression{
             Method: ast.MemberExpression{
               Member: ast.SymbolExpression{
-                Value: "m",
+                Value: "io",
               },
-              Property: "greet",
+              Property: "printf",
             },
-            Arguments: p0,
-          },
-        },
-        ast.VariableDeclarationStatement{
-          Identifier: "z",
-          Constant: false,
-          AssignedValue: ast.StringExpression{
-            Value: "hello world",
-          },
-          ExplicitType: ast.SymbolType{
-            Value: "string",
-          },
-          IsStatic: false,
-        },
-        ast.IfStatement{
-          Condition: ast.BinaryExpression{
-            Left: ast.CallExpression{
-              Method: ast.MemberExpression{
+            Arguments: []ast.Expression{
+              ast.StringExpression{
+                Value: "%f",
+              },
+              ast.MemberExpression{
                 Member: ast.SymbolExpression{
-                  Value: "a",
+                  Value: "t",
                 },
-                Property: "add",
-              },
-              Arguments: p0,
-            },
-            Operator: lexer.Token{
-              Kind: 19,
-              Value: ">",
-            },
-            Right: ast.NumberExpression{
-              Value: 10.0,
-            },
-          },
-          Consequent: ast.BlockStatement{
-            Body: []ast.Statement{
-              ast.VariableDeclarationStatement{
-                Identifier: "y",
-                Constant: false,
-                AssignedValue: ast.NumberExpression{
-                  Value: 800.0,
-                },
-                ExplicitType: ast.SymbolType{
-                  Value: "int",
-                },
-                IsStatic: false,
-              },
-              ast.IfStatement{
-                Condition: ast.BinaryExpression{
-                  Left: ast.NumberExpression{
-                    Value: 100.0,
-                  },
-                  Operator: lexer.Token{
-                    Kind: 19,
-                    Value: ">",
-                  },
-                  Right: ast.NumberExpression{
-                    Value: 20.0,
-                  },
-                },
-                Consequent: ast.BlockStatement{
-                  Body: []ast.Statement{
-                    ast.ExpressionStatement{
-                      Expression: ast.CallExpression{
-                        Method: ast.MemberExpression{
-                          Member: ast.SymbolExpression{
-                            Value: "io",
-                          },
-                          Property: "printf",
-                        },
-                        Arguments: []ast.Expression{
-                          ast.StringExpression{
-                            Value: "value = %d ",
-                          },
-                          ast.SymbolExpression{
-                            Value: "y",
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-                Alternate: ast.BlockStatement{
-                  Body: p2,
-                },
-              },
-            },
-          },
-          Alternate: ast.BlockStatement{
-            Body: []ast.Statement{
-              ast.VariableDeclarationStatement{
-                Identifier: "ni",
-                Constant: false,
-                AssignedValue: ast.NumberExpression{
-                  Value: 200.0,
-                },
-                ExplicitType: ast.SymbolType{
-                  Value: "int",
-                },
-                IsStatic: false,
+                Property: "x",
               },
             },
           },
@@ -424,10 +89,4 @@ ast.BlockStatement{
     },
   },
 }
-Duration: 1.041625ms
-RETURN :   %Math*
-RETURN :   double
-HERE ---- {{io} printf}
-HERE ---- {{io} printf}
-HERE ---- {{this} add}
-HERE ---- {{{this} x} greet}
+Duration: 2.519125ms

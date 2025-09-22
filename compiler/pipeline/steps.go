@@ -24,6 +24,15 @@ func (t *Pipeline) importModules(methodMap map[string]function.Func, module stri
 	}
 }
 
+func (t *Pipeline) DeclareGlobals() {
+	for _, stI := range t.tree.Body {
+		switch stI.(type) {
+		case ast.VariableDeclarationStatement:
+			errorsx.PanicCompilationError("global vars not allowed")
+		}
+	}
+}
+
 func (t *Pipeline) ImportModules() {
 	for _, stI := range t.tree.Body {
 		switch st := stI.(type) {

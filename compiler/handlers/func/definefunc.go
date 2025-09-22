@@ -11,7 +11,7 @@ import (
 // defineFunc does concrete function declaration
 func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDeclarationStatement) {
 	// new level for function block
-	t.st.Vars.AddLevel()
+	t.st.Vars.AddFunc()
 
 	name := t.st.IdentifierBuilder.Attach(className, fn.Name)
 	if className == "" { // indicates classless function: main
@@ -52,4 +52,6 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDeclarationSt
 	if fn.ReturnType == nil {
 		entry.NewRet(nil)
 	}
+
+	t.st.Vars.RemoveFunc()
 }

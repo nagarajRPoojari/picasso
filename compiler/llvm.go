@@ -27,7 +27,7 @@ type LLVM struct {
 func NewLLVM() *LLVM {
 	m := ir.NewModule()
 	tree := scope.NewVarTree()
-	tree.AddLevel()
+	// tree.()
 
 	st := &state.State{
 		Module:            m,

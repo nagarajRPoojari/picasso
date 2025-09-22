@@ -8,17 +8,17 @@ import (
 )
 
 func (t *ExpressionHandler) DeclareVariable(block *ir.Block, st *ast.VariableDeclarationStatement) {
+	if t.st.Vars.Exists(st.Identifier) {
+		errorsx.PanicCompilationError("variable already exists")
+	}
+
 	var v tf.Var
 	if st.AssignedValue == nil {
 		v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), nil)
-		t.st.Vars.AddNewVar(st.Identifier, v)
 	} else {
 		v = t.ProcessExpression(block, st.AssignedValue)
-		if t.st.Vars.Exists(st.Identifier) {
-			errorsx.PanicCompilationError("variable already exists")
-		}
 		casted := t.st.TypeHandler.CastToType(block, st.ExplicitType.Get(), v.Load(block))
-		vv := t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), casted)
-		t.st.Vars.AddNewVar(st.Identifier, vv)
+		v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), casted)
 	}
+	t.st.Vars.AddNewVar(st.Identifier, v)
 }

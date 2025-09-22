@@ -10,7 +10,7 @@ import (
 
 func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Statement) *ir.Block {
 	// add new block
-	t.st.Vars.AddLevel()
+	t.st.Vars.AddBlock()
 
 	for _, stI := range sts {
 		switch st := stI.(type) {
@@ -35,6 +35,6 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Stat
 		}
 	}
 
-	t.st.Vars.RemoveLevel()
+	t.st.Vars.RemoveBlock()
 	return entry
 }

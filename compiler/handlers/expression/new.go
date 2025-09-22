@@ -10,6 +10,9 @@ import (
 )
 
 func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpression) tf.Var {
+	t.st.Vars.AddFunc()
+	defer t.st.Vars.RemoveFunc()
+
 	meth := ex.Instantiation.Method.(ast.SymbolExpression)
 	classMeta := t.st.Classes[meth.Value]
 	if classMeta == nil {
@@ -22,10 +25,16 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 
 	for name, index := range meta.VarIndexMap {
 		exp := meta.VarAST[name]
-		x := t.ProcessExpression(block, exp.AssignedValue)
-
 		fieldType := structType.Fields[index]
-		instance.UpdateField(block, index, x.Load(block), fieldType)
+
+		var v tf.Var
+		if exp.AssignedValue == nil {
+			v = t.st.TypeHandler.BuildVar(block, tf.Type(exp.ExplicitType.Get()), nil)
+		} else {
+			v = t.ProcessExpression(block, exp.AssignedValue)
+		}
+		instance.UpdateField(block, index, v.Load(block), fieldType)
+		t.st.Vars.AddNewVar(exp.Identifier, v)
 	}
 
 	t.CallConstructor(block, instance, ex.Instantiation)

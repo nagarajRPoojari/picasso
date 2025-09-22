@@ -180,23 +180,28 @@ func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
 
 	switch src := v.Type().(type) {
 	case *types.IntType:
-		if dst, ok := target.(*types.IntType); ok {
-			// promote/demote by bit-size
+		switch dst := target.(type) {
+		case *types.IntType:
 			if src.BitSize < dst.BitSize {
 				return block.NewZExt(v, dst)
 			} else if src.BitSize > dst.BitSize {
 				return block.NewTrunc(v, dst)
 			}
 			return v
+		case *types.FloatType:
+			return block.NewSIToFP(v, dst)
 		}
 	case *types.FloatType:
-		if dst, ok := target.(*types.FloatType); ok {
-			if src.Kind == dst.Kind {
-				return v
-			}
+		switch dst := target.(type) {
+		case *types.FloatType:
 			if floatRank(src.Kind) < floatRank(dst.Kind) {
 				return block.NewFPExt(v, dst)
+			} else if floatRank(src.Kind) > floatRank(dst.Kind) {
+				return block.NewFPTrunc(v, dst)
 			}
+			return v
+		case *types.IntType:
+			return block.NewFPToSI(v, dst)
 		}
 	}
 

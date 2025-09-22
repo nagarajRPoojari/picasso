@@ -64,6 +64,9 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 	case ast.ComputedExpression:
 		// e.g, arr[1], arr[1][a.id()];
 
+	case ast.PrefixExpression:
+		return t.ProcessPrefixExpression(block, ex)
+
 	case ast.AssignmentExpression:
 		t.assignVariable(block, &ex)
 

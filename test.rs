@@ -50,24 +50,29 @@
 //     m.greet();
 //     say z: string = a.str();
 //     io.printf("last:   %f   ", m.pi);
-//     // if a.add()  > 10 {
-//     //   say y: int = 800;
-//     //   if 100 > 20 {
-//     //       io.printf("value = %d ", y);
-//     //   } else {
+//     if a.add()  > 10 {
+//       say y: int = 800;
+//       if 100 > 20 {
+//           io.printf("value = %d ", y);
+//       } else {
           
-//     //   }
-//     // } else {
-//     //   say ni: int = 200;
-//     // }
+//       }
+//     } else {
+//       say ni: int = 200;
+//     }
     
 //     return 0;
 // }
 
-
-import io;
-fn main(): int32 {
-		say z: int = 190;
-		io.printf("hello world");
-		return 0;
-}
+                import io;
+                fn main(): int32 {
+                    // say a: int = 100;
+                    io.printf("a=%d", a);
+                    if a > 10 {
+                      say a: int = 200;
+                      io.printf("a=%d", a);
+                    }else {
+                      io.printf("%d is less than 10", a);
+                    }
+                    return 0;
+                }
