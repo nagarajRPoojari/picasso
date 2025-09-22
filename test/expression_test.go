@@ -590,6 +590,25 @@ func TestBinaryExpression(t *testing.T) {
             `,
 			wantOut: "20",
 		},
+		{
+			name: "involving function calls",
+			src: `
+                import io;
+                class Test {
+                    fn Test() {}
+                    fn pi(): float {
+                        return 3.14;
+                    }
+                }
+                fn main(): int32 {
+                    say t: Test = new Test();
+                    say a: int = (2 + 3) * 4 * t.pi();
+                    io.printf("%d", a);
+                    return 0;
+                }
+            `,
+			wantOut: "62",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

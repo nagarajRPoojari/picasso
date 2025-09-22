@@ -64,8 +64,15 @@
 //     return 0;
 // }
                 import io;
+                class Test {
+                    fn Test() {}
+                    fn pi(): float {
+                        return 3.14;
+                    }
+                }
                 fn main(): int32 {
-                    say x: boolean = 10 > 5;
-                    io.printf("%d", x);
+                    say t: Test = new Test();
+                    say a: int = (2 + 3) * 4 * t.pi();
+                    io.printf("%d", a);
                     return 0;
                 }
