@@ -5,6 +5,11 @@ import (
 	"github.com/llir/llvm/ir/types"
 )
 
+const (
+	ALLOC        = "lang_alloc"
+	RUNTIME_INIT = "runtime_init"
+)
+
 type GC struct {
 	langAlloc   *ir.Func
 	runtimeInit *ir.Func
@@ -13,12 +18,16 @@ type GC struct {
 var Instance *GC
 
 func GetGC(mod *ir.Module) *GC {
-	if Instance == nil {
-		Instance = &GC{
-			mod.NewFunc("lang_alloc", types.I8Ptr, ir.NewParam("", types.I64)),
-			mod.NewFunc("runtime_init", types.Void),
+	// must ensure the module doesn't already contains declaration,
+	// to avoid redeclaring same functions.
+	for _, f := range mod.Funcs {
+		if f.Name() == ALLOC || f.Name() == RUNTIME_INIT {
+			return Instance
 		}
-
+	}
+	Instance = &GC{
+		mod.NewFunc(ALLOC, types.I8Ptr, ir.NewParam("", types.I64)),
+		mod.NewFunc(RUNTIME_INIT, types.Void),
 	}
 	return Instance
 }

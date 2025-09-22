@@ -8,7 +8,6 @@ import (
 )
 
 func TestPrintf(t *testing.T) {
-	dir := t.TempDir()
 	tests := []struct {
 		name    string
 		src     string
@@ -29,24 +28,24 @@ func TestPrintf(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "with basic format specifiers",
+			name: "basic printf without format specifiers",
 			src: `
 			import io;
 			fn main(): int32 {
-				say a: int = 190;
-				say b: float64 = 1.23;
-				say c: string = "test";
-				io.printf("hello world %d %s %f", a, c, b);
+				say z: int = 190;
+				say s: string = "string";
+				say n: float64 = 89.0;
+				io.printf("hello world %d, %s, %f", z, s, n);
 				return 0;
 			}
 			`,
-			want:    "hello world 190 test 1.230000",
+			want:    "hello world 190, string, 89.000000",
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotErr := testutils.CompileAndRun(tt.src, dir)
+			got, gotErr := testutils.CompileAndRun(tt.src, t.TempDir())
 			if gotErr != nil {
 				if !tt.wantErr {
 					t.Errorf("CompileAndRun() failed: %v", gotErr)
