@@ -19,7 +19,7 @@ func (t *ExpressionHandler) ProcessPrefixExpression(block *ir.Block, ex ast.Pref
 
 	var res value.Value
 	lv := operand.Load(block)
-	f := &floats.Float64{}
+	f := &boolean.Boolean{}
 	val, err := f.Cast(block, lv)
 	if err != nil {
 		errorsx.PanicCompilationError(fmt.Sprintf("failed to cast %s to float", lv))

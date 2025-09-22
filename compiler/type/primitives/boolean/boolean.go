@@ -5,6 +5,7 @@ import (
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/compiler/utils"
@@ -29,16 +30,20 @@ func (b *Boolean) Constant() constant.Constant           { return constant.NewIn
 func (b *Boolean) Slot() value.Value                     { return b.Value }
 func (c *Boolean) Type() types.Type                      { return c.NativeType }
 func (b *Boolean) Cast(block *ir.Block, v value.Value) (value.Value, error) {
-	switch v.Type().(type) {
+	switch t := v.Type().(type) {
 	case *types.IntType:
-		// cast any int to i1
-		if v.Type().(*types.IntType).BitSize == 1 {
-			return v, nil
+		if t.BitSize == 1 {
+			return v, nil // already i1
 		}
-		// if incoming int type is other than types.I1, truncate it to single bit
-		return block.NewTrunc(v, types.I1), nil
+		zero := constant.NewInt(t, 0)
+		return block.NewICmp(enum.IPredNE, v, zero), nil
+
+	case *types.FloatType:
+		zero := constant.NewFloat(t, 0.0)
+		return block.NewFCmp(enum.FPredONE, v, zero), nil
+
 	default:
-		return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to booolean", v))
+		return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to int64", v))
 	}
 }
 func (f *Boolean) NativeTypeString() string { return "boolean" }

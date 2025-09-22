@@ -420,3 +420,190 @@ func TestAssignVar(t *testing.T) {
 		})
 	}
 }
+
+func TestBinaryExpression(t *testing.T) {
+	tests := []struct {
+		name    string
+		src     string
+		wantOut string
+		wantErr bool
+	}{
+		// arithmetic
+		{
+			name: "Addition",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say a: int = 5 + 7;
+                    io.printf("%d", a);
+                    return 0;
+                }
+            `,
+			wantOut: "12",
+		},
+		{
+			name: "Subtraction with negative result",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say b: int = 10 - 20;
+                    io.printf("%d", b);
+                    return 0;
+                }
+            `,
+			wantOut: "-10",
+		},
+		{
+			name: "Multiplication",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say c: int = 6 * 7;
+                    io.printf("%d", c);
+                    return 0;
+                }
+            `,
+			wantOut: "42",
+		},
+		{
+			name: "Division",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say d: int = 20 / 4;
+                    io.printf("%d", d);
+                    return 0;
+                }
+            `,
+			wantOut: "5",
+		},
+		// comparision
+		{
+			name: "Greater than true",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say x: boolean = 10 > 5;
+                    io.printf("%d", x);
+                    return 0;
+                }
+            `,
+			wantOut: "1",
+		},
+		{
+			name: "Less than false",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say y: boolean = 10 < 5;
+                    io.printf("%d", y);
+                    return 0;
+                }
+            `,
+			wantOut: "0",
+		},
+		{
+			name: "Equality",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say z: boolean = 7 == 7;
+                    io.printf("%d", z);
+                    return 0;
+                }
+            `,
+			wantOut: "1",
+		},
+		{
+			name: "Inequality",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say z: boolean = 7 != 8;
+                    io.printf("%d", z);
+                    return 0;
+                }
+            `,
+			wantOut: "1",
+		},
+
+		// logical
+		{
+			name: "Logical AND",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say res: boolean = 1 && 0;
+                    io.printf("%d", res);
+                    return 0;
+                }
+            `,
+			wantOut: "0",
+		},
+		{
+			name: "Logical OR",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say res: boolean = 0 || 1;
+                    io.printf("%d", res);
+                    return 0;
+                }
+            `,
+			wantOut: "1",
+		},
+		{
+			name: "Logical NOT",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say res: boolean = !0;
+                    io.printf("%d", res);
+                    return 0;
+                }
+            `,
+			wantOut: "1",
+		},
+
+		// mixed precedence
+		{
+			name: "Precedence multiplication before addition",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say a: int = 2 + 3 * 4;
+                    io.printf("%d", a);
+                    return 0;
+                }
+            `,
+			wantOut: "14",
+		},
+		{
+			name: "Parentheses override precedence",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say a: int = (2 + 3) * 4;
+                    io.printf("%d", a);
+                    return 0;
+                }
+            `,
+			wantOut: "20",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotErr := testutils.CompileAndRunSafe(tt.src, t.TempDir())
+			if gotErr != nil {
+				if !tt.wantErr {
+					t.Errorf("CompileAndRun() failed: %v", gotErr)
+				}
+				return
+			}
+			if tt.wantErr {
+				t.Fatal("CompileAndRun() succeeded unexpectedly")
+			}
+			assert.Equal(t, tt.wantOut, got)
+		})
+	}
+}

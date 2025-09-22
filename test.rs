@@ -63,20 +63,9 @@
     
 //     return 0;
 // }
-
                 import io;
-                class Test {
-                  fn Test() {
-                  }
-
-                  fn test() {
-                  }
-
-                }
-
                 fn main(): int32 {
-                    say a: int = 100;
-                    say c: Test = new Test();
-					          a = "hello";
+                    say x: boolean = 10 > 5;
+                    io.printf("%d", x);
                     return 0;
                 }

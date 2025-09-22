@@ -134,7 +134,7 @@ func parse_array_literal_expr(p *Parser) ast.Expression {
 func parse_grouping_expr(p *Parser) ast.Expression {
 	p.expect(lexer.OPEN_PAREN)
 	expr := parse_expr(p, default_bp)
-	p.expect(lexer.OPEN_PAREN)
+	p.expect(lexer.CLOSE_PAREN)
 	return expr
 }
 

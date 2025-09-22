@@ -16,6 +16,7 @@ type ExpressionHandler struct {
 var ExpressionHandlerInst *ExpressionHandler
 
 func NewExpressionHandler(st *state.State) *ExpressionHandler {
+	initOpLookUpTables()
 	return &ExpressionHandler{
 		st: st,
 	}
