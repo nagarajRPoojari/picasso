@@ -368,6 +368,41 @@ func TestAssignVar(t *testing.T) {
             `,
 			wantOut: "a=20",
 		},
+		// invalid assignments
+		{
+			name: "name resolution with function params",
+			src: `
+                import io;
+                class Test {
+                  fn Test() {
+                  }
+
+                  fn test() {
+                  }
+
+                }
+
+                fn main(): int32 {
+                    say a: int = 100;
+                    say c: Test = new Test();
+					a = c.test();
+                    return 0;
+                }
+            `,
+			wantErr: true,
+		},
+		{
+			name: "name resolution with function params",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say a: int = 100;
+					a = "hello";
+                    return 0;
+                }
+            `,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

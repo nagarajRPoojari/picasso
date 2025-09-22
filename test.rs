@@ -69,10 +69,7 @@
                   fn Test() {
                   }
 
-                  fn test(x: int): int {
-				    // should be able to hide params as well
-                    x = 20;
-                    return x;
+                  fn test() {
                   }
 
                 }
@@ -80,6 +77,6 @@
                 fn main(): int32 {
                     say a: int = 100;
                     say c: Test = new Test();
-                    io.printf("a=%d", c.test(1000));
+					          a = "hello";
                     return 0;
                 }
