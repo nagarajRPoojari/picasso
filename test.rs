@@ -65,14 +65,21 @@
 // }
 
                 import io;
+                class Test {
+                  fn Test() {
+                  }
+
+                  fn test(x: int): int {
+				    // should be able to hide params as well
+                    x = 20;
+                    return x;
+                  }
+
+                }
+
                 fn main(): int32 {
-                    // say a: int = 100;
-                    io.printf("a=%d", a);
-                    if a > 10 {
-                      say a: int = 200;
-                      io.printf("a=%d", a);
-                    }else {
-                      io.printf("%d is less than 10", a);
-                    }
+                    say a: int = 100;
+                    say c: Test = new Test();
+                    io.printf("a=%d", c.test(1000));
                     return 0;
                 }

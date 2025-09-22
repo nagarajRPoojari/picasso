@@ -239,6 +239,31 @@ func TestDeclareVar(t *testing.T) {
             `,
 			wantOut: "a=100a=200",
 		},
+		{
+			name: "name resolution with function params",
+			src: `
+                import io;
+                class Test {
+                  fn Test() {
+                  }
+
+                  fn test(x: int): int {
+				    // should be able to hide params as well
+                    say x: int = 20;
+                    return x;
+                  }
+
+                }
+
+                fn main(): int32 {
+                    say a: int = 100;
+                    say c: Test = new Test();
+                    io.printf("a=%d", c.test(1000));
+                    return 0;
+                }
+            `,
+			wantOut: "a=20",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -316,6 +341,32 @@ func TestAssignVar(t *testing.T) {
                 }
             `,
 			wantOut: "100",
+		},
+		// visibility
+		{
+			name: "name resolution with function params",
+			src: `
+                import io;
+                class Test {
+                  fn Test() {
+                  }
+
+                  fn test(x: int): int {
+				    // should be able to hide params as well
+                    x = 20;
+                    return x;
+                  }
+
+                }
+
+                fn main(): int32 {
+                    say a: int = 100;
+                    say c: Test = new Test();
+                    io.printf("a=%d", c.test(1000));
+                    return 0;
+                }
+            `,
+			wantOut: "a=20",
 		},
 	}
 	for _, tt := range tests {
