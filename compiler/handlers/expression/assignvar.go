@@ -8,7 +8,7 @@ import (
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
-func (t *ExpressionHandler) assignVariable(block *ir.Block, st *ast.AssignmentExpression) {
+func (t *ExpressionHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExpression) {
 
 	switch m := st.Assignee.(type) {
 	case ast.SymbolExpression:

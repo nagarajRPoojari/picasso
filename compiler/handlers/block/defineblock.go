@@ -11,6 +11,7 @@ import (
 func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Statement) *ir.Block {
 	// add new block
 	t.st.Vars.AddBlock()
+	defer t.st.Vars.RemoveBlock()
 
 	for _, stI := range sts {
 		switch st := stI.(type) {
@@ -20,9 +21,9 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Stat
 		case ast.ExpressionStatement:
 			switch exp := st.Expression.(type) {
 			case ast.AssignmentExpression:
-				expression.ExpressionHandlerInst.ProcessExpression(entry, exp)
+				expression.ExpressionHandlerInst.AssignVariable(entry, &exp)
 			case ast.CallExpression:
-				expression.ExpressionHandlerInst.ProcessExpression(entry, exp)
+				expression.ExpressionHandlerInst.CallFunc(entry, exp)
 			default:
 				errorsx.PanicCompilationError("invalid statement")
 			}
@@ -35,6 +36,5 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Stat
 		}
 	}
 
-	t.st.Vars.RemoveBlock()
 	return entry
 }

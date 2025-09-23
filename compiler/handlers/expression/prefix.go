@@ -19,16 +19,21 @@ func (t *ExpressionHandler) ProcessPrefixExpression(block *ir.Block, ex ast.Pref
 
 	var res value.Value
 	lv := operand.Load(block)
-	f := &boolean.Boolean{}
-	val, err := f.Cast(block, lv)
-	if err != nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("failed to cast %s to float", lv))
-	}
 
 	switch ex.Operator.Value {
 	case "-":
+		f := &floats.Float64{}
+		val, err := f.Cast(block, lv)
+		if err != nil {
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to cast %s to float", lv))
+		}
 		res = block.NewFNeg(val)
 	case "!":
+		f := &boolean.Boolean{}
+		val, err := f.Cast(block, lv)
+		if err != nil {
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to cast %s to float", lv))
+		}
 		one := constant.NewInt(types.I1, 1)
 		res = block.NewXor(val, one)
 	}

@@ -68,9 +68,6 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 	case ast.PrefixExpression:
 		return t.ProcessPrefixExpression(block, ex)
 
-	case ast.AssignmentExpression:
-		t.assignVariable(block, &ex)
-
 	case ast.CallExpression:
 		return t.CallFunc(block, ex)
 

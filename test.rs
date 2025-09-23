@@ -65,14 +65,13 @@
 // }
                 import io;
                 class Test {
-                    fn Test() {}
-                    fn printer(x: int, y: double) {
-                        io.printf("x=%d, y=%f", x, y);
-                    }
+                  say x: int;
+                  fn Test() {
+                    this.x = 100;
+                  }
                 }
+
                 fn main(): int32 {
-                    say a: Test = new Test();
-                    a.printer(10,20);
-                    a.printer(10);
+                    say c: Test = new Test();
                     return 0;
                 }

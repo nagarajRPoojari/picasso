@@ -15,16 +15,16 @@ import (
 	"github.com/nagarajRPoojari/x-lang/lexer"
 )
 
-type Operation func(block *ir.Block, l, r value.Value) (value.Value, error)
+type BinaryOperation func(block *ir.Block, l, r value.Value) (value.Value, error)
 
-var arithmatic map[lexer.TokenKind]Operation
-var comparision map[lexer.TokenKind]Operation
-var logical map[lexer.TokenKind]Operation
+var arithmatic map[lexer.TokenKind]BinaryOperation
+var comparision map[lexer.TokenKind]BinaryOperation
+var logical map[lexer.TokenKind]BinaryOperation
 
 func initOpLookUpTables() {
-	arithmatic = make(map[lexer.TokenKind]Operation)
-	comparision = make(map[lexer.TokenKind]Operation)
-	logical = make(map[lexer.TokenKind]Operation)
+	arithmatic = make(map[lexer.TokenKind]BinaryOperation)
+	comparision = make(map[lexer.TokenKind]BinaryOperation)
+	logical = make(map[lexer.TokenKind]BinaryOperation)
 
 	arithmatic[lexer.PLUS] = add
 	arithmatic[lexer.DASH] = sub
@@ -95,17 +95,17 @@ func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.Bina
 		f := &floats.Float64{}
 		lvf, err := f.Cast(block, lv)
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 		rvf, err := f.Cast(block, rv)
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 
 		res, err := op(block, lvf, rvf)
 
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 		ptr := block.NewAlloca(types.Double)
 		block.NewStore(res, ptr)
@@ -115,16 +115,16 @@ func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.Bina
 		f := &floats.Float64{}
 		lvf, err := f.Cast(block, lv)
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 		rvf, err := f.Cast(block, rv)
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 
 		res, err := op(block, lvf, rvf)
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 		ptr := block.NewAlloca(types.I1)
 		block.NewStore(res, ptr)
@@ -134,21 +134,21 @@ func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.Bina
 		f := &boolean.Boolean{}
 		lvf, err := f.Cast(block, lv)
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 		rvf, err := f.Cast(block, rv)
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 
 		res, err := op(block, lvf, rvf)
 		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d: %v", int(ex.Operator.Kind), err))
+			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
 		}
 		ptr := block.NewAlloca(types.I1)
 		block.NewStore(res, ptr)
 		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
 	}
-	errorsx.PanicCompilationError(fmt.Sprintf("failed to do operation %d", int(ex.Operator.Kind)))
+	errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d", int(ex.Operator.Kind)))
 	return nil
 }
