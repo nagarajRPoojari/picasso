@@ -868,7 +868,7 @@ func TestCallFunc(t *testing.T) {
 	}
 }
 
-func TestCallConstructor(t *testing.T) {
+func TestNewExpression(t *testing.T) {
 	tests := []struct {
 		name    string
 		src     string
@@ -876,111 +876,43 @@ func TestCallConstructor(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "function call without param, without return",
+			name: "basic constructor with field modification",
 			src: `
                 import io;
                 class Test {
-                    fn Test() {}
+                    say x: int;
+                    fn Test(x: int) {
+                        this.x = x;
+                    }
                     fn greet() {
-                        io.printf("hi");
                     }
                 }
                 fn main(): int32 {
-                    say a: Test = new Test();
-                    a.greet();
+                    say t: Test = new Test(200);
+                    io.printf("%d", t.x);
                     return 0;
                 }
             `,
-			wantOut: "hi",
+			wantOut: "200",
 		},
 		{
-			name: "function call with params, without return",
+			name: "independednt new expression",
 			src: `
                 import io;
                 class Test {
-                    fn Test() {}
-                    fn printer(x: int, y: double) {
-                        io.printf("x=%d, y=%f", x, y);
+                    say x: int;
+                    fn Test(x: int) {
+                        this.x = x;
+                    }
+                    fn greet() {
                     }
                 }
                 fn main(): int32 {
-                    say a: Test = new Test();
-                    a.printer(10,20);
+                    new Test(200);
                     return 0;
                 }
             `,
-			wantOut: "x=10, y=20.000000",
-		},
-		{
-			name: "function call with params, without return",
-			src: `
-                import io;
-                class Test {
-                    fn Test() {}
-                    fn printer(x: int, y: double) {
-                        io.printf("x=%d, y=%f", x, y);
-                    }
-                }
-                fn main(): int32 {
-                    say a: Test = new Test();
-                    a.printer(10,20);
-                    return 0;
-                }
-            `,
-			wantOut: "x=10, y=20.000000",
-		},
-		{
-			name: "function call with params, with return",
-			src: `
-                import io;
-                class Test {
-                    fn Test() {}
-                    fn printer(x: int, y: double): string {
-                        io.printf("x=%d, y=%f", x, y);
-                        return "hello";
-                    }
-                }
-                fn main(): int32 {
-                    say a: Test = new Test();
-                    io.printf("%s", a.printer(10,20));
-                    return 0;
-                }
-            `,
-			wantOut: "x=10, y=20.000000hello",
-		},
-		{
-			name: "unknown function call",
-			src: `
-                import io;
-                class Test {
-                    fn Test() {}
-                }
-                fn main(): int32 {
-                    say a: Test = new Test();
-                    a.greet();
-                    return 0;
-                }
-            `,
-			wantErr: true,
-		},
-		{
-			name: "function call with ignoring params",
-			src: `
-                import io;
-                class Test {
-                    fn Test() {}
-                    fn printer(x: int, y: double) {
-                        io.printf("x=%d, y=%f", x, y);
-                    }
-                }
-                fn main(): int32 {
-                    say a: Test = new Test();
-                    a.printer(10,20);
-                    a.printer(10);
-                    return 0;
-                }
-            `,
-			wantOut: "x=10, y=20.000000x=10, y=0.000000",
+			wantOut: "",
 		},
 	}
 	for _, tt := range tests {

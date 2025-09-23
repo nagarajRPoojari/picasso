@@ -65,15 +65,14 @@
 // }
                 import io;
                 class Test {
-                  say x: float;
-                  fn Test() {
-                    this.x = 20;
-                  }
+                    say x: int;
+                    fn Test(x: int) {
+                        this.x = x;
+                    }
+                    fn greet() {
+                    }
                 }
-
                 fn main(): int32 {
-                    say c: Test = new Test();
-                    // c.x = 190;
-                    io.printf("x=%d", c.x);
+                    new Test(200);
                     return 0;
                 }
