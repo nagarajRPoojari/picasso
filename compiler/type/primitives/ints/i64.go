@@ -43,4 +43,4 @@ func (i *Int64) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	}
 }
 func (c *Int64) Type() types.Type         { return c.NativeType }
-func (f *Int64) NativeTypeString() string { return "in64" }
+func (f *Int64) NativeTypeString() string { return "int64" }

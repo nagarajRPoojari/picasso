@@ -197,7 +197,7 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 
 	if udt, ok := t.Udts[string(_type)]; ok {
 		if init == nil {
-			constant.NewZeroInitializer(udt.UDT)
+			init = constant.NewZeroInitializer(udt.UDT)
 		}
 		c := NewClass(
 			block, string(_type), udt.UDT,

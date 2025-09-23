@@ -7,7 +7,7 @@ import (
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
-func (t *BlockHandler) processIfElseStatement(fn *ir.Func, entry *ir.Block, st *ast.IfStatement) *ir.Block {
+func (t *BlockHandler) processIfElseBlock(fn *ir.Func, entry *ir.Block, st *ast.IfStatement) *ir.Block {
 	ifBlock := fn.NewBlock("")
 	elseBlock := fn.NewBlock("")
 	endBlock := fn.NewBlock("")

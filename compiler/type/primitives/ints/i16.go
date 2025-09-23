@@ -44,4 +44,4 @@ func (i *Int16) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 
 	}
 }
-func (f *Int16) NativeTypeString() string { return "in16" }
+func (f *Int16) NativeTypeString() string { return "int16" }

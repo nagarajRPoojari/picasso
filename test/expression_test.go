@@ -64,6 +64,24 @@ func TestDeclareVar(t *testing.T) {
 			wantOut: "1",
 		},
 		{
+			name: "declaration as class instance",
+			src: `
+                import io;
+                class Test {
+                    say x: Math = new Math();
+					fn Test() {}
+                }
+                class Math {
+                    fn Math() {}
+                } 
+                fn main(): int32 {
+                    say t: Test = new Test();
+                    return 0;
+                }
+            `,
+			wantOut: "",
+		},
+		{
 			name: "declaration as class fields",
 			src: `
                 import io;
@@ -165,6 +183,39 @@ func TestDeclareVar(t *testing.T) {
                 }
             `,
 			wantOut: "0",
+		},
+		{
+			name: "uninitialized class instance type",
+			src: `
+                import io;
+                class Test {
+                    say x: Math;
+					fn Test() {}
+                }
+                class Math {
+                    fn Math() {}
+                }
+                fn main(): int32 {
+                    say t: Test = new Test();
+                    return 0;
+                }
+            `,
+			wantOut: "",
+		},
+		{
+			name: "allow recursive type reference",
+			src: `
+                import io;
+                class Test {
+                    say x: Test;
+					fn Test() {}
+                }
+                fn main(): int32 {
+                    say t: Test = new Test();
+                    return 0;
+                }
+            `,
+			wantOut: "",
 		},
 		// redeclare should fail
 		{
@@ -328,6 +379,28 @@ func TestAssignVar(t *testing.T) {
             `,
 			wantOut: "never",
 		},
+		{
+			name: "class type reassignment",
+			src: `
+                import io;
+                class Test {
+                    say x: Math;
+                    fn Test() {
+                        this.x = new Math();
+                    }
+                }
+                class Math {
+                    say x: int = 100;
+                    fn Math() {}
+                }
+                fn main(): int32 {
+                    say t: Test = new Test();
+                    io.printf("x=%d", t.x.x);
+                    return 0;
+                }
+            `,
+			wantOut: "x=100",
+		},
 		// assignment with expression
 		{
 			name: "init with expression",
@@ -337,6 +410,23 @@ func TestAssignVar(t *testing.T) {
                     say a: int = 90;
                     a = a + 10;
                     io.printf("%d", a);
+                    return 0;
+                }
+            `,
+			wantOut: "100",
+		},
+		{
+			name: "init with member expression",
+			src: `
+                import io;
+                class Test {
+                    say x: int = 100;
+                    fn Test() {}
+                }
+                fn main(): int32 {
+                    say a: Test = new Test();
+                    say b: int = a.x;
+                    io.printf("%d", b);
                     return 0;
                 }
             `,
@@ -375,18 +465,17 @@ func TestAssignVar(t *testing.T) {
                 import io;
                 class Test {
                   say x: float;
-                  fn Test() {
-                  }
+                  fn Test() {}
                 }
 
                 fn main(): int32 {
                     say c: Test = new Test();
                     c.x = 190;
-                    io.printf("x=%d", x);
+                    io.printf("x=%f", c.x);
                     return 0;
                 }
             `,
-			wantOut: "x=190",
+			wantOut: "x=190.000000",
 		},
 		// invalid assignments
 		{
