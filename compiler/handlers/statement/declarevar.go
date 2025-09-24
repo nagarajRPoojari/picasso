@@ -1,8 +1,6 @@
 package statement
 
 import (
-	"fmt"
-
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
@@ -18,7 +16,6 @@ func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDecl
 	var v tf.Var
 	if st.AssignedValue == nil {
 		v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), nil)
-		fmt.Println("assigning: ", v)
 	} else {
 		v = expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
 		casted := t.st.TypeHandler.CastToType(block, st.ExplicitType.Get(), v.Load(block))

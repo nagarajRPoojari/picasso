@@ -92,3 +92,8 @@ type NewExpression struct {
 }
 
 func (NewExpression) expr() {}
+
+type NullExpression struct {
+}
+
+func (NullExpression) expr() {}

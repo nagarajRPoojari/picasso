@@ -221,6 +221,18 @@ func parse_class_declaration_stmt(p *Parser) ast.Statement {
 
 func parse_function_return_stmt(p *Parser) ast.Statement {
 	p.expect(lexer.RETURN)
+
+	if p.currentTokenKind() == lexer.NULL {
+		p.move()
+		p.expect(lexer.SEMI_COLON)
+		return ast.ReturnStatement{}
+	}
+	if p.currentTokenKind() == lexer.SEMI_COLON {
+		p.move()
+		return ast.ReturnStatement{
+			IsVoid: true,
+		}
+	}
 	exp := parse_expression_stmt(p)
 
 	return ast.ReturnStatement{

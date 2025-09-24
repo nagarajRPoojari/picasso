@@ -289,6 +289,8 @@ func (t *TypeHandler) CastToType(block *ir.Block, target string, v value.Value) 
 				"cannot cast %s to string", v.Type().String(),
 			))
 		}
+	case "void":
+		return nil
 	}
 
 	if k, ok := t.Udts[target]; ok {
@@ -308,7 +310,11 @@ func (t *TypeHandler) intCast(block *ir.Block, v value.Value, dst *types.IntType
 		panic("cannot intCast from " + v.Type().String())
 	}
 	if src.BitSize > dst.BitSize {
-		return block.NewTrunc(v, dst)
+		y := block.NewTrunc(v, dst)
+		fmt.Printf("truncating: src=%s (%T), dst=%s, result=%s (%T)\n",
+			v.Type(), v, dst, y.Type(), y)
+
+		return y
 	} else if src.BitSize < dst.BitSize {
 		return block.NewSExt(v, dst)
 	}

@@ -93,6 +93,7 @@ func BuildTokensTable() {
 	led(lexer.OPEN_BRACKET, member, parse_member_expr)
 	led(lexer.OPEN_PAREN, call, parse_call_expr)
 
+	nud(lexer.NULL, parse_null_expr)
 	// Grouping Expr
 	nud(lexer.OPEN_PAREN, parse_grouping_expr)
 	nud(lexer.FN, parse_fn_expr)

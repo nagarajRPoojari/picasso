@@ -38,7 +38,8 @@ type FunctionDeclarationStatement struct {
 func (FunctionDeclarationStatement) stmt() {}
 
 type ReturnStatement struct {
-	Value ExpressionStatement
+	Value  ExpressionStatement
+	IsVoid bool
 }
 
 func (ReturnStatement) stmt() {}

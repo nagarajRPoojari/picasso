@@ -138,6 +138,11 @@ func parse_grouping_expr(p *Parser) ast.Expression {
 	return expr
 }
 
+func parse_null_expr(p *Parser) ast.Expression {
+	p.expect(lexer.NULL)
+	return ast.NullExpression{}
+}
+
 func parse_call_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
 	p.move()
 	arguments := make([]ast.Expression, 0)

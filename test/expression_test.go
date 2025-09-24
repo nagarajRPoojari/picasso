@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDeclareVar(t *testing.T) {
+func TestDeclareVarExpression(t *testing.T) {
 	tests := []struct {
 		name    string
 		src     string
@@ -315,6 +315,20 @@ func TestDeclareVar(t *testing.T) {
             `,
 			wantOut: "a=20",
 		},
+		// type cast
+		{
+			name: "type cast float64 to int64",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say a: float = 10;
+                    say b: int = a;
+                    io.printf("b=%d", b);
+                    return 0;
+                }
+            `,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -333,7 +347,7 @@ func TestDeclareVar(t *testing.T) {
 	}
 }
 
-func TestAssignVar(t *testing.T) {
+func TestAssignVarExpression(t *testing.T) {
 	tests := []struct {
 		name    string
 		src     string
@@ -507,6 +521,21 @@ func TestAssignVar(t *testing.T) {
                 fn main(): int32 {
                     say a: int = 100;
 					a = "hello";
+                    return 0;
+                }
+            `,
+			wantErr: true,
+		},
+		// type cast
+		{
+			name: "type cast float64 to int64",
+			src: `
+                import io;
+                fn main(): int32 {
+                    say a: float = 10;
+                    say b: int;
+                    b = a;
+                    io.printf("b=%d", b);
                     return 0;
                 }
             `,
@@ -736,7 +765,7 @@ func TestBinaryExpression(t *testing.T) {
 	}
 }
 
-func TestCallFunc(t *testing.T) {
+func TestFunctionCallExpression(t *testing.T) {
 	tests := []struct {
 		name    string
 		src     string
@@ -849,6 +878,26 @@ func TestCallFunc(t *testing.T) {
                 }
             `,
 			wantOut: "x=10, y=20.000000x=10, y=0.000000",
+		},
+		// type cast
+		{
+			name: "type cast function return",
+			src: `
+                import io;
+                class Test {
+                    fn Test() {}
+                    fn printer(x: float): float {
+                        return x;
+                    }
+                }
+                fn main(): int32 {
+                    say a: Test = new Test();  
+                    say b: int = a.printer(100);
+                    io.printf("%d", b);
+                    return 0;
+                }
+            `,
+			wantOut: "100",
 		},
 	}
 	for _, tt := range tests {
