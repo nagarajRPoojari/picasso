@@ -63,31 +63,20 @@
     
 //     return 0;
 // }
-			import io;
-            class Test {
-                say a: int = 100;
-                fn Test() {}
-                fn tester(do: int, m: Math): Math {
-                    if (do == 1){
-                        return new Math();
-                    }else {
-                        return null;
+                import io;
+                class Test {
+                    fn Test() {}
+                    fn nothing(): Math {
+						return new Math();
                     }
-                    return null;
                 }
-                fn nuller(): Math {
-                    return null;
+				class Math {
+					sat x: int = 190;
+					fn Math() {}
+				}
+                fn main(): int32 {
+                    say t: Test = new Test();
+					say x: Math = t.nothing();
+					io.printf("x=%d", x.x);
+                    return 0;
                 }
-            }
-
-            class Math {
-                say h: int = 90;
-                fn Math() {}
-            }
-			fn main(): int32 {
-				say x: Test = new Test();
-                say nn: Math;
-                say n: Math = x.tester(1, x.nuller());
-                io.printf("x= %d", n.h);
-				return 0;
-			}

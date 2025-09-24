@@ -50,6 +50,108 @@ func TestReturnStatement(t *testing.T) {
             `,
 			wantOut: "200.000000",
 		},
+		// returning nothing
+		{
+			name: "return void by no return statement",
+			src: `
+                import io;
+                class Test {
+                    fn Test() {}
+                    fn nothing() {
+                    }
+                }
+                fn main(): int32 {
+                    say t: Test = new Test();
+					t.nothing();
+                    return 0;
+                }
+            `,
+			wantOut: "",
+		},
+		{
+			name: "return void by empty return statement",
+			src: `
+                import io;
+                class Test {
+                    fn Test() {}
+                    fn nothing() {
+						return;
+                    }
+                }
+                fn main(): int32 {
+                    say t: Test = new Test();
+					t.nothing();
+                    return 0;
+                }
+            `,
+			wantOut: "",
+		},
+		{
+			name: "void return should not be assignable",
+			src: `
+                import io;
+                class Test {
+                    fn Test() {}
+                    fn nothing() {
+						return;
+                    }
+                }
+                fn main(): int32 {
+                    say t: Test = new Test();
+					say n: int = t.nothing();
+                    return 0;
+                }
+            `,
+			wantErr: true,
+		},
+		// return class instance
+		{
+			name: "return null",
+			src: `
+                import io;
+                class Test {
+                    fn Test() {}
+                    fn nothing(): Math {
+						return new Math();
+                    }
+                }
+				class Math {
+					say x: int = 190;
+					fn Math() {}
+				}
+                fn main(): int32 {
+                    say t: Test = new Test();
+					say x: Math = t.nothing();
+					io.printf("x=%d", x.x);
+                    return 0;
+                }
+            `,
+			wantOut: "x=190",
+		},
+		// null returns
+		{
+			name: "return null",
+			src: `
+                import io;
+                class Test {
+                    fn Test() {}
+                    fn nothing(): Math {
+						return null;
+                    }
+                }
+				class Math {
+					say x: int = 190;
+					fn Math() {}
+				}
+                fn main(): int32 {
+                    say t: Test = new Test();
+					say x: Math = t.nothing();
+					io.printf("x=%d", x.x);
+                    return 0;
+                }
+            `,
+			wantErr: true,
+		},
 		{
 			name: "return by typecasting",
 			src: `
