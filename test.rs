@@ -64,19 +64,22 @@
 //     return 0;
 // }
                 import io;
+                import types;
                 class Test {
+                    say n: int = 100;
                     fn Test() {}
                     fn nothing(): Math {
 						return new Math();
                     }
                 }
 				class Math {
-					sat x: int = 190;
+					say x: int = 190;
 					fn Math() {}
 				}
                 fn main(): int32 {
                     say t: Test = new Test();
 					say x: Math = t.nothing();
-					io.printf("x=%d", x.x);
+                    say i: int8 = 100;
+					io.printf("x=%d", types.size(t));
                     return 0;
                 }
