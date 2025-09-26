@@ -370,8 +370,8 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, 
 	if floatRank(src.Kind) < floatRank(dst.Kind) {
 		return b.NewFPExt(v, dst), b
 	}
-	abort := b.Parent.NewBlock("overflow")
-	safe := b.Parent.NewBlock("safe")
+	abort := b.Parent.NewBlock("")
+	safe := b.Parent.NewBlock("")
 
 	maxVal := constant.NewFloat(dst, floatMax[dst])
 	minVal := constant.NewFloat(dst, floatMin[dst])
@@ -391,8 +391,8 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, 
 
 func (t *TypeHandler) catchIntToFloatDowncast(block *ir.Block, v value.Value, src *types.IntType, dst *types.FloatType) (value.Value, *ir.Block) {
 	b := block
-	abort := b.Parent.NewBlock("overflow")
-	safe := b.Parent.NewBlock("safe")
+	abort := b.Parent.NewBlock("")
+	safe := b.Parent.NewBlock("")
 
 	// Float max/min for this destination type
 	maxVal := constant.NewFloat(dst, floatMax[dst])
