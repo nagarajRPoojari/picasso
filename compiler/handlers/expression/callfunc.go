@@ -12,7 +12,7 @@ import (
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
-func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) tf.Var {
+func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf.Var, *ir.Block) {
 	// check if imported modules
 	if m, ok := ex.Method.(ast.MemberExpression); ok {
 		x, ok := m.Member.(ast.SymbolExpression)
@@ -21,9 +21,11 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) tf.
 			if f, ok := t.st.LibMethods[fName]; ok {
 				args := make([]tf.Var, 0)
 				for _, v := range ex.Arguments {
-					args = append(args, t.ProcessExpression(block, v))
+					res, safe := t.ProcessExpression(block, v)
+					block = safe
+					args = append(args, res)
 				}
-				return f(t.st.TypeHandler, t.st.Module, block, args)
+				return f(t.st.TypeHandler, t.st.Module, block, args), block
 			}
 		}
 
@@ -35,7 +37,9 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) tf.
 
 	case ast.MemberExpression:
 		// Evaluate the base expression
-		baseVar := t.ProcessExpression(block, m.Member)
+		baseVar, safe := t.ProcessExpression(block, m.Member)
+		block = safe
+
 		if baseVar == nil {
 			errorsx.PanicCompilationError("handleCallExpression: nil baseVar for member expression")
 		}
@@ -62,7 +66,9 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) tf.
 		// Build args for the user parameters (do not append `this` yet)
 		args := make([]value.Value, 0, len(ex.Arguments)+1)
 		for i, argExp := range ex.Arguments {
-			v := t.ProcessExpression(block, argExp)
+			v, safe := t.ProcessExpression(block, argExp)
+			block = safe
+
 			if v == nil {
 				errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: nil arg %d for %s.%s", i, cls.Name, m.Property))
 			}
@@ -101,11 +107,11 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) tf.
 		// make function call
 		ret := block.NewCall(fn, args...)
 		if fn.Sig.RetType == types.Void {
-			return nil
+			return nil, block
 		}
 
 		tp := utils.GetTypeString(fn.Sig.RetType)
-		return t.st.TypeHandler.BuildVar(block, tf.Type(tp), ret)
+		return t.st.TypeHandler.BuildVar(block, tf.Type(tp), ret), block
 	}
-	return nil
+	return nil, block
 }

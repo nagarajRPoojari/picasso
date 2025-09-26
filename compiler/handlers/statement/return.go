@@ -9,9 +9,14 @@ import (
 )
 
 func (t *StatementHandler) Return(block *ir.Block, st *ast.ReturnStatement, rt types.Type) {
-	v := expression.ExpressionHandlerInst.ProcessExpression(block, st.Value.Expression)
+	v, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.Value.Expression)
+	block = safe
+
 	val := v.Load(block)
 	tp := utils.GetTypeString(rt)
-	r, block := t.st.TypeHandler.ImplicitTypeCast(block, tp, val)
+
+	r, safe := t.st.TypeHandler.ImplicitTypeCast(block, tp, val)
+	block = safe
+
 	block.NewRet(r)
 }

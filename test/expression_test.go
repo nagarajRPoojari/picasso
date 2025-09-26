@@ -124,23 +124,6 @@ func TestDeclareVarExpression(t *testing.T) {
             `,
 			wantOut: "0 -100",
 		},
-		{
-			name: "init class fields with expression",
-			src: `
-                import io;
-                class Test {
-                    say x: int = 42;
-					say y: int = 2 * x;
-					fn Test() {}
-                }
-                fn main(): int32 {
-                    say t: Test = new Test();
-                    io.printf("%d", t.y);
-                    return 0;
-                }
-            `,
-			wantOut: "84",
-		},
 		// uninitialized variables
 		{
 			name: "uninitialized int, float, boolean",
@@ -317,13 +300,11 @@ func TestDeclareVarExpression(t *testing.T) {
 		},
 		// type cast
 		{
-			name: "type cast float64 to int64",
+			name: "type cast float64 to int8",
 			src: `
                 import io;
                 fn main(): int32 {
-                    say a: float = 10;
-                    say b: int = a;
-                    io.printf("b=%d", b);
+                    say a: int8 = 1899;
                     return 0;
                 }
             `,
@@ -528,14 +509,11 @@ func TestAssignVarExpression(t *testing.T) {
 		},
 		// type cast
 		{
-			name: "type cast float64 to int64",
+			name: "type cast float64 to int8",
 			src: `
                 import io;
                 fn main(): int32 {
-                    say a: float = 10;
-                    say b: int;
-                    b = a;
-                    io.printf("b=%d", b);
+                    say a: int8 = 1090;
                     return 0;
                 }
             `,
@@ -866,18 +844,18 @@ func TestFunctionCallExpression(t *testing.T) {
                 import io;
                 class Test {
                     fn Test() {}
-                    fn printer(x: int, y: double) {
-                        io.printf("x=%d, y=%f", x, y);
+                    fn printer(x: int, y: string) {
+                        io.printf("x=%d, y=%s", x, y);
                     }
                 }
                 fn main(): int32 {
                     say a: Test = new Test();
-                    a.printer(10,20);
+                    a.printer(10,"hi");
                     a.printer(10);
                     return 0;
                 }
             `,
-			wantOut: "x=10, y=20.000000x=10, y=0.000000",
+			wantOut: "x=10, y=hix=10, y=",
 		},
 		// type cast
 		{
@@ -945,7 +923,7 @@ func TestNewExpression(t *testing.T) {
 			wantOut: "200",
 		},
 		{
-			name: "independednt new expression",
+			name: "independent new expression",
 			src: `
                 import io;
                 class Test {

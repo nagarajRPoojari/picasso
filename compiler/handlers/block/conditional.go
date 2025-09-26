@@ -13,7 +13,9 @@ func (t *BlockHandler) processIfElseBlock(fn *ir.Func, entry *ir.Block, st *ast.
 	endBlock := fn.NewBlock("")
 
 	// condition
-	res := expression.ExpressionHandlerInst.ProcessExpression(entry, st.Condition)
+	res, safe := expression.ExpressionHandlerInst.ProcessExpression(entry, st.Condition)
+	entry = safe
+
 	casted, entry := t.st.TypeHandler.ImplicitTypeCast(entry, string(tf.BOOLEAN), res.Load(entry))
 	cond := t.st.TypeHandler.BuildVar(entry, tf.Type(tf.BOOLEAN), casted)
 	entry.NewCondBr(cond.Load(entry), ifBlock, elseBlock)

@@ -17,7 +17,10 @@ func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDecl
 	if st.AssignedValue == nil {
 		v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), nil)
 	} else {
-		v = expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
+		_v, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
+		v = _v
+		block = safe
+
 		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, st.ExplicitType.Get(), v.Load(block))
 		block = safe
 		v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), casted)

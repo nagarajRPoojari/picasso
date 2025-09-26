@@ -20,6 +20,7 @@ func NewTypeHandler() *TypeHandler {
 func (t *TypeHandler) ListAllFuncs() map[string]function.Func {
 	funcs := make(map[string]function.Func)
 	funcs["size"] = t.size
+	funcs["type"] = t._type
 	return funcs
 }
 
@@ -41,4 +42,20 @@ func (t *TypeHandler) size(typeHandler *tf.TypeHandler, module *ir.Module, block
 		NativeType: types.I64,
 		Value:      slot,
 	}
+}
+
+func (t *TypeHandler) _type(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) typedef.Var {
+	typ := args[0].NativeTypeString()
+
+	strConst := constant.NewCharArrayFromString(typ + "\x00")
+	global := module.NewGlobalDef("", strConst)
+
+	gep := block.NewGetElementPtr(
+		global.ContentType,
+		global,
+		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 0),
+	)
+
+	return tf.NewString(block, gep)
 }

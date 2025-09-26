@@ -19,16 +19,22 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		if !ok {
 			panic(fmt.Sprintf("undefined: %s", st))
 		}
-		rhs := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
+		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
+		block = safe
+
 		typeName := v.NativeTypeString()
+
 		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
 		block = safe
+
 		c := t.st.TypeHandler.BuildVar(block, tf.Type(typeName), casted)
 		v.Update(block, c.Load(block))
 
 	case ast.MemberExpression:
 
-		baseVar := expression.ExpressionHandlerInst.ProcessExpression(block, m.Member)
+		baseVar, safe := expression.ExpressionHandlerInst.ProcessExpression(block, m.Member)
+		block = safe
+
 		if baseVar == nil {
 			errorsx.PanicCompilationError(fmt.Sprintf("nil base in member expression: %v", m))
 		}
@@ -45,7 +51,9 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		index := meta.VarIndexMap[m.Property]
 		fieldType := structType.Fields[index]
 
-		rhs := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
+		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
+		block = safe
+
 		typeName := fieldType.Name()
 		if typeName == "" {
 			typeName = fieldType.String()

@@ -3,6 +3,7 @@ package typedef
 import "github.com/llir/llvm/ir/types"
 
 var intMax = map[*types.IntType]int64{
+	types.I1:  1,
 	types.I8:  127,
 	types.I16: 32767,
 	types.I32: 2147483647,
@@ -10,6 +11,7 @@ var intMax = map[*types.IntType]int64{
 }
 
 var intMin = map[*types.IntType]int64{
+	types.I1:  0,
 	types.I8:  -128,
 	types.I16: -32768,
 	types.I32: -2147483648,
@@ -17,13 +19,13 @@ var intMin = map[*types.IntType]int64{
 }
 
 var floatMax = map[*types.FloatType]float64{
-	types.Half:   6.55e4,
+	types.Half:   65504.0, // will be converted to half
 	types.Float:  3.4028235e38,
 	types.Double: 1.7976931348623157e308,
 }
 
 var floatMin = map[*types.FloatType]float64{
-	types.Half:   -6.55e4,
+	types.Half:   -65504.0,
 	types.Float:  -3.4028235e38,
 	types.Double: -1.7976931348623157e308,
 }

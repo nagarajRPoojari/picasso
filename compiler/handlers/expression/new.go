@@ -11,14 +11,15 @@ import (
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
-func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex ast.CallExpression) {
+func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex ast.CallExpression) *ir.Block {
 	m := ex.Method.(ast.SymbolExpression)
 	meth := t.st.IdentifierBuilder.Attach(m.Value, m.Value)
 	fn := t.st.Methods[meth]
 
 	args := make([]value.Value, 0, len(ex.Arguments)+1)
 	for i, argExp := range ex.Arguments {
-		v := t.ProcessExpression(block, argExp)
+		v, safe := t.ProcessExpression(block, argExp)
+		block = safe
 		if v == nil {
 			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: nil arg %d for %s", i, m.Value))
 		}
@@ -29,7 +30,7 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 
 		expected := fn.Sig.Params[i]
 		target := utils.GetTypeString(expected)
-		raw, safe := t.st.TypeHandler.ImplicitTypeCast(block, target, raw)
+		raw, safe = t.st.TypeHandler.ImplicitTypeCast(block, target, raw)
 		block = safe
 		if raw == nil {
 			errorsx.PanicCompilationError(fmt.Sprintf(
@@ -50,9 +51,11 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 	args = append(args, thisPtr)
 
 	block.NewCall(fn, args...)
+
+	return block
 }
 
-func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpression) tf.Var {
+func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpression) (tf.Var, *ir.Block) {
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
 
@@ -74,15 +77,19 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 		if exp.AssignedValue == nil {
 			v = t.st.TypeHandler.BuildVar(block, tf.Type(exp.ExplicitType.Get()), nil)
 		} else {
-			v = t.ProcessExpression(block, exp.AssignedValue)
+			_v, safe := t.ProcessExpression(block, exp.AssignedValue)
+			v = _v
+			block = safe
+
 			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, exp.ExplicitType.Get(), v.Load(block))
 			block = safe
+
 			v = t.st.TypeHandler.BuildVar(block, tf.Type(exp.ExplicitType.Get()), casted)
 		}
 		instance.UpdateField(block, index, v.Load(block), fieldType)
 		t.st.Vars.AddNewVar(exp.Identifier, v)
 	}
 
-	t.callConstructor(block, instance, ex.Instantiation)
-	return instance
+	block = t.callConstructor(block, instance, ex.Instantiation)
+	return instance, block
 }

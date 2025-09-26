@@ -252,20 +252,7 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.Value) (value.Value, *ir.Block) {
 	switch target {
 	case "boolean", "bool", "i1":
-		if v.Type().Equal(types.I1) {
-			return v, block
-		}
-		switch v.Type().(type) {
-		case *types.IntType:
-			zero := constant.NewInt(v.Type().(*types.IntType), 0)
-			return block.NewICmp(enum.IPredNE, v, zero), block
-		case *types.FloatType:
-			zero := constant.NewFloat(v.Type().(*types.FloatType), 0.0)
-			return block.NewFCmp(enum.FPredONE, v, zero), block
-		default:
-			panic("cannot cast to boolean from type " + v.Type().String())
-		}
-
+		return t.ImplicitIntCast(block, v, types.I1)
 	case "int8", "i8":
 		return t.ImplicitIntCast(block, v, types.I8)
 	case "int16", "i16":
@@ -301,8 +288,17 @@ func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.V
 	return nil, block
 }
 
-func (t *TypeHandler) catchIntDownCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
+// NOTE: assumes floatMax/floatMin and intMax/intMin maps exist as you already have.
+
+func (t *TypeHandler) catchIntToIntDownCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
 	b := block
+
+	// boolean target (i1): non-zero -> true
+	if dst.BitSize == 1 {
+		cmp := b.NewICmp(enum.IPredNE, v, constant.NewInt(v.Type().(*types.IntType), 0))
+		return cmp, b
+	}
+
 	abort := b.Parent.NewBlock("")
 	safe := b.Parent.NewBlock("")
 
@@ -317,8 +313,8 @@ func (t *TypeHandler) catchIntDownCast(block *ir.Block, v value.Value, dst *type
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in int downcast\n")
 	abort.NewUnreachable()
 
-	v = safe.NewTrunc(v, dst)
-	return v, safe
+	vTrunc := safe.NewTrunc(v, dst)
+	return vTrunc, safe
 }
 
 func (t *TypeHandler) catchFloatToIntDownCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
@@ -327,11 +323,20 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *ir.Block, v value.Value, ds
 	abort := b.Parent.NewBlock("")
 	safe := b.Parent.NewBlock("")
 
-	minVal := constant.NewFloat(types.Float, float64(intMin[dst]))
-	maxVal := constant.NewFloat(types.Float, float64(intMax[dst]))
+	// Promote the float to double for robust comparison (avoids half literal issues)
+	var vAsDouble value.Value
+	if _, ok := v.Type().(*types.FloatType); ok && v.Type().(*types.FloatType).Kind != types.FloatKindDouble {
+		vAsDouble = b.NewFPExt(v, types.Double)
+	} else {
+		vAsDouble = v
+	}
 
-	overflowMax := b.NewFCmp(enum.FPredOGT, v, maxVal)
-	overflowMin := b.NewFCmp(enum.FPredOLT, v, minVal)
+	// Compare against integer bounds expressed as double constants
+	minValD := constant.NewFloat(types.Double, float64(intMin[dst]))
+	maxValD := constant.NewFloat(types.Double, float64(intMax[dst]))
+
+	overflowMax := b.NewFCmp(enum.FPredOGT, vAsDouble, maxValD)
+	overflowMin := b.NewFCmp(enum.FPredOLT, vAsDouble, minValD)
 	overflow := b.NewOr(overflowMax, overflowMin)
 
 	b.NewCondBr(overflow, abort, safe)
@@ -339,23 +344,47 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *ir.Block, v value.Value, ds
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in float → int downcast\n")
 	abort.NewUnreachable()
 
-	v = safe.NewFPToSI(v, dst)
-	return v, safe
+	// In safe block: do the FP->SI conversion. Use vAsDouble (double->int) which is fine.
+	// If you prefer converting from original width, you can do safe.NewFPToSI(v, dst) too;
+	// FPToSI from double is fine and avoids repeated casting complexities.
+	res := safe.NewFPToSI(vAsDouble, dst)
+	return res, safe
 }
 
 func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
 	b := block
 	src, ok := v.Type().(*types.IntType)
 	if !ok {
+		// v is not an int; allow float -> int/boolean conversions
 		if _, ok := v.Type().(*types.FloatType); ok {
+			// float -> boolean
+			if dst == types.I1 {
+				zero := constant.NewFloat(v.Type().(*types.FloatType), 0.0)
+				cond := b.NewFCmp(enum.FPredONE, v, zero) // v != 0.0
+				return cond, b
+			}
+
+			// float -> integer (with overflow checks)
 			return t.catchFloatToIntDownCast(block, v, dst)
 		}
 		panic("cannot intCast from " + v.Type().String())
 	}
+
+	if src.BitSize == 1 {
+		if dst.BitSize == 1 {
+			return v, b
+		}
+		// Boolean widen → ZExt
+		return b.NewZExt(v, dst), b
+	}
+
+	// v is integer
 	if src.BitSize > dst.BitSize {
-		return t.catchIntDownCast(block, v, dst)
+		// downcast integer -> integer (with overflow checks)
+		return t.catchIntToIntDownCast(block, v, dst)
 	}
 	if src.BitSize < dst.BitSize {
+		// extend smaller integer to larger
 		return b.NewSExt(v, dst), b
 	}
 	return v, b
@@ -363,21 +392,35 @@ func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types
 
 func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, src *types.FloatType, dst *types.FloatType) (value.Value, *ir.Block) {
 	b := block
+
+	// If same type, no cast needed
 	if src.Kind == dst.Kind {
 		return v, b
 	}
 
+	// Upcast (smaller -> larger)
 	if floatRank(src.Kind) < floatRank(dst.Kind) {
 		return b.NewFPExt(v, dst), b
 	}
+
+	// Downcast (larger -> smaller)
 	abort := b.Parent.NewBlock("")
 	safe := b.Parent.NewBlock("")
 
-	maxVal := constant.NewFloat(dst, floatMax[dst])
-	minVal := constant.NewFloat(dst, floatMin[dst])
+	// Promote v to double for comparisons (avoids half literal problems)
+	var vAsDouble value.Value
+	if src.Kind != types.FloatKindDouble {
+		vAsDouble = b.NewFPExt(v, types.Double)
+	} else {
+		vAsDouble = v
+	}
 
-	overflowMax := b.NewFCmp(enum.FPredOGT, v, maxVal)
-	overflowMin := b.NewFCmp(enum.FPredOLT, v, minVal)
+	// Use floatMax/floatMin maps (float64 values) as double constants
+	maxD := constant.NewFloat(types.Double, floatMax[dst])
+	minD := constant.NewFloat(types.Double, floatMin[dst])
+
+	overflowMax := b.NewFCmp(enum.FPredOGT, vAsDouble, maxD)
+	overflowMin := b.NewFCmp(enum.FPredOLT, vAsDouble, minD)
 	overflow := b.NewOr(overflowMax, overflowMin)
 
 	b.NewCondBr(overflow, abort, safe)
@@ -385,42 +428,51 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, 
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in float demotion")
 	abort.NewUnreachable()
 
-	v = safe.NewFPTrunc(v, dst)
-	return v, safe
+	// Safe block: actually truncate original value to dst type
+	vTrunc := safe.NewFPTrunc(v, dst)
+	return vTrunc, safe
 }
 
-func (t *TypeHandler) catchIntToFloatDowncast(block *ir.Block, v value.Value, src *types.IntType, dst *types.FloatType) (value.Value, *ir.Block) {
+func (t *TypeHandler) catchIntToFloatDowncast(block *ir.Block, v value.Value, dst *types.FloatType) (value.Value, *ir.Block) {
 	b := block
+
 	abort := b.Parent.NewBlock("")
 	safe := b.Parent.NewBlock("")
 
-	// Float max/min for this destination type
-	maxVal := constant.NewFloat(dst, floatMax[dst])
-	minVal := constant.NewFloat(dst, floatMin[dst])
+	// Convert integer to double for comparison (avoids half literal issues)
+	vAsDouble := b.NewSIToFP(v, types.Double)
 
-	// Convert int to float for comparison
-	vAsFloat := b.NewSIToFP(v, dst)
-	overflowMax := b.NewFCmp(enum.FPredOGT, vAsFloat, maxVal)
-	overflowMin := b.NewFCmp(enum.FPredOLT, vAsFloat, minVal)
+	maxD := constant.NewFloat(types.Double, floatMax[dst])
+	minD := constant.NewFloat(types.Double, floatMin[dst])
+
+	overflowMax := b.NewFCmp(enum.FPredOGT, vAsDouble, maxD)
+	overflowMin := b.NewFCmp(enum.FPredOLT, vAsDouble, minD)
 	overflow := b.NewOr(overflowMax, overflowMin)
 
-	// Conditional branch
 	b.NewCondBr(overflow, abort, safe)
 
-	// Overflow block
 	rterr.Instance.RaiseRTError(abort, "runtime overflow converting int → float")
 	abort.NewUnreachable()
 
-	// Safe block: return converted float
-	return safe.NewSIToFP(v, dst), safe
+	// Safe block: return converted float in requested dst width
+	res := safe.NewSIToFP(v, dst)
+	return res, safe
 }
 
 func (t *TypeHandler) ImplicitFloatCast(block *ir.Block, v value.Value, dst *types.FloatType) (value.Value, *ir.Block) {
 	switch src := v.Type().(type) {
 	case *types.FloatType:
 		return t.catchFloatToFloatDowncast(block, v, src, dst)
+
 	case *types.IntType:
-		return t.catchIntToFloatDowncast(block, v, src, dst)
+		// int -> float: special-case i1 -> treat as 0/1
+		if src.BitSize == 1 {
+			intVal := block.NewZExt(v, types.I8) // 0 or 1 -> i8 then convert
+			floatVal := block.NewSIToFP(intVal, dst)
+			return floatVal, block
+		}
+		return t.catchIntToFloatDowncast(block, v, dst)
+
 	default:
 		panic("cannot floatCast from " + v.Type().String())
 	}

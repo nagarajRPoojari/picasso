@@ -82,8 +82,12 @@ func or(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
 }
 
 func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.BinaryExpression) tf.Var {
-	left := t.ProcessExpression(block, ex.Left)
-	right := t.ProcessExpression(block, ex.Right)
+	left, safe := t.ProcessExpression(block, ex.Left)
+	block = safe
+
+	right, safe := t.ProcessExpression(block, ex.Right)
+	block = safe
+
 	if left == nil || right == nil {
 		errorsx.PanicCompilationError("nil operand in binary expression")
 	}

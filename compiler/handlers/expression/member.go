@@ -15,7 +15,9 @@ import (
 
 func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.MemberExpression) tf.Var {
 	// Evaluate the base expression
-	baseVar := t.ProcessExpression(block, ex.Member)
+	baseVar, safe := t.ProcessExpression(block, ex.Member)
+	block = safe
+
 	if baseVar == nil {
 		errorsx.PanicCompilationError(fmt.Sprintf("nil base in member expression: %v", ex.Member))
 	}

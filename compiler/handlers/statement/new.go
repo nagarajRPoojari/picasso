@@ -7,6 +7,6 @@ import (
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
-func (t *StatementHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpression) tf.Var {
+func (t *StatementHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpression) (tf.Var, *ir.Block) {
 	return expression.ExpressionHandlerInst.ProcessNewExpression(block, ex)
 }

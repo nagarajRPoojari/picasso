@@ -22,9 +22,9 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Stat
 			case ast.AssignmentExpression:
 				entry = statement.StatementHandlerInst.AssignVariable(entry, &exp)
 			case ast.CallExpression:
-				statement.StatementHandlerInst.CallFunc(entry, exp)
+				_, entry = statement.StatementHandlerInst.CallFunc(entry, exp)
 			case ast.NewExpression:
-				statement.StatementHandlerInst.ProcessNewExpression(entry, exp)
+				_, entry = statement.StatementHandlerInst.ProcessNewExpression(entry, exp)
 			default:
 				errorsx.PanicCompilationError("invalid expression statement")
 			}

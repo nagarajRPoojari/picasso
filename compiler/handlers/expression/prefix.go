@@ -15,7 +15,8 @@ import (
 )
 
 func (t *ExpressionHandler) ProcessPrefixExpression(block *ir.Block, ex ast.PrefixExpression) tf.Var {
-	operand := t.ProcessExpression(block, ex.Operand)
+	operand, safe := t.ProcessExpression(block, ex.Operand)
+	block = safe
 
 	var res value.Value
 	lv := operand.Load(block)

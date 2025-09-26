@@ -23,16 +23,16 @@ func NewExpressionHandler(st *state.State) *ExpressionHandler {
 }
 
 // processExpression handles binary expressions, function calls, member operations etc..
-func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expression) tf.Var {
+func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expression) (tf.Var, *ir.Block) {
 	if expI == nil {
-		return tf.NewNullVar(types.NewPointer(types.NewStruct()))
+		return tf.NewNullVar(types.NewPointer(types.NewStruct())), block
 	}
 
 	switch ex := expI.(type) {
 
 	case ast.SymbolExpression:
 		// search for variable locally then gloablly
-		return t.processSymbolExpression(ex)
+		return t.processSymbolExpression(ex), block
 
 	case ast.ListExpression:
 		// should handle, [[1,2,3], [4,5,6]]
@@ -40,7 +40,7 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 	case ast.NumberExpression:
 		// produce a runtime mutable var for the literal (double)
 		// by default number will be wrapped up with float64
-		return t.st.TypeHandler.BuildVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value))
+		return t.st.TypeHandler.BuildVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value)), block
 
 	case ast.StringExpression:
 		formatStr := ex.Value
@@ -54,26 +54,26 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 			constant.NewInt(types.I32, 0),
 		)
 
-		return tf.NewString(block, gep)
+		return tf.NewString(block, gep), block
 
 	case ast.NewExpression:
 		return t.ProcessNewExpression(block, ex)
 
 	case ast.MemberExpression:
-		return t.ProcessMemberExpression(block, ex)
+		return t.ProcessMemberExpression(block, ex), block
 
 	case ast.ComputedExpression:
 		// e.g, arr[1], arr[1][a.id()];
 
 	case ast.PrefixExpression:
-		return t.ProcessPrefixExpression(block, ex)
+		return t.ProcessPrefixExpression(block, ex), block
 
 	case ast.CallExpression:
 		return t.CallFunc(block, ex)
 
 	case ast.BinaryExpression:
-		return t.ProcessBinaryExpression(block, ex)
+		return t.ProcessBinaryExpression(block, ex), block
 	}
 
-	return nil
+	panic("error")
 }
