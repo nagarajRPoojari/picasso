@@ -1,16 +1,36 @@
+class AdvancedMath {
+    say PI: float64 = 3.14159265;
 
+    fn AdvancedMath() {
 
-class IO {
-	say PI: float64 = 3.14;
-	fn IO() {
+    }
 
-	}
+    fn circleArea(radius: float64): float64 {
+        return this.PI * radius * radius;
+    }
 
-	fn add(a: int, b: int): int {
-		return a + b;
-	}
+    fn circleCircumference(radius: float64): float64 {
+        return 2 * this.PI * radius;
+    }
 
-	fn multiply(a: int, b: int): int {
-		return a * b;
+    fn power(base: int, exp: int): int {
+        // only supports small exponent, no loops, recursive instead
+        if (exp == 0 ){
+            return 1;
+        } else {
+            return base * this.power(base, exp-1);
+        }
+
+		return 0;
+    }
+
+	fn factorial(n :int): int {
+		if (n==1){
+			return 1;
+		}else {
+			return n * this.factorial(n-1);
+		}
+
+		return 0;
 	}
 }

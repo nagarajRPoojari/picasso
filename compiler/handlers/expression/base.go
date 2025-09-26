@@ -72,7 +72,7 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 		return t.CallFunc(block, ex)
 
 	case ast.BinaryExpression:
-		return t.ProcessBinaryExpression(block, ex), block
+		return t.ProcessBinaryExpression(block, ex)
 	}
 
 	panic("error")

@@ -81,7 +81,7 @@ func or(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
 	return block.NewOr(lvf, rvf), nil
 }
 
-func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.BinaryExpression) tf.Var {
+func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.BinaryExpression) (tf.Var, *ir.Block) {
 	left, safe := t.ProcessExpression(block, ex.Left)
 	block = safe
 
@@ -113,7 +113,7 @@ func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.Bina
 		}
 		ptr := block.NewAlloca(types.Double)
 		block.NewStore(res, ptr)
-		return &floats.Float64{NativeType: types.Double, Value: ptr}
+		return &floats.Float64{NativeType: types.Double, Value: ptr}, block
 
 	} else if op, ok := comparision[ex.Operator.Kind]; ok {
 		f := &floats.Float64{}
@@ -132,7 +132,7 @@ func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.Bina
 		}
 		ptr := block.NewAlloca(types.I1)
 		block.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, block
 
 	} else if op, ok := logical[ex.Operator.Kind]; ok {
 		f := &boolean.Boolean{}
@@ -151,8 +151,8 @@ func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.Bina
 		}
 		ptr := block.NewAlloca(types.I1)
 		block.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, block
 	}
 	errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d", int(ex.Operator.Kind)))
-	return nil
+	return nil, block
 }

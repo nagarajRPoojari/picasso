@@ -57,7 +57,8 @@ func (t *Pipeline) resolveImportsRecursive(module ast.BlockStatement, imported m
 
 		pkgModule, exists := t.packages[pkgName]
 		if !exists {
-			panic("imported package not found: " + pkgName)
+			// might be a native library
+			continue
 		}
 
 		imported[pkgName] = struct{}{}
