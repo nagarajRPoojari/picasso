@@ -61,6 +61,6 @@ func (t *LLVM) Dump(file string) {
 	f.WriteString(t.st.Module.String())
 }
 
-func (t *LLVM) ParseAST(tree *ast.BlockStatement) {
-	pipeline.NewPipeline(t.st, tree).Run()
+func (t *LLVM) ParseAST(packages map[string]ast.BlockStatement) {
+	pipeline.NewPipeline(t.st, packages).Run()
 }

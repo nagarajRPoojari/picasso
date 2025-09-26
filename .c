@@ -1,34 +1,207 @@
 ast.BlockStatement{
   Body: []ast.Statement{
-    ast.ImportStatement{
-      Name: "io",
-      From: "io",
-    },
     ast.ClassDeclarationStatement{
-      Name: "Test",
+      Name: "IO",
       Body: []ast.Statement{
         ast.VariableDeclarationStatement{
-          Identifier: "x",
+          Identifier: "PI",
           Constant: false,
-          AssignedValue: ast.PrefixExpression{
-            Operator: lexer.Token{
-              Kind: 34,
-              Value: "-",
-            },
-            Operand: ast.NumberExpression{
-              Value: 42.0,
-            },
+          AssignedValue: ast.NumberExpression{
+            Value: 3.14,
           },
           ExplicitType: ast.SymbolType{
-            Value: "int",
+            Value: "float64",
           },
           IsStatic: false,
         },
         ast.FunctionDeclarationStatement{
           Parameters: []ast.Parameter{}, // p0
-          Name: "Test",
-          Body: []ast.Statement{},
+          Name: "Math",
+          Body: []ast.Statement{}, // p1
           ReturnType: nil,
+          IsStatic: false,
+        },
+        ast.FunctionDeclarationStatement{
+          Parameters: []ast.Parameter{
+            ast.Parameter{
+              Name: "a",
+              Type: ast.SymbolType{
+                Value: "int",
+              },
+            },
+            ast.Parameter{
+              Name: "b",
+              Type: ast.SymbolType{
+                Value: "int",
+              },
+            },
+          },
+          Name: "add",
+          Body: []ast.Statement{
+            ast.ReturnStatement{
+              Value: ast.ExpressionStatement{
+                Expression: ast.BinaryExpression{
+                  Left: ast.SymbolExpression{
+                    Value: "a",
+                  },
+                  Operator: lexer.Token{
+                    Kind: 33,
+                    Value: "+",
+                  },
+                  Right: ast.SymbolExpression{
+                    Value: "b",
+                  },
+                },
+              },
+              IsVoid: false,
+            },
+          },
+          ReturnType: ast.SymbolType{
+            Value: "int",
+          },
+          IsStatic: false,
+        },
+        ast.FunctionDeclarationStatement{
+          Parameters: []ast.Parameter{
+            ast.Parameter{
+              Name: "a",
+              Type: ast.SymbolType{
+                Value: "int",
+              },
+            },
+            ast.Parameter{
+              Name: "b",
+              Type: ast.SymbolType{
+                Value: "int",
+              },
+            },
+          },
+          Name: "multiply",
+          Body: []ast.Statement{
+            ast.ReturnStatement{
+              Value: ast.ExpressionStatement{
+                Expression: ast.BinaryExpression{
+                  Left: ast.SymbolExpression{
+                    Value: "a",
+                  },
+                  Operator: lexer.Token{
+                    Kind: 36,
+                    Value: "*",
+                  },
+                  Right: ast.SymbolExpression{
+                    Value: "b",
+                  },
+                },
+              },
+              IsVoid: false,
+            },
+          },
+          ReturnType: ast.SymbolType{
+            Value: "int",
+          },
+          IsStatic: false,
+        },
+      },
+    },
+    ast.ClassDeclarationStatement{
+      Name: "Math",
+      Body: []ast.Statement{
+        ast.VariableDeclarationStatement{
+          Identifier: "PI",
+          Constant: false,
+          AssignedValue: ast.NumberExpression{
+            Value: 3.14,
+          },
+          ExplicitType: ast.SymbolType{
+            Value: "float64",
+          },
+          IsStatic: false,
+        },
+        ast.FunctionDeclarationStatement{
+          Parameters: p0,
+          Name: "Math",
+          Body: p1,
+          ReturnType: nil,
+          IsStatic: false,
+        },
+        ast.FunctionDeclarationStatement{
+          Parameters: []ast.Parameter{
+            ast.Parameter{
+              Name: "a",
+              Type: ast.SymbolType{
+                Value: "int",
+              },
+            },
+            ast.Parameter{
+              Name: "b",
+              Type: ast.SymbolType{
+                Value: "int",
+              },
+            },
+          },
+          Name: "add",
+          Body: []ast.Statement{
+            ast.ReturnStatement{
+              Value: ast.ExpressionStatement{
+                Expression: ast.BinaryExpression{
+                  Left: ast.SymbolExpression{
+                    Value: "a",
+                  },
+                  Operator: lexer.Token{
+                    Kind: 33,
+                    Value: "+",
+                  },
+                  Right: ast.SymbolExpression{
+                    Value: "b",
+                  },
+                },
+              },
+              IsVoid: false,
+            },
+          },
+          ReturnType: ast.SymbolType{
+            Value: "int",
+          },
+          IsStatic: false,
+        },
+        ast.FunctionDeclarationStatement{
+          Parameters: []ast.Parameter{
+            ast.Parameter{
+              Name: "a",
+              Type: ast.SymbolType{
+                Value: "int",
+              },
+            },
+            ast.Parameter{
+              Name: "b",
+              Type: ast.SymbolType{
+                Value: "int",
+              },
+            },
+          },
+          Name: "multiply",
+          Body: []ast.Statement{
+            ast.ReturnStatement{
+              Value: ast.ExpressionStatement{
+                Expression: ast.BinaryExpression{
+                  Left: ast.SymbolExpression{
+                    Value: "a",
+                  },
+                  Operator: lexer.Token{
+                    Kind: 36,
+                    Value: "*",
+                  },
+                  Right: ast.SymbolExpression{
+                    Value: "b",
+                  },
+                },
+              },
+              IsVoid: false,
+            },
+          },
+          ReturnType: ast.SymbolType{
+            Value: "int",
+          },
           IsStatic: false,
         },
       },
@@ -38,41 +211,20 @@ ast.BlockStatement{
       Name: "main",
       Body: []ast.Statement{
         ast.VariableDeclarationStatement{
-          Identifier: "t",
+          Identifier: "m",
           Constant: false,
           AssignedValue: ast.NewExpression{
             Instantiation: ast.CallExpression{
               Method: ast.SymbolExpression{
-                Value: "Test",
+                Value: "Math",
               },
               Arguments: []ast.Expression{},
             },
           },
           ExplicitType: ast.SymbolType{
-            Value: "Test",
+            Value: "Math",
           },
           IsStatic: false,
-        },
-        ast.ExpressionStatement{
-          Expression: ast.CallExpression{
-            Method: ast.MemberExpression{
-              Member: ast.SymbolExpression{
-                Value: "io",
-              },
-              Property: "printf",
-            },
-            Arguments: []ast.Expression{
-              ast.StringExpression{
-                Value: "%f",
-              },
-              ast.MemberExpression{
-                Member: ast.SymbolExpression{
-                  Value: "t",
-                },
-                Property: "x",
-              },
-            },
-          },
         },
         ast.ReturnStatement{
           Value: ast.ExpressionStatement{
@@ -80,6 +232,7 @@ ast.BlockStatement{
               Value: 0.0,
             },
           },
+          IsVoid: false,
         },
       },
       ReturnType: ast.SymbolType{
@@ -89,4 +242,4 @@ ast.BlockStatement{
     },
   },
 }
-Duration: 2.519125ms
+Exit code: 0

@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/nagarajRPoojari/x-lang/compiler"
-	"github.com/nagarajRPoojari/x-lang/parser"
 )
 
 func CompileAndRunSafe(src string, dir string, libs ...string) (out string, err error) {
@@ -29,9 +28,9 @@ func CompileAndRun(src string, dir string, libs ...string) (string, error) {
 	runtimeObj := path.Join(dir, "runtime.o")
 	execFile := path.Join(dir, "output")
 
-	ast := parser.Parse(src)
+	// ast := parser.Parse(src)
 	c := compiler.NewCompiler()
-	c.Compile(ast)
+	// c.Compile(ast)
 	c.Dump(irFile)
 
 	if out, err := exec.Command("llvm-as", irFile, "-o", bcFile).CombinedOutput(); err != nil {
