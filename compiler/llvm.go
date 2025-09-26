@@ -15,6 +15,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/state"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/statement"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
+	rterr "github.com/nagarajRPoojari/x-lang/compiler/libs/private/runtime"
 	"github.com/nagarajRPoojari/x-lang/compiler/pipeline"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
@@ -45,6 +46,8 @@ func NewLLVM() *LLVM {
 	funcs.FuncHandlerInst = funcs.NewFuncHandler(st)
 	block.BlockHandlerInst = block.NewBlockHandler(st)
 	class.ClassHandlerInst = class.NewClassHandler(st)
+
+	rterr.Instance = rterr.NewErrorHandler(m)
 
 	return &LLVM{st: st}
 }

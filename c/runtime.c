@@ -1,5 +1,6 @@
 #include <gc.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // Initialize GC at program startup
 void runtime_init() {
@@ -19,4 +20,9 @@ void *lang_alloc_atomic(long size) {
 // Debug helper
 void runtime_collect() {
     GC_gcollect();
+}
+
+void runtime_error(const char* msg) {
+    fprintf(stderr, "%s\n", msg);
+    exit(1);
 }

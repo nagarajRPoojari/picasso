@@ -74,10 +74,10 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) tf.
 			// If the callee expects a certain param type, cast to it
 			expected := fn.Sig.Params[i]
 			target := utils.GetTypeString(expected)
-			raw = t.st.TypeHandler.CastToType(block, target, raw)
+			raw, block = t.st.TypeHandler.ImplicitTypeCast(block, target, raw)
 			if raw == nil {
 				errorsx.PanicCompilationError(fmt.Sprintf(
-					"handleCallExpression: CastToType returned nil for arg %d -> %s", i, target))
+					"handleCallExpression: ImplicitTypeCast returned nil for arg %d -> %s", i, target))
 			}
 			args = append(args, raw)
 

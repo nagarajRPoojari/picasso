@@ -8,7 +8,7 @@ import (
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
-func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDeclarationStatement) {
+func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDeclarationStatement) *ir.Block {
 	if t.st.Vars.Exists(st.Identifier) {
 		errorsx.PanicCompilationError("variable already exists")
 	}
@@ -18,8 +18,10 @@ func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDecl
 		v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), nil)
 	} else {
 		v = expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
-		casted := t.st.TypeHandler.CastToType(block, st.ExplicitType.Get(), v.Load(block))
+		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, st.ExplicitType.Get(), v.Load(block))
+		block = safe
 		v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), casted)
 	}
 	t.st.Vars.AddNewVar(st.Identifier, v)
+	return block
 }

@@ -15,12 +15,12 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Stat
 	for _, stI := range sts {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
-			statement.StatementHandlerInst.DeclareVariable(entry, &st)
+			entry = statement.StatementHandlerInst.DeclareVariable(entry, &st)
 
 		case ast.ExpressionStatement:
 			switch exp := st.Expression.(type) {
 			case ast.AssignmentExpression:
-				statement.StatementHandlerInst.AssignVariable(entry, &exp)
+				entry = statement.StatementHandlerInst.AssignVariable(entry, &exp)
 			case ast.CallExpression:
 				statement.StatementHandlerInst.CallFunc(entry, exp)
 			case ast.NewExpression:

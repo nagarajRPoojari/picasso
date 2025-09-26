@@ -29,10 +29,11 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 
 		expected := fn.Sig.Params[i]
 		target := utils.GetTypeString(expected)
-		raw = t.st.TypeHandler.CastToType(block, target, raw)
+		raw, safe := t.st.TypeHandler.ImplicitTypeCast(block, target, raw)
+		block = safe
 		if raw == nil {
 			errorsx.PanicCompilationError(fmt.Sprintf(
-				"handleCallExpression: CastToType returned nil for arg %d -> %s", i, target))
+				"handleCallExpression: ImplicitTypeCast returned nil for arg %d -> %s", i, target))
 		}
 		args = append(args, raw)
 
@@ -74,7 +75,8 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 			v = t.st.TypeHandler.BuildVar(block, tf.Type(exp.ExplicitType.Get()), nil)
 		} else {
 			v = t.ProcessExpression(block, exp.AssignedValue)
-			casted := t.st.TypeHandler.CastToType(block, exp.ExplicitType.Get(), v.Load(block))
+			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, exp.ExplicitType.Get(), v.Load(block))
+			block = safe
 			v = t.st.TypeHandler.BuildVar(block, tf.Type(exp.ExplicitType.Get()), casted)
 		}
 		instance.UpdateField(block, index, v.Load(block), fieldType)

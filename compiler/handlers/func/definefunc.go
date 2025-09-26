@@ -48,7 +48,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDeclarationSt
 		break
 	}
 
-	block.BlockHandlerInst.ProcessBlock(f, entry, fn.Body)
+	entry = block.BlockHandlerInst.ProcessBlock(f, entry, fn.Body)
 
 	if fn.ReturnType == nil {
 		entry.NewRet(nil)

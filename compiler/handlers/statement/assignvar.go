@@ -10,7 +10,7 @@ import (
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
-func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExpression) {
+func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExpression) *ir.Block {
 
 	switch m := st.Assignee.(type) {
 	case ast.SymbolExpression:
@@ -21,7 +21,8 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		}
 		rhs := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
 		typeName := v.NativeTypeString()
-		casted := t.st.TypeHandler.CastToType(block, typeName, rhs.Load(block))
+		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
+		block = safe
 		c := t.st.TypeHandler.BuildVar(block, tf.Type(typeName), casted)
 		v.Update(block, c.Load(block))
 
@@ -52,9 +53,11 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		if typeName[0:1] == "%" {
 			typeName = typeName[1 : len(typeName)-1]
 		}
-		casted := t.st.TypeHandler.CastToType(block, typeName, rhs.Load(block))
+		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
+		block = safe
 		c := t.st.TypeHandler.BuildVar(block, tf.Type(typeName), casted)
 		cls.UpdateField(block, index, c.Load(block), fieldType)
 	}
 
+	return block
 }
