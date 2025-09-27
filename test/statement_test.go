@@ -17,7 +17,7 @@ func TestReturnStatement(t *testing.T) {
 		{
 			name: "return int",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn doubleIt(x: int): int {
@@ -35,7 +35,7 @@ func TestReturnStatement(t *testing.T) {
 		{
 			name: "return float",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn doubleIt(x: float): float {
@@ -54,7 +54,7 @@ func TestReturnStatement(t *testing.T) {
 		{
 			name: "return void by no return statement",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn nothing() {
@@ -71,7 +71,7 @@ func TestReturnStatement(t *testing.T) {
 		{
 			name: "return void by empty return statement",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn nothing() {
@@ -89,7 +89,7 @@ func TestReturnStatement(t *testing.T) {
 		{
 			name: "void return should not be assignable",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn nothing() {
@@ -108,7 +108,7 @@ func TestReturnStatement(t *testing.T) {
 		{
 			name: "return null",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn nothing(): Math {
@@ -132,7 +132,7 @@ func TestReturnStatement(t *testing.T) {
 		{
 			name: "return null",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn nothing(): Math {
@@ -155,7 +155,7 @@ func TestReturnStatement(t *testing.T) {
 		{
 			name: "return by typecasting",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn doubleIt(x: int): float {

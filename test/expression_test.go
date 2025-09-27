@@ -18,7 +18,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "int declaration",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 10;
                     io.printf("%d", a);
@@ -30,7 +30,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "float declaration",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say f: float64 = 3.14159;
                     io.printf("%f", f);
@@ -42,7 +42,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "string declaration",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say s: string = "hello";
                     io.printf("%s", s);
@@ -54,7 +54,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "boolean declaration",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say s: boolean = 1;
                     io.printf("%d", s);
@@ -66,7 +66,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "declaration as class instance",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: Math = new Math();
 					fn Test() {}
@@ -84,7 +84,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "declaration as class fields",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: int = 42;
 					fn Test() {}
@@ -101,7 +101,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "init with expression",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 5;
                     say b: int = a + 10;
@@ -114,7 +114,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "literals with unary expression",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say z: int = 0;
                     say n: int = -100;
@@ -128,7 +128,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "uninitialized int, float, boolean",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int;
 					say b: float;
@@ -142,7 +142,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "uninitialized string",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: string;
                     io.printf("%s", a);
@@ -154,7 +154,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "uninitialized class fields",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: int;
 					fn Test() {}
@@ -170,7 +170,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "uninitialized class instance type",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: Math;
 					fn Test() {}
@@ -188,7 +188,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "allow recursive type reference",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: Test;
 					fn Test() {}
@@ -204,7 +204,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "redeclare variable",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 10;
                     say a: int = 20;
@@ -216,7 +216,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "redeclaring class fields",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: int;
 					say x: int;
@@ -234,7 +234,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "different funcs with same var names",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn fa(): int {
@@ -258,7 +258,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "name resolution in nested blocks",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 100;
                     io.printf("a=%d", a);
@@ -276,7 +276,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "name resolution with function params",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                   fn Test() {
                   }
@@ -302,7 +302,7 @@ func TestDeclareVarExpression(t *testing.T) {
 		{
 			name: "type cast float64 to int8",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int8 = 1899;
                     return 0;
@@ -338,7 +338,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "int reassignment",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 10;
 					a = 180;
@@ -351,7 +351,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "float reassignment with int literal",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say f: float64 = 3.14159;
 					f = 90;
@@ -364,7 +364,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "string reassignment",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say s: string = "hello";
 					s = "never";
@@ -377,7 +377,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "class type reassignment",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: Math;
                     fn Test() {
@@ -400,7 +400,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "init with expression",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 90;
                     a = a + 10;
@@ -413,7 +413,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "init with member expression",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: int = 100;
                     fn Test() {}
@@ -431,7 +431,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "name resolution with function params",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                   fn Test() {
                   }
@@ -457,7 +457,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "assign class fields",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                   say x: float;
                   fn Test() {}
@@ -476,7 +476,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "name resolution with function params",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                   fn Test() {
                   }
@@ -498,7 +498,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "name resolution with function params",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 100;
 					a = "hello";
@@ -511,7 +511,7 @@ func TestAssignVarExpression(t *testing.T) {
 		{
 			name: "type cast float64 to int8",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int8 = 1090;
                     return 0;
@@ -548,7 +548,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Addition",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 5 + 7;
                     io.printf("%d", a);
@@ -560,7 +560,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Subtraction with negative result",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say b: int = 10 - 20;
                     io.printf("%d", b);
@@ -572,7 +572,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Multiplication",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say c: int = 6 * 7;
                     io.printf("%d", c);
@@ -584,7 +584,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Division",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say d: int = 20 / 4;
                     io.printf("%d", d);
@@ -597,7 +597,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Greater than true",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say x: boolean = 10 > 5;
                     io.printf("%d", x);
@@ -609,7 +609,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Less than false",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say y: boolean = 10 < 5;
                     io.printf("%d", y);
@@ -621,7 +621,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Equality",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say z: boolean = 7 == 7;
                     io.printf("%d", z);
@@ -633,7 +633,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Inequality",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say z: boolean = 7 != 8;
                     io.printf("%d", z);
@@ -647,7 +647,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Logical AND",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say res: boolean = 1 && 0;
                     io.printf("%d", res);
@@ -659,7 +659,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Logical OR",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say res: boolean = 0 || 1;
                     io.printf("%d", res);
@@ -671,7 +671,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Logical NOT",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say res: boolean = !0;
                     io.printf("%d", res);
@@ -685,7 +685,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Precedence multiplication before addition",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = 2 + 3 * 4;
                     io.printf("%d", a);
@@ -697,7 +697,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "Parentheses override precedence",
 			src: `
-                import io;
+                import io from builtin;
                 fn main(): int32 {
                     say a: int = (2 + 3) * 4;
                     io.printf("%d", a);
@@ -709,7 +709,7 @@ func TestBinaryExpression(t *testing.T) {
 		{
 			name: "involving function calls",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn pi(): float {
@@ -753,7 +753,7 @@ func TestFunctionCallExpression(t *testing.T) {
 		{
 			name: "function call without param, without return",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn greet() {
@@ -771,7 +771,7 @@ func TestFunctionCallExpression(t *testing.T) {
 		{
 			name: "function call with params, without return",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn printer(x: int, y: double) {
@@ -789,7 +789,7 @@ func TestFunctionCallExpression(t *testing.T) {
 		{
 			name: "function call with params, without return",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn printer(x: int, y: double) {
@@ -807,7 +807,7 @@ func TestFunctionCallExpression(t *testing.T) {
 		{
 			name: "function call with params, with return",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn printer(x: int, y: double): string {
@@ -826,7 +826,7 @@ func TestFunctionCallExpression(t *testing.T) {
 		{
 			name: "unknown function call",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                 }
@@ -841,7 +841,7 @@ func TestFunctionCallExpression(t *testing.T) {
 		{
 			name: "function call with ignoring params",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn printer(x: int, y: string) {
@@ -861,7 +861,7 @@ func TestFunctionCallExpression(t *testing.T) {
 		{
 			name: "type cast function return",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     fn Test() {}
                     fn printer(x: float): float {
@@ -905,7 +905,7 @@ func TestNewExpression(t *testing.T) {
 		{
 			name: "basic constructor with field modification",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: int;
                     fn Test(x: int) {
@@ -925,7 +925,7 @@ func TestNewExpression(t *testing.T) {
 		{
 			name: "independent new expression",
 			src: `
-                import io;
+                import io from builtin;
                 class Test {
                     say x: int;
                     fn Test(x: int) {

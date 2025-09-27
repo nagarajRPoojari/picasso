@@ -18,8 +18,8 @@ func TestBooleanTypeCasting(t *testing.T) {
 		{
 			name: "boolean->boolean",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say b: boolean = 1;
 				say c: boolean = b;
@@ -32,8 +32,8 @@ func TestBooleanTypeCasting(t *testing.T) {
 		{
 			name: "boolean->int8",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say b: boolean = 1;
 				say c: int8 = b;
@@ -46,8 +46,8 @@ func TestBooleanTypeCasting(t *testing.T) {
 		{
 			name: "boolean->int32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say b: boolean = 1;
 				say c: int32 = b;
@@ -60,8 +60,8 @@ func TestBooleanTypeCasting(t *testing.T) {
 		{
 			name: "boolean->int64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say b: boolean = 1;
 				say c: int = b;
@@ -74,8 +74,8 @@ func TestBooleanTypeCasting(t *testing.T) {
 		{
 			name: "boolean->float16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say b: boolean = 1;
 				say c: float16 = b;
@@ -88,8 +88,8 @@ func TestBooleanTypeCasting(t *testing.T) {
 		{
 			name: "boolean->float32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say b: boolean = 1;
 				say c: float32 = b;
@@ -102,8 +102,8 @@ func TestBooleanTypeCasting(t *testing.T) {
 		{
 			name: "boolean->float64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say b: boolean = 1;
 				say c: float64 = b;
@@ -115,7 +115,7 @@ func TestBooleanTypeCasting(t *testing.T) {
 		{
 			name: "boolean->string",
 			src: `
-			import io;
+			import io from builtin;
 			fn main(): int32 {
 				say b: boolean = true;
 				say s: string = b;
@@ -153,8 +153,8 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->boolean",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int8 = 1;
 				say b: boolean = a;
@@ -166,8 +166,8 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->boolean (other than 0/1)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int8 = 100;
 				say b: boolean = a;
@@ -180,8 +180,8 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->int8",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int8 = 42;
 				say b: int8 = a;
@@ -194,8 +194,8 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->int32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int8 = 42;
 				say b: int32 = a;
@@ -208,8 +208,8 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->int64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int8 = 42;
 				say b: int64 = a;
@@ -222,8 +222,8 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->float16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int8 = 42;
 				say b: float16 = a;
@@ -236,8 +236,8 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->float32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int8 = 42;
 				say b: float32 = a;
@@ -250,8 +250,8 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->float64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int8 = 42;
 				say b: float64 = a;
@@ -264,7 +264,7 @@ func TestInt8TypeCasting(t *testing.T) {
 		{
 			name: "int8->string",
 			src: `
-			import io;
+			import io from builtin;
 			fn main(): int32 {
 				say a: int8 = 42;
 				say s: string = a;
@@ -303,8 +303,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->boolean",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 1;
 				say b: boolean = a;
@@ -316,8 +316,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->boolean (other than 0/1)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 1000;
 				say b: boolean = a;
@@ -330,8 +330,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->int8",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 42;
 				say b: int8 = a;
@@ -343,8 +343,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->int8 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 420;
 				say b: int8 = a;
@@ -357,8 +357,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->int16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 42;
 				say b: int16 = a;
@@ -371,8 +371,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->int32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 42;
 				say b: int32 = a;
@@ -385,8 +385,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->int64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 42;
 				say b: int64 = a;
@@ -399,8 +399,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->float16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 42;
 				say b: float16 = a;
@@ -413,8 +413,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->float32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 42;
 				say b: float32 = a;
@@ -427,8 +427,8 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->float64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int16 = 42;
 				say b: float64 = a;
@@ -441,7 +441,7 @@ func TestInt16TypeCasting(t *testing.T) {
 		{
 			name: "int16->string",
 			src: `
-			import io;
+			import io from builtin;
 			fn main(): int32 {
 				say a: int16 = 42;
 				say s: string = a;
@@ -480,8 +480,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->boolean",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 1;
 				say b: boolean = a;
@@ -493,8 +493,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->boolean (other than 0/1)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 100000;
 				say b: boolean = a;
@@ -507,8 +507,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->int8",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 42;
 				say b: int8 = a;
@@ -520,8 +520,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->int8 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 420;
 				say b: int8 = a;
@@ -534,8 +534,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->int16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 42;
 				say b: int16 = a;
@@ -547,8 +547,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->int16 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 32769;
 				say b: int16 = a;
@@ -561,8 +561,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->int32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 42;
 				say b: int32 = a;
@@ -575,8 +575,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->int64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 42;
 				say b: int64 = a;
@@ -589,8 +589,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->float16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 42;
 				say b: float16 = a;
@@ -602,8 +602,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->float16 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 65509;
 				say b: float16 = a;
@@ -616,8 +616,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->float32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 42;
 				say b: float32 = a;
@@ -630,8 +630,8 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->float64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int32 = 42;
 				say b: float64 = a;
@@ -644,7 +644,7 @@ func TestInt32TypeCasting(t *testing.T) {
 		{
 			name: "int32->string",
 			src: `
-			import io;
+			import io from builtin;
 			fn main(): int32 {
 				say a: int32 = 42;
 				say s: string = a;
@@ -683,8 +683,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->boolean",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 1;
 				say b: boolean = a;
@@ -696,8 +696,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->boolean (other than 0/1)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 1000000000;
 				say b: boolean = a;
@@ -710,8 +710,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->int8",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 42;
 				say b: int8 = a;
@@ -723,8 +723,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->int8 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 178;
 				say b: int8 = a;
@@ -737,8 +737,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->int16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 42;
 				say b: int16 = a;
@@ -750,8 +750,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->int16 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 32769;
 				say b: int16 = a;
@@ -764,8 +764,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->int32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 42;
 				say b: int32 = a;
@@ -777,8 +777,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->int32 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 2147483649;
 				say b: int32 = a;
@@ -791,8 +791,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->int64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 42;
 				say b: int64 = a;
@@ -805,8 +805,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->float16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 42;
 				say b: float16 = a;
@@ -818,8 +818,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->float16 (oveflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 65509;
 				say b: float16 = a;
@@ -832,8 +832,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->float32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 42;
 				say b: float32 = a;
@@ -846,8 +846,8 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->float64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: int64 = 42;
 				say b: float64 = a;
@@ -860,7 +860,7 @@ func TestInt64TypeCasting(t *testing.T) {
 		{
 			name: "int64->string",
 			src: `
-			import io;
+			import io from builtin;
 			fn main(): int32 {
 				say a: int64 = 42;
 				say s: string = a;
@@ -899,8 +899,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->boolean (non-zero)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 1.5;
 				say b: boolean = a;
@@ -912,8 +912,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->boolean (zero)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 0.0;
 				say b: boolean = a;
@@ -926,8 +926,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->int8",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 42.0;
 				say b: int8 = a;
@@ -940,8 +940,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->int16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 42.0;
 				say b: int16 = a;
@@ -953,8 +953,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->int16 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 65504;
 				say b: int16 = a;
@@ -967,8 +967,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->int32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 42.0;
 				say b: int32 = a;
@@ -981,8 +981,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->int64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 42.0;
 				say b: int64 = a;
@@ -995,8 +995,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->float16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 3.14;
 				say b: float16 = a;
@@ -1009,8 +1009,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->float32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 3.14;
 				say b: float32 = a;
@@ -1023,8 +1023,8 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->float64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float16 = 3.14;
 				say b: float64 = a;
@@ -1037,7 +1037,7 @@ func TestFloat16TypeCasting(t *testing.T) {
 		{
 			name: "float16->string",
 			src: `
-			import io;
+			import io from builtin;
 			fn main(): int32 {
 				say a: float16 = 3.14;
 				say s: string = a;
@@ -1076,8 +1076,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->boolean (non-zero)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 1.5;
 				say b: boolean = a;
@@ -1089,8 +1089,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->boolean (zero)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 0.0;
 				say b: boolean = a;
@@ -1103,8 +1103,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->int8",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 42.0;
 				say b: int8 = a;
@@ -1117,8 +1117,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->int16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 42.0;
 				say b: int16 = a;
@@ -1130,8 +1130,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->int16 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 1e6;
 				say b: int16 = a;
@@ -1144,8 +1144,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->int32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 42.0;
 				say b: int32 = a;
@@ -1157,8 +1157,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->int32 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 1e20;
 				say b: int32 = a;
@@ -1171,8 +1171,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->int64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 42.0;
 				say b: int64 = a;
@@ -1185,8 +1185,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->float16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 3.14;
 				say b: float16 = a;
@@ -1200,8 +1200,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->float32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 3.14;
 				say b: float32 = a;
@@ -1214,8 +1214,8 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->float64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float32 = 3.14;
 				say b: float64 = a;
@@ -1228,7 +1228,7 @@ func TestFloat32TypeCasting(t *testing.T) {
 		{
 			name: "float32->string",
 			src: `
-			import io;
+			import io from builtin;
 			fn main(): int32 {
 				say a: float32 = 3.14;
 				say s: string = a;
@@ -1267,8 +1267,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->boolean (non-zero)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 1.5;
 				say b: boolean = a;
@@ -1280,8 +1280,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->boolean (zero)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 0.0;
 				say b: boolean = a;
@@ -1294,8 +1294,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->int8",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 42.0;
 				say b: int8 = a;
@@ -1307,8 +1307,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->int8 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 1e3;
 				say b: int8 = a;
@@ -1321,8 +1321,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->int16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 42.0;
 				say b: int16 = a;
@@ -1334,8 +1334,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->int16 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 1e6;
 				say b: int16 = a;
@@ -1348,8 +1348,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->int32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 42.0;
 				say b: int32 = a;
@@ -1361,8 +1361,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->int32 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 1e20;
 				say b: int32 = a;
@@ -1375,8 +1375,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->int64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 42.0;
 				say b: int64 = a;
@@ -1388,8 +1388,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->int64 (overflow)",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 1e40;
 				say b: int64 = a;
@@ -1402,8 +1402,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->float16",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 3.14;
 				say b: float16 = a;
@@ -1416,8 +1416,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->float32",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 3.14;
 				say b: float32 = a;
@@ -1430,8 +1430,8 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->float64",
 			src: `
-			import io;
-			import types;
+			import io from builtin;
+			import types from builtin;
 			fn main(): int32 {
 				say a: float64 = 3.14;
 				say b: float64 = a;
@@ -1444,7 +1444,7 @@ func TestFloat64TypeCasting(t *testing.T) {
 		{
 			name: "float64->string",
 			src: `
-			import io;
+			import io from builtin;
 			fn main(): int32 {
 				say a: float64 = 3.14;
 				say s: string = a;

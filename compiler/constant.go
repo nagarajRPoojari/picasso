@@ -1,7 +1,8 @@
 package compiler
 
 const (
-	MAIN  = "main"
-	ENTRY = "entry"
-	THIS  = "this"
+	MAIN    = "main"
+	ENTRY   = "entry"
+	THIS    = "this"
+	BUILTIN = "builtin"
 )

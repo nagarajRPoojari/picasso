@@ -1,4 +1,4 @@
-import io;
+import io from builtin;
 import math;
 
 class Calculator {

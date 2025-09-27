@@ -173,7 +173,7 @@ func parse_import_stmt(p *Parser) ast.Statement {
 
 	if p.currentTokenKind() == lexer.FROM {
 		p.move()
-		importFrom = p.expect(lexer.STRING).Value
+		importFrom = p.expect(lexer.IDENTIFIER).Value
 	} else {
 		importFrom = importName
 	}

@@ -6,18 +6,15 @@ import (
 )
 
 type Pipeline struct {
-	packages map[string]ast.BlockStatement
-	st       *state.State
-
+	st   *state.State
 	tree ast.BlockStatement
 }
 
-func NewPipeline(st *state.State, packages map[string]ast.BlockStatement) *Pipeline {
-	return &Pipeline{st: st, packages: packages}
+func NewPipeline(st *state.State, tree ast.BlockStatement) *Pipeline {
+	return &Pipeline{st: st, tree: tree}
 }
 
 func (t *Pipeline) Run() {
-	t.tree = t.BuildUniModule()
 	t.ImportModules()
 	t.PredeclareClasses()
 	t.DeclareVars()

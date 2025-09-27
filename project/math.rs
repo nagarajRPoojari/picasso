@@ -1,8 +1,10 @@
+import circle;
+
 class AdvancedMath {
     say PI: float64 = 3.14159265;
 
     fn AdvancedMath() {
-
+        say c: Circle = new Circle();
     }
 
     fn circleArea(radius: float64): float64 {

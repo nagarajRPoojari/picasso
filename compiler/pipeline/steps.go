@@ -33,54 +33,13 @@ func (t *Pipeline) DeclareGlobals() {
 	}
 }
 
-func (t *Pipeline) BuildUniModule() ast.BlockStatement {
-	mainModule := t.packages[constants.MAIN]
-	imported := make(map[string]struct{})
-	t.resolveImportsRecursive(mainModule, imported)
-	return mainModule
-}
-
-// resolveImportsRecursive traverses imports in `module` and inlines their bodies.
-func (t *Pipeline) resolveImportsRecursive(module ast.BlockStatement, imported map[string]struct{}) {
-	for i := 0; i < len(module.Body); i++ {
-		st := module.Body[i]
-
-		importStmt, ok := st.(ast.ImportStatement)
-		if !ok {
-			continue
-		}
-
-		pkgName := importStmt.Name
-		if _, seen := imported[pkgName]; seen {
-			panic("recursive import detected: " + pkgName)
-		}
-
-		pkgModule, exists := t.packages[pkgName]
-		if !exists {
-			// might be a native library
-			continue
-		}
-
-		imported[pkgName] = struct{}{}
-
-		t.resolveImportsRecursive(pkgModule, imported)
-
-		module.Body = append(
-			module.Body[:i],
-			append(pkgModule.Body, module.Body[i+1:]...)...,
-		)
-
-		i += len(pkgModule.Body) - 1
-
-		delete(imported, pkgName)
-	}
-}
-
 func (t *Pipeline) ImportModules() {
 	for _, stI := range t.tree.Body {
 		switch st := stI.(type) {
 		case ast.ImportStatement:
-			t.importModules(t.st.LibMethods, st.Name)
+			if st.From == constants.BUILTIN {
+				t.importModules(t.st.LibMethods, st.Name)
+			}
 		}
 	}
 }
