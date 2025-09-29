@@ -114,5 +114,6 @@ func BuildTokensTable() {
 	statement(lexer.IMPORT, parse_import_stmt)
 	statement(lexer.FOREACH, parse_foreach_stmt)
 	statement(lexer.CLASS, parse_class_declaration_stmt)
+	statement(lexer.INTERFACE, parse_interface_declaration_stmt)
 	statement(lexer.RETURN, parse_function_return_stmt)
 }

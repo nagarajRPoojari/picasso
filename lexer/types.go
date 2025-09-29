@@ -54,6 +54,7 @@ const (
 	SAY
 	CONST
 	CLASS
+	INTERFACE
 	NEW
 	IMPORT
 	FROM
@@ -74,26 +75,27 @@ const (
 )
 
 var reserved_keywords map[string]TokenKind = map[string]TokenKind{
-	"true":    TRUE,
-	"false":   FALSE,
-	"null":    NULL,
-	"say":     SAY,
-	"const":   CONST,
-	"class":   CLASS,
-	"new":     NEW,
-	"import":  IMPORT,
-	"from":    FROM,
-	"fn":      FN,
-	"if":      IF,
-	"else":    ELSE,
-	"foreach": FOREACH,
-	"while":   WHILE,
-	"for":     FOR,
-	"export":  EXPORT,
-	"typeof":  TYPEOF,
-	"in":      IN,
-	"return":  RETURN,
-	"static":  STATIC,
+	"true":      TRUE,
+	"false":     FALSE,
+	"null":      NULL,
+	"say":       SAY,
+	"const":     CONST,
+	"class":     CLASS,
+	"interface": INTERFACE,
+	"new":       NEW,
+	"import":    IMPORT,
+	"from":      FROM,
+	"fn":        FN,
+	"if":        IF,
+	"else":      ELSE,
+	"foreach":   FOREACH,
+	"while":     WHILE,
+	"for":       FOR,
+	"export":    EXPORT,
+	"typeof":    TYPEOF,
+	"in":        IN,
+	"return":    RETURN,
+	"static":    STATIC,
 }
 
 type Token struct {
@@ -202,6 +204,8 @@ func TokenKindString(kind TokenKind) string {
 		return "const"
 	case CLASS:
 		return "class"
+	case INTERFACE:
+		return "interface"
 	case NEW:
 		return "new"
 	case IMPORT:

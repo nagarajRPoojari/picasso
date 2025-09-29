@@ -27,10 +27,19 @@ type Parameter struct {
 	Type Type
 }
 
-type FunctionDeclarationStatement struct {
+type FunctionDefinitionStatement struct {
 	Parameters []Parameter
 	Name       string
 	Body       []Statement
+	ReturnType Type
+	IsStatic   bool
+}
+
+func (FunctionDefinitionStatement) stmt() {}
+
+type FunctionDeclarationStatement struct {
+	Parameters []Parameter
+	Name       string
 	ReturnType Type
 	IsStatic   bool
 }
@@ -74,3 +83,10 @@ type ClassDeclarationStatement struct {
 }
 
 func (n ClassDeclarationStatement) stmt() {}
+
+type InterfaceDeclarationStatement struct {
+	Name string
+	Body []Statement
+}
+
+func (n InterfaceDeclarationStatement) stmt() {}

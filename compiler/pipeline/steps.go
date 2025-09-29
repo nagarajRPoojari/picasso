@@ -38,6 +38,12 @@ func (t *Pipeline) ImportModules() {
 	})
 }
 
+func (t *Pipeline) DeclareInterface() {
+	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
+		class.ClassHandlerInst.PredeclareClass(st)
+	})
+}
+
 func (t *Pipeline) PredeclareClasses() {
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
 		class.ClassHandlerInst.PredeclareClass(st)
@@ -58,12 +64,12 @@ func (t *Pipeline) DeclareFuncs() {
 
 func (t *Pipeline) DefineClasses() {
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
-		class.ClassHandlerInst.DefineClass(st)
+		class.ClassHandlerInst.DefineClassFuncs(st)
 	})
 }
 
 func (t *Pipeline) DefineMain() {
-	Loop(t.tree, func(st ast.FunctionDeclarationStatement) {
+	Loop(t.tree, func(st ast.FunctionDefinitionStatement) {
 		if st.Name == constants.MAIN {
 			f := t.st.Module.NewFunc(constants.MAIN, types.I32)
 			t.st.Methods[constants.MAIN] = f

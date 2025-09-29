@@ -1,4 +1,4 @@
-package class
+package _interface
 
 import (
 	"github.com/llir/llvm/ir"
@@ -9,7 +9,7 @@ import (
 
 // predeclareClass creates an opaque struct for all classes defined by user
 // and registers it with typehandler for identfying forward declaration
-func (t *ClassHandler) PredeclareClass(cls ast.ClassDeclarationStatement) {
+func (t *InterfaceHandler) PredeclareInterface(cls ast.ClassDeclarationStatement) {
 	if _, ok := t.st.Classes[cls.Name]; ok {
 		return
 	}
@@ -23,5 +23,4 @@ func (t *ClassHandler) PredeclareClass(cls ast.ClassDeclarationStatement) {
 	}
 	t.st.Classes[cls.Name] = mc
 	t.st.TypeHandler.Register(cls.Name, mc)
-
 }

@@ -9,7 +9,7 @@ import (
 )
 
 // defineFunc does concrete function declaration
-func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDeclarationStatement) {
+func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionStatement) {
 	// new level for function block
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()

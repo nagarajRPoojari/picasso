@@ -1,4 +1,4 @@
-package class
+package _interface
 
 import (
 	"github.com/llir/llvm/ir"
@@ -10,10 +10,10 @@ import (
 
 // declareFunctions loops over all functions inside Class & creates
 // a header declaration
-func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement) {
+func (t *InterfaceHandler) DeclareFunctions(cls ast.ClassDeclarationStatement) {
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
-		case ast.FunctionDeclarationStatement:
+		case ast.FunctionDefinitionStatement:
 			params := make([]*ir.Param, 0)
 			for _, p := range st.Parameters {
 				params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(tf.Type(p.Type.Get()))))

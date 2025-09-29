@@ -134,7 +134,7 @@ func parse_fn_declaration(p *Parser) ast.Statement {
 	}
 	functionParams, returnType, functionBody := parse_fn_params_and_body(p)
 
-	return ast.FunctionDeclarationStatement{
+	return ast.FunctionDefinitionStatement{
 		Parameters: functionParams,
 		ReturnType: returnType,
 		Body:       functionBody,
@@ -216,6 +216,17 @@ func parse_class_declaration_stmt(p *Parser) ast.Statement {
 	return ast.ClassDeclarationStatement{
 		Name: className,
 		Body: ast.ExpectStmt[ast.BlockStatement](classBody).Body,
+	}
+}
+
+func parse_interface_declaration_stmt(p *Parser) ast.Statement {
+	p.move()
+	interfaceName := p.expect(lexer.IDENTIFIER).Value
+	interfaceBody := parse_block_stmt(p)
+
+	return ast.InterfaceDeclarationStatement{
+		Name: interfaceName,
+		Body: ast.ExpectStmt[ast.BlockStatement](interfaceBody).Body,
 	}
 }
 
