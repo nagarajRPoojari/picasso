@@ -13,14 +13,14 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
-			funcs.FuncHandlerInst.DefineFunc(cls.Name, &st)
+			funcs.FuncHandlerInst.DefineFunc(&cls, &st)
 		}
 	}
 }
 
 // defineClassVars stores corresponding ast for all var declaration
 // which will be used to instantiate them on constructor call, i.e, new MyClass()
-func (t *ClassHandler) DefineClassVars(cls ast.ClassDeclarationStatement) {
+func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 	mc := t.st.Classes[cls.Name]
 	fieldTypes := make([]types.Type, 0)
 	vars := make(map[string]struct{}, 0)

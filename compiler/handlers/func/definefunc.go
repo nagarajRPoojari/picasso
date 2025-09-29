@@ -10,8 +10,12 @@ import (
 )
 
 // defineFunc does concrete function declaration
-func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionStatement) {
+func (t *FuncHandler) DefineFunc(cls *ast.ClassDeclarationStatement, fn *ast.FunctionDefinitionStatement) {
 	// new level for function block
+	var className = ""
+	if cls != nil {
+		className = cls.Name
+	}
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
 
