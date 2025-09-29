@@ -10,6 +10,7 @@ import (
 )
 
 type State struct {
+	MainFunc *ir.Func
 	// llvm module
 	Module *ir.Module
 
@@ -20,7 +21,6 @@ type State struct {
 	// all global vars
 	Vars *scope.VarTree
 	// all methods including class methods & top level functions
-	Methods map[string]*ir.Func
 	// custom classes defined by user
 	Classes map[string]*tf.MetaClass
 

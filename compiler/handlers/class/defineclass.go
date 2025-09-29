@@ -9,7 +9,7 @@ import (
 )
 
 // defineClass similar to declareClass but does function concrete declaration
-func (t *ClassHandler) DefineClassFuncs(cls ast.ClassDeclarationStatement) {
+func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
@@ -28,18 +28,42 @@ func (t *ClassHandler) DefineClassVars(cls ast.ClassDeclarationStatement) {
 	// map each fields with corresponding udt struct index
 	i := 0
 	for _, stI := range cls.Body {
-		if st, ok := stI.(ast.VariableDeclarationStatement); ok {
+		switch st := stI.(type) {
+		case ast.VariableDeclarationStatement:
 			fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Identifier)
 			if _, ok := vars[fqName]; ok {
 				errorsx.PanicCompilationError("variable already exists")
 			}
 
-			mc.VarIndexMap[fqName] = i
+			mc.FieldIndexMap[fqName] = i
 			mc.VarAST[fqName] = &st
 
 			fieldType := t.st.TypeHandler.GetLLVMType(tf.Type(st.ExplicitType.Get()))
 			fieldTypes = append(fieldTypes, fieldType)
 			vars[fqName] = struct{}{}
+			i++
+
+		case ast.FunctionDefinitionStatement:
+
+			var retType types.Type
+			if st.ReturnType != nil {
+				retType = t.st.TypeHandler.GetLLVMType(tf.Type(st.ReturnType.Get()))
+			} else {
+				retType = t.st.TypeHandler.GetLLVMType(tf.Type(tf.NULL))
+			}
+
+			args := make([]types.Type, 0)
+			for _, p := range st.Parameters {
+				args = append(args, t.st.TypeHandler.GetLLVMType(tf.Type(p.Type.Get())))
+			}
+
+			funcType := types.NewFunc(retType, args...)
+			funcPtrType := types.NewPointer(funcType)
+			fieldTypes = append(fieldTypes, funcPtrType)
+
+			fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Name)
+			mc.FieldIndexMap[fqName] = i
+
 			i++
 		}
 	}

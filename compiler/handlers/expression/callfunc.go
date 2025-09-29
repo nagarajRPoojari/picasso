@@ -58,60 +58,58 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 		}
 
 		methodKey := t.st.IdentifierBuilder.Attach(cls.Name, m.Property)
-		fn, ok := classMeta.Methods[methodKey]
-		if !ok || fn == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: unknown method %s on class %s", m.Property, cls.Name))
+		idx, ok := classMeta.FieldIndexMap[methodKey]
+
+		if !ok {
+			panic(fmt.Sprintf("unable to find method: %s", m.Property))
 		}
 
-		// Build args for the user parameters (do not append `this` yet)
+		st := classMeta.StructType()
+		fieldType := st.Fields[idx]
+
+		// Load the function pointer directly from the struct field (single load)
+		fnVal := cls.LoadField(block, idx, fieldType)
+		if fnVal == nil {
+			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: function pointer is nil for %s.%s", cls.Name, m.Member))
+		}
+
+		var funcType *types.FuncType
+		if ptrType, ok := fieldType.(*types.PointerType); ok {
+			funcType, ok = ptrType.ElemType.(*types.FuncType)
+			if !ok {
+				panic(fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
+			}
+		} else {
+			panic(fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
+		}
+
+		// Build args
 		args := make([]value.Value, 0, len(ex.Arguments)+1)
 		for i, argExp := range ex.Arguments {
 			v, safe := t.ProcessExpression(block, argExp)
 			block = safe
-
-			if v == nil {
-				errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: nil arg %d for %s.%s", i, cls.Name, m.Property))
-			}
 			raw := v.Load(block)
-			if raw == nil {
-				errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: loaded nil arg %d for %s.%s", i, cls.Name, m.Property))
-			}
-
-			// If the callee expects a certain param type, cast to it
-			expected := fn.Sig.Params[i]
-			target := utils.GetTypeString(expected)
-			raw, block = t.st.TypeHandler.ImplicitTypeCast(block, target, raw)
-			if raw == nil {
-				errorsx.PanicCompilationError(fmt.Sprintf(
-					"handleCallExpression: ImplicitTypeCast returned nil for arg %d -> %s", i, target))
-			}
+			expected := funcType.Params[i]
+			raw, block = t.st.TypeHandler.ImplicitTypeCast(block, utils.GetTypeString(expected), raw)
 			args = append(args, raw)
-
 		}
 
-		// Pass `this` as a pointer-to-struct (Slot returns pointer)
+		// Append `this` pointer as last arg
 		thisPtr := cls.Slot()
-		if thisPtr == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: this pointer is nil for %s", cls.Name))
-		}
-
-		// Check function expected param count: we declared 'this' last when creating fn,
-		// adjust order according to how the function was declared.
 		args = append(args, thisPtr)
 
-		// ensure function is non-nil
-		if fn == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: function pointer nil for %s.%s", cls.Name, m.Property))
-		}
+		// Call
+		ret := block.NewCall(fnVal, args...)
 
-		// make function call
-		ret := block.NewCall(fn, args...)
-		if fn.Sig.RetType == types.Void {
+		// Return handling
+		retType := funcType.RetType
+		if retType == types.Void {
 			return nil, block
 		}
 
-		tp := utils.GetTypeString(fn.Sig.RetType)
+		tp := utils.GetTypeString(retType)
 		return t.st.TypeHandler.BuildVar(block, tf.Type(tp), ret), block
+
 	}
 	return nil, block
 }

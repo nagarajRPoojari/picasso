@@ -1,6 +1,7 @@
 package funcs
 
 import (
+	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
@@ -15,10 +16,13 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	defer t.st.Vars.RemoveFunc()
 
 	name := t.st.IdentifierBuilder.Attach(className, fn.Name)
+	var f *ir.Func
 	if className == "" { // indicates classless function: main
 		name = fn.Name
+		f = t.st.MainFunc
+	} else {
+		f = t.st.Classes[className].Methods[name]
 	}
-	f := t.st.Methods[name]
 	entry := f.NewBlock(constants.ENTRY)
 
 	if className == "" {

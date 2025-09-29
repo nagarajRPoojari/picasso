@@ -36,7 +36,7 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 
 	// Compute field name in identifier map
 	fieldID := t.st.IdentifierBuilder.Attach(cls.Name, ex.Property)
-	idx, ok := classMeta.VarIndexMap[fieldID]
+	idx, ok := classMeta.FieldIndexMap[fieldID]
 	if !ok {
 		errorsx.PanicCompilationError(fmt.Sprintf("unknown field %s on class %s", ex.Property, cls.Name))
 	}

@@ -17,10 +17,10 @@ func (t *ClassHandler) PredeclareClass(cls ast.ClassDeclarationStatement) {
 	udt := types.NewStruct() // opaque
 	t.st.Module.NewTypeDef(cls.Name, udt)
 	mc := &tf.MetaClass{
-		VarIndexMap: make(map[string]int),
-		VarAST:      make(map[string]*ast.VariableDeclarationStatement),
-		Methods:     make(map[string]*ir.Func),
-		UDT:         types.NewPointer(udt),
+		FieldIndexMap: make(map[string]int),
+		VarAST:        make(map[string]*ast.VariableDeclarationStatement),
+		UDT:           types.NewPointer(udt),
+		Methods:       make(map[string]*ir.Func),
 	}
 	t.st.Classes[cls.Name] = mc
 	t.st.TypeHandler.Register(cls.Name, mc)
@@ -51,7 +51,6 @@ func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement) {
 				retType = t.st.TypeHandler.GetLLVMType(tf.Type(tf.NULL))
 			}
 			f := t.st.Module.NewFunc(name, retType, params...)
-			t.st.Methods[name] = f
 			t.st.Classes[cls.Name].Methods[name] = f
 		}
 	}

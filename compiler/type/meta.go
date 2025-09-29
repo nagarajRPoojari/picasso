@@ -8,8 +8,8 @@ import (
 )
 
 type MetaClass struct {
-	VarIndexMap map[string]int
-	VarAST      map[string]*ast.VariableDeclarationStatement
+	FieldIndexMap map[string]int
+	VarAST        map[string]*ast.VariableDeclarationStatement
 
 	Methods map[string]*ir.Func
 
@@ -31,9 +31,9 @@ func (mc *MetaClass) StructType() *types.StructType {
 
 func NewMetaClass() *MetaClass {
 	return &MetaClass{
-		VarIndexMap: make(map[string]int),
-		VarAST:      make(map[string]*ast.VariableDeclarationStatement),
-		Methods:     make(map[string]*ir.Func),
+		FieldIndexMap: make(map[string]int),
+		VarAST:        make(map[string]*ast.VariableDeclarationStatement),
+		Methods:       make(map[string]*ir.Func),
 	}
 }
 func (m *MetaClass) FieldType(idx int) types.Type {

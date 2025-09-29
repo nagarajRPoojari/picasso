@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
@@ -12,10 +13,34 @@ import (
 )
 
 func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex ast.CallExpression) *ir.Block {
+	// Get the method symbol and metadata
 	m := ex.Method.(ast.SymbolExpression)
 	meth := t.st.IdentifierBuilder.Attach(m.Value, m.Value)
-	fn := t.st.Methods[meth]
+	meta := t.st.Classes[cls.Name]
+	idx := meta.FieldIndexMap[meth]
 
+	// Get struct and field type
+	st := meta.StructType()
+	fieldType := st.Fields[idx]
+
+	// Load the function pointer directly from the struct field (single load)
+	fnVal := cls.LoadField(block, idx, fieldType)
+	if fnVal == nil {
+		errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: function pointer is nil for %s.%s", cls.Name, m.Value))
+	}
+
+	// Ensure field type is pointer-to-function
+	var funcType *types.FuncType
+	if ptrType, ok := fieldType.(*types.PointerType); ok {
+		funcType, ok = ptrType.ElemType.(*types.FuncType)
+		if !ok {
+			panic(fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
+		}
+	} else {
+		panic(fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
+	}
+
+	// Build arguments
 	args := make([]value.Value, 0, len(ex.Arguments)+1)
 	for i, argExp := range ex.Arguments {
 		v, safe := t.ProcessExpression(block, argExp)
@@ -28,29 +53,27 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: loaded nil arg %d for %s", i, m.Value))
 		}
 
-		expected := fn.Sig.Params[i]
+		// Implicit type cast if needed
+		expected := funcType.Params[i]
 		target := utils.GetTypeString(expected)
 		raw, safe = t.st.TypeHandler.ImplicitTypeCast(block, target, raw)
 		block = safe
 		if raw == nil {
 			errorsx.PanicCompilationError(fmt.Sprintf(
-				"handleCallExpression: ImplicitTypeCast returned nil for arg %d -> %s", i, target))
+				"handleConstructorCall: ImplicitTypeCast returned nil for arg %d -> %s", i, target))
 		}
 		args = append(args, raw)
-
 	}
 
-	// Pass `this` as a pointer-to-struct (Slot returns pointer)
+	// Append `this` pointer as the last argument
 	thisPtr := cls.Slot()
 	if thisPtr == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: this pointer is nil for %s", cls.Name))
+		errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: this pointer is nil for %s", cls.Name))
 	}
-
-	// Check function expected param count: we declared 'this' last when creating fn,
-	// adjust order according to how the function was declared.
 	args = append(args, thisPtr)
 
-	block.NewCall(fn, args...)
+	// Call the function pointer
+	block.NewCall(fnVal, args...)
 
 	return block
 }
@@ -69,8 +92,14 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 	structType := classMeta.StructType()
 	meta := t.st.Classes[meth.Value]
 
-	for name, index := range meta.VarIndexMap {
-		exp := meta.VarAST[name]
+	for name, index := range meta.FieldIndexMap {
+		exp, ok := meta.VarAST[name]
+		if !ok {
+			f := t.st.Classes[meth.Value].Methods[name]
+			fieldType := t.st.Classes[meth.Value].StructType().Fields[index]
+			instance.UpdateField(block, index, f, fieldType)
+			continue
+		}
 		fieldType := structType.Fields[index]
 
 		var v tf.Var

@@ -64,7 +64,7 @@ func (t *Pipeline) DeclareFuncs() {
 
 func (t *Pipeline) DefineClasses() {
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
-		class.ClassHandlerInst.DefineClassFuncs(st)
+		class.ClassHandlerInst.DefineClass(st)
 	})
 }
 
@@ -72,7 +72,7 @@ func (t *Pipeline) DefineMain() {
 	Loop(t.tree, func(st ast.FunctionDefinitionStatement) {
 		if st.Name == constants.MAIN {
 			f := t.st.Module.NewFunc(constants.MAIN, types.I32)
-			t.st.Methods[constants.MAIN] = f
+			t.st.MainFunc = f
 			funcs.FuncHandlerInst.DefineFunc("", &st)
 		}
 	})

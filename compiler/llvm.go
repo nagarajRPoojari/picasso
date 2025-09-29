@@ -34,7 +34,6 @@ func NewLLVM() *LLVM {
 		Module:            m,
 		TypeHandler:       tf.NewTypeHandler(),
 		Vars:              tree,
-		Methods:           make(map[string]*ir.Func),
 		Classes:           make(map[string]*tf.MetaClass),
 		IdentifierBuilder: identifier.NewIdentifierBuilder(MAIN),
 		LibMethods:        make(map[string]function.Func),
