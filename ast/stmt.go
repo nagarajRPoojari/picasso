@@ -78,8 +78,9 @@ type ForeachStatement struct {
 func (n ForeachStatement) stmt() {}
 
 type ClassDeclarationStatement struct {
-	Name string
-	Body []Statement
+	Name       string
+	Body       []Statement
+	Implements string
 }
 
 func (n ClassDeclarationStatement) stmt() {}

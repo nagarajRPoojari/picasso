@@ -1,7 +1,7 @@
 import io from builtin;
 import math;
 
-class Calculator {
+class Calculator: Any {
     fn Calculator() {
         // constructor
     }

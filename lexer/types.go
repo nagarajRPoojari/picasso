@@ -55,6 +55,7 @@ const (
 	CONST
 	CLASS
 	INTERFACE
+	IS
 	NEW
 	IMPORT
 	FROM
@@ -82,6 +83,7 @@ var reserved_keywords map[string]TokenKind = map[string]TokenKind{
 	"const":     CONST,
 	"class":     CLASS,
 	"interface": INTERFACE,
+	"is":        IS,
 	"new":       NEW,
 	"import":    IMPORT,
 	"from":      FROM,
@@ -206,6 +208,8 @@ func TokenKindString(kind TokenKind) string {
 		return "class"
 	case INTERFACE:
 		return "interface"
+	case IS:
+		return "is"
 	case NEW:
 		return "new"
 	case IMPORT:

@@ -211,11 +211,17 @@ func parse_foreach_stmt(p *Parser) ast.Statement {
 func parse_class_declaration_stmt(p *Parser) ast.Statement {
 	p.move()
 	className := p.expect(lexer.IDENTIFIER).Value
+	var implements string
+	if p.currentTokenKind() == lexer.COLON {
+		p.move()
+		implements = p.expect(lexer.IDENTIFIER).Value
+	}
 	classBody := parse_block_stmt(p)
 
 	return ast.ClassDeclarationStatement{
-		Name: className,
-		Body: ast.ExpectStmt[ast.BlockStatement](classBody).Body,
+		Name:       className,
+		Body:       ast.ExpectStmt[ast.BlockStatement](classBody).Body,
+		Implements: implements,
 	}
 }
 
