@@ -31,6 +31,7 @@ type FunctionDefinitionStatement struct {
 	Parameters []Parameter
 	Name       string
 	Body       []Statement
+	Hash       uint32
 	ReturnType Type
 	IsStatic   bool
 }

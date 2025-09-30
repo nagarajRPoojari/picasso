@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"hash/fnv"
+
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/lexer"
 )
@@ -140,7 +142,22 @@ func parse_fn_declaration(p *Parser) ast.Statement {
 		Body:       functionBody,
 		Name:       functionName,
 		IsStatic:   isStatic,
+		Hash:       func_hash(functionParams, returnType),
 	}
+}
+
+func func_hash(params []ast.Parameter, ret ast.Type) uint32 {
+	var s = ""
+	if ret != nil {
+		s = ret.Get()
+	}
+	for _, i := range params {
+		s += i.Type.Get()
+	}
+
+	h := fnv.New32a()
+	h.Write([]byte(s))
+	return h.Sum32()
 }
 
 func parse_if_stmt(p *Parser) ast.Statement {

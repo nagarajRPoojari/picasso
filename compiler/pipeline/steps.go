@@ -8,6 +8,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/class"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	funcs "github.com/nagarajRPoojari/x-lang/compiler/handlers/func"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/state"
 	"github.com/nagarajRPoojari/x-lang/compiler/libs"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
@@ -51,21 +52,77 @@ func (t *Pipeline) PredeclareClasses() {
 }
 
 func (t *Pipeline) DeclareVars() {
-	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
-		class.ClassHandlerInst.DefineClassUDT(st)
-	})
+	parent := make(map[string]string)
+	classDefs := make(map[string]ast.ClassDeclarationStatement)
+	childs := make(map[string][]ast.ClassDeclarationStatement)
+	roots := make([]ast.ClassDeclarationStatement, 0)
+
+	for _, i := range t.tree.Body {
+		if st, ok := i.(ast.ClassDeclarationStatement); ok {
+			parent[st.Name] = st.Implements
+			if st.Implements != "" {
+				if _, ok := childs[st.Implements]; !ok {
+					childs[st.Implements] = make([]ast.ClassDeclarationStatement, 0)
+				}
+				childs[st.Implements] = append(childs[st.Implements], st)
+			} else {
+				roots = append(roots, st)
+			}
+			classDefs[st.Name] = st
+		}
+	}
+	for i := range parent {
+		cyclicCheck(i, parent, make(map[string]struct{}))
+	}
+
+	t.st.TypeHeirarchy = state.TypeHeirarchy{
+		Parent:    parent,
+		Roots:     roots,
+		Childs:    childs,
+		ClassDefs: classDefs,
+	}
+
+	for _, i := range roots {
+		traverse(i, childs, func(st ast.ClassDeclarationStatement) {
+			class.ClassHandlerInst.DefineClassUDT(st)
+		})
+	}
+
+}
+
+func cyclicCheck(child string, parent map[string]string, isV map[string]struct{}) {
+	isV[child] = struct{}{}
+	p := parent[child]
+	if p != "" {
+		if _, ok := isV[p]; ok {
+			panic(fmt.Sprintf("cyclic inheritance found involving %s", p))
+		}
+		cyclicCheck(p, parent, isV)
+	}
+	delete(isV, child)
+}
+
+func traverse(parent ast.ClassDeclarationStatement, childs map[string][]ast.ClassDeclarationStatement, fn func(ast.ClassDeclarationStatement)) {
+	fn(parent)
+	for _, c := range childs[parent.Name] {
+		traverse(c, childs, fn)
+	}
 }
 
 func (t *Pipeline) DeclareFuncs() {
-	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
-		class.ClassHandlerInst.DeclareFunctions(st)
-	})
+	for _, i := range t.st.TypeHeirarchy.Roots {
+		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
+			class.ClassHandlerInst.DeclareFunctions(st)
+		})
+	}
 }
 
 func (t *Pipeline) DefineClasses() {
-	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
-		class.ClassHandlerInst.DefineClass(st)
-	})
+	for _, i := range t.st.TypeHeirarchy.Roots {
+		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
+			class.ClassHandlerInst.DefineClass(st)
+		})
+	}
 }
 
 func (t *Pipeline) DefineMain() {
@@ -73,7 +130,7 @@ func (t *Pipeline) DefineMain() {
 		if st.Name == constants.MAIN {
 			f := t.st.Module.NewFunc(constants.MAIN, types.I32)
 			t.st.MainFunc = f
-			funcs.FuncHandlerInst.DefineFunc(nil, &st)
+			funcs.FuncHandlerInst.DefineFunc("", &st)
 		}
 	})
 }

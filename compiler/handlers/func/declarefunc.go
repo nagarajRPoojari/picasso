@@ -9,17 +9,17 @@ import (
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
-func (t *FuncHandler) DeclareFunc(cls *ast.ClassDeclarationStatement, st ast.FunctionDefinitionStatement) {
+func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement) {
 	params := make([]*ir.Param, 0)
 	for _, p := range st.Parameters {
 		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(tf.Type(p.Type.Get()))))
 	}
 
 	// at the end pass `this` parameter representing current object
-	udt := t.st.Classes[cls.Name].UDT
+	udt := t.st.Classes[cls].UDT
 	params = append(params, ir.NewParam(constants.THIS, udt))
 
-	name := t.st.IdentifierBuilder.Attach(cls.Name, st.Name)
+	name := t.st.IdentifierBuilder.Attach(cls, st.Name)
 
 	var retType types.Type
 	if st.ReturnType != nil {
@@ -28,5 +28,5 @@ func (t *FuncHandler) DeclareFunc(cls *ast.ClassDeclarationStatement, st ast.Fun
 		retType = t.st.TypeHandler.GetLLVMType(tf.Type(tf.NULL))
 	}
 	f := t.st.Module.NewFunc(name, retType, params...)
-	t.st.Classes[cls.Name].Methods[name] = f
+	t.st.Classes[cls].Methods[name] = f
 }

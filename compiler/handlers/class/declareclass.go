@@ -30,10 +30,18 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement) {
 // declareFunctions loops over all functions inside Class & creates
 // a header declaration
 func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement) {
+
+	// declare all inherited methods
+	for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
+		switch st := stI.(type) {
+		case ast.FunctionDefinitionStatement:
+			funcs.FuncHandlerInst.DeclareFunc(cls.Name, st)
+		}
+	}
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
-			funcs.FuncHandlerInst.DeclareFunc(&cls, st)
+			funcs.FuncHandlerInst.DeclareFunc(cls.Name, st)
 		}
 	}
 }

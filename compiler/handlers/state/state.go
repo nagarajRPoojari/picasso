@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/gc"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/identifier"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/scope"
@@ -30,5 +31,14 @@ type State struct {
 
 	LibMethods map[string]function.Func
 
+	TypeHeirarchy TypeHeirarchy
+
 	GC *gc.GC
+}
+
+type TypeHeirarchy struct {
+	Parent    map[string]string
+	Childs    map[string][]ast.ClassDeclarationStatement
+	Roots     []ast.ClassDeclarationStatement
+	ClassDefs map[string]ast.ClassDeclarationStatement
 }

@@ -10,10 +10,17 @@ import (
 
 // defineClass similar to declareClass but does function concrete declaration
 func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
+	for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
+		switch st := stI.(type) {
+		case ast.FunctionDefinitionStatement:
+			funcs.FuncHandlerInst.DefineFunc(cls.Name, &st)
+		}
+	}
+
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
-			funcs.FuncHandlerInst.DefineFunc(&cls, &st)
+			funcs.FuncHandlerInst.DefineFunc(cls.Name, &st)
 		}
 	}
 }
@@ -27,6 +34,38 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 
 	// map each fields with corresponding udt struct index
 	i := 0
+
+	parentClass := t.st.Classes[cls.Implements]
+	if parentClass != nil {
+		for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
+			switch st := stI.(type) {
+			case ast.FunctionDefinitionStatement:
+				fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Name)
+				mc.FieldIndexMap[fqName] = i
+				i++
+			case ast.VariableDeclarationStatement:
+				fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Identifier)
+				if _, ok := vars[fqName]; ok {
+					errorsx.PanicCompilationError("variable already exists")
+				}
+
+				mc.FieldIndexMap[fqName] = i
+				mc.VarAST[fqName] = &st
+				i++
+			}
+		}
+		if ptr, ok := parentClass.UDT.(*types.PointerType); ok {
+			if st, ok2 := ptr.ElemType.(*types.StructType); ok2 {
+				// take all fields from parent
+				fieldTypes = append(fieldTypes, st.Fields...)
+			} else {
+				panic("parentClass.UDT pointer does not point to a struct")
+			}
+		} else {
+			panic("parentClass.UDT is not a pointer type")
+		}
+	}
+
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
