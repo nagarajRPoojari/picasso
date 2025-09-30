@@ -31,14 +31,15 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement) {
 // a header declaration
 func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement) {
 
-	// declare all inherited methods
-	for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
+	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
 			funcs.FuncHandlerInst.DeclareFunc(cls.Name, st)
 		}
 	}
-	for _, stI := range cls.Body {
+
+	// declare all inherited methods
+	for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
 			funcs.FuncHandlerInst.DeclareFunc(cls.Name, st)

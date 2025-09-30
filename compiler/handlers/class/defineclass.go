@@ -1,6 +1,8 @@
 package class
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	funcs "github.com/nagarajRPoojari/x-lang/compiler/handlers/func"
@@ -10,17 +12,19 @@ import (
 
 // defineClass similar to declareClass but does function concrete declaration
 func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
-	for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
-		switch st := stI.(type) {
-		case ast.FunctionDefinitionStatement:
-			funcs.FuncHandlerInst.DefineFunc(cls.Name, &st)
-		}
-	}
-
+	avoid := make(map[string]struct{}, 0)
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
-			funcs.FuncHandlerInst.DefineFunc(cls.Name, &st)
+			funcs.FuncHandlerInst.DefineFunc(cls.Name, &st, avoid)
+			avoid[st.Name] = struct{}{}
+		}
+	}
+
+	for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
+		switch st := stI.(type) {
+		case ast.FunctionDefinitionStatement:
+			funcs.FuncHandlerInst.DefineFunc(cls.Name, &st, avoid)
 		}
 	}
 }
@@ -32,6 +36,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 	fieldTypes := make([]types.Type, 0)
 	vars := make(map[string]struct{}, 0)
 
+	funcs := make(map[string]uint32, 0)
 	// map each fields with corresponding udt struct index
 	i := 0
 
@@ -42,15 +47,17 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 			case ast.FunctionDefinitionStatement:
 				fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Name)
 				mc.FieldIndexMap[fqName] = i
+				funcs[st.Name] = st.Hash
 				i++
 			case ast.VariableDeclarationStatement:
 				fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Identifier)
 				if _, ok := vars[fqName]; ok {
-					errorsx.PanicCompilationError("variable already exists")
+					errorsx.PanicCompilationError(fmt.Sprintf("variable already exists: %s", st.Identifier))
 				}
 
 				mc.FieldIndexMap[fqName] = i
 				mc.VarAST[fqName] = &st
+				vars[fqName] = struct{}{}
 				i++
 			}
 		}
@@ -71,7 +78,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 		case ast.VariableDeclarationStatement:
 			fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Identifier)
 			if _, ok := vars[fqName]; ok {
-				errorsx.PanicCompilationError("variable already exists")
+				errorsx.PanicCompilationError(fmt.Sprintf("variable already exists: %s", st.Identifier))
 			}
 
 			mc.FieldIndexMap[fqName] = i
@@ -83,7 +90,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 			i++
 
 		case ast.FunctionDefinitionStatement:
-
+			fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Name)
 			var retType types.Type
 			if st.ReturnType != nil {
 				retType = t.st.TypeHandler.GetLLVMType(tf.Type(st.ReturnType.Get()))
@@ -98,12 +105,17 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 
 			funcType := types.NewFunc(retType, args...)
 			funcPtrType := types.NewPointer(funcType)
-			fieldTypes = append(fieldTypes, funcPtrType)
 
-			fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Name)
-			mc.FieldIndexMap[fqName] = i
-
-			i++
+			if sh, ok := funcs[st.Name]; ok {
+				if sh != st.Hash {
+					panic("improper override: method signature didn't match")
+				}
+				fieldTypes[mc.FieldIndexMap[fqName]] = funcPtrType
+			} else {
+				fieldTypes = append(fieldTypes, funcPtrType)
+				mc.FieldIndexMap[fqName] = i
+				i++
+			}
 		}
 	}
 

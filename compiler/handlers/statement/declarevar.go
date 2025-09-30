@@ -1,6 +1,8 @@
 package statement
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
@@ -10,7 +12,7 @@ import (
 
 func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDeclarationStatement) *ir.Block {
 	if t.st.Vars.Exists(st.Identifier) {
-		errorsx.PanicCompilationError("variable already exists")
+		errorsx.PanicCompilationError(fmt.Sprintf("variable already exists: %s", st.Identifier))
 	}
 
 	var v tf.Var

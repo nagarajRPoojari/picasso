@@ -3,14 +3,16 @@ import io from builtin;
 
 
 class Math {
+    say x: int = 190;
     fn Math() {}
-    fn Print() {
-        io.printf("printing from Math class");
+    fn Print(a : int) {
+        io.printf("printing from Math class.    ");
     }
 }
 
 
 class Calculator: Math {
+    say y: int = 10;
     fn Calculator() {
         // constructor
     }
@@ -19,6 +21,10 @@ class Calculator: Math {
         return a + b;
     }
 
+    fn Print(b : int) {
+        say n: int = this.x;
+        io.printf("printing from Math Calculator class.   %d ", n);
+    }
 
     // fn multiply(a: int, b: int): int {
     //     return a * b;
@@ -49,7 +55,7 @@ fn main(): int32 {
     say c: Calculator = new Calculator();
     c.add(10,20);
 
-    c.Print();
+    c.Print(99);
 
     // say calc: Calculator = new Calculator();
     // say adv: AdvancedMath = new AdvancedMath();

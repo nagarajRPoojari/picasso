@@ -27,6 +27,9 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 	} else {
 		retType = t.st.TypeHandler.GetLLVMType(tf.Type(tf.NULL))
 	}
-	f := t.st.Module.NewFunc(name, retType, params...)
-	t.st.Classes[cls].Methods[name] = f
+
+	if _, ok := t.st.Classes[cls].Methods[name]; !ok {
+		f := t.st.Module.NewFunc(name, retType, params...)
+		t.st.Classes[cls].Methods[name] = f
+	}
 }
