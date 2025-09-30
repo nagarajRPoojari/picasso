@@ -1,4 +1,5 @@
 import io from builtin;
+import types from builtin;
 // import math;
 
 
@@ -55,7 +56,14 @@ fn main(): int32 {
     say c: Calculator = new Calculator();
     c.add(10,20);
 
-    c.Print(99);
+    // c.Print(99);
+
+
+    say a: Math = new Calculator();
+    a.Print(9);
+
+
+    io.printf("typeof a = %s ", types.type(a));
 
     // say calc: Calculator = new Calculator();
     // say adv: AdvancedMath = new AdvancedMath();

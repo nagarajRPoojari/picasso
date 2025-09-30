@@ -1,16 +1,20 @@
 package class
 
 import (
-	"fmt"
-
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	funcs "github.com/nagarajRPoojari/x-lang/compiler/handlers/func"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
-// defineClass similar to declareClass but does function concrete declaration
+// DefineClass generates IR definitions for all methods of a class.
+// It defines both the class's own functions and inherited ones from its parent,
+// ensuring that duplicates are avoided by tracking already-defined names.
+//
+// Params:
+//
+//	cls – the AST ClassDeclarationStatement representing the class
 func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
 	avoid := make(map[string]struct{}, 0)
 	for _, stI := range cls.Body {
@@ -29,8 +33,21 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
 	}
 }
 
-// defineClassVars stores corresponding ast for all var declaration
-// which will be used to instantiate them on constructor call, i.e, new MyClass()
+// DefineClassUDT finalizes the LLVM struct definition for a user-defined class.
+// It assigns struct field indices for variables and methods, validates overrides,
+// incorporates fields and methods from the parent class, and updates the
+// opaque UDT created earlier in DeclareClassUDT with concrete field types.
+//
+// Behavior:
+//   - Inherits fields and methods from the parent class, extending the struct.
+//   - Registers new fields from the class body, ensuring no duplicates.
+//   - Adds function pointers for methods, validating method overrides
+//     (signature must match).
+//   - Updates the underlying LLVM struct with all collected field types.
+//
+// Params:
+//
+//	cls – the AST ClassDeclarationStatement representing the class
 func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 	mc := t.st.Classes[cls.Name]
 	fieldTypes := make([]types.Type, 0)
@@ -52,7 +69,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 			case ast.VariableDeclarationStatement:
 				fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Identifier)
 				if _, ok := vars[fqName]; ok {
-					errorsx.PanicCompilationError(fmt.Sprintf("variable already exists: %s", st.Identifier))
+					errorutils.Abort(errorutils.VariableRedeclaration, st.Identifier)
 				}
 
 				mc.FieldIndexMap[fqName] = i
@@ -61,16 +78,15 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 				i++
 			}
 		}
-		if ptr, ok := parentClass.UDT.(*types.PointerType); ok {
-			if st, ok2 := ptr.ElemType.(*types.StructType); ok2 {
-				// take all fields from parent
-				fieldTypes = append(fieldTypes, st.Fields...)
-			} else {
-				panic("parentClass.UDT pointer does not point to a struct")
-			}
-		} else {
-			panic("parentClass.UDT is not a pointer type")
+		ptr, ok := parentClass.UDT.(*types.PointerType)
+		if !ok {
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalUDTDefinitionError, "udt must be a pointer")
 		}
+		st, ok := ptr.ElemType.(*types.StructType)
+		if !ok {
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalUDTDefinitionError, "udt must be pointer to a struct")
+		}
+		fieldTypes = append(fieldTypes, st.Fields...)
 	}
 
 	for _, stI := range cls.Body {
@@ -78,7 +94,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 		case ast.VariableDeclarationStatement:
 			fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Identifier)
 			if _, ok := vars[fqName]; ok {
-				errorsx.PanicCompilationError(fmt.Sprintf("variable already exists: %s", st.Identifier))
+				errorutils.Abort(errorutils.VariableRedeclaration, st.Identifier)
 			}
 
 			mc.FieldIndexMap[fqName] = i
@@ -108,7 +124,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 
 			if sh, ok := funcs[st.Name]; ok {
 				if sh != st.Hash {
-					panic("improper override: method signature didn't match")
+					errorutils.Abort(errorutils.FunctionSignatureMisMatch, st.Name)
 				}
 				fieldTypes[mc.FieldIndexMap[fqName]] = funcPtrType
 			} else {
@@ -119,14 +135,14 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 		}
 	}
 
-	if ptr, ok := mc.UDT.(*types.PointerType); ok {
-		if st, ok2 := ptr.ElemType.(*types.StructType); ok2 {
-			st.Fields = fieldTypes
-		} else {
-			panic("mc.UDT pointer does not point to a struct")
-		}
-	} else {
-		panic("mc.UDT is not a pointer type")
+	ptr, ok := mc.UDT.(*types.PointerType)
+	if !ok {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalUDTDefinitionError, "udt must be a pointer")
 	}
+	st, ok := ptr.ElemType.(*types.StructType)
+	if !ok {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalUDTDefinitionError, "udt must be pointer to a struct")
+	}
+	fieldTypes = append(fieldTypes, st.Fields...)
 
 }

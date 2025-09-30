@@ -7,6 +7,19 @@ import (
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
+// processIfElseBlock generates LLVM IR for an if-else statement.
+// It builds condition evaluation, branching, and merges control flow
+// into a common end block.
+//
+// Params:
+//
+//	fn    – the LLVM function being built
+//	entry – the current IR basic block before the if-statement
+//	st    – the AST IfStatement to process
+//
+// Return:
+//
+//	A new IR basic block representing the merge point after the if-else.
 func (t *BlockHandler) processIfElseBlock(fn *ir.Func, entry *ir.Block, st *ast.IfStatement) *ir.Block {
 	ifBlock := fn.NewBlock("")
 	elseBlock := fn.NewBlock("")

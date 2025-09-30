@@ -4,15 +4,23 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	funcs "github.com/nagarajRPoojari/x-lang/compiler/handlers/func"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
-// predeclareClass creates an opaque struct for all classes defined by user
-// and registers it with typehandler for identfying forward declaration
+// DeclareClassUDT registers a new user-defined class type in the module.
+// It creates an opaque LLVM struct for the class, wraps it in a pointer type,
+// and stores metadata including fields, variables, and methods.
+//
+// If the class name already exists in the symbol table, it does nothing.
+//
+// Params:
+//
+//	cls – the AST ClassDeclarationStatement defining the class
 func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement) {
 	if _, ok := t.st.Classes[cls.Name]; ok {
-		return
+		errorutils.Abort(errorutils.ClassRedeclaration, cls.Name)
 	}
 	udt := types.NewStruct() // opaque
 	t.st.Module.NewTypeDef(cls.Name, udt)
@@ -24,11 +32,15 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement) {
 	}
 	t.st.Classes[cls.Name] = mc
 	t.st.TypeHandler.Register(cls.Name, mc)
-
 }
 
-// declareFunctions loops over all functions inside Class & creates
-// a header declaration
+// DeclareFunctions declares all functions (methods) of a class in the IR.
+// It processes both the functions defined directly in the class body and
+// any functions inherited from its parent class.
+//
+// Params:
+//
+//	cls – the AST ClassDeclarationStatement for which functions are declared
 func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement) {
 
 	for _, stI := range cls.Body {
@@ -38,7 +50,6 @@ func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement) {
 		}
 	}
 
-	// declare all inherited methods
 	for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:

@@ -3,10 +3,10 @@ package funcs
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
 // defineFunc does concrete function declaration
@@ -33,7 +33,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	}
 
 	if name == constants.MAIN && len(fn.Parameters) != 0 {
-		errorsx.PanicCompilationError("parameters are not allowed in main function")
+		errorutils.Abort(errorutils.MainFuncError, "parameters are not allowed in main function")
 	}
 
 	for i, p := range f.Params {
@@ -45,7 +45,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 
 		clsMeta := t.st.Classes[className]
 		if clsMeta == nil {
-			errorsx.PanicCompilationError("defineFunc: unknown class when binding this")
+			errorutils.Abort(errorutils.UnknownClass, className)
 		}
 		t.st.Vars.AddNewVar(p.LocalName, &tf.Class{
 			Name: className,

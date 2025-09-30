@@ -8,6 +8,14 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 )
 
+// Return handles a return statement by evaluating the expression,
+// performing implicit type casting to the function's return type, and emitting a return in the IR.
+//
+// Parameters:
+//
+//	block - the current IR block
+//	st    - the AST ReturnStatement node
+//	rt    - the expected return type of the function
 func (t *StatementHandler) Return(block *ir.Block, st *ast.ReturnStatement, rt types.Type) {
 	v, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.Value.Expression)
 	block = safe

@@ -7,11 +7,33 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
+// CallFunc handles invocation of a function or method call expression.
+//
+// Supports two main cases:
+//  1. Calls to imported library methods (resolved via t.st.LibMethods)
+//  2. Calls to class instance methods (resolved through class metadata and vtable-like lookup)
+//
+// Steps:
+//   - If the call looks like a library call (e.g., module.func), resolve and invoke directly.
+//   - Otherwise, evaluate the base expression, resolve the class metadata, locate the method
+//     function pointer, perform argument type-casting, and emit a call instruction.
+//   - Appends the `this` pointer automatically as the final argument for instance methods.
+//   - Returns a wrapped runtime variable if the function has a return type; otherwise returns nil.
+//
+// Parameters:
+//
+//	block - the current IR block in which code generation should occur
+//	ex    - the call expression AST node
+//
+// Returns:
+//
+//	tf.Var     - the resulting variable if the function returns a value, otherwise nil
+//	*ir.Block  - the (possibly updated) IR block after processing
 func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf.Var, *ir.Block) {
 	// check if imported modules
 	if m, ok := ex.Method.(ast.MemberExpression); ok {
@@ -33,7 +55,7 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 
 	switch m := ex.Method.(type) {
 	case ast.SymbolExpression:
-		errorsx.PanicCompilationError("method call should be on instance")
+		errorutils.Abort(errorutils.MemberExpressionError, "method call should be on instance")
 
 	case ast.MemberExpression:
 		// Evaluate the base expression
@@ -41,27 +63,27 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 		block = safe
 
 		if baseVar == nil {
-			errorsx.PanicCompilationError("handleCallExpression: nil baseVar for member expression")
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "nil base for member expression")
 		}
 
 		cls, ok := baseVar.(*tf.Class)
 		if !ok {
-			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: member access base is not Class (got %T)", baseVar))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "member access base is not a Class type")
 		}
 		if cls == nil || cls.Ptr == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("handleCallExpression: class or class.Ptr is nil for class %v", cls))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "class or class.Ptr is nil for class")
 		}
 
 		classMeta := t.st.Classes[cls.Name]
 		if classMeta == nil {
-			errorsx.PanicCompilationError("handleCallExpression: unknown class metadata: " + cls.Name)
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "unknown class metadata: "+cls.Name)
 		}
 
 		methodKey := t.st.IdentifierBuilder.Attach(cls.Name, m.Property)
 		idx, ok := classMeta.FieldIndexMap[methodKey]
 
 		if !ok {
-			panic(fmt.Sprintf("unable to find method: %s", m.Property))
+			errorutils.Abort(errorutils.UnknownMethod, m.Property)
 		}
 
 		st := classMeta.StructType()
@@ -70,17 +92,17 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 		// Load the function pointer directly from the struct field (single load)
 		fnVal := cls.LoadField(block, idx, fieldType)
 		if fnVal == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: function pointer is nil for %s.%s", cls.Name, m.Member))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, m.Member))
 		}
 
 		var funcType *types.FuncType
 		if ptrType, ok := fieldType.(*types.PointerType); ok {
 			funcType, ok = ptrType.ElemType.(*types.FuncType)
 			if !ok {
-				panic(fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
+				errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
 			}
 		} else {
-			panic(fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
 		}
 
 		// Build args

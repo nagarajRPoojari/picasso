@@ -5,6 +5,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/state"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
@@ -22,7 +23,22 @@ func NewExpressionHandler(st *state.State) *ExpressionHandler {
 	}
 }
 
-// processExpression handles binary expressions, function calls, member operations etc..
+// ProcessExpression evaluates an AST expression node within the given IR block
+// and produces a corresponding runtime variable along with the (possibly updated) block.
+//
+// It serves as a central dispatcher, delegating handling of each expression type
+// (symbols, literals, function calls, object creation, operators, etc.) to the
+// appropriate specialized method.
+//
+// Parameters:
+//
+//	block - the current IR block in which code generation should occur
+//	expI  - the AST expression to evaluate (nil-safe)
+//
+// Returns:
+//
+//	tf.Var     - the resulting typed variable representing the expression
+//	*ir.Block  - the (possibly modified) IR block after processing
 func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expression) (tf.Var, *ir.Block) {
 	if expI == nil {
 		return tf.NewNullVar(types.NewPointer(types.NewStruct())), block
@@ -31,30 +47,18 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 	switch ex := expI.(type) {
 
 	case ast.SymbolExpression:
-		// search for variable locally then gloablly
 		return t.processSymbolExpression(ex), block
 
 	case ast.ListExpression:
 		// should handle, [[1,2,3], [4,5,6]]
+		// @todo
 
 	case ast.NumberExpression:
-		// produce a runtime mutable var for the literal (double)
 		// by default number will be wrapped up with float64
 		return t.st.TypeHandler.BuildVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value)), block
 
 	case ast.StringExpression:
-		formatStr := ex.Value
-		strConst := constant.NewCharArrayFromString(formatStr + "\x00")
-		global := t.st.Module.NewGlobalDef("", strConst)
-
-		gep := block.NewGetElementPtr(
-			global.ContentType,
-			global,
-			constant.NewInt(types.I32, 0),
-			constant.NewInt(types.I32, 0),
-		)
-
-		return tf.NewString(block, gep), block
+		return t.ProcessStringLiteral(block, ex), block
 
 	case ast.NewExpression:
 		return t.ProcessNewExpression(block, ex)
@@ -75,5 +79,6 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 		return t.ProcessBinaryExpression(block, ex)
 	}
 
-	panic("error")
+	errorutils.Abort(errorutils.InvalidExpression)
+	return nil, nil
 }

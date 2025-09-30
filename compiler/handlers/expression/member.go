@@ -6,39 +6,60 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/ints"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
+// ProcessMemberExpression evaluates a member access expression (e.g., obj.field)
+// and returns a typed runtime variable corresponding to the accessed field.
+//
+// Behavior:
+//   - Recursively evaluates the base expression (`ex.Member`) to get the object instance.
+//   - Validates that the base is a class instance (`*tf.Class`).
+//   - Resolves the field index and type from class metadata.
+//   - Obtains a pointer to the field and wraps it in the appropriate tf.Var type:
+//   - Integer types (Int8, Int16, Int32, Int64, Boolean)
+//   - Floating-point types (Float16, Float32, Float64)
+//   - Struct pointers → wrapped as a new tf.Class instance
+//   - Other pointer types → wrapped as a tf.String
+//
+// Parameters:
+//
+//	block - the current IR block for code generation
+//	ex    - the AST member expression node
+//
+// Returns:
+//
+//	tf.Var - a runtime variable representing the field
 func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.MemberExpression) tf.Var {
 	// Evaluate the base expression
 	baseVar, safe := t.ProcessExpression(block, ex.Member)
 	block = safe
 
 	if baseVar == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("nil base in member expression: %v", ex.Member))
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
 	}
 
 	// Base must be a class instance
 	cls, ok := baseVar.(*tf.Class)
 	if !ok {
-		errorsx.PanicCompilationError(fmt.Sprintf("member access base is not a class instance, got %T, while, %v", baseVar, ex))
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "member access base is not a class instance")
 	}
 
 	// Get metadata for base class
 	classMeta, ok := t.st.Classes[cls.Name]
 	if !ok {
-		errorsx.PanicCompilationError(fmt.Sprintf("unknown class metadata: %s", cls.Name))
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "unknown class metadata: "+cls.Name)
 	}
 
 	// Compute field name in identifier map
 	fieldID := t.st.IdentifierBuilder.Attach(cls.Name, ex.Property)
 	idx, ok := classMeta.FieldIndexMap[fieldID]
 	if !ok {
-		errorsx.PanicCompilationError(fmt.Sprintf("unknown field %s on class %s", ex.Property, cls.Name))
+		errorutils.Abort(errorutils.UnknownClassField, cls.Name)
 	}
 
 	// Get field type from struct UDT
@@ -79,7 +100,7 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 		case 64:
 			return &ints.Int64{NativeType: types.I64, Value: fieldPtr}
 		default:
-			panic(fmt.Sprintf("unsupported int size %d", ft.BitSize))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported int size %d", ft.BitSize))
 		}
 
 	case *types.FloatType:
@@ -91,7 +112,7 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 		case types.FloatKindDouble:
 			return &floats.Float64{NativeType: types.Double, Value: fieldPtr}
 		default:
-			panic(fmt.Sprintf("unsupported float kind %v", ft.Kind))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported float kind %v", ft.Kind))
 		}
 
 	case *types.PointerType:
@@ -106,7 +127,7 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 		}
 
 	default:
-		errorsx.PanicCompilationError(fmt.Sprintf("unsupported field type %T in member expression", fieldType))
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported field type %T in member expression", fieldType))
 	}
 	return nil
 }

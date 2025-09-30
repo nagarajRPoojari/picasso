@@ -7,9 +7,9 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
 func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex ast.CallExpression) *ir.Block {
@@ -26,7 +26,7 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 	// Load the function pointer directly from the struct field (single load)
 	fnVal := cls.LoadField(block, idx, fieldType)
 	if fnVal == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: function pointer is nil for %s.%s", cls.Name, m.Value))
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, m.Value))
 	}
 
 	// Ensure field type is pointer-to-function
@@ -34,10 +34,10 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 	if ptrType, ok := fieldType.(*types.PointerType); ok {
 		funcType, ok = ptrType.ElemType.(*types.FuncType)
 		if !ok {
-			panic(fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
 		}
 	} else {
-		panic(fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
 	}
 
 	// Build arguments
@@ -46,11 +46,11 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 		v, safe := t.ProcessExpression(block, argExp)
 		block = safe
 		if v == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: nil arg %d for %s", i, m.Value))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("nil arg %d for %s", i, m.Value))
 		}
 		raw := v.Load(block)
 		if raw == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: loaded nil arg %d for %s", i, m.Value))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("loaded nil arg %d for %s", i, m.Value))
 		}
 
 		// Implicit type cast if needed
@@ -59,8 +59,7 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 		raw, safe = t.st.TypeHandler.ImplicitTypeCast(block, target, raw)
 		block = safe
 		if raw == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf(
-				"handleConstructorCall: ImplicitTypeCast returned nil for arg %d -> %s", i, target))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("ImplicitTypeCast returned nil for arg %d -> %s", i, target))
 		}
 		args = append(args, raw)
 	}
@@ -68,7 +67,7 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 	// Append `this` pointer as the last argument
 	thisPtr := cls.Slot()
 	if thisPtr == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("handleConstructorCall: this pointer is nil for %s", cls.Name))
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("this pointer is nil for %s", cls.Name))
 	}
 	args = append(args, thisPtr)
 
@@ -78,6 +77,30 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 	return block
 }
 
+// ProcessNewExpression handles the creation of a new class instance (`new` expression).
+//
+// Steps:
+//  1. Adds a new function scope for variables and ensures cleanup via defer.
+//  2. Resolves the class metadata for the given instantiation method.
+//  3. Allocates a new class instance and initializes its underlying struct type.
+//  4. Iterates over all fields defined in the class:
+//     - For fields with assigned AST values, evaluates the expression, performs
+//     implicit type casting if necessary, and stores the value.
+//     - For fields without assigned values, initializes a default variable
+//     using the explicit type specified in the AST.
+//     - For method fields, updates the instance with the function pointer.
+//  5. Registers each initialized variable in the current scope.
+//  6. Invokes the class constructor if specified via `callConstructor`.
+//
+// Parameters:
+//
+//	block - the current IR block where the new instance and field assignments are emitted
+//	ex    - the AST `NewExpression` node containing instantiation details
+//
+// Returns:
+//
+//	tf.Var     - the newly created class instance
+//	*ir.Block  - the updated IR block after field initialization and constructor call
 func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpression) (tf.Var, *ir.Block) {
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
@@ -85,7 +108,7 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 	meth := ex.Instantiation.Method.(ast.SymbolExpression)
 	classMeta := t.st.Classes[meth.Value]
 	if classMeta == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("unknown class: %s", meth.Value))
+		errorutils.Abort(errorutils.UnknownClass, meth.Value)
 	}
 
 	instance := tf.NewClass(block, meth.Value, classMeta.UDT)

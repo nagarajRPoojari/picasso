@@ -1,15 +1,24 @@
 package statement
 
 import (
-	"fmt"
-
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
+// AssignVariable handles assignment statements, updating either a variable or
+// a class member with the result of an evaluated expression.
+//
+// Parameters:
+//
+//	block - the current IR block
+//	st    - the AST AssignmentExpression node
+//
+// Returns:
+//
+//	*ir.Block - the updated IR block after performing the assignment
 func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExpression) *ir.Block {
 
 	switch m := st.Assignee.(type) {
@@ -17,7 +26,7 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		assignee := m.Value
 		v, ok := t.st.Vars.Search(assignee)
 		if !ok {
-			panic(fmt.Sprintf("undefined: %s", st))
+			errorutils.Abort(errorutils.UnknownVariable, st)
 		}
 		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
 		block = safe
@@ -36,13 +45,13 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		block = safe
 
 		if baseVar == nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("nil base in member expression: %v", m))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
 		}
 
 		// Base must be a class instance
 		cls, ok := baseVar.(*tf.Class)
 		if !ok {
-			errorsx.PanicCompilationError(fmt.Sprintf("member access base is not a class instance, got %T, while, %v", baseVar, m))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "member access base is not a class instance")
 		}
 
 		classMeta := t.st.Classes[cls.Name]

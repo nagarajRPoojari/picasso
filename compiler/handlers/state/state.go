@@ -10,32 +10,34 @@ import (
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
+// State holds the global compiler/interpreter state during IR generation.
 type State struct {
+	// Entry point function (usually "main")
 	MainFunc *ir.Func
-	// llvm module
+	// LLVM IR module
 	Module *ir.Module
 
+	// Handles type conversions and casts
 	TypeHandler *tf.TypeHandler
-	// utility tool to build consistent identifier names
+	// Utility to create consistent identifiers
 	IdentifierBuilder *identifier.IdentifierBuilder
 
-	// all global vars
+	// All global and scoped variables
 	Vars *scope.VarTree
-	// all methods including class methods & top level functions
-	// custom classes defined by user
+	// User-defined classes with metadata
 	Classes map[string]*tf.MetaClass
-
-	// global string counter
-	// @todo: move this to separate string module
-	StrCounter int
-
+	// Imported library functions
 	LibMethods map[string]function.Func
 
+	// Global string counter for unique string literals
+	StrCounter int
+	// Class inheritance hierarchy
 	TypeHeirarchy TypeHeirarchy
-
+	// Garbage collector instance
 	GC *gc.GC
 }
 
+// TypeHeirarchy stores inheritance relationships between classes.
 type TypeHeirarchy struct {
 	Parent    map[string]string
 	Childs    map[string][]ast.ClassDeclarationStatement

@@ -1,18 +1,27 @@
 package statement
 
 import (
-	"fmt"
-
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
+// DeclareVariable handles variable declarations, optionally initializing
+// them with an assigned value.
+//
+// Parameters:
+//
+//	block - the current IR block
+//	st    - the AST VariableDeclarationStatement node
+//
+// Returns:
+//
+//	*ir.Block - the updated IR block after declaration
 func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDeclarationStatement) *ir.Block {
 	if t.st.Vars.Exists(st.Identifier) {
-		errorsx.PanicCompilationError(fmt.Sprintf("variable already exists: %s", st.Identifier))
+		errorutils.Abort(errorutils.VariableRedeclaration, st.Identifier)
 	}
 
 	var v tf.Var

@@ -9,6 +9,8 @@ import (
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
+// DeclareFunc declares a class method in the IR module.
+// It sets up the method's parameters and determines its return type.
 func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement) {
 	params := make([]*ir.Param, 0)
 	for _, p := range st.Parameters {

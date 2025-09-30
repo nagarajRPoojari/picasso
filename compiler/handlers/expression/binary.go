@@ -1,17 +1,15 @@
 package expression
 
 import (
-	"fmt"
-
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 	"github.com/nagarajRPoojari/x-lang/lexer"
 )
 
@@ -21,6 +19,106 @@ var arithmatic map[lexer.TokenKind]BinaryOperation
 var comparision map[lexer.TokenKind]BinaryOperation
 var logical map[lexer.TokenKind]BinaryOperation
 
+// ProcessBinaryExpression handles evaluation of a binary operation expression.
+//
+// It recursively processes the left and right operands, performs type-safe casting,
+// applies the corresponding operator (arithmetic, comparison, or logical),
+// and produces a new runtime variable with the result.
+//
+// Supported categories:
+//   - Arithmetic (e.g., +, -, *, /) → result as Float64
+//   - Comparison (e.g., <, >, ==)   → result as Boolean (I1)
+//   - Logical (e.g., &&, ||)        → result as Boolean (I1)
+//
+// Parameters:
+//
+//	block - the current IR block in which code generation should occur
+//	ex    - the binary expression AST node
+//
+// Returns:
+//
+//	tf.Var     - the resulting variable (float64 or boolean depending on operator)
+//	*ir.Block  - the (possibly updated) IR block after processing
+func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.BinaryExpression) (tf.Var, *ir.Block) {
+	left, safe := t.ProcessExpression(block, ex.Left)
+	block = safe
+
+	right, safe := t.ProcessExpression(block, ex.Right)
+	block = safe
+
+	if left == nil || right == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+
+	lv := left.Load(block)
+	rv := right.Load(block)
+
+	if op, ok := arithmatic[ex.Operator.Kind]; ok {
+		f := &floats.Float64{}
+		lvf, err := f.Cast(block, lv)
+		if err != nil {
+			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.FLOAT64)
+		}
+		rvf, err := f.Cast(block, rv)
+		if err != nil {
+			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.FLOAT64)
+		}
+
+		res, err := op(block, lvf, rvf)
+
+		if err != nil {
+			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
+		}
+		ptr := block.NewAlloca(types.Double)
+		block.NewStore(res, ptr)
+		return &floats.Float64{NativeType: types.Double, Value: ptr}, block
+
+	} else if op, ok := comparision[ex.Operator.Kind]; ok {
+		// comparision operations are done on float type operands only
+		f := &floats.Float64{}
+		lvf, err := f.Cast(block, lv)
+		if err != nil {
+			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.FLOAT64)
+		}
+		rvf, err := f.Cast(block, rv)
+		if err != nil {
+			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.FLOAT64)
+		}
+
+		res, err := op(block, lvf, rvf)
+		if err != nil {
+			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
+		}
+		ptr := block.NewAlloca(types.I1)
+		block.NewStore(res, ptr)
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, block
+
+	} else if op, ok := logical[ex.Operator.Kind]; ok {
+		f := &boolean.Boolean{}
+		lvf, err := f.Cast(block, lv)
+		if err != nil {
+			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.BOOLEAN)
+		}
+		rvf, err := f.Cast(block, rv)
+		if err != nil {
+			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.BOOLEAN)
+		}
+
+		res, err := op(block, lvf, rvf)
+		if err != nil {
+			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
+		}
+		ptr := block.NewAlloca(types.I1)
+		block.NewStore(res, ptr)
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, block
+	}
+
+	errorutils.Abort(errorutils.InvalidBinaryExpressionOperator, ex.Operator.Value)
+	return nil, block
+}
+
+// initOpLookUpTables inits lookup table mapping operand token with its
+// corresponding operation
 func initOpLookUpTables() {
 	arithmatic = make(map[lexer.TokenKind]BinaryOperation)
 	comparision = make(map[lexer.TokenKind]BinaryOperation)
@@ -79,80 +177,4 @@ func and(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
 }
 func or(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
 	return block.NewOr(lvf, rvf), nil
-}
-
-func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.BinaryExpression) (tf.Var, *ir.Block) {
-	left, safe := t.ProcessExpression(block, ex.Left)
-	block = safe
-
-	right, safe := t.ProcessExpression(block, ex.Right)
-	block = safe
-
-	if left == nil || right == nil {
-		errorsx.PanicCompilationError("nil operand in binary expression")
-	}
-
-	lv := left.Load(block)
-	rv := right.Load(block)
-
-	if op, ok := arithmatic[ex.Operator.Kind]; ok {
-		f := &floats.Float64{}
-		lvf, err := f.Cast(block, lv)
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-		rvf, err := f.Cast(block, rv)
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-
-		res, err := op(block, lvf, rvf)
-
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-		ptr := block.NewAlloca(types.Double)
-		block.NewStore(res, ptr)
-		return &floats.Float64{NativeType: types.Double, Value: ptr}, block
-
-	} else if op, ok := comparision[ex.Operator.Kind]; ok {
-		f := &floats.Float64{}
-		lvf, err := f.Cast(block, lv)
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-		rvf, err := f.Cast(block, rv)
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-
-		res, err := op(block, lvf, rvf)
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-		ptr := block.NewAlloca(types.I1)
-		block.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, block
-
-	} else if op, ok := logical[ex.Operator.Kind]; ok {
-		f := &boolean.Boolean{}
-		lvf, err := f.Cast(block, lv)
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-		rvf, err := f.Cast(block, rv)
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-
-		res, err := op(block, lvf, rvf)
-		if err != nil {
-			errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d: %v", int(ex.Operator.Kind), err))
-		}
-		ptr := block.NewAlloca(types.I1)
-		block.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, block
-	}
-	errorsx.PanicCompilationError(fmt.Sprintf("failed to do Binaryoperation %d", int(ex.Operator.Kind)))
-	return nil, block
 }
