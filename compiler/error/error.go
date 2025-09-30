@@ -3,7 +3,7 @@ package errorutils
 import "fmt"
 
 const (
-	InternalError                   = "[internal]: %s : %s"
+	InternalError                   = "[internal]: %s: %s"
 	InvalidStatement                = "invalid statement"
 	InvalidExpression               = "invalid expression"
 	InvalidBinaryExpressionOperand  = "invalid operand for binary operation"
@@ -19,6 +19,13 @@ const (
 	UnknownClass                    = "unknown class %s"
 	UnknownVariable                 = "unknown variable %s"
 	MainFuncError                   = "main function error: %s"
+	TypeError                       = "type error: %s: %s"
+)
+
+const (
+	InvalidNativeType = "invalid native type"
+	InvalidLLVMType   = "invalid llvm type"
+	InvalidTargetType = "invalid target type"
 )
 
 const (

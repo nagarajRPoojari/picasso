@@ -8,6 +8,7 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	rterr "github.com/nagarajRPoojari/x-lang/compiler/libs/private/runtime"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
@@ -207,7 +208,7 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		return c
 	}
 
-	errorsx.PanicCompilationError(fmt.Sprintf("invalid primitive type: %s , %v", _type, t.Udts))
+	errorutils.Abort(errorutils.TypeError, errorutils.InvalidNativeType, _type)
 	return nil
 }
 
@@ -243,7 +244,7 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 		return k.UDT
 	}
 
-	errorsx.PanicCompilationError((fmt.Sprintf("invalid LLVM type: %s", _type)))
+	errorutils.Abort(errorutils.TypeError, errorutils.InvalidLLVMType, _type)
 	return nil
 }
 
@@ -284,7 +285,7 @@ func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.V
 	if k, ok := t.Udts[target]; ok {
 		return ensureType(block, v, k.UDT), block
 	}
-	errorsx.PanicCompilationError(fmt.Sprintf("unexpected target type: %s", target))
+	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
 	return nil, block
 }
 

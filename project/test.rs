@@ -59,7 +59,7 @@ fn main(): int32 {
     // c.Print(99);
 
 
-    say a: Math = new Calculator();
+    say a: Na = new Calculator();
     a.Print(9);
 
 

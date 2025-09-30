@@ -143,6 +143,6 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 	if !ok {
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalUDTDefinitionError, "udt must be pointer to a struct")
 	}
-	fieldTypes = append(fieldTypes, st.Fields...)
+	st.Fields = fieldTypes
 
 }
