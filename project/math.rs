@@ -1,38 +1,73 @@
-import circle;
+import io from builtin;
+import types from builtin;
+// import math;
 
-class AdvancedMath {
-    say PI: float64 = 3.14159265;
 
-    fn AdvancedMath() {
-        say c: Circle = new Circle();
+class Math {
+    say x: int = 190;
+    fn Math() {}
+    fn Print(a : int) {
+        io.printf("printing from Math class.    ");
+    }
+}
+
+
+class Calculator: Math {
+    say y: int = 10;
+    fn Calculator() {
+        // constructor
     }
 
-    fn circleArea(radius: float64): float64 {
-        return this.PI * radius * radius;
+    fn add(a: int, b: int): int {
+        return a + b;
     }
 
-    fn circleCircumference(radius: float64): float64 {
-        return 2 * this.PI * radius;
+    fn Print(b : int) {
+        say n: int = this.x;
+        io.printf("printing from Math Calculator class.   %d ", n);
     }
 
-    fn power(base: int, exp: int): int {
-        // only supports small exponent, no loops, recursive instead
-        if (exp == 0 ){
-            return 1;
-        } else {
-            return base * this.power(base, exp-1);
-        }
+    // fn multiply(a: int, b: int): int {
+    //     return a * b;
+    // }
 
-		return 0;
-    }
+    // fn divide(a: int, b: int): float64 {
+    //     if (b == 0) {
+    //         io.printf("Division by zero!\n");
+    //         return 0.0;
+    //     } else {
+    //         return a / b;
+    //     }
+	// 	return 0;
+    // }
 
-	fn factorial(n :int): int {
-		if (n==1){
-			return 1;
-		}else {
-			return n * this.factorial(n-1);
-		}
+    // fn max(a: int, b: int): int {
+    //     if( a > b ){
+    //         return a;
+    //     } else {
+	// 		return b;
+	// 	}
+	// 	return b;
+    // }
+}
 
-		return 0;
-	}
+
+fn main(): int32 {
+    say c: Calculator = new Calculator();
+    c.add(10,20);
+
+    // c.Print(99);
+
+
+    say a: Math = new Calculator();
+    a.Print(9);
+
+
+    io.printf("typeof a = %s ", types.type(a));
+
+    // say calc: Calculator = new Calculator();
+    // say adv: AdvancedMath = new AdvancedMath();
+	// say n: int = 11;
+	// io.printf("factorial of %d = %d  ", n, adv.factorial(n));
+    return 0;
 }

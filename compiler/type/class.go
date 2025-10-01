@@ -182,13 +182,15 @@ func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
 	tgtPtr, okTgt := target.(*types.PointerType)
 
 	if okSrc && okTgt {
-		// Check if both are pointer to struct types for parent-child conversion
 		srcStruct, srcIsStruct := srcPtr.ElemType.(*types.StructType)
 		tgtStruct, tgtIsStruct := tgtPtr.ElemType.(*types.StructType)
 
-		// @todo:  maintain a O(1) edge checker, or isParent , may be using binary jumping (log(n))
-
 		if srcIsStruct && tgtIsStruct {
+			// Allow empty struct to be cast to any struct
+			if len(srcStruct.Fields) == 0 {
+				return block.NewBitCast(v, target)
+			}
+
 			// Child -> Parent layout check
 			if len(srcStruct.Fields) < len(tgtStruct.Fields) {
 				panic("ensureType: source struct has fewer fields than target parent")
@@ -208,14 +210,12 @@ func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
 		return block.NewBitCast(v, target)
 	}
 
-	// Not compatible pointers, check if we can bitcast function pointers
+	// Bitcast function pointers
 	if _, okSrcFunc := srcType.(*types.FuncType); okSrcFunc {
 		if _, okTgtFunc := target.(*types.FuncType); okTgtFunc {
 			return block.NewBitCast(v, target)
 		}
 	}
-
-	// Otherwise, types are incompatible
 	panic(fmt.Sprintf("ensureType: cannot convert %v -> %v", srcType, target))
 }
 

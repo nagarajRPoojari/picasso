@@ -57,7 +57,9 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		classMeta := t.st.Classes[cls.Name]
 		structType := classMeta.StructType()
 		meta := t.st.Classes[cls.Name]
-		index := meta.FieldIndexMap[m.Property]
+		fqName := t.st.IdentifierBuilder.Attach(cls.Name, m.Property)
+		index := meta.FieldIndexMap[fqName]
+
 		fieldType := structType.Fields[index]
 
 		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
