@@ -4,7 +4,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 )
 
 type MetaClass struct {
@@ -20,11 +20,11 @@ type MetaClass struct {
 func (mc *MetaClass) StructType() *types.StructType {
 	ptr, ok := mc.UDT.(*types.PointerType)
 	if !ok {
-		errorsx.PanicCompilationError("UDT is not a pointer-to-struct")
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, "UDT is not a pointer-to-struct")
 	}
 	st, ok := ptr.ElemType.(*types.StructType)
 	if !ok {
-		errorsx.PanicCompilationError("UDT pointer does not point to a struct")
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, "UDT pointer does not point to a struct")
 	}
 	return st
 }

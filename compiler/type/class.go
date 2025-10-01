@@ -171,47 +171,52 @@ func (s *Class) Type() types.Type {
 }
 
 func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
-	if v == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("cannot determine type of nil value: %v", v))
-	}
-	if v.Type().Equal(target) {
+	srcType := v.Type()
+
+	if srcType.Equal(target) {
 		return v
 	}
 
-	switch src := v.Type().(type) {
-	case *types.IntType:
-		switch dst := target.(type) {
-		case *types.IntType:
-			if src.BitSize < dst.BitSize {
-				return block.NewZExt(v, dst)
-			} else if src.BitSize > dst.BitSize {
-				return block.NewTrunc(v, dst)
+	// Handle pointer types
+	srcPtr, okSrc := srcType.(*types.PointerType)
+	tgtPtr, okTgt := target.(*types.PointerType)
+
+	if okSrc && okTgt {
+		// Check if both are pointer to struct types for parent-child conversion
+		srcStruct, srcIsStruct := srcPtr.ElemType.(*types.StructType)
+		tgtStruct, tgtIsStruct := tgtPtr.ElemType.(*types.StructType)
+
+		// @todo:  maintain a O(1) edge checker, or isParent , may be using binary jumping (log(n))
+
+		if srcIsStruct && tgtIsStruct {
+			// Child -> Parent layout check
+			if len(srcStruct.Fields) < len(tgtStruct.Fields) {
+				panic("ensureType: source struct has fewer fields than target parent")
 			}
-			return v
-		case *types.FloatType:
-			return block.NewSIToFP(v, dst)
-		}
-	case *types.FloatType:
-		switch dst := target.(type) {
-		case *types.FloatType:
-			if floatRank(src.Kind) < floatRank(dst.Kind) {
-				return block.NewFPExt(v, dst)
-			} else if floatRank(src.Kind) > floatRank(dst.Kind) {
-				return block.NewFPTrunc(v, dst)
+
+			for i := range tgtStruct.Fields {
+				if !srcStruct.Fields[i].Equal(tgtStruct.Fields[i]) {
+					panic(fmt.Sprintf("ensureType: field %d type mismatch: %v vs %v", i, srcStruct.Fields[i], tgtStruct.Fields[i]))
+				}
 			}
-			return v
-		case *types.IntType:
-			return block.NewFPToSI(v, dst)
+
+			// Safe to bitcast child pointer to parent pointer
+			return block.NewBitCast(v, target)
 		}
+
+		// Not structs, fallback: generic pointer bitcast
+		return block.NewBitCast(v, target)
 	}
 
-	if _, ok := v.Type().(*types.PointerType); ok {
-		if _, ok2 := target.(*types.PointerType); ok2 {
+	// Not compatible pointers, check if we can bitcast function pointers
+	if _, okSrcFunc := srcType.(*types.FuncType); okSrcFunc {
+		if _, okTgtFunc := target.(*types.FuncType); okTgtFunc {
 			return block.NewBitCast(v, target)
 		}
 	}
 
-	return block.NewBitCast(v, target)
+	// Otherwise, types are incompatible
+	panic(fmt.Sprintf("ensureType: cannot convert %v -> %v", srcType, target))
 }
 
 func (f *Class) NativeTypeString() string { return f.Name }

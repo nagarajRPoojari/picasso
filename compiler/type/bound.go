@@ -19,7 +19,7 @@ var intMin = map[*types.IntType]int64{
 }
 
 var floatMax = map[*types.FloatType]float64{
-	types.Half:   65504.0, // will be converted to half
+	types.Half:   65504.0,
 	types.Float:  3.4028235e38,
 	types.Double: 1.7976931348623157e308,
 }

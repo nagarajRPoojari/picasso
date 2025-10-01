@@ -56,6 +56,22 @@ func (t *TypeHandler) Register(name string, meta *MetaClass) {
 	t.Udts[name] = meta
 }
 
+// BuildVar creates and initializes a new variable of the given type in the
+// specified LLVM IR block. It allocates storage, applies an optional
+// initializer, and returns a Var wrapper that provides runtime access.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where the variable is allocated.
+//	_type — the high-level type identifier (primitive, string, void, or Class type).
+//	init  — optional initializer value; if nil, a default zero value is used.
+//
+// Returns:
+//
+//	Var — a wrapper around the allocated variable.
+//
+// Note:
+//   - class must be registered with TypeHandler before building var.
 func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Var {
 	switch _type {
 	case BOOLEAN, "i1":
@@ -212,7 +228,25 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 	return nil
 }
 
-// GetLLVMType accepts native Type & returns llvm compatible types.Type
+// GetLLVMType maps a high-level type identifier to its corresponding LLVM type.
+//
+// Parameters:
+//
+//	_type — the high-level type identifier (e.g., INT32, FLOAT64, STRING, UDT).
+//
+// Returns:
+//
+//	types.Type — the LLVM-compatible type that matches the given high-level type.
+//
+// Special cases:
+//   - NULL, VOID → types.Void
+//   - Boolean → types.I1
+//   - Integers → LLVM integer types (I8, I16, I32, I64)
+//   - Floats → LLVM floating-point types (Half, Float, Double)
+//   - String → i8 pointer
+//   - UDTs → resolved from the registered type table
+//
+// If the type is unknown or unsupported, the function aborts with a type error.
 func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	switch _type {
 	case NULL, VOID:
@@ -248,8 +282,28 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	return nil
 }
 
-// ImplicitTypeCast takes a target type name (e.g. "float64", "int8")
-// and a value, and emits the appropriate cast instruction in `block`.
+// ImplicitTypeCast attempts to cast the given LLVM IR value to a specified target type.
+//
+// Parameters:
+//
+//	block  — the LLVM IR basic block where casting instructions are inserted.
+//	target — the target type as a string (e.g., "i32", "float64", "string").
+//	v      — the LLVM IR value to be cast.
+//
+// Returns:
+//
+//	value.Value — the resulting LLVM IR value after casting.
+//	*ir.Block   — the (possibly updated) IR block reflecting the new instructions.
+//
+// Supported casts:
+//   - Booleans: "boolean", "bool", "i1"
+//   - Integers: "int8"/"i8", "int16"/"i16", "int32"/"i32", "int"/"int64"/"i64"
+//   - Floats:   "float16"/"half", "float32"/"float", "float64"/"double"
+//   - String:   "string", "i8*" (only from pointer types)
+//   - Void:     "void" (produces nil)
+//
+// Additionally, user-defined types (UDTs) are resolved from the type registry.
+// If the cast is invalid or unsupported, the function panics or aborts with a type error.
 func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.Value) (value.Value, *ir.Block) {
 	switch target {
 	case "boolean", "bool", "i1":
@@ -289,8 +343,24 @@ func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.V
 	return nil, block
 }
 
-// NOTE: assumes floatMax/floatMin and intMax/intMin maps exist as you already have.
-
+// catchIntToIntDownCast inserts runtime checks for narrowing integer casts
+// (downcasts) to detect overflow and raise an error if the value cannot fit
+// in the destination integer type.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the source integer value to be downcast.
+//	dst   — the target integer type (must be narrower than v’s type).
+//
+// Returns:
+//
+//	value.Value — the safely downcasted integer value, or a boolean when casting to i1.
+//	*ir.Block   — the block after branching, pointing to the "safe" continuation path.
+//
+// Behavior:
+//   - On overflow, a runtime error is raised, and execution is terminated via `unreachable`.
+//   - On success, the value is truncated (`trunc`) to the destination type.
 func (t *TypeHandler) catchIntToIntDownCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
 	b := block
 
@@ -318,6 +388,27 @@ func (t *TypeHandler) catchIntToIntDownCast(block *ir.Block, v value.Value, dst 
 	return vTrunc, safe
 }
 
+// catchFloatToIntDownCast inserts runtime checks for narrowing casts from
+// floating-point values to integers, ensuring the value lies within the
+// destination integer's bounds. If an overflow is detected, a runtime
+// error is raised.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the floating-point value to be downcast.
+//	dst   — the target integer type.
+//
+// Returns:
+//
+//	value.Value — the safely cast integer value (FP → SI).
+//	*ir.Block   — the block after branching, pointing to the "safe" continuation path.
+//
+// Behavior:
+//   - On overflow, a runtime error is raised and execution is terminated
+//     with `unreachable`.
+//   - On success, the float is converted to the destination integer type
+//     using FPToSI.
 func (t *TypeHandler) catchFloatToIntDownCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
 	b := block
 
@@ -352,6 +443,29 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *ir.Block, v value.Value, ds
 	return res, safe
 }
 
+// ImplicitIntCast casts a value to a target integer type, performing
+// necessary runtime checks for overflows or width adjustments.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the value to be cast (integer or floating-point).
+//	dst   — the destination integer type.
+//
+// Returns:
+//
+//	value.Value — the resulting LLVM IR value after casting.
+//	*ir.Block   — the (possibly updated) block reflecting inserted instructions.
+//
+// Behavior:
+//   - Boolean widening: i1 → larger integer uses ZExt; i1 → i1 returns unchanged.
+//   - Integer upcast: smaller → larger integer uses SExt.
+//   - Integer downcast: larger → smaller integer uses catchIntToIntDownCast
+//     with overflow checks.
+//   - Float → int: uses catchFloatToIntDownCast with overflow checks.
+//   - Float → boolean: compares against 0.0 (non-zero → true).
+//   - If the input type cannot be cast to an integer, the function aborts
+//     with an implicit type cast error.
 func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
 	b := block
 	src, ok := v.Type().(*types.IntType)
@@ -368,20 +482,20 @@ func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types
 			// float -> integer (with overflow checks)
 			return t.catchFloatToIntDownCast(block, v, dst)
 		}
-		panic("cannot intCast from " + v.Type().String())
+		errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "int")
 	}
 
 	if src.BitSize == 1 {
 		if dst.BitSize == 1 {
 			return v, b
 		}
-		// Boolean widen → ZExt
+		// Boolean widen with ZExt
 		return b.NewZExt(v, dst), b
 	}
 
 	// v is integer
 	if src.BitSize > dst.BitSize {
-		// downcast integer -> integer (with overflow checks)
+		// downcast integer to integer (with overflow checks)
 		return t.catchIntToIntDownCast(block, v, dst)
 	}
 	if src.BitSize < dst.BitSize {
@@ -391,6 +505,27 @@ func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types
 	return v, b
 }
 
+// catchFloatToFloatDowncast inserts runtime checks for floating-point
+// narrowing casts (downcasts) to ensure that the value fits within the
+// destination type's representable range. If an overflow occurs, a runtime
+// error is raised.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the source floating-point value to be cast.
+//	src   — the source floating-point type.
+//	dst   — the destination floating-point type.
+//
+// Returns:
+//
+//	value.Value — the safely cast floating-point value.
+//	*ir.Block   — the block after branching, pointing to the "safe" continuation path.
+//
+// Behavior:
+//   - On overflow, a runtime error is raised and execution is terminated
+//     with `unreachable`.
+//   - In the safe path, the value is truncated (FPTrunc) to the destination type.
 func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, src *types.FloatType, dst *types.FloatType) (value.Value, *ir.Block) {
 	b := block
 
@@ -434,6 +569,27 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, 
 	return vTrunc, safe
 }
 
+// catchIntToFloatDowncast inserts runtime checks for casting integers to
+// floating-point types, ensuring the integer value fits within the
+// representable range of the destination float. If the value exceeds the
+// bounds, a runtime error is raised.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the integer value to be cast.
+//	dst   — the destination floating-point type.
+//
+// Returns:
+//
+//	value.Value — the safely cast floating-point value.
+//	*ir.Block   — the block after branching, pointing to the "safe" continuation path.
+//
+// Behavior:
+//   - On overflow, a runtime error is raised and execution is terminated
+//     with `unreachable`.
+//   - In the safe path, the integer is converted to the requested float
+//     type (SIToFP).
 func (t *TypeHandler) catchIntToFloatDowncast(block *ir.Block, v value.Value, dst *types.FloatType) (value.Value, *ir.Block) {
 	b := block
 
@@ -460,6 +616,27 @@ func (t *TypeHandler) catchIntToFloatDowncast(block *ir.Block, v value.Value, ds
 	return res, safe
 }
 
+// ImplicitFloatCast casts a value to a target floating-point type, performing
+// necessary runtime checks for safe conversions and width adjustments.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the value to be cast (floating-point or integer).
+//	dst   — the destination floating-point type.
+//
+// Returns:
+//
+//	value.Value — the resulting LLVM IR value after casting.
+//	*ir.Block   — the (possibly updated) block reflecting inserted instructions.
+//
+// Behavior:
+//   - Float → float: uses catchFloatToFloatDowncast to handle upcasts and
+//     downcasts with overflow checks.
+//   - Integer → float: safe conversion with overflow checks.
+//   - For i1, zero/one is promoted and converted to float.
+//   - For larger integers, uses catchIntToFloatDowncast with overflow checks.
+//   - If the input type cannot be cast to a float, the function panics.
 func (t *TypeHandler) ImplicitFloatCast(block *ir.Block, v value.Value, dst *types.FloatType) (value.Value, *ir.Block) {
 	switch src := v.Type().(type) {
 	case *types.FloatType:
@@ -468,15 +645,16 @@ func (t *TypeHandler) ImplicitFloatCast(block *ir.Block, v value.Value, dst *typ
 	case *types.IntType:
 		// int -> float: special-case i1 -> treat as 0/1
 		if src.BitSize == 1 {
-			intVal := block.NewZExt(v, types.I8) // 0 or 1 -> i8 then convert
+			intVal := block.NewZExt(v, types.I8)
 			floatVal := block.NewSIToFP(intVal, dst)
 			return floatVal, block
 		}
 		return t.catchIntToFloatDowncast(block, v, dst)
 
 	default:
-		panic("cannot floatCast from " + v.Type().String())
+		errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "float")
 	}
+	return nil, nil
 }
 
 func floatRank(k types.FloatKind) int {
