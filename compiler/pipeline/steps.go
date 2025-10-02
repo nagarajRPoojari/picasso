@@ -39,12 +39,6 @@ func (t *Pipeline) ImportModules() {
 	})
 }
 
-func (t *Pipeline) DeclareInterface() {
-	// Loop(t.tree, func(st ast.ClassDeclarationStatement) {
-	// 	class.ClassHandlerInst.DeclareClassUDT(st)
-	// })
-}
-
 func (t *Pipeline) PredeclareClasses() {
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
 		class.ClassHandlerInst.DeclareClassUDT(st)

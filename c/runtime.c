@@ -26,3 +26,22 @@ void runtime_error(const char* msg) {
     fprintf(stderr, "%s\n", msg);
     exit(1);
 }
+
+typedef struct {
+    long length;
+    void* data;
+} Array;
+
+// Allocates an array of `count` elements of size `elem_size`
+Array* lang_alloc_array(long count, long elem_size) {
+    Array* arr = GC_MALLOC(sizeof(Array));
+    arr->length = count;
+    arr->data = GC_MALLOC(count * elem_size);
+    return arr;
+}
+
+
+// Allocate array of count elements, each of elem_size bytes
+void* lang_alloc_array(long count, long elem_size) {
+    return GC_MALLOC(count * elem_size);
+}

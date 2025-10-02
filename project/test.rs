@@ -21,5 +21,8 @@ fn main(): int32 {
 
     say x: Any = i.Value();
 
+    say arr: [4][0]Integer = arrays.create(Integer, 4, 5);
+    arr[0][0] = new Integer();
+
     return 0;
 }
