@@ -124,7 +124,7 @@ func (t *Pipeline) DefineMain() {
 		if st.Name == constants.MAIN {
 			f := t.st.Module.NewFunc(constants.MAIN, types.I32)
 			t.st.MainFunc = f
-			funcs.FuncHandlerInst.DefineFunc("", &st, make(map[string]struct{}))
+			funcs.FuncHandlerInst.DefineMainFunc(&st, make(map[string]struct{}))
 		}
 	})
 }

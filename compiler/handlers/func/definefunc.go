@@ -2,6 +2,8 @@ package funcs
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/block"
@@ -17,19 +19,14 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 
 	name := t.st.IdentifierBuilder.Attach(className, fn.Name)
 	var f *ir.Func
-	if className == "" { // indicates classless function: main
-		name = fn.Name
-		f = t.st.MainFunc
-	} else {
-		f = t.st.Classes[className].Methods[name]
-		if _, ok := avoid[fn.Name]; ok {
-			return
-		}
+	f = t.st.Classes[className].Methods[name]
+	if _, ok := avoid[fn.Name]; ok {
+		return
 	}
 	entry := f.NewBlock(constants.ENTRY)
 
-	if className == "" {
-		entry.NewCall(t.st.GC.Init())
+	if className == fn.Name {
+		t.initTypes(entry, className)
 	}
 
 	if name == constants.MAIN && len(fn.Parameters) != 0 {
@@ -60,4 +57,47 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	if fn.ReturnType == nil {
 		entry.NewRet(nil)
 	}
+}
+
+func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid map[string]struct{}) {
+	// new level for function block
+	t.st.Vars.AddFunc()
+	defer t.st.Vars.RemoveFunc()
+
+	var f *ir.Func
+	f = t.st.MainFunc
+	entry := f.NewBlock(constants.ENTRY)
+	t.Init(entry)
+	entry.NewCall(t.st.GC.Init())
+
+	if len(fn.Parameters) != 0 {
+		errorutils.Abort(errorutils.MainFuncError, "parameters are not allowed in main function")
+	}
+
+	entry = block.BlockHandlerInst.ProcessBlock(f, entry, fn.Body)
+
+	if fn.ReturnType == nil {
+		entry.NewRet(nil)
+	}
+}
+
+func (t *FuncHandler) Init(block *ir.Block) {
+	tps := []string{"int64", "int32", "int16", "int8", "string"}
+	for _, tp := range tps {
+		t.initTypes(block, tp)
+	}
+}
+
+func (t *FuncHandler) initTypes(block *ir.Block, s string) {
+	strConst := constant.NewCharArrayFromString(s + "\x00")
+	global := t.st.Module.NewGlobalDef("", strConst)
+
+	gep := block.NewGetElementPtr(
+		global.ContentType,
+		global,
+		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 0),
+	)
+
+	t.st.Vars.RegisterTypeHolders(block, s, tf.NewString(block, gep))
 }

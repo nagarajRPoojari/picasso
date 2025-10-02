@@ -39,9 +39,3 @@ Array* lang_alloc_array(long count, long elem_size) {
     arr->data = GC_MALLOC(count * elem_size);
     return arr;
 }
-
-
-// Allocate array of count elements, each of elem_size bytes
-void* lang_alloc_array(long count, long elem_size) {
-    return GC_MALLOC(count * elem_size);
-}

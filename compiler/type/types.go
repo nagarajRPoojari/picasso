@@ -56,6 +56,20 @@ func (t *TypeHandler) Register(name string, meta *MetaClass) {
 	t.Udts[name] = meta
 }
 
+func (t *TypeHandler) Exists(tp string) bool {
+	switch Type(tp) {
+	case NULL, VOID, BOOLEAN, "i1", INT8, "i8", INT16, "i16", INT32, "132", INT64, INT, "i64", FLOAT16, "half", FLOAT32, "float", FLOAT64, DOUBLE, STRING:
+		return true
+	}
+
+	// Check if already registered
+	if _, ok := t.Udts[tp]; ok {
+		return true
+	}
+
+	return false
+}
+
 // BuildVar creates and initializes a new variable of the given type in the
 // specified LLVM IR block. It allocates storage, applies an optional
 // initializer, and returns a Var wrapper that provides runtime access.

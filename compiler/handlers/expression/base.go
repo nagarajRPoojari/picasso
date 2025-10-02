@@ -47,6 +47,19 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 	switch ex := expI.(type) {
 
 	case ast.SymbolExpression:
+		if t.st.TypeHandler.Exists(ex.Value) {
+			formatStr := ex.Value
+			strConst := constant.NewCharArrayFromString(formatStr + "\x00")
+			global := t.st.Module.NewGlobalDef("", strConst)
+
+			gep := block.NewGetElementPtr(
+				global.ContentType,
+				global,
+				constant.NewInt(types.I32, 0),
+				constant.NewInt(types.I32, 0),
+			)
+			return tf.NewString(block, gep), block
+		}
 		return t.processSymbolExpression(ex), block
 
 	case ast.ListExpression:
