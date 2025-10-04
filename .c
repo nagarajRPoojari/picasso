@@ -1,1 +1,1 @@
-printing from Math Calculator class.   190 typeof a = Math Exit code: 0
+value = 0 Exit code: 0

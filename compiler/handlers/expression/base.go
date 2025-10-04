@@ -80,7 +80,7 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 		return t.ProcessMemberExpression(block, ex), block
 
 	case ast.ComputedExpression:
-		// e.g, arr[1], arr[1][a.id()];
+		return t.ProcessIndexingExpression(block, ex)
 
 	case ast.PrefixExpression:
 		return t.ProcessPrefixExpression(block, ex), block

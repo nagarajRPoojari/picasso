@@ -8,6 +8,12 @@ func GetTypeString(t types.Type) string {
 	case *types.PointerType:
 		if st, ok := et.ElemType.(*types.StructType); ok {
 			target = st.Name()
+			if target == "" {
+				target = st.String()
+			}
+			if target[0:1] == "%" {
+				target = target[1 : len(target)-1]
+			}
 		} else {
 			target = t.String()
 		}

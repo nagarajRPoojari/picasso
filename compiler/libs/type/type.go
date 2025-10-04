@@ -24,7 +24,7 @@ func (t *TypeHandler) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *TypeHandler) size(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) typedef.Var {
+func (t *TypeHandler) size(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
 	// assume args[0] holds the type or var we want sizeof
 	typ := args[0].Type() // this should be `types.Type`
 
@@ -41,10 +41,10 @@ func (t *TypeHandler) size(typeHandler *tf.TypeHandler, module *ir.Module, block
 	return &ints.Int32{
 		NativeType: types.I64,
 		Value:      slot,
-	}
+	}, block
 }
 
-func (t *TypeHandler) _type(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) typedef.Var {
+func (t *TypeHandler) _type(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
 	typ := args[0].NativeTypeString()
 
 	strConst := constant.NewCharArrayFromString(typ + "\x00")
@@ -57,5 +57,5 @@ func (t *TypeHandler) _type(typeHandler *tf.TypeHandler, module *ir.Module, bloc
 		constant.NewInt(types.I32, 0),
 	)
 
-	return tf.NewString(block, gep)
+	return tf.NewString(block, gep), block
 }

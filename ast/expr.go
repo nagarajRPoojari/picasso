@@ -60,8 +60,8 @@ type CallExpression struct {
 func (CallExpression) expr() {}
 
 type ComputedExpression struct {
-	Member   Expression
-	Property Expression
+	Member  Expression
+	Indices []Expression
 }
 
 func (ComputedExpression) expr() {}

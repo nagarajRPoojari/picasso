@@ -2,9 +2,11 @@ package statement
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
@@ -65,17 +67,35 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
 		block = safe
 
-		typeName := fieldType.Name()
-		if typeName == "" {
-			typeName = fieldType.String()
-		}
-		if typeName[0:1] == "%" {
-			typeName = typeName[1 : len(typeName)-1]
-		}
+		typeName := utils.GetTypeString(fieldType)
 		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
 		block = safe
 		c := t.st.TypeHandler.BuildVar(block, tf.Type(typeName), casted)
 		cls.UpdateField(block, index, c.Load(block), fieldType)
+
+	case ast.ComputedExpression:
+		base, safe := expression.ExpressionHandlerInst.ProcessExpression(block, m.Member)
+		block = safe
+		indices := make([]value.Value, 0)
+		for _, i := range m.Indices {
+			v, safe := expression.ExpressionHandlerInst.ProcessExpression(block, i)
+			block = safe
+			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, string(tf.INT64), v.Load(block))
+			block = safe
+			c := t.st.TypeHandler.BuildVar(block, tf.Type(tf.INT64), casted)
+			indices = append(indices, c.Load(block))
+		}
+
+		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
+		block = safe
+
+		needed := base.(*tf.Array).ElemType
+
+		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, utils.GetTypeString(needed), rhs.Load(block))
+		block = safe
+
+		c := t.st.TypeHandler.BuildVar(block, tf.Type(utils.GetTypeString(needed)), casted)
+		base.(*tf.Array).StoreByIndex(block, indices, c.Load(block))
 	}
 
 	return block

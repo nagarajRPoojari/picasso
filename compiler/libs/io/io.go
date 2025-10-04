@@ -36,7 +36,7 @@ func (t *IO) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) typedef.Var {
+func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
 	if len(args) == 0 {
 		panic("printf requires at least one argument (format string)")
 	}
@@ -84,5 +84,5 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Bl
 	result := block.NewCall(printfFn, callArgs...)
 
 	// Wrap result in a Var (since printf returns int)
-	return typeHandler.BuildVar(block, typedef.INT32, result)
+	return typeHandler.BuildVar(block, typedef.INT32, result), block
 }

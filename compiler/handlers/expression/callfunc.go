@@ -47,7 +47,9 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 					block = safe
 					args = append(args, res)
 				}
-				return f(t.st.TypeHandler, t.st.Module, block, args), block
+				ret, safe := f(t.st.TypeHandler, t.st.Module, block, args)
+				block = safe
+				return ret, block
 			}
 		}
 

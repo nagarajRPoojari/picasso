@@ -98,11 +98,19 @@ func parse_member_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expr
 	isComputed := p.move().Kind == lexer.OPEN_BRACKET
 
 	if isComputed {
-		rhs := parse_expr(p, bp)
+		rhsList := make([]ast.Expression, 0)
+		rhsList = append(rhsList, parse_expr(p, bp))
+		for {
+			if p.currentTokenKind() == lexer.CLOSE_BRACKET {
+				break
+			}
+			p.expect(lexer.COMMA)
+			rhsList = append(rhsList, parse_expr(p, bp))
+		}
 		p.expect(lexer.CLOSE_BRACKET)
 		return ast.ComputedExpression{
-			Member:   left,
-			Property: rhs,
+			Member:  left,
+			Indices: rhsList,
 		}
 	}
 

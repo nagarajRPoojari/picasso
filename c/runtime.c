@@ -28,12 +28,13 @@ void runtime_error(const char* msg) {
 }
 
 typedef struct {
-    long length;
+    int length;
     void* data;
+    int* shape;
+    int rank;
 } Array;
 
-// Allocates an array of `count` elements of size `elem_size`
-Array* lang_alloc_array(long count, long elem_size) {
+Array* lang_alloc_array(int count, int elem_size) {
     Array* arr = GC_MALLOC(sizeof(Array));
     arr->length = count;
     arr->data = GC_MALLOC(count * elem_size);

@@ -13,4 +13,4 @@ type ListType struct {
 	Underlying Type
 }
 
-func (t ListType) Get() string { return "" }
+func (t ListType) Get() string { return "array" }

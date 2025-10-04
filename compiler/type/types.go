@@ -225,6 +225,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		return NewString(block, init)
 	case NULL, VOID:
 		return NewNullVar(types.NewPointer(init.Type()))
+	case ARRAY:
+
 	}
 
 	if udt, ok := t.Udts[string(_type)]; ok {
@@ -348,6 +350,8 @@ func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.V
 		}
 	case "void":
 		return nil, block
+	case "array":
+		return v, block
 	}
 
 	if k, ok := t.Udts[target]; ok {
