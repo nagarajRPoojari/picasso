@@ -34,7 +34,7 @@ import (
 // Returns:
 //
 //	tf.Var - a runtime variable representing the field
-func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.MemberExpression) tf.Var {
+func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.MemberExpression) (tf.Var, *ir.Block) {
 	// Evaluate the base expression
 	baseVar, safe := t.ProcessExpression(block, ex.Member)
 	block = safe
@@ -90,15 +90,15 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 	case *types.IntType:
 		switch ft.BitSize {
 		case 1:
-			return &boolean.Boolean{NativeType: types.I1, Value: fieldPtr}
+			return &boolean.Boolean{NativeType: types.I1, Value: fieldPtr}, block
 		case 8:
-			return &ints.Int8{NativeType: types.I8, Value: fieldPtr}
+			return &ints.Int8{NativeType: types.I8, Value: fieldPtr}, block
 		case 16:
-			return &ints.Int16{NativeType: types.I16, Value: fieldPtr}
+			return &ints.Int16{NativeType: types.I16, Value: fieldPtr}, block
 		case 32:
-			return &ints.Int32{NativeType: types.I32, Value: fieldPtr}
+			return &ints.Int32{NativeType: types.I32, Value: fieldPtr}, block
 		case 64:
-			return &ints.Int64{NativeType: types.I64, Value: fieldPtr}
+			return &ints.Int64{NativeType: types.I64, Value: fieldPtr}, block
 		default:
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported int size %d", ft.BitSize))
 		}
@@ -106,11 +106,11 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 	case *types.FloatType:
 		switch ft.Kind {
 		case types.FloatKindHalf:
-			return &floats.Float16{NativeType: types.Half, Value: fieldPtr}
+			return &floats.Float16{NativeType: types.Half, Value: fieldPtr}, block
 		case types.FloatKindFloat:
-			return &floats.Float32{NativeType: types.Float, Value: fieldPtr}
+			return &floats.Float32{NativeType: types.Float, Value: fieldPtr}, block
 		case types.FloatKindDouble:
-			return &floats.Float64{NativeType: types.Double, Value: fieldPtr}
+			return &floats.Float64{NativeType: types.Double, Value: fieldPtr}, block
 		default:
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported float kind %v", ft.Kind))
 		}
@@ -121,13 +121,13 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 				block, getClassName(fieldType), ft,
 			)
 			c.Update(block, block.NewLoad(fieldType, fieldPtr))
-			return c
+			return c, block
 		} else {
-			return tf.NewString(block, block.NewLoad(types.I8Ptr, fieldPtr))
+			return tf.NewString(block, block.NewLoad(types.I8Ptr, fieldPtr)), block
 		}
 
 	default:
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported field type %T in member expression", fieldType))
 	}
-	return nil
+	return nil, block
 }

@@ -67,7 +67,7 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 		return t.ProcessNewExpression(block, ex)
 
 	case ast.MemberExpression:
-		return t.ProcessMemberExpression(block, ex), block
+		return t.ProcessMemberExpression(block, ex)
 
 	case ast.ComputedExpression:
 		return t.ProcessIndexingExpression(block, ex)

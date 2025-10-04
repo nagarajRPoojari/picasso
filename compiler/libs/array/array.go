@@ -2,6 +2,7 @@ package array
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	_types "github.com/nagarajRPoojari/x-lang/compiler/libs/type"
@@ -28,7 +29,10 @@ func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, block *ir.B
 	size, safe := _types.NewTypeHandler().Size(th, module, block, []tf.Var{args[0]})
 	block = safe
 	for _, i := range args[1:] {
-		dims = append(dims, i.Load(block))
+		toInt, safe := th.ImplicitIntCast(block, i.Load(block), types.I64)
+		block = safe
+
+		dims = append(dims, toInt)
 	}
 	return typedef.NewArray(block, th.GetLLVMType(tf.Type(tp)), size.Load(block), dims), block
 }

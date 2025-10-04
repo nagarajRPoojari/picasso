@@ -20,7 +20,6 @@ type Array struct {
 }
 
 func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
-	fmt.Printf("elemType: %v\n", elemType)
 	arrType := types.NewStruct(
 		types.I64,                   // length
 		types.NewPointer(types.I8),  // data
@@ -114,7 +113,7 @@ func (a *Array) Len(block *ir.Block) value.Value {
 }
 
 func (a *Array) Load(block *ir.Block) value.Value {
-	return block.NewLoad(a.ArrayType, a.Ptr)
+	return a.Ptr
 }
 
 func (a *Array) Update(block *ir.Block, v value.Value) {
@@ -139,6 +138,7 @@ func (a *Array) LoadShapePtr(block *ir.Block) value.Value {
 	raw := block.NewLoad(types.NewPointer(types.I64), shapePtrField)
 	return raw
 }
+
 func (a *Array) IndexOffset(block *ir.Block, indices []value.Value) value.Value {
 	shapePtr := a.LoadShapePtr(block)
 	var offset value.Value = constant.NewInt(types.I64, 0)

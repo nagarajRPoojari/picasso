@@ -59,6 +59,17 @@ func (t *VarTree) Search(v string) (tf.Var, bool) {
 	return t.searchGlobal(v)
 }
 
+func (t *VarTree) Replace(v string, by tf.Var) {
+	for i := len(t.tree) - 1; i >= 0; i-- {
+		if t.tree == nil {
+			break
+		}
+		if _, ok := t.tree[i][v]; ok {
+			t.tree[i][v] = &by
+		}
+	}
+}
+
 func (t *VarTree) searchGlobal(v string) (tf.Var, bool) {
 	x, ok := t.globals[v]
 	if !ok {

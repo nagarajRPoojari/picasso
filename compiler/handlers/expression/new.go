@@ -138,7 +138,6 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 
 			v = t.st.TypeHandler.BuildVar(block, tf.Type(exp.ExplicitType.Get()), casted)
 
-			fmt.Printf("v: %v\n", v)
 		}
 		instance.UpdateField(block, index, v.Load(block), fieldType)
 		t.st.Vars.AddNewVar(exp.Identifier, v)

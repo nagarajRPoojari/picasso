@@ -97,6 +97,25 @@ func TestDeclareVarExpression(t *testing.T) {
             `,
 			wantOut: "42",
 		},
+		{
+			name: "2D array of class types declaration",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                import types from builtin;
+                class Test {
+                    say x: int = 42;
+					fn Test() {}
+                }
+                fn main(): int32 {
+                    say arr: [][]Test = array.create(Test, 4, 5);
+                    arr[0,0] = new Test();
+                    io.printf("type=%s,eleType=%s,eleValue at [0,0]=%d", types.type(arr), types.type(arr[0,0]), arr[0,0].x);
+                    return 0;
+                }
+            `,
+			wantOut: "type=array,eleType=Test,eleValue at [0,0]=42",
+		},
 		// declaration with expression
 		{
 			name: "init with expression",
@@ -184,6 +203,20 @@ func TestDeclareVarExpression(t *testing.T) {
                 }
             `,
 			wantOut: "",
+		},
+		{
+			name: "uninitialized array type",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                import types from builtin;
+                fn main(): int32 {
+                    say arr: []int;
+                    io.printf("type = %s ", types.type(arr));
+                    return 0;
+                }
+            `,
+			wantOut: "type = array ",
 		},
 		{
 			name: "allow recursive type reference",
@@ -396,6 +429,21 @@ func TestAssignVarExpression(t *testing.T) {
             `,
 			wantOut: "x=100",
 		},
+		{
+			name: "array type reassignment",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                import types from builtin;
+                fn main(): int32 {
+                    say arr: []int = array.create(int, 10);
+                    arr = array.create(int, 2);
+                    io.printf("type = %s ", types.type(arr));
+                    return 0;
+                }
+            `,
+			wantOut: "type = array ",
+		},
 		// assignment with expression
 		{
 			name: "init with expression",
@@ -420,6 +468,20 @@ func TestAssignVarExpression(t *testing.T) {
                 }
                 fn main(): int32 {
                     say a: Test = new Test();
+                    say b: int = a.x;
+                    io.printf("%d", b);
+                    return 0;
+                }
+            `,
+			wantOut: "100",
+		},
+		{
+			name: "init with array index expression",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                fn main(): int32 {
+
                     say b: int = a.x;
                     io.printf("%d", b);
                     return 0;

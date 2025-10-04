@@ -13,4 +13,5 @@ type ListType struct {
 	Underlying Type
 }
 
-func (t ListType) Get() string { return "array" }
+func (t ListType) GetEleType() string { return t.Underlying.Get() }
+func (t ListType) Get() string        { return "array" }

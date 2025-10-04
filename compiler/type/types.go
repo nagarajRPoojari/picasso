@@ -226,7 +226,7 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 	case NULL, VOID:
 		return NewNullVar(types.NewPointer(init.Type()))
 	case ARRAY:
-
+		return &Array{}
 	}
 
 	if udt, ok := t.Udts[string(_type)]; ok {

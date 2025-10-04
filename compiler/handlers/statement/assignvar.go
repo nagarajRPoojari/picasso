@@ -5,6 +5,7 @@ import (
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
@@ -33,13 +34,17 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
 		block = safe
 
-		typeName := v.NativeTypeString()
+		if v.NativeTypeString() != constants.ARRAY {
+			typeName := v.NativeTypeString()
 
-		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
-		block = safe
+			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
+			block = safe
 
-		c := t.st.TypeHandler.BuildVar(block, tf.Type(typeName), casted)
-		v.Update(block, c.Load(block))
+			rhs = t.st.TypeHandler.BuildVar(block, tf.Type(typeName), casted)
+			v.Update(block, rhs.Load(block))
+		} else {
+			t.st.Vars.Replace(assignee, rhs)
+		}
 
 	case ast.MemberExpression:
 
