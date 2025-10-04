@@ -5,4 +5,5 @@ const (
 	ENTRY   = "entry"
 	THIS    = "this"
 	BUILTIN = "builtin"
+	ARRAY   = "array"
 )

@@ -2,8 +2,6 @@ package funcs
 
 import (
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/constant"
-	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/block"
@@ -89,15 +87,5 @@ func (t *FuncHandler) Init(block *ir.Block) {
 }
 
 func (t *FuncHandler) initTypes(block *ir.Block, s string) {
-	strConst := constant.NewCharArrayFromString(s + "\x00")
-	global := t.st.Module.NewGlobalDef("", strConst)
-
-	gep := block.NewGetElementPtr(
-		global.ContentType,
-		global,
-		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 0),
-	)
-
-	t.st.Vars.RegisterTypeHolders(block, s, tf.NewString(block, gep))
+	t.st.Vars.RegisterTypeHolders(block, s, t.st.TypeHandler.BuildVar(block, tf.Type(s), nil))
 }

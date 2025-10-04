@@ -48,17 +48,7 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 
 	case ast.SymbolExpression:
 		if t.st.TypeHandler.Exists(ex.Value) {
-			formatStr := ex.Value
-			strConst := constant.NewCharArrayFromString(formatStr + "\x00")
-			global := t.st.Module.NewGlobalDef("", strConst)
-
-			gep := block.NewGetElementPtr(
-				global.ContentType,
-				global,
-				constant.NewInt(types.I32, 0),
-				constant.NewInt(types.I32, 0),
-			)
-			return tf.NewString(block, gep), block
+			return t.st.TypeHandler.BuildVar(block, tf.Type(ex.Value), nil), block
 		}
 		return t.processSymbolExpression(ex), block
 

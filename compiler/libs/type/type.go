@@ -19,12 +19,12 @@ func NewTypeHandler() *TypeHandler {
 
 func (t *TypeHandler) ListAllFuncs() map[string]function.Func {
 	funcs := make(map[string]function.Func)
-	funcs["size"] = t.size
-	funcs["type"] = t._type
+	funcs["size"] = t.Size
+	funcs["type"] = t.TypeOf
 	return funcs
 }
 
-func (t *TypeHandler) size(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
+func (t *TypeHandler) Size(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
 	// assume args[0] holds the type or var we want sizeof
 	typ := args[0].Type() // this should be `types.Type`
 
@@ -44,7 +44,7 @@ func (t *TypeHandler) size(typeHandler *tf.TypeHandler, module *ir.Module, block
 	}, block
 }
 
-func (t *TypeHandler) _type(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
+func (t *TypeHandler) TypeOf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
 	typ := args[0].NativeTypeString()
 
 	strConst := constant.NewCharArrayFromString(typ + "\x00")

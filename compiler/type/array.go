@@ -19,7 +19,8 @@ type Array struct {
 	Dims      []value.Value
 }
 
-func NewArray(block *ir.Block, elemType types.Type, dims []value.Value) *Array {
+func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
+	fmt.Printf("elemType: %v\n", elemType)
 	arrType := types.NewStruct(
 		types.I64,                   // length
 		types.NewPointer(types.I8),  // data
@@ -37,9 +38,7 @@ func NewArray(block *ir.Block, elemType types.Type, dims []value.Value) *Array {
 		totalLen = block.NewMul(totalLen, dims[i])
 	}
 
-	elemSize := constant.NewInt(types.I64, int64(sizeOf(elemType)))
-
-	structAlloc := block.NewCall(allocFn, totalLen, elemSize)
+	structAlloc := block.NewCall(allocFn, totalLen, eleSize)
 
 	shapeCount := constant.NewInt(types.I64, int64(len(dims)))
 	shapeElemSize := constant.NewInt(types.I64, 8)
@@ -76,18 +75,6 @@ func NewArray(block *ir.Block, elemType types.Type, dims []value.Value) *Array {
 		ElemType:  elemType,
 		ArrayType: arrType,
 		Dims:      dims,
-	}
-}
-func sizeOf(ty types.Type) int {
-	switch t := ty.(type) {
-	case *types.IntType:
-		return int(t.BitSize / 8)
-	case *types.FloatType:
-		panic(fmt.Sprintf("unsupported type in sizeOf: %T", ty))
-	case *types.PointerType:
-		return 8 // assuming 64-bit target
-	default:
-		panic(fmt.Sprintf("unsupported type in sizeOf: %T", ty))
 	}
 }
 
