@@ -20,7 +20,6 @@ type Array struct {
 }
 
 func NewArray(block *ir.Block, elemType types.Type, dims []value.Value) *Array {
-	// Struct layout: { i64 length, i8* data, i64* shape, i64 rank }
 	arrType := types.NewStruct(
 		types.I64,                   // length
 		types.NewPointer(types.I8),  // data
@@ -40,12 +39,12 @@ func NewArray(block *ir.Block, elemType types.Type, dims []value.Value) *Array {
 
 	elemSize := constant.NewInt(types.I64, int64(sizeOf(elemType)))
 
-	structAlloc := block.NewCall(allocFn, totalLen, elemSize) // returns Array*
+	structAlloc := block.NewCall(allocFn, totalLen, elemSize)
 
 	shapeCount := constant.NewInt(types.I64, int64(len(dims)))
 	shapeElemSize := constant.NewInt(types.I64, 8)
 
-	shapeStruct := block.NewCall(allocFn, shapeCount, shapeElemSize) // returns Array* for the shape container
+	shapeStruct := block.NewCall(allocFn, shapeCount, shapeElemSize)
 	shapeDataFieldPtr := block.NewGetElementPtr(arrType, shapeStruct,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 1),
@@ -154,30 +153,29 @@ func (a *Array) LoadShapePtr(block *ir.Block) value.Value {
 	return raw
 }
 func (a *Array) IndexOffset(block *ir.Block, indices []value.Value) value.Value {
-	shapePtr := a.LoadShapePtr(block)                      // i64*
-	var offset value.Value = constant.NewInt(types.I64, 0) // offset accumulator
+	shapePtr := a.LoadShapePtr(block)
+	var offset value.Value = constant.NewInt(types.I64, 0)
 
 	for i := 0; i < len(indices); i++ {
-		var prod value.Value = constant.NewInt(types.I64, 1) // product of remaining dims
+		var prod value.Value = constant.NewInt(types.I64, 1)
 
 		for j := i + 1; j < len(indices); j++ {
 			elemPtr := block.NewGetElementPtr(types.I64, shapePtr, constant.NewInt(types.I64, int64(j)))
 			dimVal := block.NewLoad(types.I64, elemPtr)
 
-			prod = block.NewMul(prod, dimVal) // *ir.InstMul satisfies value.Value
+			prod = block.NewMul(prod, dimVal)
 		}
 
-		offsetPart := block.NewMul(indices[i], prod) // also value.Value
-		offset = block.NewAdd(offset, offsetPart)    // *ir.InstAdd satisfies value.Value
+		offsetPart := block.NewMul(indices[i], prod)
+		offset = block.NewAdd(offset, offsetPart)
 	}
 
 	return offset
 }
 
+// StoreByIndex updates element value at given index
 func (a *Array) StoreByIndex(block *ir.Block, indices []value.Value, val value.Value) {
 	offset := a.IndexOffset(block, indices)
-
-	// Load data pointer
 	dataPtrField := block.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 1),
@@ -189,6 +187,7 @@ func (a *Array) StoreByIndex(block *ir.Block, indices []value.Value, val value.V
 	block.NewStore(val, elemPtr)
 }
 
+// LoadByIndex retrieves element value at given index
 func (a *Array) LoadByIndex(block *ir.Block, indices []value.Value) value.Value {
 	offset := a.IndexOffset(block, indices)
 
