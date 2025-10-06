@@ -126,8 +126,6 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 		// Call
 		ret := block.NewCall(fnVal, args...)
 
-		fmt.Printf("funcType.RetType: %v\n", funcType.RetType)
-
 		// Return handling
 		retType := funcType.RetType
 		if retType == types.Void {
@@ -141,7 +139,7 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 			underlyingType = tp.(ast.ListType).GetEleType()
 		}
 
-		return t.st.TypeHandler.BuildVar(block, tf.Type(tp), ret, underlyingType), block
+		return t.st.TypeHandler.BuildVar(block, tf.NewType(tp, underlyingType), ret), block
 
 	}
 	return nil, block

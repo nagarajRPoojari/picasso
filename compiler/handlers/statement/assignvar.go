@@ -40,7 +40,7 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
 			block = safe
 
-			rhs = t.st.TypeHandler.BuildVar(block, tf.Type(typeName), casted)
+			rhs = t.st.TypeHandler.BuildVar(block, tf.NewType(typeName), casted)
 			v.Update(block, rhs.Load(block))
 		} else {
 			t.st.Vars.Replace(assignee, rhs)
@@ -75,7 +75,7 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		typeName := utils.GetTypeString(fieldType)
 		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
 		block = safe
-		c := t.st.TypeHandler.BuildVar(block, tf.Type(typeName), casted)
+		c := t.st.TypeHandler.BuildVar(block, tf.NewType(typeName), casted)
 		cls.UpdateField(block, index, c.Load(block), fieldType)
 
 	case ast.ComputedExpression:
@@ -87,7 +87,7 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 			block = safe
 			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, string(tf.INT64), v.Load(block))
 			block = safe
-			c := t.st.TypeHandler.BuildVar(block, tf.Type(tf.INT64), casted)
+			c := t.st.TypeHandler.BuildVar(block, tf.NewType(tf.INT64), casted)
 			indices = append(indices, c.Load(block))
 		}
 
@@ -99,7 +99,7 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, utils.GetTypeString(needed), rhs.Load(block))
 		block = safe
 
-		c := t.st.TypeHandler.BuildVar(block, tf.Type(utils.GetTypeString(needed)), casted)
+		c := t.st.TypeHandler.BuildVar(block, tf.NewType(utils.GetTypeString(needed)), casted)
 		base.(*tf.Array).StoreByIndex(block, indices, c.Load(block))
 	}
 

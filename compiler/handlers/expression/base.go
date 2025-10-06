@@ -48,7 +48,7 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 
 	case ast.SymbolExpression:
 		if t.st.TypeHandler.Exists(ex.Value) {
-			return t.st.TypeHandler.BuildVar(block, tf.Type(ex.Value), nil), block
+			return t.st.TypeHandler.BuildVar(block, tf.NewType(ex.Value), nil), block
 		}
 		return t.processSymbolExpression(ex), block
 
@@ -58,7 +58,7 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 
 	case ast.NumberExpression:
 		// by default number will be wrapped up with float64
-		return t.st.TypeHandler.BuildVar(block, tf.FLOAT64, constant.NewFloat(types.Double, ex.Value)), block
+		return t.st.TypeHandler.BuildVar(block, tf.NewType(tf.FLOAT64), constant.NewFloat(types.Double, ex.Value)), block
 
 	case ast.StringExpression:
 		return t.ProcessStringLiteral(block, ex), block

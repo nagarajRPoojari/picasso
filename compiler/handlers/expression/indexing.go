@@ -19,10 +19,10 @@ func (t *ExpressionHandler) ProcessIndexingExpression(block *ir.Block, ex ast.Co
 
 		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, string(tf.INT64), v.Load(block))
 		block = safe
-		c := t.st.TypeHandler.BuildVar(block, tf.Type(tf.INT64), casted)
+		c := t.st.TypeHandler.BuildVar(block, tf.NewType(tf.INT64), casted)
 
 		indices = append(indices, c.Load(block))
 	}
 	v := base.(*tf.Array).LoadByIndex(block, indices)
-	return t.st.TypeHandler.BuildVar(block, tf.Type(utils.GetTypeString(v.Type())), v), block
+	return t.st.TypeHandler.BuildVar(block, tf.NewType(utils.GetTypeString(v.Type())), v), block
 }

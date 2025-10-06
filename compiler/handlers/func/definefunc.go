@@ -34,10 +34,10 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	for i, p := range f.Params {
 		if i < len(fn.Parameters) {
 			if l, ok := fn.Parameters[i].Type.(ast.ListType); ok {
-				paramType := tf.Type(fn.Parameters[i].Type.Get())
-				t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p, l.GetEleType()))
+				paramType := tf.NewType(fn.Parameters[i].Type.Get(), l.GetEleType())
+				t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p))
 			} else {
-				paramType := tf.Type(fn.Parameters[i].Type.Get())
+				paramType := tf.NewType(fn.Parameters[i].Type.Get())
 				t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p))
 			}
 		} else {
@@ -90,5 +90,5 @@ func (t *FuncHandler) Init(block *ir.Block) {
 }
 
 func (t *FuncHandler) initTypes(block *ir.Block, s string) {
-	t.st.Vars.RegisterTypeHolders(block, s, t.st.TypeHandler.BuildVar(block, tf.Type(s), nil))
+	t.st.Vars.RegisterTypeHolders(block, s, t.st.TypeHandler.BuildVar(block, tf.NewType(s), nil))
 }

@@ -27,7 +27,7 @@ func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDecl
 
 	var v tf.Var
 	if st.AssignedValue == nil {
-		v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), nil)
+		v = t.st.TypeHandler.BuildVar(block, tf.NewType(st.ExplicitType.Get()), nil)
 	} else {
 		_v, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
 		v = _v
@@ -35,7 +35,7 @@ func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDecl
 		if st.ExplicitType.Get() != constants.ARRAY {
 			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, st.ExplicitType.Get(), v.Load(block))
 			block = safe
-			v = t.st.TypeHandler.BuildVar(block, tf.Type(st.ExplicitType.Get()), casted)
+			v = t.st.TypeHandler.BuildVar(block, tf.NewType(st.ExplicitType.Get()), casted)
 		} else {
 			// @todo: dimension check & element type check
 		}

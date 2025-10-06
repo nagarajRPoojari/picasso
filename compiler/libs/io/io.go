@@ -84,5 +84,5 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Bl
 	result := block.NewCall(printfFn, callArgs...)
 
 	// Wrap result in a Var (since printf returns int)
-	return typeHandler.BuildVar(block, typedef.INT32, result), block
+	return typeHandler.BuildVar(block, tf.NewType(typedef.INT32), result), block
 }

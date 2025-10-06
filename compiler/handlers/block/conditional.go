@@ -30,7 +30,7 @@ func (t *BlockHandler) processIfElseBlock(fn *ir.Func, entry *ir.Block, st *ast.
 	entry = safe
 
 	casted, entry := t.st.TypeHandler.ImplicitTypeCast(entry, string(tf.BOOLEAN), res.Load(entry))
-	cond := t.st.TypeHandler.BuildVar(entry, tf.Type(tf.BOOLEAN), casted)
+	cond := t.st.TypeHandler.BuildVar(entry, tf.NewType(tf.BOOLEAN), casted)
 	entry.NewCondBr(cond.Load(entry), ifBlock, elseBlock)
 
 	// process consequent

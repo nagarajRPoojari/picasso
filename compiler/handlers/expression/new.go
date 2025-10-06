@@ -127,7 +127,7 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 
 		var v tf.Var
 		if exp.AssignedValue == nil {
-			v = t.st.TypeHandler.BuildVar(block, tf.Type(exp.ExplicitType.Get()), nil)
+			v = t.st.TypeHandler.BuildVar(block, tf.NewType(exp.ExplicitType.Get()), nil)
 		} else {
 			_v, safe := t.ProcessExpression(block, exp.AssignedValue)
 			v = _v
@@ -136,7 +136,7 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, exp.ExplicitType.Get(), v.Load(block))
 			block = safe
 
-			v = t.st.TypeHandler.BuildVar(block, tf.Type(exp.ExplicitType.Get()), casted)
+			v = t.st.TypeHandler.BuildVar(block, tf.NewType(exp.ExplicitType.Get()), casted)
 
 		}
 		instance.UpdateField(block, index, v.Load(block), fieldType)

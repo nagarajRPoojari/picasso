@@ -17,29 +17,39 @@ import (
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
-type Type string
+type Type struct {
+	T string
+	U string
+}
+
+func NewType(T string, U ...string) Type {
+	if len(U) > 0 {
+		return Type{T: T, U: U[0]}
+	}
+	return Type{T: T}
+}
 
 const (
-	BOOLEAN Type = "boolean"
+	BOOLEAN = "boolean"
 
-	INT   Type = "int"
-	INT8  Type = "int8"
-	INT16 Type = "int16"
-	INT32 Type = "int32"
-	INT64 Type = "int64"
+	INT   = "int"
+	INT8  = "int8"
+	INT16 = "int16"
+	INT32 = "int32"
+	INT64 = "int64"
 
-	FLOAT16 Type = "float16"
-	FLOAT32 Type = "float32"
-	FLOAT64 Type = "float64"
+	FLOAT16 = "float16"
+	FLOAT32 = "float32"
+	FLOAT64 = "float64"
 
-	DOUBLE Type = "double"
+	DOUBLE = "double"
 
-	STRING Type = "string"
+	STRING = "string"
 
-	ARRAY Type = "array"
+	ARRAY = "array"
 
-	NULL Type = "null"
-	VOID Type = "void"
+	NULL = "null"
+	VOID = "void"
 )
 
 type TypeHandler struct {
@@ -58,7 +68,7 @@ func (t *TypeHandler) Register(name string, meta *MetaClass) {
 }
 
 func (t *TypeHandler) Exists(tp string) bool {
-	switch Type(tp) {
+	switch tp {
 	case NULL, VOID, BOOLEAN, "i1", INT8, "i8", INT16, "i16", INT32, "132", INT64, INT, "i64", FLOAT16, "half", FLOAT32, "float", FLOAT64, DOUBLE, STRING:
 		return true
 	}
@@ -87,8 +97,8 @@ func (t *TypeHandler) Exists(tp string) bool {
 //
 // Note:
 //   - class must be registered with TypeHandler before building var.
-func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value, subType ...string) Var {
-	switch _type {
+func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Var {
+	switch _type.T {
 	case BOOLEAN, "i1":
 		if init == nil {
 			init = constant.NewInt(types.I1, 0)
@@ -227,11 +237,11 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value, su
 	case NULL, VOID:
 		return NewNullVar(types.NewPointer(init.Type()))
 	case ARRAY:
-		if len(subType) == 0 {
+		if _type.U == "" {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalError, "sub type should be provided for array type")
 		}
 
-		ele := t.GetLLVMType(ast.SymbolType{Value: subType[0]})
+		ele := t.GetLLVMType(ast.SymbolType{Value: _type.U})
 		return &Array{
 			Ptr:       init,
 			ArrayType: ARRAYSTRUCT,
@@ -239,12 +249,12 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value, su
 		}
 	}
 
-	if udt, ok := t.Udts[string(_type)]; ok {
+	if udt, ok := t.Udts[string(_type.T)]; ok {
 		if init == nil {
 			init = constant.NewZeroInitializer(udt.UDT)
 		}
 		c := NewClass(
-			block, string(_type), udt.UDT,
+			block, string(_type.T), udt.UDT,
 		)
 		c.Update(block, init)
 		return c
@@ -278,7 +288,7 @@ func (t *TypeHandler) GetLLVMType(_type ast.Type) types.Type {
 		return types.Void
 	}
 
-	tp := Type(_type.Get())
+	tp := _type.Get()
 
 	switch tp {
 	case NULL, VOID:
