@@ -4,6 +4,10 @@ type SymbolType struct {
 	Value string
 }
 
+func (t SymbolType) GetUnderlyingType() string {
+	return ""
+}
+
 func (t SymbolType) Get() string {
 	return t.Value
 }
@@ -13,10 +17,10 @@ type ListType struct {
 	Underlying Type
 }
 
-func (t ListType) GetEleType() string {
+func (t ListType) GetUnderlyingType() string {
 	switch underlying := t.Underlying.(type) {
 	case ListType:
-		return underlying.GetEleType()
+		return underlying.GetUnderlyingType()
 	default:
 		return underlying.Get()
 	}

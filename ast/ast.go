@@ -12,6 +12,7 @@ type Expression interface {
 
 type Type interface {
 	Get() string
+	GetUnderlyingType() string
 }
 
 func ExpectExpr[T Expression](expr Expression) T {

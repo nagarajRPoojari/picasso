@@ -33,13 +33,9 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 
 	for i, p := range f.Params {
 		if i < len(fn.Parameters) {
-			if l, ok := fn.Parameters[i].Type.(ast.ListType); ok {
-				paramType := tf.NewType(fn.Parameters[i].Type.Get(), l.GetEleType())
-				t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p))
-			} else {
-				paramType := tf.NewType(fn.Parameters[i].Type.Get())
-				t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p))
-			}
+			pt := fn.Parameters[i].Type
+			paramType := tf.NewType(pt.Get(), pt.GetUnderlyingType())
+			t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p))
 		} else {
 			clsMeta := t.st.Classes[className]
 			if clsMeta == nil {
