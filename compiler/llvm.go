@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/gc"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/block"
@@ -47,6 +48,13 @@ func NewLLVM() *LLVM {
 	class.ClassHandlerInst = class.NewClassHandler(st)
 
 	rterr.Instance = rterr.NewErrorHandler(m)
+
+	st.Module.NewTypeDef("array", types.NewStruct(
+		types.I64,                   // length
+		types.NewPointer(types.I8),  // data
+		types.NewPointer(types.I64), // shape (i64*)
+		types.I64,                   // rank
+	))
 
 	return &LLVM{st: st}
 }

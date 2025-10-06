@@ -12,6 +12,7 @@ type MetaClass struct {
 	VarAST        map[string]*ast.VariableDeclarationStatement
 
 	Methods map[string]*ir.Func
+	Returns map[string]ast.Type
 
 	// UDT is pointer-to-struct
 	UDT types.Type
@@ -34,6 +35,7 @@ func NewMetaClass() *MetaClass {
 		FieldIndexMap: make(map[string]int),
 		VarAST:        make(map[string]*ast.VariableDeclarationStatement),
 		Methods:       make(map[string]*ir.Func),
+		Returns:       map[string]ast.Type{},
 	}
 }
 func (m *MetaClass) FieldType(idx int) types.Type {

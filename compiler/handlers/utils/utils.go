@@ -1,6 +1,8 @@
 package utils
 
-import "github.com/llir/llvm/ir/types"
+import (
+	"github.com/llir/llvm/ir/types"
+)
 
 func GetTypeString(t types.Type) string {
 	var target string

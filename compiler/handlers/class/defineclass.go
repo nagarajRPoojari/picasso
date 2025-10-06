@@ -5,7 +5,6 @@ import (
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	funcs "github.com/nagarajRPoojari/x-lang/compiler/handlers/func"
-	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
 // DefineClass generates IR definitions for all methods of a class.
@@ -100,7 +99,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 			mc.FieldIndexMap[fqName] = i
 			mc.VarAST[fqName] = &st
 
-			fieldType := t.st.TypeHandler.GetLLVMType(tf.Type(st.ExplicitType.Get()))
+			fieldType := t.st.TypeHandler.GetLLVMType(st.ExplicitType)
 			fieldTypes = append(fieldTypes, fieldType)
 			vars[fqName] = struct{}{}
 			i++
@@ -109,14 +108,14 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 			fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Name)
 			var retType types.Type
 			if st.ReturnType != nil {
-				retType = t.st.TypeHandler.GetLLVMType(tf.Type(st.ReturnType.Get()))
+				retType = t.st.TypeHandler.GetLLVMType(st.ReturnType)
 			} else {
-				retType = t.st.TypeHandler.GetLLVMType(tf.Type(tf.NULL))
+				retType = t.st.TypeHandler.GetLLVMType(nil)
 			}
 
 			args := make([]types.Type, 0)
 			for _, p := range st.Parameters {
-				args = append(args, t.st.TypeHandler.GetLLVMType(tf.Type(p.Type.Get())))
+				args = append(args, t.st.TypeHandler.GetLLVMType(p.Type))
 			}
 
 			funcType := types.NewFunc(retType, args...)

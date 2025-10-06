@@ -8,6 +8,7 @@ import (
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
@@ -125,6 +126,8 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 		// Call
 		ret := block.NewCall(fnVal, args...)
 
+		fmt.Printf("funcType.RetType: %v\n", funcType.RetType)
+
 		// Return handling
 		retType := funcType.RetType
 		if retType == types.Void {
@@ -132,7 +135,13 @@ func (t *ExpressionHandler) CallFunc(block *ir.Block, ex ast.CallExpression) (tf
 		}
 
 		tp := utils.GetTypeString(retType)
-		return t.st.TypeHandler.BuildVar(block, tf.Type(tp), ret), block
+		var underlyingType string
+		if tp == constants.ARRAY {
+			tp := classMeta.Returns[methodKey]
+			underlyingType = tp.(ast.ListType).GetEleType()
+		}
+
+		return t.st.TypeHandler.BuildVar(block, tf.Type(tp), ret, underlyingType), block
 
 	}
 	return nil, block

@@ -481,13 +481,49 @@ func TestAssignVarExpression(t *testing.T) {
                 import io from builtin;
                 import array from builtin;
                 fn main(): int32 {
-
-                    say b: int = a.x;
+                    say arr: []int = array.create(int, 4);
+                    say b: int = arr[0];
                     io.printf("%d", b);
                     return 0;
                 }
             `,
-			wantOut: "100",
+			wantOut: "0",
+		},
+		// initializing the uninitialized
+		{
+			name: "uninitialized array assignment",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                import types from builtin;
+                fn main(): int32 {
+                    say arr: []int;
+                    arr = array.create(int, 2);
+                    arr[0] = 10;
+                    io.printf("type = %s, %d ", types.type(arr), arr[0]);
+                    return 0;
+                }
+            `,
+			wantOut: "type = array, 10 ",
+		},
+		{
+			name: "uninitialized array assignment",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                import types from builtin;
+                class Test {
+                    say x: int;
+                    fn Test(x: int) {this.x = x;}
+                }
+                fn main(): int32 {
+                    say t: Test;
+                    t = new Test(90);
+                    io.printf("type = %s, %d ", types.type(t), t.x);
+                    return 0;
+                }
+            `,
+			wantOut: "type = Test, 90 ",
 		},
 		// visibility
 		{
@@ -748,13 +784,16 @@ func TestBinaryExpression(t *testing.T) {
 			name: "Precedence multiplication before addition",
 			src: `
                 import io from builtin;
+                import array from builtin;
                 fn main(): int32 {
-                    say a: int = 2 + 3 * 4;
+                    say x: []int = array.create(int, 2);
+                    x[0] = 100;
+                    say a: int = 2 + 3 * 4 * x[0];
                     io.printf("%d", a);
                     return 0;
                 }
             `,
-			wantOut: "14",
+			wantOut: "1202",
 		},
 		{
 			name: "Parentheses override precedence",
@@ -900,24 +939,35 @@ func TestFunctionCallExpression(t *testing.T) {
             `,
 			wantErr: true,
 		},
+		// function call involving heap vars
 		{
-			name: "function call with ignoring params",
+			name: "class types as function params",
 			src: `
                 import io from builtin;
                 class Test {
                     fn Test() {}
-                    fn printer(x: int, y: string) {
-                        io.printf("x=%d, y=%s", x, y);
+                    fn Calc(m: Math): double {
+                        say prev:double =  m.PI;
+                        m.Reset();
+                        return prev;
+                    }
+                }
+                class Math {
+                    say PI: double = 3.14;
+                    fn Math() {}
+                    fn Reset() {
+                        this.PI = 0.0;
                     }
                 }
                 fn main(): int32 {
                     say a: Test = new Test();
-                    a.printer(10,"hi");
-                    a.printer(10);
+                    say m: Math = new Math();
+                    io.printf("before: %f", a.Calc(m));
+                    io.printf("after: %f", m.PI);
                     return 0;
                 }
             `,
-			wantOut: "x=10, y=hix=10, y=",
+			wantOut: "before: 3.140000after: 0.000000",
 		},
 		// type cast
 		{

@@ -8,6 +8,7 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	rterr "github.com/nagarajRPoojari/x-lang/compiler/libs/private/runtime"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
@@ -86,7 +87,7 @@ func (t *TypeHandler) Exists(tp string) bool {
 //
 // Note:
 //   - class must be registered with TypeHandler before building var.
-func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Var {
+func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value, subType ...string) Var {
 	switch _type {
 	case BOOLEAN, "i1":
 		if init == nil {
@@ -226,7 +227,16 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 	case NULL, VOID:
 		return NewNullVar(types.NewPointer(init.Type()))
 	case ARRAY:
-		return &Array{}
+		if len(subType) == 0 {
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalError, "sub type should be provided for array type")
+		}
+
+		ele := t.GetLLVMType(ast.SymbolType{Value: subType[0]})
+		return &Array{
+			Ptr:       init,
+			ArrayType: ARRAYSTRUCT,
+			ElemType:  ele,
+		}
 	}
 
 	if udt, ok := t.Udts[string(_type)]; ok {
@@ -263,8 +273,14 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 //   - UDTs → resolved from the registered type table
 //
 // If the type is unknown or unsupported, the function aborts with a type error.
-func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
-	switch _type {
+func (t *TypeHandler) GetLLVMType(_type ast.Type) types.Type {
+	if _type == nil {
+		return types.Void
+	}
+
+	tp := Type(_type.Get())
+
+	switch tp {
 	case NULL, VOID:
 		return types.Void
 	case BOOLEAN, "i1":
@@ -286,11 +302,19 @@ func (t *TypeHandler) GetLLVMType(_type Type) types.Type {
 	case STRING:
 		return types.I8Ptr
 	case ARRAY:
-		// return
+		s := types.NewStruct(
+			types.I64,                   // length
+			types.NewPointer(types.I8),  // data
+			types.NewPointer(types.I64), // shape (i64*)
+			types.I64,                   // rank
+		)
+
+		s.SetName("array")
+		return types.NewPointer(s)
 	}
 
 	// Check if already registered
-	if k, ok := t.Udts[string(_type)]; ok {
+	if k, ok := t.Udts[string(tp)]; ok {
 		return k.UDT
 	}
 

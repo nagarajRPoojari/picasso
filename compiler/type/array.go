@@ -8,6 +8,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/compiler/gc"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
@@ -16,17 +17,20 @@ type Array struct {
 	Ptr       value.Value
 	ElemType  types.Type
 	ArrayType *types.StructType
-	Dims      []value.Value
+}
+
+var ARRAYSTRUCT = types.NewStruct(
+	types.I64,                   // length
+	types.NewPointer(types.I8),  // data
+	types.NewPointer(types.I64), // shape (i64*)
+	types.I64,                   // rank
+)
+
+func init() {
+	ARRAYSTRUCT.SetName(constants.ARRAY)
 }
 
 func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
-	arrType := types.NewStruct(
-		types.I64,                   // length
-		types.NewPointer(types.I8),  // data
-		types.NewPointer(types.I64), // shape (i64*)
-		types.I64,                   // rank
-	)
-
 	allocFn := gc.Instance.ArrayAlloc()
 	if allocFn == nil {
 		panic("lang_alloc_array not declared in module (gc.Instance.ArrayAlloc returned nil)")
@@ -43,7 +47,7 @@ func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []
 	shapeElemSize := constant.NewInt(types.I64, 8)
 
 	shapeStruct := block.NewCall(allocFn, shapeCount, shapeElemSize)
-	shapeDataFieldPtr := block.NewGetElementPtr(arrType, shapeStruct,
+	shapeDataFieldPtr := block.NewGetElementPtr(ARRAYSTRUCT, shapeStruct,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 1),
 	)
@@ -57,13 +61,13 @@ func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []
 
 	rank := constant.NewInt(types.I64, int64(len(dims)))
 
-	shapeFieldPtr := block.NewGetElementPtr(arrType, structAlloc,
+	shapeFieldPtr := block.NewGetElementPtr(ARRAYSTRUCT, structAlloc,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 2),
 	)
 	block.NewStore(shapePtrCast, shapeFieldPtr)
 
-	rankPtr := block.NewGetElementPtr(arrType, structAlloc,
+	rankPtr := block.NewGetElementPtr(ARRAYSTRUCT, structAlloc,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 3),
 	)
@@ -72,8 +76,7 @@ func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []
 	return &Array{
 		Ptr:       structAlloc,
 		ElemType:  elemType,
-		ArrayType: arrType,
-		Dims:      dims,
+		ArrayType: ARRAYSTRUCT,
 	}
 }
 

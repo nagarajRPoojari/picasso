@@ -25,7 +25,6 @@ func (t *ArrayHandler) ListAllFuncs() map[string]function.Func {
 
 func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
 	dims := make([]value.Value, 0)
-	tp := args[0].NativeTypeString()
 	size, safe := _types.NewTypeHandler().Size(th, module, block, []tf.Var{args[0]})
 	block = safe
 	for _, i := range args[1:] {
@@ -34,5 +33,5 @@ func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, block *ir.B
 
 		dims = append(dims, toInt)
 	}
-	return typedef.NewArray(block, th.GetLLVMType(tf.Type(tp)), size.Load(block), dims), block
+	return typedef.NewArray(block, args[0].Type(), size.Load(block), dims), block
 }

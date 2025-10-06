@@ -1,21 +1,42 @@
-                import io from builtin;
-                import array from builtin;
-                import types from builtin;
-                class Test {
-                    say x: int = 90;
-                    fn Test(x: int){this.x = x;}
-                }
-                fn main(): int32 {
-                    say arr: []int;
-                    arr = array.create(int, 2);
+import io from builtin;
+import array from builtin;
+import types from builtin;
 
-                    arr[0,0] = 90;
+// class Integer {
+//     say x: int;
+//     fn Integer(x: int) {
+//         this.x = x;
+//     }
 
-                    io.printf("type = %d ", arr[0,0]);
-                    // say c: Test;
-                    // c = new Test(80);
+//     fn Print() {
+//         return 
+//     }
+// }
 
-                    // io.printf("printing: %d ", c.x);
+class Test {
+    fn Test() {}
+    fn Update(arr: [][]int): [][]int {
+        // io.printf(" ==== %s.  ", types.type(arr));
 
-                    return 0;
-                }
+        io.printf("value = %d. ", arr[0, 1]);
+
+        return arr;
+    }   
+}
+fn main(): int32 {
+    say arr: [][]int = array.create(int, 5, 4);
+    arr[0, 1] = 1890;
+
+
+    // io.printf("value = %d. ", arr[0]);
+    // say n: []int = arr;
+
+    // io.printf("%d.  ", n[0]);
+
+    say t: Test = new Test();
+    say x: [][]int = t.Update(arr);
+
+    io.printf("value = %d. ", x[0, 1]);
+
+    return 0;
+}

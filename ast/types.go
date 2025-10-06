@@ -13,5 +13,12 @@ type ListType struct {
 	Underlying Type
 }
 
-func (t ListType) GetEleType() string { return t.Underlying.Get() }
-func (t ListType) Get() string        { return "array" }
+func (t ListType) GetEleType() string {
+	switch underlying := t.Underlying.(type) {
+	case ListType:
+		return underlying.GetEleType()
+	default:
+		return underlying.Get()
+	}
+}
+func (t ListType) Get() string { return "array" }

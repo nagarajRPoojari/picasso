@@ -33,21 +33,24 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 
 	for i, p := range f.Params {
 		if i < len(fn.Parameters) {
-			paramType := tf.Type(fn.Parameters[i].Type.Get())
-			t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p))
-			continue
+			if l, ok := fn.Parameters[i].Type.(ast.ListType); ok {
+				paramType := tf.Type(fn.Parameters[i].Type.Get())
+				t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p, l.GetEleType()))
+			} else {
+				paramType := tf.Type(fn.Parameters[i].Type.Get())
+				t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p))
+			}
+		} else {
+			clsMeta := t.st.Classes[className]
+			if clsMeta == nil {
+				errorutils.Abort(errorutils.UnknownClass, className)
+			}
+			t.st.Vars.AddNewVar(p.LocalName, &tf.Class{
+				Name: className,
+				UDT:  clsMeta.UDT,
+				Ptr:  p,
+			})
 		}
-
-		clsMeta := t.st.Classes[className]
-		if clsMeta == nil {
-			errorutils.Abort(errorutils.UnknownClass, className)
-		}
-		t.st.Vars.AddNewVar(p.LocalName, &tf.Class{
-			Name: className,
-			UDT:  clsMeta.UDT,
-			Ptr:  p,
-		})
-		break
 	}
 
 	entry = block.BlockHandlerInst.ProcessBlock(f, entry, fn.Body)

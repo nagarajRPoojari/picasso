@@ -6,7 +6,6 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
-	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
 // DeclareFunc declares a class method in the IR module.
@@ -14,7 +13,7 @@ import (
 func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement) {
 	params := make([]*ir.Param, 0)
 	for _, p := range st.Parameters {
-		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(tf.Type(p.Type.Get()))))
+		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(p.Type)))
 	}
 
 	// at the end pass `this` parameter representing current object
@@ -25,13 +24,14 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 
 	var retType types.Type
 	if st.ReturnType != nil {
-		retType = t.st.TypeHandler.GetLLVMType(tf.Type(st.ReturnType.Get()))
+		retType = t.st.TypeHandler.GetLLVMType(st.ReturnType)
 	} else {
-		retType = t.st.TypeHandler.GetLLVMType(tf.Type(tf.NULL))
+		retType = t.st.TypeHandler.GetLLVMType(nil)
 	}
 
 	if _, ok := t.st.Classes[cls].Methods[name]; !ok {
 		f := t.st.Module.NewFunc(name, retType, params...)
 		t.st.Classes[cls].Methods[name] = f
+		t.st.Classes[cls].Returns[name] = st.ReturnType
 	}
 }

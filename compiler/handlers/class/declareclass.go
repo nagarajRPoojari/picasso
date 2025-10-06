@@ -29,6 +29,7 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement) {
 		VarAST:        make(map[string]*ast.VariableDeclarationStatement),
 		UDT:           types.NewPointer(udt),
 		Methods:       make(map[string]*ir.Func),
+		Returns:       map[string]ast.Type{},
 	}
 	t.st.Classes[cls.Name] = mc
 	t.st.TypeHandler.Register(cls.Name, mc)
