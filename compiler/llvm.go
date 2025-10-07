@@ -6,7 +6,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
-	"github.com/nagarajRPoojari/x-lang/compiler/gc"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/class"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
@@ -38,7 +38,7 @@ func NewLLVM() *LLVM {
 		Classes:           make(map[string]*tf.MetaClass),
 		IdentifierBuilder: identifier.NewIdentifierBuilder(MAIN),
 		LibMethods:        make(map[string]function.Func),
-		GC:                gc.GetGC(m),
+		GC:                c.NewInterface(m),
 	}
 
 	expression.ExpressionHandlerInst = expression.NewExpressionHandler(st)

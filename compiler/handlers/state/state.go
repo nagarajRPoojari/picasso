@@ -3,7 +3,7 @@ package state
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
-	"github.com/nagarajRPoojari/x-lang/compiler/gc"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/identifier"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/scope"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
@@ -34,7 +34,7 @@ type State struct {
 	// Class inheritance hierarchy
 	TypeHeirarchy TypeHeirarchy
 	// Garbage collector instance
-	GC *gc.GC
+	GC *c.Interface
 }
 
 // TypeHeirarchy stores inheritance relationships between classes.

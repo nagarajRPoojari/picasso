@@ -7,7 +7,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/x-lang/compiler/gc"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
@@ -31,7 +31,7 @@ func init() {
 }
 
 func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
-	allocFn := gc.Instance.ArrayAlloc()
+	allocFn := c.Instance.ArrayAlloc()
 	if allocFn == nil {
 		panic("lang_alloc_array not declared in module (gc.Instance.ArrayAlloc returned nil)")
 	}

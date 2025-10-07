@@ -7,7 +7,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/x-lang/compiler/gc"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
@@ -42,7 +42,7 @@ func NewClass(block *ir.Block, name string, udt types.Type) *Class {
 	size := constant.NewPtrToInt(gep, types.I64)
 
 	// Call GC allocator
-	mem := block.NewCall(gc.Instance.Alloc(), size)
+	mem := block.NewCall(c.Instance.Alloc(), size)
 
 	// Bitcast to your struct pointer type
 	ptr := block.NewBitCast(mem, ptrType)
