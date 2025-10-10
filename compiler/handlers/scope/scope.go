@@ -1,7 +1,6 @@
 package scope
 
 import (
-	"github.com/llir/llvm/ir"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
@@ -22,7 +21,7 @@ func (t *VarTree) AddBlock() {
 	t.tree = append(t.tree, make(map[string]*tf.Var))
 }
 
-func (t *VarTree) RegisterTypeHolders(block *ir.Block, name string, s tf.Var) {
+func (t *VarTree) RegisterTypeHolders(block tf.BlockHolder, name string, s tf.Var) {
 	t.globals[name] = &s
 }
 

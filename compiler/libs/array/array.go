@@ -23,15 +23,15 @@ func (t *ArrayHandler) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
+func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, bh tf.BlockHolder, args []typedef.Var) (typedef.Var, tf.BlockHolder) {
 	dims := make([]value.Value, 0)
-	size, safe := _types.NewTypeHandler().Size(th, module, block, []tf.Var{args[0]})
-	block = safe
+	size, safe := _types.NewTypeHandler().Size(th, module, bh, []tf.Var{args[0]})
+	bh = safe
 	for _, i := range args[1:] {
-		toInt, safe := th.ImplicitIntCast(block, i.Load(block), types.I64)
-		block = safe
+		toInt, safeN := th.ImplicitIntCast(bh.N, i.Load(bh.N), types.I64)
+		bh.N = safeN
 
 		dims = append(dims, toInt)
 	}
-	return typedef.NewArray(block, args[0].Type(), size.Load(block), dims), block
+	return typedef.NewArray(bh, args[0].Type(), size.Load(bh.N), dims), bh
 }

@@ -3,7 +3,6 @@ package expression
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
@@ -13,7 +12,7 @@ import (
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
-func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex ast.CallExpression) *ir.Block {
+func (t *ExpressionHandler) callConstructor(bh tf.BlockHolder, cls *tf.Class, ex ast.CallExpression) tf.BlockHolder {
 	// Get the method symbol and metadata
 	m := ex.Method.(ast.SymbolExpression)
 	meth := t.st.IdentifierBuilder.Attach(m.Value, m.Value)
@@ -25,7 +24,7 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 	fieldType := st.Fields[idx]
 
 	// Load the function pointer directly from the struct field (single load)
-	fnVal := cls.LoadField(block, idx, fieldType)
+	fnVal := cls.LoadField(bh.N, idx, fieldType)
 	if fnVal == nil {
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, m.Value))
 	}
@@ -44,12 +43,12 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 	// Build arguments
 	args := make([]value.Value, 0, len(ex.Arguments)+1)
 	for i, argExp := range ex.Arguments {
-		v, safe := t.ProcessExpression(block, argExp)
-		block = safe
+		v, safe := t.ProcessExpression(bh, argExp)
+		bh = safe
 		if v == nil {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("nil arg %d for %s", i, m.Value))
 		}
-		raw := v.Load(block)
+		raw := v.Load(bh.N)
 		if raw == nil {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("loaded nil arg %d for %s", i, m.Value))
 		}
@@ -57,8 +56,8 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 		// Implicit type cast if needed
 		expected := funcType.Params[i]
 		target := utils.GetTypeString(expected)
-		raw, safe = t.st.TypeHandler.ImplicitTypeCast(block, target, raw)
-		block = safe
+		raw, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, target, raw)
+		bh.N = safeN
 		if raw == nil {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("ImplicitTypeCast returned nil for arg %d -> %s", i, target))
 		}
@@ -73,9 +72,9 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 	args = append(args, thisPtr)
 
 	// Call the function pointer
-	block.NewCall(fnVal, args...)
+	bh.N.NewCall(fnVal, args...)
 
-	return block
+	return bh
 }
 
 // ProcessNewExpression handles the creation of a new class instance (`new` expression).
@@ -102,7 +101,7 @@ func (t *ExpressionHandler) callConstructor(block *ir.Block, cls *tf.Class, ex a
 //
 //	tf.Var     - the newly created class instance
 //	*ir.Block  - the updated IR block after field initialization and constructor call
-func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpression) (tf.Var, *ir.Block) {
+func (t *ExpressionHandler) ProcessNewExpression(bh tf.BlockHolder, ex ast.NewExpression) (tf.Var, tf.BlockHolder) {
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
 
@@ -112,7 +111,7 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 		errorutils.Abort(errorutils.UnknownClass, meth.Value)
 	}
 
-	instance := tf.NewClass(block, meth.Value, classMeta.UDT)
+	instance := tf.NewClass(bh.V, meth.Value, classMeta.UDT)
 	structType := classMeta.StructType()
 	meta := t.st.Classes[meth.Value]
 
@@ -121,32 +120,32 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 		if !ok {
 			f := t.st.Classes[meth.Value].Methods[name]
 			fieldType := t.st.Classes[meth.Value].StructType().Fields[index]
-			instance.UpdateField(block, index, f, fieldType)
+			instance.UpdateField(bh.N, index, f, fieldType)
 			continue
 		}
 		fieldType := structType.Fields[index]
 
 		var v tf.Var
 		if exp.AssignedValue == nil {
-			v = t.st.TypeHandler.BuildVar(block, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), nil)
+			v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), nil)
 		} else {
-			_v, safe := t.ProcessExpression(block, exp.AssignedValue)
+			_v, safe := t.ProcessExpression(bh, exp.AssignedValue)
 			v = _v
-			block = safe
+			bh = safe
 
 			if v.NativeTypeString() != constants.ARRAY {
-				casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, exp.ExplicitType.Get(), v.Load(block))
-				block = safe
-				v = t.st.TypeHandler.BuildVar(block, tf.NewType(exp.ExplicitType.Get()), casted)
+				casted, safe := t.st.TypeHandler.ImplicitTypeCast(bh.N, exp.ExplicitType.Get(), v.Load(bh.N))
+				bh.N = safe
+				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get()), casted)
 			} else {
 				// no need to cast, but does type check
-				t.st.TypeHandler.ImplicitTypeCast(block, exp.ExplicitType.Get(), v.Load(block))
+				t.st.TypeHandler.ImplicitTypeCast(bh.N, exp.ExplicitType.Get(), v.Load(bh.N))
 			}
 		}
-		instance.UpdateField(block, index, v.Load(block), fieldType)
+		instance.UpdateField(bh.N, index, v.Load(bh.N), fieldType)
 		t.st.Vars.AddNewVar(exp.Identifier, v)
 	}
 
-	block = t.callConstructor(block, instance, ex.Instantiation)
-	return instance, block
+	bh = t.callConstructor(bh, instance, ex.Instantiation)
+	return instance, bh
 }

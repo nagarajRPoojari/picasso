@@ -1,7 +1,6 @@
 package expression
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
@@ -26,39 +25,39 @@ import (
 // Returns:
 //
 //	tf.Var - result variable
-func (t *ExpressionHandler) ProcessPrefixExpression(block *ir.Block, ex ast.PrefixExpression) tf.Var {
-	operand, safe := t.ProcessExpression(block, ex.Operand)
-	block = safe
+func (t *ExpressionHandler) ProcessPrefixExpression(bh tf.BlockHolder, ex ast.PrefixExpression) tf.Var {
+	operand, safe := t.ProcessExpression(bh, ex.Operand)
+	bh = safe
 
 	var res value.Value
-	lv := operand.Load(block)
+	lv := operand.Load(bh.N)
 
 	switch ex.Operator.Value {
 	case "-":
 		f := &floats.Float64{}
-		val, err := f.Cast(block, lv)
+		val, err := f.Cast(bh.N, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv, tf.FLOAT64)
 		}
-		res = block.NewFNeg(val)
+		res = bh.N.NewFNeg(val)
 	case "!":
 		f := &boolean.Boolean{}
-		val, err := f.Cast(block, lv)
+		val, err := f.Cast(bh.N, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv, tf.FLOAT64)
 		}
 		one := constant.NewInt(types.I1, 1)
-		res = block.NewXor(val, one)
+		res = bh.N.NewXor(val, one)
 	}
 
 	switch res.Type().Equal(types.I1) {
 	case true:
-		ptr := block.NewAlloca(types.I1)
-		block.NewStore(res, ptr)
+		ptr := bh.V.NewAlloca(types.I1)
+		bh.N.NewStore(res, ptr)
 		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
 	default:
-		ptr := block.NewAlloca(types.Double)
-		block.NewStore(res, ptr)
+		ptr := bh.V.NewAlloca(types.Double)
+		bh.N.NewStore(res, ptr)
 		return &floats.Float64{NativeType: types.Double, Value: ptr}
 	}
 }

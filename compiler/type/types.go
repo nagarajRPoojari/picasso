@@ -16,6 +16,15 @@ import (
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
+type VarBlock struct {
+	*ir.Block
+}
+
+type BlockHolder struct {
+	V VarBlock
+	N *ir.Block
+}
+
 type Type struct {
 	T string
 	U string
@@ -96,14 +105,14 @@ func (t *TypeHandler) Exists(tp string) bool {
 //
 // Note:
 //   - class must be registered with TypeHandler before building var.
-func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Var {
+func (t *TypeHandler) BuildVar(bh BlockHolder, _type Type, init value.Value) Var {
 	switch _type.T {
 	case BOOLEAN, "i1":
 		if init == nil {
 			init = constant.NewInt(types.I1, 0)
 		}
-		ptr := block.NewAlloca(types.I1)
-		block.NewStore(init, ptr)
+		ptr := bh.V.NewAlloca(types.I1)
+		bh.N.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
 			return &boolean.Boolean{
@@ -118,8 +127,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		if init == nil {
 			init = constant.NewInt(types.I8, 0)
 		}
-		ptr := block.NewAlloca(types.I8)
-		block.NewStore(init, ptr)
+		ptr := bh.V.NewAlloca(types.I8)
+		bh.N.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
 			return &ints.Int8{
@@ -134,8 +143,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		if init == nil {
 			init = constant.NewInt(types.I16, 0)
 		}
-		ptr := block.NewAlloca(types.I16)
-		block.NewStore(init, ptr)
+		ptr := bh.V.NewAlloca(types.I16)
+		bh.N.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
 			return &ints.Int16{
@@ -150,8 +159,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		if init == nil {
 			init = constant.NewInt(types.I32, 0)
 		}
-		ptr := block.NewAlloca(types.I32)
-		block.NewStore(init, ptr)
+		ptr := bh.V.NewAlloca(types.I32)
+		bh.N.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
 			return &ints.Int32{
@@ -166,8 +175,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		if init == nil {
 			init = constant.NewInt(types.I64, 0)
 		}
-		ptr := block.NewAlloca(types.I64)
-		block.NewStore(init, ptr)
+		ptr := bh.V.NewAlloca(types.I64)
+		bh.N.NewStore(init, ptr)
 
 		if ci, ok := init.(*constant.Int); ok {
 			return &ints.Int64{
@@ -182,8 +191,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		if init == nil {
 			init = constant.NewFloat(types.Half, 0.0)
 		}
-		ptr := block.NewAlloca(types.Half)
-		block.NewStore(init, ptr)
+		ptr := bh.V.NewAlloca(types.Half)
+		bh.N.NewStore(init, ptr)
 
 		if cf, ok := init.(*constant.Float); ok {
 			f, _ := cf.X.Float64()
@@ -199,8 +208,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		if init == nil {
 			init = constant.NewFloat(types.Float, 0.0)
 		}
-		ptr := block.NewAlloca(types.Float)
-		block.NewStore(init, ptr)
+		ptr := bh.V.NewAlloca(types.Float)
+		bh.N.NewStore(init, ptr)
 
 		if cf, ok := init.(*constant.Float); ok {
 			f, _ := cf.X.Float64()
@@ -216,8 +225,8 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		if init == nil {
 			init = constant.NewFloat(types.Double, 0.0)
 		}
-		ptr := block.NewAlloca(types.Double)
-		block.NewStore(init, ptr)
+		ptr := bh.V.NewAlloca(types.Double)
+		bh.N.NewStore(init, ptr)
 
 		if cf, ok := init.(*constant.Float); ok {
 			f, _ := cf.X.Float64()
@@ -232,7 +241,7 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 		if init == nil {
 			init = constant.NewNull(types.I8Ptr)
 		}
-		return NewString(block, init)
+		return NewString(bh, init)
 	case NULL, VOID:
 		return NewNullVar(types.NewPointer(init.Type()))
 	case ARRAY:
@@ -257,9 +266,9 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 			init = constant.NewZeroInitializer(udt.UDT)
 		}
 		c := NewClass(
-			block, string(_type.T), udt.UDT,
+			bh.V, string(_type.T), udt.UDT,
 		)
-		c.Update(block, init)
+		c.Update(bh.N, init)
 		return c
 	}
 

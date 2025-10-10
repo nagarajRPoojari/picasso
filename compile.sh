@@ -12,5 +12,7 @@ clang -c c/runtime.c -I"$brew_prefix/include" -o bin/runtime.o
 
 clang bin/output.o bin/runtime.o -L"$brew_prefix/lib" -lgc -o bin/output
 
+start=$(gdate +%s%N)
 ./bin/output
-echo "Exit code: $?"
+end=$(gdate +%s%N)
+echo "\n Time taken: $((end - start)) ns"

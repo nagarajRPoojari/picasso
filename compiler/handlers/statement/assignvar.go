@@ -1,7 +1,6 @@
 package statement
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
@@ -22,7 +21,7 @@ import (
 // Returns:
 //
 //	*ir.Block - the updated IR block after performing the assignment
-func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExpression) *ir.Block {
+func (t *StatementHandler) AssignVariable(bh tf.BlockHolder, st *ast.AssignmentExpression) tf.BlockHolder {
 
 	switch m := st.Assignee.(type) {
 	case ast.SymbolExpression:
@@ -31,25 +30,25 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		if !ok {
 			errorutils.Abort(errorutils.UnknownVariable, st)
 		}
-		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
-		block = safe
+		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
+		bh = safe
 
 		if v.NativeTypeString() != constants.ARRAY {
 			typeName := v.NativeTypeString()
 
-			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
-			block = safe
+			casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, typeName, rhs.Load(bh.N))
+			bh.N = safeN
 
-			rhs = t.st.TypeHandler.BuildVar(block, tf.NewType(typeName), casted)
-			v.Update(block, rhs.Load(block))
+			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
+			v.Update(bh.N, rhs.Load(bh.N))
 		} else {
-			v.(*tf.Array).UpdateV2(block, rhs.(*tf.Array))
+			v.(*tf.Array).UpdateV2(bh.N, rhs.(*tf.Array))
 		}
 
 	case ast.MemberExpression:
 
-		baseVar, safe := expression.ExpressionHandlerInst.ProcessExpression(block, m.Member)
-		block = safe
+		baseVar, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)
+		bh = safe
 
 		if baseVar == nil {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
@@ -69,41 +68,42 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 
 		fieldType := structType.Fields[index]
 
-		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
-		block = safe
+		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
+		bh = safe
 
 		typeName := utils.GetTypeString(fieldType)
 		if typeName != constants.ARRAY {
-			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
-			block = safe
-			rhs = t.st.TypeHandler.BuildVar(block, tf.NewType(typeName), casted)
+			casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, typeName, rhs.Load(bh.N))
+			bh.N = safeN
+			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
 		}
-		cls.UpdateField(block, index, rhs.Load(block), fieldType)
+		cls.UpdateField(bh.N, index, rhs.Load(bh.N), fieldType)
 
 	case ast.ComputedExpression:
-		base, safe := expression.ExpressionHandlerInst.ProcessExpression(block, m.Member)
-		block = safe
+		base, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)
+		bh = safe
 		indices := make([]value.Value, 0)
 		for _, i := range m.Indices {
-			v, safe := expression.ExpressionHandlerInst.ProcessExpression(block, i)
-			block = safe
-			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, string(tf.INT64), v.Load(block))
-			block = safe
-			c := t.st.TypeHandler.BuildVar(block, tf.NewType(tf.INT64), casted)
-			indices = append(indices, c.Load(block))
+			v, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, i)
+			bh = safe
+			casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, string(tf.INT64), v.Load(bh.N))
+			bh.N = safeN
+			c := t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT64), casted)
+			indices = append(indices, c.Load(bh.N))
 		}
 
-		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
-		block = safe
+		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
+		bh = safe
 
 		needed := base.(*tf.Array).ElemType
 
-		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, utils.GetTypeString(needed), rhs.Load(block))
-		block = safe
+		casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, utils.GetTypeString(needed), rhs.Load(bh.N))
+		bh.N = safeN
 
-		c := t.st.TypeHandler.BuildVar(block, tf.NewType(utils.GetTypeString(needed)), casted)
-		base.(*tf.Array).StoreByIndex(block, indices, c.Load(block))
+		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(utils.GetTypeString(needed)), casted)
+		base.(*tf.Array).StoreByIndex(bh.N, indices, c.Load(bh.N))
+
 	}
 
-	return block
+	return bh
 }

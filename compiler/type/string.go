@@ -18,9 +18,9 @@ type String struct {
 }
 
 // IMP: init must be i8*, pointer to a global string constant
-func NewString(block *ir.Block, init value.Value) *String {
-	slot := block.NewAlloca(types.I8Ptr)
-	block.NewStore(init, slot)
+func NewString(block BlockHolder, init value.Value) *String {
+	slot := block.V.NewAlloca(types.I8Ptr)
+	block.N.NewStore(init, slot)
 
 	var s string
 	if c, ok := init.(*constant.CharArray); ok {

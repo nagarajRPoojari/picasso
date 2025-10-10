@@ -5,6 +5,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/statement"
+	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
 // ProcessBlock builds LLVM IR for a list of AST statements within a function.
@@ -21,7 +22,7 @@ import (
 // Return:
 //
 //	The updated IR basic block after processing all statements.
-func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Statement) *ir.Block {
+func (t *BlockHandler) ProcessBlock(fn *ir.Func, bh tf.BlockHolder, sts []ast.Statement) tf.BlockHolder {
 	// add new scope block for variables
 	t.st.Vars.AddBlock()
 	defer t.st.Vars.RemoveBlock()
@@ -29,27 +30,29 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, entry *ir.Block, sts []ast.Stat
 	for _, stI := range sts {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
-			entry = statement.StatementHandlerInst.DeclareVariable(entry, &st)
+			bh = statement.StatementHandlerInst.DeclareVariable(bh, &st)
 
 		case ast.ExpressionStatement:
 			switch exp := st.Expression.(type) {
 			case ast.AssignmentExpression:
-				entry = statement.StatementHandlerInst.AssignVariable(entry, &exp)
+				bh = statement.StatementHandlerInst.AssignVariable(bh, &exp)
 			case ast.CallExpression:
-				_, entry = statement.StatementHandlerInst.CallFunc(entry, exp)
+				_, bh = statement.StatementHandlerInst.CallFunc(bh, exp)
 			case ast.NewExpression:
-				_, entry = statement.StatementHandlerInst.ProcessNewExpression(entry, exp)
+				_, bh = statement.StatementHandlerInst.ProcessNewExpression(bh, exp)
 			default:
 				errorutils.Abort(errorutils.InvalidStatement)
 			}
 
 		case ast.IfStatement:
-			entry = t.processIfElseBlock(fn, entry, &st)
+			bh = t.processIfElseBlock(fn, bh, &st)
+		case ast.ForeachStatement:
+			bh = t.processForBlock(fn, bh, &st)
 		case ast.ReturnStatement:
 			retType := fn.Sig.RetType
-			statement.StatementHandlerInst.Return(entry, &st, retType)
+			statement.StatementHandlerInst.Return(bh, &st, retType)
 		}
 	}
 
-	return entry
+	return bh
 }

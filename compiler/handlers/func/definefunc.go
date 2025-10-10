@@ -21,10 +21,11 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	if _, ok := avoid[fn.Name]; ok {
 		return
 	}
-	entry := f.NewBlock(constants.ENTRY)
+
+	bh := tf.BlockHolder{V: tf.VarBlock{Block: f.NewBlock("")}, N: f.NewBlock(constants.ENTRY)}
 
 	if className == fn.Name {
-		t.initTypes(entry, className)
+		t.initTypes(bh, className)
 	}
 
 	if name == constants.MAIN && len(fn.Parameters) != 0 {
@@ -35,7 +36,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 		if i < len(fn.Parameters) {
 			pt := fn.Parameters[i].Type
 			paramType := tf.NewType(pt.Get(), pt.GetUnderlyingType())
-			t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(entry, paramType, p))
+			t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(bh, paramType, p))
 		} else {
 			clsMeta := t.st.Classes[className]
 			if clsMeta == nil {
@@ -49,10 +50,11 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 		}
 	}
 
-	entry = block.BlockHandlerInst.ProcessBlock(f, entry, fn.Body)
-
+	old := bh.N
+	bh = block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
+	bh.V.NewBr(old)
 	if fn.ReturnType == nil {
-		entry.NewRet(nil)
+		bh.N.NewRet(nil)
 	}
 }
 
@@ -63,28 +65,29 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 
 	var f *ir.Func
 	f = t.st.MainFunc
-	entry := f.NewBlock(constants.ENTRY)
-	t.Init(entry)
-	entry.NewCall(t.st.GC.Init())
+	bh := tf.BlockHolder{V: tf.VarBlock{Block: f.NewBlock(constants.ENTRY)}, N: f.NewBlock("")}
+	t.Init(bh)
+	bh.N.NewCall(t.st.GC.Init())
 
 	if len(fn.Parameters) != 0 {
 		errorutils.Abort(errorutils.MainFuncError, "parameters are not allowed in main function")
 	}
 
-	entry = block.BlockHandlerInst.ProcessBlock(f, entry, fn.Body)
-
+	old := bh.N
+	bh = block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
+	bh.V.NewBr(old)
 	if fn.ReturnType == nil {
-		entry.NewRet(nil)
+		bh.N.NewRet(nil)
 	}
 }
 
-func (t *FuncHandler) Init(block *ir.Block) {
+func (t *FuncHandler) Init(block tf.BlockHolder) {
 	tps := []string{"int64", "int32", "int16", "int8", "string"}
 	for _, tp := range tps {
 		t.initTypes(block, tp)
 	}
 }
 
-func (t *FuncHandler) initTypes(block *ir.Block, s string) {
+func (t *FuncHandler) initTypes(block tf.BlockHolder, s string) {
 	t.st.Vars.RegisterTypeHolders(block, s, t.st.TypeHandler.BuildVar(block, tf.NewType(s), nil))
 }

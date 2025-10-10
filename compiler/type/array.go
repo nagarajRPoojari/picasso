@@ -30,7 +30,7 @@ func init() {
 	ARRAYSTRUCT.SetName(constants.ARRAY)
 }
 
-func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
+func NewArray(bh BlockHolder, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
 	allocFn := c.Instance.ArrayAlloc()
 	if allocFn == nil {
 		panic("lang_alloc_array not declared in module (gc.Instance.ArrayAlloc returned nil)")
@@ -38,40 +38,40 @@ func NewArray(block *ir.Block, elemType types.Type, eleSize value.Value, dims []
 
 	totalLen := dims[0]
 	for i := 1; i < len(dims); i++ {
-		totalLen = block.NewMul(totalLen, dims[i])
+		totalLen = bh.N.NewMul(totalLen, dims[i])
 	}
 
-	structAlloc := block.NewCall(allocFn, totalLen, eleSize)
+	structAlloc := bh.N.NewCall(allocFn, totalLen, eleSize)
 
 	shapeCount := constant.NewInt(types.I64, int64(len(dims)))
 	shapeElemSize := constant.NewInt(types.I64, 8)
 
-	shapeStruct := block.NewCall(allocFn, shapeCount, shapeElemSize)
-	shapeDataFieldPtr := block.NewGetElementPtr(ARRAYSTRUCT, shapeStruct,
+	shapeStruct := bh.N.NewCall(allocFn, shapeCount, shapeElemSize)
+	shapeDataFieldPtr := bh.N.NewGetElementPtr(ARRAYSTRUCT, shapeStruct,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 1),
 	)
-	shapeRaw := block.NewLoad(types.NewPointer(types.I8), shapeDataFieldPtr) // i8* raw buffer
-	shapePtrCast := block.NewBitCast(shapeRaw, types.NewPointer(types.I64))  // i64* shapePtr
+	shapeRaw := bh.N.NewLoad(types.NewPointer(types.I8), shapeDataFieldPtr) // i8* raw buffer
+	shapePtrCast := bh.N.NewBitCast(shapeRaw, types.NewPointer(types.I64))  // i64* shapePtr
 
 	for i, d := range dims {
-		elemPtr := block.NewGetElementPtr(types.I64, shapePtrCast, constant.NewInt(types.I64, int64(i)))
-		block.NewStore(d, elemPtr)
+		elemPtr := bh.N.NewGetElementPtr(types.I64, shapePtrCast, constant.NewInt(types.I64, int64(i)))
+		bh.N.NewStore(d, elemPtr)
 	}
 
 	rank := constant.NewInt(types.I64, int64(len(dims)))
 
-	shapeFieldPtr := block.NewGetElementPtr(ARRAYSTRUCT, structAlloc,
+	shapeFieldPtr := bh.N.NewGetElementPtr(ARRAYSTRUCT, structAlloc,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 2),
 	)
-	block.NewStore(shapePtrCast, shapeFieldPtr)
+	bh.N.NewStore(shapePtrCast, shapeFieldPtr)
 
-	rankPtr := block.NewGetElementPtr(ARRAYSTRUCT, structAlloc,
+	rankPtr := bh.N.NewGetElementPtr(ARRAYSTRUCT, structAlloc,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 3),
 	)
-	block.NewStore(rank, rankPtr)
+	bh.N.NewStore(rank, rankPtr)
 
 	return &Array{
 		Ptr:       structAlloc,

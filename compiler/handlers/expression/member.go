@@ -3,7 +3,6 @@ package expression
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
@@ -35,10 +34,10 @@ import (
 // Returns:
 //
 //	tf.Var - a runtime variable representing the field
-func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.MemberExpression) (tf.Var, *ir.Block) {
+func (t *ExpressionHandler) ProcessMemberExpression(bh tf.BlockHolder, ex ast.MemberExpression) (tf.Var, tf.BlockHolder) {
 	// Evaluate the base expression
-	baseVar, safe := t.ProcessExpression(block, ex.Member)
-	block = safe
+	baseVar, safe := t.ProcessExpression(bh, ex.Member)
+	bh = safe
 
 	if baseVar == nil {
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
@@ -68,7 +67,7 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 	fieldType := st.Fields[idx]
 
 	// Get pointer to the field
-	fieldPtr := cls.FieldPtr(block, idx)
+	fieldPtr := cls.FieldPtr(bh.N, idx)
 	// return t.typeHandler.BuildVar(block, "", fieldPtr)
 
 	// Determine the class name if the field is a struct
@@ -91,15 +90,15 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 	case *types.IntType:
 		switch ft.BitSize {
 		case 1:
-			return &boolean.Boolean{NativeType: types.I1, Value: fieldPtr}, block
+			return &boolean.Boolean{NativeType: types.I1, Value: fieldPtr}, bh
 		case 8:
-			return &ints.Int8{NativeType: types.I8, Value: fieldPtr}, block
+			return &ints.Int8{NativeType: types.I8, Value: fieldPtr}, bh
 		case 16:
-			return &ints.Int16{NativeType: types.I16, Value: fieldPtr}, block
+			return &ints.Int16{NativeType: types.I16, Value: fieldPtr}, bh
 		case 32:
-			return &ints.Int32{NativeType: types.I32, Value: fieldPtr}, block
+			return &ints.Int32{NativeType: types.I32, Value: fieldPtr}, bh
 		case 64:
-			return &ints.Int64{NativeType: types.I64, Value: fieldPtr}, block
+			return &ints.Int64{NativeType: types.I64, Value: fieldPtr}, bh
 		default:
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported int size %d", ft.BitSize))
 		}
@@ -107,11 +106,11 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 	case *types.FloatType:
 		switch ft.Kind {
 		case types.FloatKindHalf:
-			return &floats.Float16{NativeType: types.Half, Value: fieldPtr}, block
+			return &floats.Float16{NativeType: types.Half, Value: fieldPtr}, bh
 		case types.FloatKindFloat:
-			return &floats.Float32{NativeType: types.Float, Value: fieldPtr}, block
+			return &floats.Float32{NativeType: types.Float, Value: fieldPtr}, bh
 		case types.FloatKindDouble:
-			return &floats.Float64{NativeType: types.Double, Value: fieldPtr}, block
+			return &floats.Float64{NativeType: types.Double, Value: fieldPtr}, bh
 		default:
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported float kind %v", ft.Kind))
 		}
@@ -119,25 +118,25 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 	case *types.PointerType:
 		if ele, ok := ft.ElemType.(*types.StructType); ok {
 			if ele.Name() == constants.ARRAY {
-				f := block.NewLoad(types.NewPointer(tf.ARRAYSTRUCT), fieldPtr)
+				f := bh.N.NewLoad(types.NewPointer(tf.ARRAYSTRUCT), fieldPtr)
 				return &tf.Array{
 					Ptr:       f,
 					ArrayType: tf.ARRAYSTRUCT,
 					ElemType:  classMeta.ArrayVarsEleTypes[idx],
-				}, block
+				}, bh
 			}
 
 			c := tf.NewClass(
-				block, getClassName(fieldType), ft,
+				bh.V, getClassName(fieldType), ft,
 			)
-			c.Update(block, block.NewLoad(fieldType, fieldPtr))
-			return c, block
+			c.Update(bh.N, bh.N.NewLoad(fieldType, fieldPtr))
+			return c, bh
 		} else {
-			return tf.NewString(block, block.NewLoad(types.I8Ptr, fieldPtr)), block
+			return tf.NewString(bh, bh.N.NewLoad(types.I8Ptr, fieldPtr)), bh
 		}
 
 	default:
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported field type %T in member expression", fieldType))
 	}
-	return nil, block
+	return nil, bh
 }

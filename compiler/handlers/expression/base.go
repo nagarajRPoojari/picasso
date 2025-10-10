@@ -1,7 +1,6 @@
 package expression
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
@@ -39,18 +38,18 @@ func NewExpressionHandler(st *state.State) *ExpressionHandler {
 //
 //	tf.Var     - the resulting typed variable representing the expression
 //	*ir.Block  - the (possibly modified) IR block after processing
-func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expression) (tf.Var, *ir.Block) {
+func (t *ExpressionHandler) ProcessExpression(bh tf.BlockHolder, expI ast.Expression) (tf.Var, tf.BlockHolder) {
 	if expI == nil {
-		return tf.NewNullVar(types.NewPointer(types.NewStruct())), block
+		return tf.NewNullVar(types.NewPointer(types.NewStruct())), bh
 	}
 
 	switch ex := expI.(type) {
 
 	case ast.SymbolExpression:
 		if t.st.TypeHandler.Exists(ex.Value) {
-			return t.st.TypeHandler.BuildVar(block, tf.NewType(ex.Value), nil), block
+			return t.st.TypeHandler.BuildVar(bh, tf.NewType(ex.Value), nil), bh
 		}
-		return t.processSymbolExpression(ex), block
+		return t.processSymbolExpression(ex), bh
 
 	case ast.ListExpression:
 		// should handle, [[1,2,3], [4,5,6]]
@@ -58,30 +57,30 @@ func (t *ExpressionHandler) ProcessExpression(block *ir.Block, expI ast.Expressi
 
 	case ast.NumberExpression:
 		// by default number will be wrapped up with float64
-		return t.st.TypeHandler.BuildVar(block, tf.NewType(tf.FLOAT64), constant.NewFloat(types.Double, ex.Value)), block
+		return t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.FLOAT64), constant.NewFloat(types.Double, ex.Value)), bh
 
 	case ast.StringExpression:
-		return t.ProcessStringLiteral(block, ex), block
+		return t.ProcessStringLiteral(bh, ex), bh
 
 	case ast.NewExpression:
-		return t.ProcessNewExpression(block, ex)
+		return t.ProcessNewExpression(bh, ex)
 
 	case ast.MemberExpression:
-		return t.ProcessMemberExpression(block, ex)
+		return t.ProcessMemberExpression(bh, ex)
 
 	case ast.ComputedExpression:
-		return t.ProcessIndexingExpression(block, ex)
+		return t.ProcessIndexingExpression(bh, ex)
 
 	case ast.PrefixExpression:
-		return t.ProcessPrefixExpression(block, ex), block
+		return t.ProcessPrefixExpression(bh, ex), bh
 
 	case ast.CallExpression:
-		return t.CallFunc(block, ex)
+		return t.CallFunc(bh, ex)
 
 	case ast.BinaryExpression:
-		return t.ProcessBinaryExpression(block, ex)
+		return t.ProcessBinaryExpression(bh, ex)
 	}
 
 	errorutils.Abort(errorutils.InvalidExpression)
-	return nil, nil
+	return nil, tf.BlockHolder{}
 }

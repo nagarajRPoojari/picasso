@@ -39,82 +39,82 @@ var logical map[lexer.TokenKind]BinaryOperation
 //
 //	tf.Var     - the resulting variable (float64 or boolean depending on operator)
 //	*ir.Block  - the (possibly updated) IR block after processing
-func (t *ExpressionHandler) ProcessBinaryExpression(block *ir.Block, ex ast.BinaryExpression) (tf.Var, *ir.Block) {
-	left, safe := t.ProcessExpression(block, ex.Left)
-	block = safe
+func (t *ExpressionHandler) ProcessBinaryExpression(bh tf.BlockHolder, ex ast.BinaryExpression) (tf.Var, tf.BlockHolder) {
+	left, safe := t.ProcessExpression(bh, ex.Left)
+	bh = safe
 
-	right, safe := t.ProcessExpression(block, ex.Right)
-	block = safe
+	right, safe := t.ProcessExpression(bh, ex.Right)
+	bh = safe
 
 	if left == nil || right == nil {
 		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
 	}
 
-	lv := left.Load(block)
-	rv := right.Load(block)
+	lv := left.Load(bh.N)
+	rv := right.Load(bh.N)
 
 	if op, ok := arithmatic[ex.Operator.Kind]; ok {
 		f := &floats.Float64{}
-		lvf, err := f.Cast(block, lv)
+		lvf, err := f.Cast(bh.N, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.FLOAT64)
 		}
-		rvf, err := f.Cast(block, rv)
+		rvf, err := f.Cast(bh.N, rv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.FLOAT64)
 		}
 
-		res, err := op(block, lvf, rvf)
+		res, err := op(bh.N, lvf, rvf)
 
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
-		ptr := block.NewAlloca(types.Double)
-		block.NewStore(res, ptr)
-		return &floats.Float64{NativeType: types.Double, Value: ptr}, block
+		ptr := bh.V.NewAlloca(types.Double)
+		bh.N.NewStore(res, ptr)
+		return &floats.Float64{NativeType: types.Double, Value: ptr}, bh
 
 	} else if op, ok := comparision[ex.Operator.Kind]; ok {
 		// comparision operations are done on float type operands only
 		f := &floats.Float64{}
-		lvf, err := f.Cast(block, lv)
+		lvf, err := f.Cast(bh.N, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.FLOAT64)
 		}
-		rvf, err := f.Cast(block, rv)
+		rvf, err := f.Cast(bh.N, rv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.FLOAT64)
 		}
 
-		res, err := op(block, lvf, rvf)
+		res, err := op(bh.N, lvf, rvf)
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
-		ptr := block.NewAlloca(types.I1)
-		block.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, block
+		ptr := bh.V.NewAlloca(types.I1)
+		bh.N.NewStore(res, ptr)
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, bh
 
 	} else if op, ok := logical[ex.Operator.Kind]; ok {
 		f := &boolean.Boolean{}
-		lvf, err := f.Cast(block, lv)
+		lvf, err := f.Cast(bh.N, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.BOOLEAN)
 		}
-		rvf, err := f.Cast(block, rv)
+		rvf, err := f.Cast(bh.N, rv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.BOOLEAN)
 		}
 
-		res, err := op(block, lvf, rvf)
+		res, err := op(bh.N, lvf, rvf)
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
-		ptr := block.NewAlloca(types.I1)
-		block.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, block
+		ptr := bh.V.NewAlloca(types.I1)
+		bh.N.NewStore(res, ptr)
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, bh
 	}
 
 	errorutils.Abort(errorutils.InvalidBinaryExpressionOperator, ex.Operator.Value)
-	return nil, block
+	return nil, bh
 }
 
 // initOpLookUpTables inits lookup table mapping operand token with its

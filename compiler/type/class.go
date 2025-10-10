@@ -18,7 +18,7 @@ type Class struct {
 	Ptr  value.Value // pointer value (pointer-to-struct, i.e. the object address)
 }
 
-func NewClass(block *ir.Block, name string, udt types.Type) *Class {
+func NewClass(block VarBlock, name string, udt types.Type) *Class {
 	// Normalize udt so s.UDT is always *types.PointerType (pointer-to-struct)
 	var ptrType *types.PointerType
 	switch t := udt.(type) {

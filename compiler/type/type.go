@@ -20,7 +20,7 @@ type TypeHolder struct {
 }
 
 // IMP: init must be i8*, pointer to a global string constant
-func NewTypeHolder(block *ir.Block, init value.Value) *TypeHolder {
+func NewTypeHolder(block VarBlock, init value.Value) *TypeHolder {
 	slot := block.NewAlloca(types.I8Ptr)
 	block.NewStore(init, slot)
 

@@ -36,7 +36,7 @@ func (t *IO) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Block, args []typedef.Var) (typedef.Var, *ir.Block) {
+func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh tf.BlockHolder, args []typedef.Var) (typedef.Var, tf.BlockHolder) {
 	if len(args) == 0 {
 		panic("printf requires at least one argument (format string)")
 	}
@@ -45,7 +45,7 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Bl
 
 	// First arg must be a string
 	formatVar := args[0]
-	formatVal := formatVar.Load(block)
+	formatVal := formatVar.Load(bh.N)
 	if formatVal.Type() != types.I8Ptr {
 		panic(fmt.Sprintf("printf: first argument must be string (i8*), got %s", formatVal.Type()))
 	}
@@ -55,7 +55,7 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Bl
 	// Remaining args
 	for _, arg := range args[1:] {
 		// Always load (so we pass value, not alloca slot)
-		loaded := arg.Load(block)
+		loaded := arg.Load(bh.N)
 
 		// printf is variadic, so no exact type match needed, but we should normalize:
 		switch loaded.Type().(type) {
@@ -66,7 +66,7 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Bl
 		case *types.FloatType:
 			// float must be promoted to double in varargs
 			if loaded.Type() == types.Float {
-				promoted := block.NewFPExt(loaded, types.Double)
+				promoted := bh.N.NewFPExt(loaded, types.Double)
 				callArgs = append(callArgs, promoted)
 			} else {
 				callArgs = append(callArgs, loaded)
@@ -81,8 +81,8 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, block *ir.Bl
 	}
 
 	// Emit call
-	result := block.NewCall(printfFn, callArgs...)
+	result := bh.N.NewCall(printfFn, callArgs...)
 
 	// Wrap result in a Var (since printf returns int)
-	return typeHandler.BuildVar(block, tf.NewType(typedef.INT32), result), block
+	return typeHandler.BuildVar(bh, tf.NewType(typedef.INT32), result), bh
 }
