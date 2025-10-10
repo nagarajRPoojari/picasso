@@ -15,4 +15,4 @@ clang bin/output.o bin/runtime.o -L"$brew_prefix/lib" -lgc -o bin/output
 start=$(gdate +%s%N)
 ./bin/output
 end=$(gdate +%s%N)
-echo "\n Time taken: $((end - start)) ns"
+echo "Time taken: $((end - start)) ns"

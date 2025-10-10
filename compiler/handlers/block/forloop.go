@@ -20,11 +20,18 @@ func (t *BlockHandler) processForBlock(fn *ir.Func, bh tf.BlockHolder, st *ast.F
 	indexVal, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, lowerExpr)
 	bh = safe
 
+	casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, tf.INT, indexVal.Load(bh.N))
+	bh.N = safeN
+	indexVal = t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT), casted)
+
 	iPtr := indexVal.Slot()
 	t.st.Vars.AddNewVar(st.Value, indexVal)
 
 	upperVal, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, upperExpr)
 	bh = safe
+	casted, safeN = t.st.TypeHandler.ImplicitTypeCast(bh.N, tf.INT, upperVal.Load(bh.N))
+	bh.N = safeN
+	upperVal = t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT), casted)
 
 	loopCond := tf.BlockHolder{V: bh.V, N: fn.NewBlock("")}
 	loopBody := tf.BlockHolder{V: bh.V, N: fn.NewBlock("")}

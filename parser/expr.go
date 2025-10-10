@@ -82,8 +82,12 @@ func parse_primary_expr(p *Parser) ast.Expression {
 		}
 	case lexer.STRING:
 		str := p.move().Value
+		unescaped, err := strconv.Unquote(str)
+		if err != nil {
+			panic(fmt.Sprintf("unexpected str format %s", str))
+		}
 		return ast.StringExpression{
-			Value: str[1 : len(str)-1],
+			Value: unescaped,
 		}
 	case lexer.IDENTIFIER:
 		return ast.SymbolExpression{

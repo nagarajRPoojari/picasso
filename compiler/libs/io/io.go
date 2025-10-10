@@ -43,7 +43,6 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh tf.BlockH
 
 	printfFn := t.ensurePrintf(module)
 
-	// First arg must be a string
 	formatVar := args[0]
 	formatVal := formatVar.Load(bh.N)
 	if formatVal.Type() != types.I8Ptr {
@@ -52,19 +51,14 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh tf.BlockH
 
 	callArgs := []value.Value{formatVal}
 
-	// Remaining args
 	for _, arg := range args[1:] {
-		// Always load (so we pass value, not alloca slot)
 		loaded := arg.Load(bh.N)
 
-		// printf is variadic, so no exact type match needed, but we should normalize:
 		switch loaded.Type().(type) {
 		case *types.IntType:
-			// leave as-is (i32, i64, etc.)
 			callArgs = append(callArgs, loaded)
 
 		case *types.FloatType:
-			// float must be promoted to double in varargs
 			if loaded.Type() == types.Float {
 				promoted := bh.N.NewFPExt(loaded, types.Double)
 				callArgs = append(callArgs, promoted)
@@ -80,9 +74,6 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh tf.BlockH
 		}
 	}
 
-	// Emit call
 	result := bh.N.NewCall(printfFn, callArgs...)
-
-	// Wrap result in a Var (since printf returns int)
 	return typeHandler.BuildVar(bh, tf.NewType(typedef.INT32), result), bh
 }
