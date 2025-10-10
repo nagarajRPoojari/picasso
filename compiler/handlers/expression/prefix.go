@@ -7,6 +7,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
 )
@@ -25,24 +26,23 @@ import (
 // Returns:
 //
 //	tf.Var - result variable
-func (t *ExpressionHandler) ProcessPrefixExpression(bh tf.BlockHolder, ex ast.PrefixExpression) tf.Var {
-	operand, safe := t.ProcessExpression(bh, ex.Operand)
-	bh = safe
+func (t *ExpressionHandler) ProcessPrefixExpression(bh *bc.BlockHolder, ex ast.PrefixExpression) tf.Var {
+	operand := t.ProcessExpression(bh, ex.Operand)
 
 	var res value.Value
-	lv := operand.Load(bh.N)
+	lv := operand.Load(bh)
 
 	switch ex.Operator.Value {
 	case "-":
 		f := &floats.Float64{}
-		val, err := f.Cast(bh.N, lv)
+		val, err := f.Cast(bh, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv, tf.FLOAT64)
 		}
 		res = bh.N.NewFNeg(val)
 	case "!":
 		f := &boolean.Boolean{}
-		val, err := f.Cast(bh.N, lv)
+		val, err := f.Cast(bh, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv, tf.FLOAT64)
 		}

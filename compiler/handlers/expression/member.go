@@ -8,6 +8,7 @@ import (
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/ints"
@@ -34,10 +35,9 @@ import (
 // Returns:
 //
 //	tf.Var - a runtime variable representing the field
-func (t *ExpressionHandler) ProcessMemberExpression(bh tf.BlockHolder, ex ast.MemberExpression) (tf.Var, tf.BlockHolder) {
+func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.MemberExpression) tf.Var {
 	// Evaluate the base expression
-	baseVar, safe := t.ProcessExpression(bh, ex.Member)
-	bh = safe
+	baseVar := t.ProcessExpression(bh, ex.Member)
 
 	if baseVar == nil {
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
@@ -67,7 +67,7 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh tf.BlockHolder, ex ast.Me
 	fieldType := st.Fields[idx]
 
 	// Get pointer to the field
-	fieldPtr := cls.FieldPtr(bh.N, idx)
+	fieldPtr := cls.FieldPtr(bh, idx)
 	// return t.typeHandler.BuildVar(block, "", fieldPtr)
 
 	// Determine the class name if the field is a struct
@@ -90,15 +90,15 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh tf.BlockHolder, ex ast.Me
 	case *types.IntType:
 		switch ft.BitSize {
 		case 1:
-			return &boolean.Boolean{NativeType: types.I1, Value: fieldPtr}, bh
+			return &boolean.Boolean{NativeType: types.I1, Value: fieldPtr}
 		case 8:
-			return &ints.Int8{NativeType: types.I8, Value: fieldPtr}, bh
+			return &ints.Int8{NativeType: types.I8, Value: fieldPtr}
 		case 16:
-			return &ints.Int16{NativeType: types.I16, Value: fieldPtr}, bh
+			return &ints.Int16{NativeType: types.I16, Value: fieldPtr}
 		case 32:
-			return &ints.Int32{NativeType: types.I32, Value: fieldPtr}, bh
+			return &ints.Int32{NativeType: types.I32, Value: fieldPtr}
 		case 64:
-			return &ints.Int64{NativeType: types.I64, Value: fieldPtr}, bh
+			return &ints.Int64{NativeType: types.I64, Value: fieldPtr}
 		default:
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported int size %d", ft.BitSize))
 		}
@@ -106,11 +106,11 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh tf.BlockHolder, ex ast.Me
 	case *types.FloatType:
 		switch ft.Kind {
 		case types.FloatKindHalf:
-			return &floats.Float16{NativeType: types.Half, Value: fieldPtr}, bh
+			return &floats.Float16{NativeType: types.Half, Value: fieldPtr}
 		case types.FloatKindFloat:
-			return &floats.Float32{NativeType: types.Float, Value: fieldPtr}, bh
+			return &floats.Float32{NativeType: types.Float, Value: fieldPtr}
 		case types.FloatKindDouble:
-			return &floats.Float64{NativeType: types.Double, Value: fieldPtr}, bh
+			return &floats.Float64{NativeType: types.Double, Value: fieldPtr}
 		default:
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported float kind %v", ft.Kind))
 		}
@@ -123,20 +123,20 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh tf.BlockHolder, ex ast.Me
 					Ptr:       f,
 					ArrayType: tf.ARRAYSTRUCT,
 					ElemType:  classMeta.ArrayVarsEleTypes[idx],
-				}, bh
+				}
 			}
 
 			c := tf.NewClass(
-				bh.V, getClassName(fieldType), ft,
+				bh, getClassName(fieldType), ft,
 			)
-			c.Update(bh.N, bh.N.NewLoad(fieldType, fieldPtr))
-			return c, bh
+			c.Update(bh, bh.N.NewLoad(fieldType, fieldPtr))
+			return c
 		} else {
-			return tf.NewString(bh, bh.N.NewLoad(types.I8Ptr, fieldPtr)), bh
+			return tf.NewString(bh, bh.N.NewLoad(types.I8Ptr, fieldPtr))
 		}
 
 	default:
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalTypeError, fmt.Sprintf("unsupported field type %T in member expression", fieldType))
 	}
-	return nil, bh
+	return nil
 }

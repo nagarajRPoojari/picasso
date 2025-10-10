@@ -5,7 +5,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
-	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // Return handles a return statement by evaluating the expression,
@@ -16,15 +16,12 @@ import (
 //	block - the current IR block
 //	st    - the AST ReturnStatement node
 //	rt    - the expected return type of the function
-func (t *StatementHandler) Return(block tf.BlockHolder, st *ast.ReturnStatement, rt types.Type) {
-	v, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.Value.Expression)
-	block = safe
+func (t *StatementHandler) Return(block *bc.BlockHolder, st *ast.ReturnStatement, rt types.Type) {
+	v := expression.ExpressionHandlerInst.ProcessExpression(block, st.Value.Expression)
 
-	val := v.Load(block.N)
+	val := v.Load(block)
 	tp := utils.GetTypeString(rt)
 
-	r, safeN := t.st.TypeHandler.ImplicitTypeCast(block.N, tp, val)
-	block.N = safeN
-
+	r := t.st.TypeHandler.ImplicitTypeCast(block, tp, val)
 	block.N.NewRet(r)
 }

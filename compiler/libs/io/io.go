@@ -9,6 +9,7 @@ import (
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	typedef "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 type IO struct {
@@ -36,7 +37,7 @@ func (t *IO) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh tf.BlockHolder, args []typedef.Var) (typedef.Var, tf.BlockHolder) {
+func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	if len(args) == 0 {
 		panic("printf requires at least one argument (format string)")
 	}
@@ -44,7 +45,7 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh tf.BlockH
 	printfFn := t.ensurePrintf(module)
 
 	formatVar := args[0]
-	formatVal := formatVar.Load(bh.N)
+	formatVal := formatVar.Load(bh)
 	if formatVal.Type() != types.I8Ptr {
 		panic(fmt.Sprintf("printf: first argument must be string (i8*), got %s", formatVal.Type()))
 	}
@@ -52,7 +53,7 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh tf.BlockH
 	callArgs := []value.Value{formatVal}
 
 	for _, arg := range args[1:] {
-		loaded := arg.Load(bh.N)
+		loaded := arg.Load(bh)
 
 		switch loaded.Type().(type) {
 		case *types.IntType:
@@ -75,5 +76,5 @@ func (t *IO) printf(typeHandler *tf.TypeHandler, module *ir.Module, bh tf.BlockH
 	}
 
 	result := bh.N.NewCall(printfFn, callArgs...)
-	return typeHandler.BuildVar(bh, tf.NewType(typedef.INT32), result), bh
+	return typeHandler.BuildVar(bh, tf.NewType(typedef.INT32), result)
 }

@@ -3,11 +3,11 @@ package floats
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
@@ -18,28 +18,30 @@ type Float16 struct {
 	GoVal      float32
 }
 
-func NewFloat16Var(block *ir.Block, init float32) *Float16 {
-	slot := block.NewAlloca(types.Half)
-	block.NewStore(constant.NewFloat(types.Half, float64(init)), slot)
+func NewFloat16Var(block *bc.BlockHolder, init float32) *Float16 {
+	slot := block.N.NewAlloca(types.Half)
+	block.N.NewStore(constant.NewFloat(types.Half, float64(init)), slot)
 	return &Float16{NativeType: types.Half, Value: slot, GoVal: init}
 }
 
-func (f *Float16) Update(block *ir.Block, v value.Value) { block.NewStore(v, f.Value) }
-func (f *Float16) Load(block *ir.Block) value.Value      { return block.NewLoad(types.Half, f.Value) }
+func (f *Float16) Update(block *bc.BlockHolder, v value.Value) { block.N.NewStore(v, f.Value) }
+func (f *Float16) Load(block *bc.BlockHolder) value.Value {
+	return block.N.NewLoad(types.Half, f.Value)
+}
 func (f *Float16) Constant() constant.Constant {
 	return constant.NewFloat(types.Half, float64(f.GoVal))
 }
 func (f *Float16) Slot() value.Value { return f.Value }
-func (f *Float16) Cast(block *ir.Block, v value.Value) (value.Value, error) {
+func (f *Float16) Cast(block *bc.BlockHolder, v value.Value) (value.Value, error) {
 	switch v.Type().(type) {
 	case *types.IntType:
-		return block.NewSIToFP(v, types.Half), nil
+		return block.N.NewSIToFP(v, types.Half), nil
 	case *types.FloatType:
 		switch v.Type() {
 		case types.Double:
-			return block.NewFPTrunc(v, types.Half), nil
+			return block.N.NewFPTrunc(v, types.Half), nil
 		case types.Half:
-			return block.NewFPExt(v, types.Half), nil
+			return block.N.NewFPExt(v, types.Half), nil
 		case types.Float:
 			return v, nil
 		}

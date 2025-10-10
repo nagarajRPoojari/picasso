@@ -7,6 +7,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // defineFunc does concrete function declaration
@@ -22,7 +23,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 		return
 	}
 
-	bh := tf.BlockHolder{V: tf.VarBlock{Block: f.NewBlock("")}, N: f.NewBlock(constants.ENTRY)}
+	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock("")}, f.NewBlock(constants.ENTRY))
 
 	if className == fn.Name {
 		t.initTypes(bh, className)
@@ -51,7 +52,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	}
 
 	old := bh.N
-	bh = block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
+	block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
 	bh.V.NewBr(old)
 	if fn.ReturnType == nil {
 		bh.N.NewRet(nil)
@@ -65,7 +66,7 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 
 	var f *ir.Func
 	f = t.st.MainFunc
-	bh := tf.BlockHolder{V: tf.VarBlock{Block: f.NewBlock(constants.ENTRY)}, N: f.NewBlock("")}
+	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock(constants.ENTRY)}, f.NewBlock(""))
 	t.Init(bh)
 	bh.N.NewCall(t.st.GC.Init())
 
@@ -74,20 +75,20 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	}
 
 	old := bh.N
-	bh = block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
+	block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
 	bh.V.NewBr(old)
 	if fn.ReturnType == nil {
 		bh.N.NewRet(nil)
 	}
 }
 
-func (t *FuncHandler) Init(block tf.BlockHolder) {
+func (t *FuncHandler) Init(block *bc.BlockHolder) {
 	tps := []string{"int64", "int32", "int16", "int8", "string"}
 	for _, tp := range tps {
 		t.initTypes(block, tp)
 	}
 }
 
-func (t *FuncHandler) initTypes(block tf.BlockHolder, s string) {
+func (t *FuncHandler) initTypes(block *bc.BlockHolder, s string) {
 	t.st.Vars.RegisterTypeHolders(block, s, t.st.TypeHandler.BuildVar(block, tf.NewType(s), nil))
 }

@@ -10,20 +10,12 @@ import (
 	"github.com/llir/llvm/ir/value"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	rterr "github.com/nagarajRPoojari/x-lang/compiler/libs/private/runtime"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/ints"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
-
-type VarBlock struct {
-	*ir.Block
-}
-
-type BlockHolder struct {
-	V VarBlock
-	N *ir.Block
-}
 
 type Type struct {
 	T string
@@ -105,7 +97,7 @@ func (t *TypeHandler) Exists(tp string) bool {
 //
 // Note:
 //   - class must be registered with TypeHandler before building var.
-func (t *TypeHandler) BuildVar(bh BlockHolder, _type Type, init value.Value) Var {
+func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value) Var {
 	switch _type.T {
 	case BOOLEAN, "i1":
 		if init == nil {
@@ -266,9 +258,9 @@ func (t *TypeHandler) BuildVar(bh BlockHolder, _type Type, init value.Value) Var
 			init = constant.NewZeroInitializer(udt.UDT)
 		}
 		c := NewClass(
-			bh.V, string(_type.T), udt.UDT,
+			bh, string(_type.T), udt.UDT,
 		)
-		c.Update(bh.N, init)
+		c.Update(bh, init)
 		return c
 	}
 
@@ -364,48 +356,48 @@ func (t *TypeHandler) GetLLVMType(_type string) types.Type {
 //
 // Additionally, user-defined types (UDTs) are resolved from the type registry.
 // If the cast is invalid or unsupported, the function panics or aborts with a type error.
-func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.Value) (value.Value, *ir.Block) {
+func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v value.Value) value.Value {
 	switch target {
 	case "boolean", "bool", "i1":
-		return t.ImplicitIntCast(block, v, types.I1)
+		return t.ImplicitIntCast(bh, v, types.I1)
 	case "int8", "i8":
-		return t.ImplicitIntCast(block, v, types.I8)
+		return t.ImplicitIntCast(bh, v, types.I8)
 	case "int16", "i16":
-		return t.ImplicitIntCast(block, v, types.I16)
+		return t.ImplicitIntCast(bh, v, types.I16)
 	case "int32", "i32":
-		return t.ImplicitIntCast(block, v, types.I32)
+		return t.ImplicitIntCast(bh, v, types.I32)
 	case "int", "int64", "i64":
-		return t.ImplicitIntCast(block, v, types.I64)
+		return t.ImplicitIntCast(bh, v, types.I64)
 
 	case "float16", "half":
-		return t.ImplicitFloatCast(block, v, types.Half)
+		return t.ImplicitFloatCast(bh, v, types.Half)
 	case "float32", "float":
-		return t.ImplicitFloatCast(block, v, types.Float)
+		return t.ImplicitFloatCast(bh, v, types.Float)
 	case "float64", "double":
-		return t.ImplicitFloatCast(block, v, types.Double)
+		return t.ImplicitFloatCast(bh, v, types.Double)
 	case "string", "i8*":
 		switch v.Type().(type) {
 		case *types.PointerType:
-			return v, block
+			return v
 		default:
 			errorsx.PanicCompilationError(fmt.Sprintf(
 				"cannot cast %s to string", v.Type().String(),
 			))
 		}
 	case "void":
-		return nil, block
+		return nil
 	case "array":
 		if v.Type().Equal(ARRAYSTRUCT) {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), target)
 		}
-		return v, block
+		return v
 	}
 
 	if k, ok := t.Udts[target]; ok {
-		return ensureType(block, v, k.UDT), block
+		return ensureType(bh, v, k.UDT)
 	}
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
-	return nil, block
+	return nil
 }
 
 // catchIntToIntDownCast inserts runtime checks for narrowing integer casts
@@ -426,13 +418,13 @@ func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.V
 // Behavior:
 //   - On overflow, a runtime error is raised, and execution is terminated via `unreachable`.
 //   - On success, the value is truncated (`trunc`) to the destination type.
-func (t *TypeHandler) catchIntToIntDownCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
-	b := block
+func (t *TypeHandler) catchIntToIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+	b := block.N
 
 	// boolean target (i1): non-zero -> true
 	if dst.BitSize == 1 {
 		cmp := b.NewICmp(enum.IPredNE, v, constant.NewInt(v.Type().(*types.IntType), 0))
-		return cmp, b
+		return cmp
 	}
 
 	abort := b.Parent.NewBlock("")
@@ -450,7 +442,8 @@ func (t *TypeHandler) catchIntToIntDownCast(block *ir.Block, v value.Value, dst 
 	abort.NewUnreachable()
 
 	vTrunc := safe.NewTrunc(v, dst)
-	return vTrunc, safe
+	block.Update(block.V, safe)
+	return vTrunc
 }
 
 // catchFloatToIntDownCast inserts runtime checks for narrowing casts from
@@ -474,8 +467,8 @@ func (t *TypeHandler) catchIntToIntDownCast(block *ir.Block, v value.Value, dst 
 //     with `unreachable`.
 //   - On success, the float is converted to the destination integer type
 //     using FPToSI.
-func (t *TypeHandler) catchFloatToIntDownCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
-	b := block
+func (t *TypeHandler) catchFloatToIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+	b := block.N
 
 	abort := b.Parent.NewBlock("")
 	safe := b.Parent.NewBlock("")
@@ -505,7 +498,8 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *ir.Block, v value.Value, ds
 	// If you prefer converting from original width, you can do safe.NewFPToSI(v, dst) too;
 	// FPToSI from double is fine and avoids repeated casting complexities.
 	res := safe.NewFPToSI(vAsDouble, dst)
-	return res, safe
+	block.Update(block.V, safe)
+	return res
 }
 
 // ImplicitIntCast casts a value to a target integer type, performing
@@ -531,8 +525,8 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *ir.Block, v value.Value, ds
 //   - Float → boolean: compares against 0.0 (non-zero → true).
 //   - If the input type cannot be cast to an integer, the function aborts
 //     with an implicit type cast error.
-func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types.IntType) (value.Value, *ir.Block) {
-	b := block
+func (t *TypeHandler) ImplicitIntCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+	b := block.N
 	src, ok := v.Type().(*types.IntType)
 	if !ok {
 		// v is not an int; allow float -> int/boolean conversions
@@ -541,7 +535,7 @@ func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types
 			if dst == types.I1 {
 				zero := constant.NewFloat(v.Type().(*types.FloatType), 0.0)
 				cond := b.NewFCmp(enum.FPredONE, v, zero) // v != 0.0
-				return cond, b
+				return cond
 			}
 
 			// float -> integer (with overflow checks)
@@ -552,10 +546,10 @@ func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types
 
 	if src.BitSize == 1 {
 		if dst.BitSize == 1 {
-			return v, b
+			return v
 		}
 		// Boolean widen with ZExt
-		return b.NewZExt(v, dst), b
+		return b.NewZExt(v, dst)
 	}
 
 	// v is integer
@@ -565,9 +559,9 @@ func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types
 	}
 	if src.BitSize < dst.BitSize {
 		// extend smaller integer to larger
-		return b.NewSExt(v, dst), b
+		return b.NewSExt(v, dst)
 	}
-	return v, b
+	return v
 }
 
 // catchFloatToFloatDowncast inserts runtime checks for floating-point
@@ -591,17 +585,17 @@ func (t *TypeHandler) ImplicitIntCast(block *ir.Block, v value.Value, dst *types
 //   - On overflow, a runtime error is raised and execution is terminated
 //     with `unreachable`.
 //   - In the safe path, the value is truncated (FPTrunc) to the destination type.
-func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, src *types.FloatType, dst *types.FloatType) (value.Value, *ir.Block) {
-	b := block
+func (t *TypeHandler) catchFloatToFloatDowncast(block *bc.BlockHolder, v value.Value, src *types.FloatType, dst *types.FloatType) value.Value {
+	b := block.N
 
 	// If same type, no cast needed
 	if src.Kind == dst.Kind {
-		return v, b
+		return v
 	}
 
 	// Upcast (smaller -> larger)
 	if floatRank(src.Kind) < floatRank(dst.Kind) {
-		return b.NewFPExt(v, dst), b
+		return b.NewFPExt(v, dst)
 	}
 
 	// Downcast (larger -> smaller)
@@ -631,7 +625,8 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, 
 
 	// Safe block: actually truncate original value to dst type
 	vTrunc := safe.NewFPTrunc(v, dst)
-	return vTrunc, safe
+	block.Update(block.V, safe)
+	return vTrunc
 }
 
 // catchIntToFloatDowncast inserts runtime checks for casting integers to
@@ -655,8 +650,8 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *ir.Block, v value.Value, 
 //     with `unreachable`.
 //   - In the safe path, the integer is converted to the requested float
 //     type (SIToFP).
-func (t *TypeHandler) catchIntToFloatDowncast(block *ir.Block, v value.Value, dst *types.FloatType) (value.Value, *ir.Block) {
-	b := block
+func (t *TypeHandler) catchIntToFloatDowncast(block *bc.BlockHolder, v value.Value, dst *types.FloatType) value.Value {
+	b := block.N
 
 	abort := b.Parent.NewBlock("")
 	safe := b.Parent.NewBlock("")
@@ -678,7 +673,8 @@ func (t *TypeHandler) catchIntToFloatDowncast(block *ir.Block, v value.Value, ds
 
 	// Safe block: return converted float in requested dst width
 	res := safe.NewSIToFP(v, dst)
-	return res, safe
+	block.Update(block.V, safe)
+	return res
 }
 
 // ImplicitFloatCast casts a value to a target floating-point type, performing
@@ -702,7 +698,7 @@ func (t *TypeHandler) catchIntToFloatDowncast(block *ir.Block, v value.Value, ds
 //   - For i1, zero/one is promoted and converted to float.
 //   - For larger integers, uses catchIntToFloatDowncast with overflow checks.
 //   - If the input type cannot be cast to a float, the function panics.
-func (t *TypeHandler) ImplicitFloatCast(block *ir.Block, v value.Value, dst *types.FloatType) (value.Value, *ir.Block) {
+func (t *TypeHandler) ImplicitFloatCast(block *bc.BlockHolder, v value.Value, dst *types.FloatType) value.Value {
 	switch src := v.Type().(type) {
 	case *types.FloatType:
 		return t.catchFloatToFloatDowncast(block, v, src, dst)
@@ -710,16 +706,16 @@ func (t *TypeHandler) ImplicitFloatCast(block *ir.Block, v value.Value, dst *typ
 	case *types.IntType:
 		// int -> float: special-case i1 -> treat as 0/1
 		if src.BitSize == 1 {
-			intVal := block.NewZExt(v, types.I8)
-			floatVal := block.NewSIToFP(intVal, dst)
-			return floatVal, block
+			intVal := block.N.NewZExt(v, types.I8)
+			floatVal := block.N.NewSIToFP(intVal, dst)
+			return floatVal
 		}
 		return t.catchIntToFloatDowncast(block, v, dst)
 
 	default:
 		errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "float")
 	}
-	return nil, nil
+	return nil
 }
 
 func floatRank(k types.FloatKind) int {

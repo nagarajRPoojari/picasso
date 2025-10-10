@@ -3,11 +3,11 @@ package typedef
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/compiler/c"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
@@ -18,7 +18,7 @@ type Class struct {
 	Ptr  value.Value // pointer value (pointer-to-struct, i.e. the object address)
 }
 
-func NewClass(block VarBlock, name string, udt types.Type) *Class {
+func NewClass(block *bc.BlockHolder, name string, udt types.Type) *Class {
 	// Normalize udt so s.UDT is always *types.PointerType (pointer-to-struct)
 	var ptrType *types.PointerType
 	switch t := udt.(type) {
@@ -42,10 +42,10 @@ func NewClass(block VarBlock, name string, udt types.Type) *Class {
 	size := constant.NewPtrToInt(gep, types.I64)
 
 	// Call GC allocator
-	mem := block.NewCall(c.Instance.Alloc(), size)
+	mem := block.N.NewCall(c.Instance.Alloc(), size)
 
 	// Bitcast to your struct pointer type
-	ptr := block.NewBitCast(mem, ptrType)
+	ptr := block.N.NewBitCast(mem, ptrType)
 
 	return &Class{
 		Name: name,
@@ -54,7 +54,8 @@ func NewClass(block VarBlock, name string, udt types.Type) *Class {
 	}
 }
 
-func (s *Class) Update(block *ir.Block, v value.Value) {
+func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
+	block := bh.N
 	if v == nil {
 		errorsx.PanicCompilationError(fmt.Sprintf("cannot update object with nil value: %v", v))
 	}
@@ -81,11 +82,11 @@ func (s *Class) Update(block *ir.Block, v value.Value) {
 
 	// Fallback: try to convert/cast to pointer-to-struct or struct appropriately, then store
 	// If we can obtain a struct value, store it; otherwise try to bitcast ptr and load.
-	val := ensureType(block, v, sPtr.ElemType) // try to get struct value
+	val := ensureType(bh, v, sPtr.ElemType) // try to get struct value
 	block.NewStore(val, s.Ptr)
 }
 
-func (s *Class) Load(block *ir.Block) value.Value {
+func (s *Class) Load(block *bc.BlockHolder) value.Value {
 	// Return the struct value loaded from object's address (s.Ptr).
 	// s.UDT is pointer-to-struct, so we must load ElemType.
 	if _, ok := s.UDT.(*types.PointerType); ok {
@@ -95,7 +96,7 @@ func (s *Class) Load(block *ir.Block) value.Value {
 	return nil
 }
 
-func (s *Class) FieldPtr(block *ir.Block, idx int) value.Value {
+func (s *Class) FieldPtr(block *bc.BlockHolder, idx int) value.Value {
 	zero := constant.NewInt(types.I32, 0)
 	i := constant.NewInt(types.I32, int64(idx))
 
@@ -107,25 +108,27 @@ func (s *Class) FieldPtr(block *ir.Block, idx int) value.Value {
 	elem := sPtr.ElemType // struct type
 
 	// GEP: base is the pointer-to-struct (object address) and we index into the struct
-	return block.NewGetElementPtr(elem, s.Ptr, zero, i)
+	return block.N.NewGetElementPtr(elem, s.Ptr, zero, i)
 }
 
-func (s *Class) UpdateField(block *ir.Block, idx int, v value.Value, expected types.Type) {
+func (s *Class) UpdateField(bh *bc.BlockHolder, idx int, v value.Value, expected types.Type) {
+	block := bh.N
 	if v == nil {
 		// errorsx.PanicCompilationError(fmt.Sprintf("cannot update field with nil value: %v", v))
 		return
 	}
-	val := ensureType(block, v, expected)
-	fieldPtr := s.FieldPtr(block, idx)
+	val := ensureType(bh, v, expected)
+	fieldPtr := s.FieldPtr(bh, idx)
 	block.NewStore(val, fieldPtr)
 }
 
-func (s *Class) LoadField(block *ir.Block, idx int, fieldType types.Type) value.Value {
+func (s *Class) LoadField(block *bc.BlockHolder, idx int, fieldType types.Type) value.Value {
 	fieldPtr := s.FieldPtr(block, idx)
-	return block.NewLoad(fieldType, fieldPtr)
+	return block.N.NewLoad(fieldType, fieldPtr)
 }
 
-func (s *Class) Cast(block *ir.Block, v value.Value) (value.Value, error) {
+func (s *Class) Cast(bh *bc.BlockHolder, v value.Value) (value.Value, error) {
+	block := bh.N
 	if v == nil {
 		errorsx.PanicCompilationError(fmt.Sprintf("cannot cast nil value: %v", v))
 	}
@@ -153,7 +156,7 @@ func (s *Class) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	}
 
 	// Fallback: try to convert value to struct type then alloca
-	val := ensureType(block, v, sPtr.ElemType)
+	val := ensureType(bh, v, sPtr.ElemType)
 	tmp := block.NewAlloca(val.Type())
 	block.NewStore(val, tmp)
 	return tmp, nil
@@ -171,7 +174,7 @@ func (s *Class) Type() types.Type {
 	return s.UDT
 }
 
-func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
+func ensureType(block *bc.BlockHolder, v value.Value, target types.Type) value.Value {
 	srcType := v.Type()
 
 	if srcType.Equal(target) {
@@ -189,7 +192,7 @@ func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
 		if srcIsStruct && tgtIsStruct {
 			// Allow empty struct to be cast to any struct
 			if len(srcStruct.Fields) == 0 {
-				return block.NewBitCast(v, target)
+				return block.N.NewBitCast(v, target)
 			}
 
 			// Child -> Parent layout check
@@ -204,17 +207,17 @@ func ensureType(block *ir.Block, v value.Value, target types.Type) value.Value {
 			}
 
 			// Safe to bitcast child pointer to parent pointer
-			return block.NewBitCast(v, target)
+			return block.N.NewBitCast(v, target)
 		}
 
 		// Not structs, fallback: generic pointer bitcast
-		return block.NewBitCast(v, target)
+		return block.N.NewBitCast(v, target)
 	}
 
 	// Bitcast function pointers
 	if _, okSrcFunc := srcType.(*types.FuncType); okSrcFunc {
 		if _, okTgtFunc := target.(*types.FuncType); okTgtFunc {
-			return block.NewBitCast(v, target)
+			return block.N.NewBitCast(v, target)
 		}
 	}
 	panic(fmt.Sprintf("ensureType: cannot convert %v -> %v", srcType, target))

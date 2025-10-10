@@ -5,6 +5,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // ProcessStringLiteral creates a runtime string variable from a string literal.
@@ -17,7 +18,7 @@ import (
 // Returns:
 //
 //	tf.Var - runtime string variable
-func (t *ExpressionHandler) ProcessStringLiteral(bh tf.BlockHolder, ex ast.StringExpression) tf.Var {
+func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.StringExpression) tf.Var {
 	formatStr := ex.Value
 	strConst := constant.NewCharArrayFromString(formatStr + "\x00")
 	global := t.st.Module.NewGlobalDef("", strConst)

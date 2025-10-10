@@ -8,6 +8,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
 	"github.com/nagarajRPoojari/x-lang/lexer"
@@ -39,27 +40,25 @@ var logical map[lexer.TokenKind]BinaryOperation
 //
 //	tf.Var     - the resulting variable (float64 or boolean depending on operator)
 //	*ir.Block  - the (possibly updated) IR block after processing
-func (t *ExpressionHandler) ProcessBinaryExpression(bh tf.BlockHolder, ex ast.BinaryExpression) (tf.Var, tf.BlockHolder) {
-	left, safe := t.ProcessExpression(bh, ex.Left)
-	bh = safe
+func (t *ExpressionHandler) ProcessBinaryExpression(bh *bc.BlockHolder, ex ast.BinaryExpression) tf.Var {
+	left := t.ProcessExpression(bh, ex.Left)
 
-	right, safe := t.ProcessExpression(bh, ex.Right)
-	bh = safe
+	right := t.ProcessExpression(bh, ex.Right)
 
 	if left == nil || right == nil {
 		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
 	}
 
-	lv := left.Load(bh.N)
-	rv := right.Load(bh.N)
+	lv := left.Load(bh)
+	rv := right.Load(bh)
 
 	if op, ok := arithmatic[ex.Operator.Kind]; ok {
 		f := &floats.Float64{}
-		lvf, err := f.Cast(bh.N, lv)
+		lvf, err := f.Cast(bh, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.FLOAT64)
 		}
-		rvf, err := f.Cast(bh.N, rv)
+		rvf, err := f.Cast(bh, rv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.FLOAT64)
 		}
@@ -71,16 +70,16 @@ func (t *ExpressionHandler) ProcessBinaryExpression(bh tf.BlockHolder, ex ast.Bi
 		}
 		ptr := bh.V.NewAlloca(types.Double)
 		bh.N.NewStore(res, ptr)
-		return &floats.Float64{NativeType: types.Double, Value: ptr}, bh
+		return &floats.Float64{NativeType: types.Double, Value: ptr}
 
 	} else if op, ok := comparision[ex.Operator.Kind]; ok {
 		// comparision operations are done on float type operands only
 		f := &floats.Float64{}
-		lvf, err := f.Cast(bh.N, lv)
+		lvf, err := f.Cast(bh, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.FLOAT64)
 		}
-		rvf, err := f.Cast(bh.N, rv)
+		rvf, err := f.Cast(bh, rv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.FLOAT64)
 		}
@@ -91,15 +90,15 @@ func (t *ExpressionHandler) ProcessBinaryExpression(bh tf.BlockHolder, ex ast.Bi
 		}
 		ptr := bh.V.NewAlloca(types.I1)
 		bh.N.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, bh
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
 
 	} else if op, ok := logical[ex.Operator.Kind]; ok {
 		f := &boolean.Boolean{}
-		lvf, err := f.Cast(bh.N, lv)
+		lvf, err := f.Cast(bh, lv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.BOOLEAN)
 		}
-		rvf, err := f.Cast(bh.N, rv)
+		rvf, err := f.Cast(bh, rv)
 		if err != nil {
 			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.BOOLEAN)
 		}
@@ -110,11 +109,11 @@ func (t *ExpressionHandler) ProcessBinaryExpression(bh tf.BlockHolder, ex ast.Bi
 		}
 		ptr := bh.V.NewAlloca(types.I1)
 		bh.N.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}, bh
+		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
 	}
 
 	errorutils.Abort(errorutils.InvalidBinaryExpressionOperator, ex.Operator.Value)
-	return nil, bh
+	return nil
 }
 
 // initOpLookUpTables inits lookup table mapping operand token with its

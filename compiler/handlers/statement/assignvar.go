@@ -8,6 +8,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // AssignVariable handles assignment statements, updating either a variable or
@@ -21,7 +22,7 @@ import (
 // Returns:
 //
 //	*ir.Block - the updated IR block after performing the assignment
-func (t *StatementHandler) AssignVariable(bh tf.BlockHolder, st *ast.AssignmentExpression) tf.BlockHolder {
+func (t *StatementHandler) AssignVariable(bh *bc.BlockHolder, st *ast.AssignmentExpression) {
 
 	switch m := st.Assignee.(type) {
 	case ast.SymbolExpression:
@@ -30,25 +31,22 @@ func (t *StatementHandler) AssignVariable(bh tf.BlockHolder, st *ast.AssignmentE
 		if !ok {
 			errorutils.Abort(errorutils.UnknownVariable, st)
 		}
-		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
-		bh = safe
+		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
 
 		if v.NativeTypeString() != constants.ARRAY {
 			typeName := v.NativeTypeString()
 
-			casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, typeName, rhs.Load(bh.N))
-			bh.N = safeN
+			casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
 
 			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
-			v.Update(bh.N, rhs.Load(bh.N))
+			v.Update(bh, rhs.Load(bh))
 		} else {
-			v.(*tf.Array).UpdateV2(bh.N, rhs.(*tf.Array))
+			v.(*tf.Array).UpdateV2(bh, rhs.(*tf.Array))
 		}
 
 	case ast.MemberExpression:
 
-		baseVar, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)
-		bh = safe
+		baseVar := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)
 
 		if baseVar == nil {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
@@ -68,42 +66,33 @@ func (t *StatementHandler) AssignVariable(bh tf.BlockHolder, st *ast.AssignmentE
 
 		fieldType := structType.Fields[index]
 
-		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
-		bh = safe
+		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
 
 		typeName := utils.GetTypeString(fieldType)
 		if typeName != constants.ARRAY {
-			casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, typeName, rhs.Load(bh.N))
-			bh.N = safeN
+			casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
 			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
 		}
-		cls.UpdateField(bh.N, index, rhs.Load(bh.N), fieldType)
+		cls.UpdateField(bh, index, rhs.Load(bh), fieldType)
 
 	case ast.ComputedExpression:
-		base, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)
-		bh = safe
+		base := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)
 		indices := make([]value.Value, 0)
 		for _, i := range m.Indices {
-			v, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, i)
-			bh = safe
-			casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, string(tf.INT64), v.Load(bh.N))
-			bh.N = safeN
+			v := expression.ExpressionHandlerInst.ProcessExpression(bh, i)
+			casted := t.st.TypeHandler.ImplicitTypeCast(bh, string(tf.INT64), v.Load(bh))
 			c := t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT64), casted)
-			indices = append(indices, c.Load(bh.N))
+			indices = append(indices, c.Load(bh))
 		}
 
-		rhs, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
-		bh = safe
+		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
 
 		needed := base.(*tf.Array).ElemType
 
-		casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, utils.GetTypeString(needed), rhs.Load(bh.N))
-		bh.N = safeN
+		casted := t.st.TypeHandler.ImplicitTypeCast(bh, utils.GetTypeString(needed), rhs.Load(bh))
 
 		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(utils.GetTypeString(needed)), casted)
-		base.(*tf.Array).StoreByIndex(bh.N, indices, c.Load(bh.N))
+		base.(*tf.Array).StoreByIndex(bh, indices, c.Load(bh))
 
 	}
-
-	return bh
 }

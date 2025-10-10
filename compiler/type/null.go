@@ -1,10 +1,10 @@
 package typedef
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // NullVar represents a null variable (used for uninitialized or placeholder values).
@@ -16,12 +16,12 @@ func NewNullVar(typ *types.PointerType) *NullVar {
 	return &NullVar{typ: typ}
 }
 
-func (n *NullVar) Update(block *ir.Block, v value.Value) {
+func (n *NullVar) Update(block *bc.BlockHolder, v value.Value) {
 	// Null cannot be updated, silently ignore or panic depending on your design choice
 	// panic("cannot update null variable")
 }
 
-func (n *NullVar) Load(block *ir.Block) value.Value {
+func (n *NullVar) Load(block *bc.BlockHolder) value.Value {
 	// Always return a null constant for its type
 	return constant.NewNull(n.typ)
 }
@@ -35,7 +35,7 @@ func (n *NullVar) Slot() value.Value {
 	return nil
 }
 
-func (n *NullVar) Cast(block *ir.Block, v value.Value) (value.Value, error) {
+func (n *NullVar) Cast(block *bc.BlockHolder, v value.Value) (value.Value, error) {
 	// If v already matches the type, return as is
 	if v.Type().Equal(n.typ) {
 		return v, nil

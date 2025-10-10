@@ -9,6 +9,7 @@ import (
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // CallFunc handles invocation of a function or method call expression.
@@ -33,7 +34,7 @@ import (
 //
 //	tf.Var     - the resulting variable if the function returns a value, otherwise nil
 //	*ir.Block  - the (possibly updated) IR block after processing
-func (t *ExpressionHandler) CallFunc(bh tf.BlockHolder, ex ast.CallExpression) (tf.Var, tf.BlockHolder) {
+func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) tf.Var {
 	// check if imported modules
 	if m, ok := ex.Method.(ast.MemberExpression); ok {
 		x, ok := m.Member.(ast.SymbolExpression)
@@ -42,13 +43,11 @@ func (t *ExpressionHandler) CallFunc(bh tf.BlockHolder, ex ast.CallExpression) (
 			if f, ok := t.st.LibMethods[fName]; ok {
 				args := make([]tf.Var, 0)
 				for _, v := range ex.Arguments {
-					res, safe := t.ProcessExpression(bh, v)
-					bh = safe
+					res := t.ProcessExpression(bh, v)
 					args = append(args, res)
 				}
-				ret, safe := f(t.st.TypeHandler, t.st.Module, bh, args)
-				bh = safe
-				return ret, bh
+				ret := f(t.st.TypeHandler, t.st.Module, bh, args)
+				return ret
 			}
 		}
 
@@ -60,8 +59,7 @@ func (t *ExpressionHandler) CallFunc(bh tf.BlockHolder, ex ast.CallExpression) (
 
 	case ast.MemberExpression:
 		// Evaluate the base expression
-		baseVar, safe := t.ProcessExpression(bh, m.Member)
-		bh = safe
+		baseVar := t.ProcessExpression(bh, m.Member)
 
 		if baseVar == nil {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "nil base for member expression")
@@ -91,7 +89,7 @@ func (t *ExpressionHandler) CallFunc(bh tf.BlockHolder, ex ast.CallExpression) (
 		fieldType := st.Fields[idx]
 
 		// Load the function pointer directly from the struct field (single load)
-		fnVal := cls.LoadField(bh.N, idx, fieldType)
+		fnVal := cls.LoadField(bh, idx, fieldType)
 		if fnVal == nil {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, m.Member))
 		}
@@ -109,12 +107,10 @@ func (t *ExpressionHandler) CallFunc(bh tf.BlockHolder, ex ast.CallExpression) (
 		// Build args
 		args := make([]value.Value, 0, len(ex.Arguments)+1)
 		for i, argExp := range ex.Arguments {
-			v, safe := t.ProcessExpression(bh, argExp)
-			bh = safe
-			raw := v.Load(bh.N)
+			v := t.ProcessExpression(bh, argExp)
+			raw := v.Load(bh)
 			expected := funcType.Params[i]
-			raw, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, utils.GetTypeString(expected), raw)
-			bh.N = safeN
+			raw = t.st.TypeHandler.ImplicitTypeCast(bh, utils.GetTypeString(expected), raw)
 			args = append(args, raw)
 		}
 
@@ -128,13 +124,13 @@ func (t *ExpressionHandler) CallFunc(bh tf.BlockHolder, ex ast.CallExpression) (
 		// Return handling
 		retType := funcType.RetType
 		if retType == types.Void {
-			return nil, bh
+			return nil
 		}
 
 		// @todo: not tested
 		tp := classMeta.Returns[methodKey]
-		return t.st.TypeHandler.BuildVar(bh, tf.NewType(tp.Get(), tp.GetUnderlyingType()), ret), bh
+		return t.st.TypeHandler.BuildVar(bh, tf.NewType(tp.Get(), tp.GetUnderlyingType()), ret)
 
 	}
-	return nil, bh
+	return nil
 }

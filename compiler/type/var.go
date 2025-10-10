@@ -1,19 +1,19 @@
 package typedef
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // Var represents a container for all native variables in the system.
 // It provides a mutable slot that supports runtime update and load operations.
 type Var interface {
 	// Update stores the given value into the variable's slot.
-	Update(block *ir.Block, v value.Value)
+	Update(block *bc.BlockHolder, v value.Value)
 
 	// Load retrieves the current value from the variable's slot.
-	Load(block *ir.Block) value.Value
+	Load(block *bc.BlockHolder) value.Value
 
 	// Slot returns the underlying mutable storage for this variable.
 	// Must be pointer to value type.
@@ -21,7 +21,7 @@ type Var interface {
 
 	// Cast attempts to convert the given value into this variable’s type.
 	// @todo: deprecate
-	Cast(block *ir.Block, v value.Value) (value.Value, error)
+	Cast(block *bc.BlockHolder, v value.Value) (value.Value, error)
 
 	// Type returns the LLVM-compatible type of this variable.
 	Type() types.Type

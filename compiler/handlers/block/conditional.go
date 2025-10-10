@@ -5,6 +5,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // processIfElseBlock generates LLVM IR for an if-else statement.
@@ -20,35 +21,33 @@ import (
 // Return:
 //
 //	A new IR basic block representing the merge point after the if-else.
-func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh tf.BlockHolder, st *ast.IfStatement) tf.BlockHolder {
-	ifBlock := tf.BlockHolder{V: bh.V, N: fn.NewBlock("")}
+func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.IfStatement) {
+	ifBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 
-	elseBlock := tf.BlockHolder{V: bh.V, N: fn.NewBlock("")}
-	endBlock := tf.BlockHolder{V: bh.V, N: fn.NewBlock("")}
+	elseBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 
 	// condition
-	res, safe := expression.ExpressionHandlerInst.ProcessExpression(bh, st.Condition)
-	bh = safe
+	res := expression.ExpressionHandlerInst.ProcessExpression(bh, st.Condition)
 
-	casted, safeN := t.st.TypeHandler.ImplicitTypeCast(bh.N, string(tf.BOOLEAN), res.Load(bh.N))
-	bh.N = safeN
+	casted := t.st.TypeHandler.ImplicitTypeCast(bh, string(tf.BOOLEAN), res.Load(bh))
 
 	cond := t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.BOOLEAN), casted)
-	bh.N.NewCondBr(cond.Load(bh.N), ifBlock.N, elseBlock.N)
+	bh.N.NewCondBr(cond.Load(bh), ifBlock.N, elseBlock.N)
 
 	// process consequent
 	conseq := st.Consequent.(ast.BlockStatement)
-	end := t.ProcessBlock(fn, ifBlock, conseq.Body)
-	if end.N.Term == nil {
-		end.N.NewBr(endBlock.N)
+	t.ProcessBlock(fn, ifBlock, conseq.Body)
+	if ifBlock.N.Term == nil {
+		ifBlock.N.NewBr(endBlock.N)
 	}
 
 	// process alternate
 	alternate := st.Alternate.(ast.BlockStatement)
-	end = t.ProcessBlock(fn, elseBlock, alternate.Body)
-	if end.N.Term == nil {
-		end.N.NewBr(endBlock.N)
+	t.ProcessBlock(fn, elseBlock, alternate.Body)
+	if elseBlock.N.Term == nil {
+		elseBlock.N.NewBr(endBlock.N)
 	}
 
-	return endBlock
+	bh.Update(endBlock.V, endBlock.N)
 }

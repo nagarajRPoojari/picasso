@@ -8,6 +8,7 @@ import (
 	_types "github.com/nagarajRPoojari/x-lang/compiler/libs/type"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	typedef "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 type ArrayHandler struct {
@@ -23,15 +24,13 @@ func (t *ArrayHandler) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, bh tf.BlockHolder, args []typedef.Var) (typedef.Var, tf.BlockHolder) {
+func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	dims := make([]value.Value, 0)
-	size, safe := _types.NewTypeHandler().Size(th, module, bh, []tf.Var{args[0]})
-	bh = safe
+	size := _types.NewTypeHandler().Size(th, module, bh, []tf.Var{args[0]})
 	for _, i := range args[1:] {
-		toInt, safeN := th.ImplicitIntCast(bh.N, i.Load(bh.N), types.I64)
-		bh.N = safeN
+		toInt := th.ImplicitIntCast(bh, i.Load(bh), types.I64)
 
 		dims = append(dims, toInt)
 	}
-	return typedef.NewArray(bh, args[0].Type(), size.Load(bh.N), dims), bh
+	return typedef.NewArray(bh, args[0].Type(), size.Load(bh), dims)
 }

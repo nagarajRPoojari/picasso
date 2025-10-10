@@ -3,12 +3,12 @@ package typedef
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
@@ -30,7 +30,7 @@ func init() {
 	ARRAYSTRUCT.SetName(constants.ARRAY)
 }
 
-func NewArray(bh BlockHolder, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
+func NewArray(bh *bc.BlockHolder, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
 	allocFn := c.Instance.ArrayAlloc()
 	if allocFn == nil {
 		panic("lang_alloc_array not declared in module (gc.Instance.ArrayAlloc returned nil)")
@@ -86,7 +86,7 @@ func (a *Array) Type() types.Type {
 	return types.NewPointer(a.ArrayType)
 }
 
-func (a *Array) Cast(block *ir.Block, v value.Value) (value.Value, error) {
+func (a *Array) Cast(block *bc.BlockHolder, v value.Value) (value.Value, error) {
 	if v == nil {
 		return nil, errorsx.NewCompilationError("cannot cast nil to array")
 	}
@@ -98,7 +98,7 @@ func (a *Array) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 	}
 
 	if _, ok := v.Type().(*types.PointerType); ok {
-		casted := block.NewBitCast(v, targetTy)
+		casted := block.N.NewBitCast(v, targetTy)
 		return casted, nil
 	}
 
@@ -107,46 +107,46 @@ func (a *Array) Cast(block *ir.Block, v value.Value) (value.Value, error) {
 
 func (a *Array) NativeTypeString() string { return "array" }
 
-func (a *Array) Len(block *ir.Block) value.Value {
-	lengthPtr := block.NewGetElementPtr(a.ArrayType, a.Ptr,
+func (a *Array) Len(block *bc.BlockHolder) value.Value {
+	lengthPtr := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 0),
 	)
-	return block.NewLoad(types.I64, lengthPtr)
+	return block.N.NewLoad(types.I64, lengthPtr)
 }
 
-func (a *Array) Load(block *ir.Block) value.Value {
+func (a *Array) Load(block *bc.BlockHolder) value.Value {
 	return a.Ptr
 }
 
-func (a *Array) Update(block *ir.Block, v value.Value) {
-	block.NewStore(a.Ptr, v)
+func (a *Array) Update(block *bc.BlockHolder, v value.Value) {
+	block.N.NewStore(a.Ptr, v)
 }
 
-func (a *Array) UpdateV2(block *ir.Block, v *Array) {
+func (a *Array) UpdateV2(block *bc.BlockHolder, v *Array) {
 	*a = *v
 }
 
 // LoadRank returns i64 rank field from runtime struct
-func (a *Array) LoadRank(block *ir.Block) value.Value {
-	rankPtr := block.NewGetElementPtr(a.ArrayType, a.Ptr,
+func (a *Array) LoadRank(block *bc.BlockHolder) value.Value {
+	rankPtr := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 3),
 	)
-	return block.NewLoad(types.I64, rankPtr)
+	return block.N.NewLoad(types.I64, rankPtr)
 }
 
 // LoadShapePtr returns i64* pointer to shape buffer
-func (a *Array) LoadShapePtr(block *ir.Block) value.Value {
-	shapePtrField := block.NewGetElementPtr(a.ArrayType, a.Ptr,
+func (a *Array) LoadShapePtr(block *bc.BlockHolder) value.Value {
+	shapePtrField := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 2),
 	)
-	raw := block.NewLoad(types.NewPointer(types.I64), shapePtrField)
+	raw := block.N.NewLoad(types.NewPointer(types.I64), shapePtrField)
 	return raw
 }
 
-func (a *Array) IndexOffset(block *ir.Block, indices []value.Value) value.Value {
+func (a *Array) IndexOffset(block *bc.BlockHolder, indices []value.Value) value.Value {
 	shapePtr := a.LoadShapePtr(block)
 	var offset value.Value = constant.NewInt(types.I64, 0)
 
@@ -154,44 +154,44 @@ func (a *Array) IndexOffset(block *ir.Block, indices []value.Value) value.Value 
 		var prod value.Value = constant.NewInt(types.I64, 1)
 
 		for j := i + 1; j < len(indices); j++ {
-			elemPtr := block.NewGetElementPtr(types.I64, shapePtr, constant.NewInt(types.I64, int64(j)))
-			dimVal := block.NewLoad(types.I64, elemPtr)
+			elemPtr := block.N.NewGetElementPtr(types.I64, shapePtr, constant.NewInt(types.I64, int64(j)))
+			dimVal := block.N.NewLoad(types.I64, elemPtr)
 
-			prod = block.NewMul(prod, dimVal)
+			prod = block.N.NewMul(prod, dimVal)
 		}
 
-		offsetPart := block.NewMul(indices[i], prod)
-		offset = block.NewAdd(offset, offsetPart)
+		offsetPart := block.N.NewMul(indices[i], prod)
+		offset = block.N.NewAdd(offset, offsetPart)
 	}
 
 	return offset
 }
 
 // StoreByIndex updates element value at given index
-func (a *Array) StoreByIndex(block *ir.Block, indices []value.Value, val value.Value) {
+func (a *Array) StoreByIndex(block *bc.BlockHolder, indices []value.Value, val value.Value) {
 	offset := a.IndexOffset(block, indices)
-	dataPtrField := block.NewGetElementPtr(a.ArrayType, a.Ptr,
+	dataPtrField := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 1),
 	)
-	raw := block.NewLoad(types.NewPointer(types.I8), dataPtrField)
-	elemsPtr := block.NewBitCast(raw, types.NewPointer(a.ElemType))
+	raw := block.N.NewLoad(types.NewPointer(types.I8), dataPtrField)
+	elemsPtr := block.N.NewBitCast(raw, types.NewPointer(a.ElemType))
 
-	elemPtr := block.NewGetElementPtr(a.ElemType, elemsPtr, offset)
-	block.NewStore(val, elemPtr)
+	elemPtr := block.N.NewGetElementPtr(a.ElemType, elemsPtr, offset)
+	block.N.NewStore(val, elemPtr)
 }
 
 // LoadByIndex retrieves element value at given index
-func (a *Array) LoadByIndex(block *ir.Block, indices []value.Value) value.Value {
+func (a *Array) LoadByIndex(block *bc.BlockHolder, indices []value.Value) value.Value {
 	offset := a.IndexOffset(block, indices)
 
-	dataPtrField := block.NewGetElementPtr(a.ArrayType, a.Ptr,
+	dataPtrField := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 1),
 	)
-	raw := block.NewLoad(types.NewPointer(types.I8), dataPtrField)
-	elemsPtr := block.NewBitCast(raw, types.NewPointer(a.ElemType))
+	raw := block.N.NewLoad(types.NewPointer(types.I8), dataPtrField)
+	elemsPtr := block.N.NewBitCast(raw, types.NewPointer(a.ElemType))
 
-	elemPtr := block.NewGetElementPtr(a.ElemType, elemsPtr, offset)
-	return block.NewLoad(a.ElemType, elemPtr)
+	elemPtr := block.N.NewGetElementPtr(a.ElemType, elemsPtr, offset)
+	return block.N.NewLoad(a.ElemType, elemPtr)
 }

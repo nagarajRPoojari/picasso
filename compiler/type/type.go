@@ -3,9 +3,9 @@ package typedef
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 	errorsx "github.com/nagarajRPoojari/x-lang/error"
 
 	"github.com/llir/llvm/ir/value"
@@ -20,9 +20,9 @@ type TypeHolder struct {
 }
 
 // IMP: init must be i8*, pointer to a global string constant
-func NewTypeHolder(block VarBlock, init value.Value) *TypeHolder {
-	slot := block.NewAlloca(types.I8Ptr)
-	block.NewStore(init, slot)
+func NewTypeHolder(block *bc.BlockHolder, init value.Value) *TypeHolder {
+	slot := block.V.NewAlloca(types.I8Ptr)
+	block.N.NewStore(init, slot)
 
 	var s string
 	if c, ok := init.(*constant.CharArray); ok {
@@ -34,13 +34,13 @@ func NewTypeHolder(block VarBlock, init value.Value) *TypeHolder {
 		GoVal:      s,
 	}
 }
-func (s *TypeHolder) Update(block *ir.Block, v value.Value) {
-	block.NewStore(v, s.Value)
+func (s *TypeHolder) Update(block *bc.BlockHolder, v value.Value) {
+	block.N.NewStore(v, s.Value)
 }
 
 // return i8*
-func (s *TypeHolder) Load(block *ir.Block) value.Value {
-	return block.NewLoad(types.I8Ptr, s.Value)
+func (s *TypeHolder) Load(block *bc.BlockHolder) value.Value {
+	return block.N.NewLoad(types.I8Ptr, s.Value)
 }
 
 func (s *TypeHolder) Constant() constant.Constant {
@@ -55,13 +55,13 @@ func (s *TypeHolder) Type() types.Type {
 	return s.NativeType
 }
 
-func (s *TypeHolder) Cast(block *ir.Block, v value.Value) (value.Value, error) {
+func (s *TypeHolder) Cast(block *bc.BlockHolder, v value.Value) (value.Value, error) {
 	switch v.Type().(type) {
 	case *types.PointerType:
 		if v.Type().Equal(types.I8Ptr) {
 			return v, nil
 		}
-		return block.NewBitCast(v, types.I8Ptr), nil
+		return block.N.NewBitCast(v, types.I8Ptr), nil
 	default:
 		return nil, errorsx.NewCompilationError(
 			fmt.Sprintf("cannot cast %v to string", v.Type()))
