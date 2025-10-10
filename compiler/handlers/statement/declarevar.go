@@ -4,7 +4,6 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
-	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
@@ -32,13 +31,9 @@ func (t *StatementHandler) DeclareVariable(block *ir.Block, st *ast.VariableDecl
 		_v, safe := expression.ExpressionHandlerInst.ProcessExpression(block, st.AssignedValue)
 		v = _v
 		block = safe
-		if st.ExplicitType.Get() != constants.ARRAY {
-			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, st.ExplicitType.Get(), v.Load(block))
-			block = safe
-			v = t.st.TypeHandler.BuildVar(block, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), casted)
-		} else {
-			// @todo: dimension check & element type check
-		}
+		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, st.ExplicitType.Get(), v.Load(block))
+		block = safe
+		v = t.st.TypeHandler.BuildVar(block, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), casted)
 	}
 	t.st.Vars.AddNewVar(st.Identifier, v)
 	return block

@@ -14,6 +14,7 @@ type MetaClass struct {
 	Methods map[string]*ir.Func
 	Returns map[string]ast.Type
 
+	ArrayVarsEleTypes map[int]types.Type
 	// UDT is pointer-to-struct
 	UDT types.Type
 }
@@ -32,10 +33,11 @@ func (mc *MetaClass) StructType() *types.StructType {
 
 func NewMetaClass() *MetaClass {
 	return &MetaClass{
-		FieldIndexMap: make(map[string]int),
-		VarAST:        make(map[string]*ast.VariableDeclarationStatement),
-		Methods:       make(map[string]*ir.Func),
-		Returns:       map[string]ast.Type{},
+		FieldIndexMap:     make(map[string]int),
+		ArrayVarsEleTypes: make(map[int]types.Type),
+		VarAST:            make(map[string]*ast.VariableDeclarationStatement),
+		Methods:           make(map[string]*ir.Func),
+		Returns:           map[string]ast.Type{},
 	}
 }
 func (m *MetaClass) FieldType(idx int) types.Type {

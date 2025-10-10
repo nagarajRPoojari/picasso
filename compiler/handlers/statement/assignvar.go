@@ -43,7 +43,7 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 			rhs = t.st.TypeHandler.BuildVar(block, tf.NewType(typeName), casted)
 			v.Update(block, rhs.Load(block))
 		} else {
-			t.st.Vars.Replace(assignee, rhs)
+			v.(*tf.Array).UpdateV2(block, rhs.(*tf.Array))
 		}
 
 	case ast.MemberExpression:
@@ -73,10 +73,12 @@ func (t *StatementHandler) AssignVariable(block *ir.Block, st *ast.AssignmentExp
 		block = safe
 
 		typeName := utils.GetTypeString(fieldType)
-		casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
-		block = safe
-		c := t.st.TypeHandler.BuildVar(block, tf.NewType(typeName), casted)
-		cls.UpdateField(block, index, c.Load(block), fieldType)
+		if typeName != constants.ARRAY {
+			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, typeName, rhs.Load(block))
+			block = safe
+			rhs = t.st.TypeHandler.BuildVar(block, tf.NewType(typeName), casted)
+		}
+		cls.UpdateField(block, index, rhs.Load(block), fieldType)
 
 	case ast.ComputedExpression:
 		base, safe := expression.ExpressionHandlerInst.ProcessExpression(block, m.Member)

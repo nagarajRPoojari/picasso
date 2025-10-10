@@ -123,6 +123,10 @@ func (a *Array) Update(block *ir.Block, v value.Value) {
 	block.NewStore(a.Ptr, v)
 }
 
+func (a *Array) UpdateV2(block *ir.Block, v *Array) {
+	*a = *v
+}
+
 // LoadRank returns i64 rank field from runtime struct
 func (a *Array) LoadRank(block *ir.Block) value.Value {
 	rankPtr := block.NewGetElementPtr(a.ArrayType, a.Ptr,

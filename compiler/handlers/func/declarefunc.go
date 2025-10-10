@@ -13,7 +13,7 @@ import (
 func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement) {
 	params := make([]*ir.Param, 0)
 	for _, p := range st.Parameters {
-		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(p.Type)))
+		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(p.Type.Get())))
 	}
 
 	// at the end pass `this` parameter representing current object
@@ -24,9 +24,9 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 
 	var retType types.Type
 	if st.ReturnType != nil {
-		retType = t.st.TypeHandler.GetLLVMType(st.ReturnType)
+		retType = t.st.TypeHandler.GetLLVMType(st.ReturnType.Get())
 	} else {
-		retType = t.st.TypeHandler.GetLLVMType(nil)
+		retType = t.st.TypeHandler.GetLLVMType("")
 	}
 
 	if _, ok := t.st.Classes[cls].Methods[name]; !ok {

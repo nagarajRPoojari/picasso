@@ -98,6 +98,29 @@ func TestDeclareVarExpression(t *testing.T) {
 			wantOut: "42",
 		},
 		{
+			name: "declaration of array as class fields",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                class Test {
+                    say x: [][]Math = array.create(Math, 3, 4);
+					fn Test() {
+                        this.x[0,0] = new Math();
+                    }
+                }
+                class Math {
+                    say pi: double = 3.14;
+                    fn Math() {}
+                }
+                fn main(): int32 {
+                    say t: Test = new Test();
+                    io.printf("%f", t.x[0,0].pi);
+                    return 0;
+                }
+            `,
+			wantOut: "3.140000",
+		},
+		{
 			name: "2D array of class types declaration",
 			src: `
                 import io from builtin;
@@ -507,7 +530,7 @@ func TestAssignVarExpression(t *testing.T) {
 			wantOut: "type = array, 10 ",
 		},
 		{
-			name: "uninitialized array assignment",
+			name: "uninitialized class assignment",
 			src: `
                 import io from builtin;
                 import array from builtin;
@@ -569,6 +592,31 @@ func TestAssignVarExpression(t *testing.T) {
                 }
             `,
 			wantOut: "x=190.000000",
+		},
+		{
+			name: "assign class fields: array",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                class Test {
+                  say x: [][]Integer;
+                  fn Test() {}
+                }
+                class Integer {
+                    say x: int;
+                    fn Integer(v: int) {
+                        this.x = v;
+                    }
+                }
+                fn main(): int32 {
+                    say c: Test = new Test();
+                    c.x = array.create(Integer, 2, 2);
+                    c.x[1,1] = new Integer(20);
+                    io.printf("x=%d", c.x[1,1].x);
+                    return 0;
+                }
+            `,
+			wantOut: "x=20",
 		},
 		// invalid assignments
 		{
@@ -939,6 +987,7 @@ func TestFunctionCallExpression(t *testing.T) {
             `,
 			wantErr: true,
 		},
+
 		// function call involving heap vars
 		{
 			name: "class types as function params",
@@ -968,6 +1017,108 @@ func TestFunctionCallExpression(t *testing.T) {
                 }
             `,
 			wantOut: "before: 3.140000after: 0.000000",
+		},
+		{
+			name: "array types as function params",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                import types from builtin;
+
+
+                class Any {
+                    fn Any() {}
+                    fn Print() {
+                        io.printf("unimplemented");
+                    }
+                }
+
+                class Integer: Any {
+                    say x: int;
+                    fn Integer(x: int) {
+                        this.x = x;
+                    }
+
+                    fn Print() {
+                        io.printf("x=%d. ", this.x);
+                    }
+                }
+
+                class Test {
+                    say x: [][]Integer = array.create(Integer, 2,2);
+                    fn Test() {}
+                    fn Update(arr: [][]Integer): [][]Integer {
+                        arr[0,1].Print();
+                        say n: Integer = arr[0,1];
+                        n.x = 90;
+                        return arr;
+                    }   
+                }
+                fn main(): int32 {
+                    say arr: [][]Integer;
+                    arr = array.create(Integer, 5, 4);
+                    arr[0, 1] = new Integer(100);
+
+                    say t: Test = new Test();
+                    say x: [][]Integer = t.Update(arr);
+
+                    t.x = arr;
+
+                    t.Update(arr);
+                    return 0;
+                }
+            `,
+			wantOut: "x=100. x=90. ",
+		},
+		// returns
+		{
+			name: "return class types",
+			src: `
+                import io from builtin;
+                class Test {
+                    say x: int;
+                    fn Test(x: int) {
+                        this.x = x;
+                    }
+                    fn self(): Test {
+                        return this;
+                    }
+                }
+
+                fn main(): int32 {
+                    say a: Test = new Test(89);  
+                    say b: Test = a.self();
+                    io.printf("%d", b.x);
+                    return 0;
+                }
+            `,
+			wantOut: "89",
+		},
+		{
+			name: "return array types",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                class Test {
+                    say x: int;
+                    fn Test(x: int) {
+                        this.x = x;
+                    }
+                    fn self(): [][]Test {
+                        say x: [][]Test = array.create(Test, 2,2);
+                        x[1,1] = new Test(78);
+                        return x;
+                    }
+                }
+
+                fn main(): int32 {
+                    say a: Test = new Test(89);  
+                    say b: [][]Test = a.self();
+                    io.printf("%d", b[1,1].x);
+                    return 0;
+                }
+            `,
+			wantOut: "78",
 		},
 		// type cast
 		{
@@ -1048,6 +1199,71 @@ func TestNewExpression(t *testing.T) {
                 }
                 fn main(): int32 {
                     new Test(200);
+                    return 0;
+                }
+            `,
+			wantOut: "",
+		},
+		{
+			name: "constructor as a method",
+			src: `
+                import io from builtin;
+                class Test {
+                    say x: int;
+                    fn Test(x: int) {
+                        this.x = x;
+                    }
+                    fn increment() {
+                        this.Test(this.x + 1);
+                    }
+                }
+                fn main(): int32 {
+                    say t: Test = new Test(200);
+                    t.increment();
+
+                    io.printf("after: x=%d", t.x);
+                    return 0;
+                }
+            `,
+			wantOut: "after: x=201",
+		},
+		{
+			name: "constructor as a method with returns",
+			src: `
+                import io from builtin;
+                class Test {
+                    say x: int;
+                    fn Test(x: int): Test {
+                        this.x = x;
+                        return this;
+                    }
+                    fn increment(): Test {
+                        return this.Test(this.x + 1);
+                    }
+                }
+                fn main(): int32 {
+                    say t: Test = new Test(200);
+                    say x:Test = t.increment();
+
+                    io.printf("after: x=%d", x.x);
+                    return 0;
+                }
+            `,
+			wantOut: "after: x=201",
+		},
+		{
+			name: "new expression involving array as param",
+			src: `
+                import io from builtin;
+                import array from builtin;
+                class Test {
+                    say x: []int;
+                    fn Test(x: []int) {
+                        this.x = x;
+                    }
+                }
+                fn main(): int32 {
+                    say t:Test = new Test(array.create(int, 2));
                     return 0;
                 }
             `,

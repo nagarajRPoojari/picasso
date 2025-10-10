@@ -8,6 +8,7 @@ import (
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
@@ -127,17 +128,20 @@ func (t *ExpressionHandler) ProcessNewExpression(block *ir.Block, ex ast.NewExpr
 
 		var v tf.Var
 		if exp.AssignedValue == nil {
-			v = t.st.TypeHandler.BuildVar(block, tf.NewType(exp.ExplicitType.Get()), nil)
+			v = t.st.TypeHandler.BuildVar(block, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), nil)
 		} else {
 			_v, safe := t.ProcessExpression(block, exp.AssignedValue)
 			v = _v
 			block = safe
 
-			casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, exp.ExplicitType.Get(), v.Load(block))
-			block = safe
-
-			v = t.st.TypeHandler.BuildVar(block, tf.NewType(exp.ExplicitType.Get()), casted)
-
+			if v.NativeTypeString() != constants.ARRAY {
+				casted, safe := t.st.TypeHandler.ImplicitTypeCast(block, exp.ExplicitType.Get(), v.Load(block))
+				block = safe
+				v = t.st.TypeHandler.BuildVar(block, tf.NewType(exp.ExplicitType.Get()), casted)
+			} else {
+				// no need to cast, but does type check
+				t.st.TypeHandler.ImplicitTypeCast(block, exp.ExplicitType.Get(), v.Load(block))
+			}
 		}
 		instance.UpdateField(block, index, v.Load(block), fieldType)
 		t.st.Vars.AddNewVar(exp.Identifier, v)

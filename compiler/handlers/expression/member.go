@@ -7,6 +7,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
@@ -116,7 +117,16 @@ func (t *ExpressionHandler) ProcessMemberExpression(block *ir.Block, ex ast.Memb
 		}
 
 	case *types.PointerType:
-		if _, ok := ft.ElemType.(*types.StructType); ok {
+		if ele, ok := ft.ElemType.(*types.StructType); ok {
+			if ele.Name() == constants.ARRAY {
+				f := block.NewLoad(types.NewPointer(tf.ARRAYSTRUCT), fieldPtr)
+				return &tf.Array{
+					Ptr:       f,
+					ArrayType: tf.ARRAYSTRUCT,
+					ElemType:  classMeta.ArrayVarsEleTypes[idx],
+				}, block
+			}
+
 			c := tf.NewClass(
 				block, getClassName(fieldType), ft,
 			)

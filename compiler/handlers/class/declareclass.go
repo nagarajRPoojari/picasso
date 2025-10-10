@@ -25,11 +25,12 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement) {
 	udt := types.NewStruct() // opaque
 	t.st.Module.NewTypeDef(cls.Name, udt)
 	mc := &tf.MetaClass{
-		FieldIndexMap: make(map[string]int),
-		VarAST:        make(map[string]*ast.VariableDeclarationStatement),
-		UDT:           types.NewPointer(udt),
-		Methods:       make(map[string]*ir.Func),
-		Returns:       map[string]ast.Type{},
+		FieldIndexMap:     make(map[string]int),
+		ArrayVarsEleTypes: make(map[int]types.Type),
+		VarAST:            make(map[string]*ast.VariableDeclarationStatement),
+		UDT:               types.NewPointer(udt),
+		Methods:           make(map[string]*ir.Func),
+		Returns:           map[string]ast.Type{},
 	}
 	t.st.Classes[cls.Name] = mc
 	t.st.TypeHandler.Register(cls.Name, mc)

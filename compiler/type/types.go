@@ -8,7 +8,6 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	rterr "github.com/nagarajRPoojari/x-lang/compiler/libs/private/runtime"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
@@ -241,7 +240,11 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalError, "sub type should be provided for array type")
 		}
 
-		ele := t.GetLLVMType(ast.SymbolType{Value: _type.U})
+		ele := t.GetLLVMType(_type.U)
+		if init == nil {
+			pt := types.NewPointer(ARRAYSTRUCT)
+			init = constant.NewNull(pt)
+		}
 		return &Array{
 			Ptr:       init,
 			ArrayType: ARRAYSTRUCT,
@@ -283,14 +286,12 @@ func (t *TypeHandler) BuildVar(block *ir.Block, _type Type, init value.Value) Va
 //   - UDTs → resolved from the registered type table
 //
 // If the type is unknown or unsupported, the function aborts with a type error.
-func (t *TypeHandler) GetLLVMType(_type ast.Type) types.Type {
-	if _type == nil {
+func (t *TypeHandler) GetLLVMType(_type string) types.Type {
+	if _type == "" {
 		return types.Void
 	}
 
-	tp := _type.Get()
-
-	switch tp {
+	switch _type {
 	case NULL, VOID:
 		return types.Void
 	case BOOLEAN, "i1":
@@ -324,7 +325,7 @@ func (t *TypeHandler) GetLLVMType(_type ast.Type) types.Type {
 	}
 
 	// Check if already registered
-	if k, ok := t.Udts[string(tp)]; ok {
+	if k, ok := t.Udts[_type]; ok {
 		return k.UDT
 	}
 
@@ -385,6 +386,9 @@ func (t *TypeHandler) ImplicitTypeCast(block *ir.Block, target string, v value.V
 	case "void":
 		return nil, block
 	case "array":
+		if v.Type().Equal(ARRAYSTRUCT) {
+			errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), target)
+		}
 		return v, block
 	}
 

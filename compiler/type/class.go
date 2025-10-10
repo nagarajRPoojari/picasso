@@ -112,7 +112,8 @@ func (s *Class) FieldPtr(block *ir.Block, idx int) value.Value {
 
 func (s *Class) UpdateField(block *ir.Block, idx int, v value.Value, expected types.Type) {
 	if v == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("cannot update field with nil value: %v", v))
+		// errorsx.PanicCompilationError(fmt.Sprintf("cannot update field with nil value: %v", v))
+		return
 	}
 	val := ensureType(block, v, expected)
 	fieldPtr := s.FieldPtr(block, idx)

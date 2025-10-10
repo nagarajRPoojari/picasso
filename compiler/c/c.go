@@ -3,6 +3,7 @@ package c
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 )
 
 const (
@@ -19,6 +20,17 @@ type Interface struct {
 
 var Instance *Interface
 
+var ARRAYSTRUCT = types.NewStruct(
+	types.I64,                   // length
+	types.NewPointer(types.I8),  // data
+	types.NewPointer(types.I64), // shape (i64*)
+	types.I64,                   // rank
+)
+
+func init() {
+	ARRAYSTRUCT.SetName(constants.ARRAY)
+}
+
 func NewInterface(mod *ir.Module) *Interface {
 	// must ensure the module doesn't already contains declaration,
 	// to avoid redeclaring same functions.
@@ -30,7 +42,7 @@ func NewInterface(mod *ir.Module) *Interface {
 	Instance = &Interface{
 		mod.NewFunc(ALLOC, types.I8Ptr, ir.NewParam("", types.I64)),
 		mod.NewFunc(RUNTIME_INIT, types.Void),
-		mod.NewFunc(ARRAY_ALLOC, types.NewPointer(types.NewStruct(types.I64, types.NewPointer(types.I8))), ir.NewParam("", types.I64), ir.NewParam("", types.I64)),
+		mod.NewFunc(ARRAY_ALLOC, types.NewPointer(ARRAYSTRUCT), ir.NewParam("", types.I64), ir.NewParam("", types.I64)),
 	}
 	return Instance
 }

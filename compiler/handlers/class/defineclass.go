@@ -99,23 +99,27 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 			mc.FieldIndexMap[fqName] = i
 			mc.VarAST[fqName] = &st
 
-			fieldType := t.st.TypeHandler.GetLLVMType(st.ExplicitType)
+			fieldType := t.st.TypeHandler.GetLLVMType(st.ExplicitType.Get())
 			fieldTypes = append(fieldTypes, fieldType)
 			vars[fqName] = struct{}{}
+
+			if st.ExplicitType.GetUnderlyingType() != "" {
+				mc.ArrayVarsEleTypes[i] = t.st.TypeHandler.GetLLVMType(st.ExplicitType.GetUnderlyingType())
+			}
 			i++
 
 		case ast.FunctionDefinitionStatement:
 			fqName := t.st.IdentifierBuilder.Attach(cls.Name, st.Name)
 			var retType types.Type
 			if st.ReturnType != nil {
-				retType = t.st.TypeHandler.GetLLVMType(st.ReturnType)
+				retType = t.st.TypeHandler.GetLLVMType(st.ReturnType.Get())
 			} else {
-				retType = t.st.TypeHandler.GetLLVMType(nil)
+				retType = t.st.TypeHandler.GetLLVMType("")
 			}
 
 			args := make([]types.Type, 0)
 			for _, p := range st.Parameters {
-				args = append(args, t.st.TypeHandler.GetLLVMType(p.Type))
+				args = append(args, t.st.TypeHandler.GetLLVMType(p.Type.Get()))
 			}
 
 			funcType := types.NewFunc(retType, args...)
