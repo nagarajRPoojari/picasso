@@ -31,7 +31,7 @@ func init() {
 }
 
 func NewArray(bh *bc.BlockHolder, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
-	allocFn := c.Instance.ArrayAlloc()
+	allocFn := c.Instance.Funcs[c.ARRAY_ALLOC]
 	if allocFn == nil {
 		panic("lang_alloc_array not declared in module (gc.Instance.ArrayAlloc returned nil)")
 	}

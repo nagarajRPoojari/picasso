@@ -38,7 +38,7 @@ func NewLLVM() *LLVM {
 		Classes:           make(map[string]*tf.MetaClass),
 		IdentifierBuilder: identifier.NewIdentifierBuilder(MAIN),
 		LibMethods:        make(map[string]function.Func),
-		GC:                c.NewInterface(m),
+		CI:                c.NewInterface(m),
 	}
 
 	expression.ExpressionHandlerInst = expression.NewExpressionHandler(st)

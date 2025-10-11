@@ -42,7 +42,7 @@ func NewClass(block *bc.BlockHolder, name string, udt types.Type) *Class {
 	size := constant.NewPtrToInt(gep, types.I64)
 
 	// Call GC allocator
-	mem := block.N.NewCall(c.Instance.Alloc(), size)
+	mem := block.N.NewCall(c.Instance.Funcs[c.ALLOC], size)
 
 	// Bitcast to your struct pointer type
 	ptr := block.N.NewBitCast(mem, ptrType)

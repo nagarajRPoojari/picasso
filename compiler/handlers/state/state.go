@@ -34,7 +34,7 @@ type State struct {
 	// Class inheritance hierarchy
 	TypeHeirarchy TypeHeirarchy
 	// Garbage collector instance
-	GC *c.Interface
+	CI *c.Interface
 }
 
 // TypeHeirarchy stores inheritance relationships between classes.

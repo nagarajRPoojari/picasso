@@ -3,6 +3,7 @@ package funcs
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/block"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
@@ -68,7 +69,7 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	f = t.st.MainFunc
 	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock(constants.ENTRY)}, f.NewBlock(""))
 	t.Init(bh)
-	bh.N.NewCall(t.st.GC.Init())
+	bh.N.NewCall(t.st.CI.Funcs[c.RUNTIME_INIT])
 
 	if len(fn.Parameters) != 0 {
 		errorutils.Abort(errorutils.MainFuncError, "parameters are not allowed in main function")
