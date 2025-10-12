@@ -1,6 +1,8 @@
 package rterr
 
 import (
+	"sync"
+
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -15,15 +17,15 @@ type ErrorHandler struct {
 	err *ir.Func
 }
 
+var once sync.Once
+
 func NewErrorHandler(mod *ir.Module) *ErrorHandler {
-	for _, f := range mod.Funcs {
-		if f.Name() == RUNTIME_ERR {
-			return Instance
+	once.Do(func() {
+		Instance = &ErrorHandler{
+			err: mod.NewFunc(RUNTIME_ERR, types.Void, ir.NewParam("msg", types.I8Ptr)),
 		}
-	}
-	return &ErrorHandler{
-		err: mod.NewFunc(RUNTIME_ERR, types.Void, ir.NewParam("msg", types.I8Ptr)),
-	}
+	})
+	return Instance
 }
 
 var Instance *ErrorHandler

@@ -7,38 +7,78 @@ import (
 
 func (t *Interface) registerFuncs(mod *ir.Module) {
 	// custom runtime
+	t.initRuntime(mod)
+	// stdio
+	t.initStdio(mod)
+}
+
+func (t *Interface) initRuntime(mod *ir.Module) {
+	// @alloc
 	t.Funcs[ALLOC] = mod.NewFunc(ALLOC, types.I8Ptr, ir.NewParam("", types.I64))
 
+	// @runtime_init
 	t.Funcs[RUNTIME_INIT] = mod.NewFunc(RUNTIME_INIT, types.Void)
 
+	// @array_alloc
 	t.Funcs[ARRAY_ALLOC] = mod.NewFunc(ARRAY_ALLOC, types.NewPointer(Array), ir.NewParam("", types.I64), ir.NewParam("", types.I64))
+}
 
+func (t *Interface) initStdio(mod *ir.Module) {
+	// @printf
 	t.Funcs[PRINTF] = mod.NewFunc(PRINTF, types.I32, ir.NewParam("", types.I8Ptr))
 	t.Funcs[PRINTF].Sig.Variadic = true
 
-	t.Funcs[MALLOC] = mod.NewFunc(MALLOC, types.I8Ptr, ir.NewParam("size", types.I64))
+	// @scanf
+	t.Funcs[SCANF] = mod.NewFunc(SCANF, types.I32, ir.NewParam("format", types.I8Ptr))
+	t.Funcs[SCANF].Sig.Variadic = true
 
-	t.Funcs[FREE] = mod.NewFunc(FREE, types.Void, ir.NewParam("ptr", types.I8Ptr))
-
-	t.Funcs[STRLEN] = mod.NewFunc(STRLEN, types.I64, ir.NewParam("s", types.I8Ptr))
-
-	t.Funcs[MEMCPY] = mod.NewFunc(MEMCPY, types.I8Ptr,
-		ir.NewParam("dest", types.I8Ptr),
-		ir.NewParam("src", types.I8Ptr),
-		ir.NewParam("n", types.I64),
+	// @fopen
+	t.Funcs[FOPEN] = mod.NewFunc(FOPEN, types.I8Ptr,
+		ir.NewParam("filename", types.I8Ptr),
+		ir.NewParam("mode", types.I8Ptr),
 	)
 
-	t.Funcs[MEMSET] = mod.NewFunc(MEMSET, types.I8Ptr,
-		ir.NewParam("dest", types.I8Ptr),
-		ir.NewParam("val", types.I32),
-		ir.NewParam("n", types.I64),
+	// @fclose
+	t.Funcs[FCLOSE] = mod.NewFunc(FCLOSE, types.I32,
+		ir.NewParam("stream", types.I8Ptr),
 	)
 
-	t.Funcs[MEMMOVE] = mod.NewFunc(MEMMOVE, types.I8Ptr,
-		ir.NewParam("dest", types.I8Ptr),
-		ir.NewParam("src", types.I8Ptr),
-		ir.NewParam("n", types.I64),
+	// @fprintf
+	t.Funcs[FPRINTF] = mod.NewFunc(FPRINTF, types.I32,
+		ir.NewParam("stream", types.I8Ptr),
+		ir.NewParam("format", types.I8Ptr),
+	)
+	t.Funcs[FPRINTF].Sig.Variadic = true
+
+	// @fscanf
+	t.Funcs[FSCANF] = mod.NewFunc(FSCANF, types.I32,
+		ir.NewParam("stream", types.I8Ptr),
+		ir.NewParam("format", types.I8Ptr),
+	)
+	t.Funcs[FSCANF].Sig.Variadic = true
+
+	// @fputs
+	t.Funcs[FPUTS] = mod.NewFunc(FPUTS, types.I32,
+		ir.NewParam("stream", types.I8Ptr),
+		ir.NewParam("file", types.I8Ptr),
 	)
 
-	t.Funcs[EXIT] = mod.NewFunc(EXIT, types.Void, ir.NewParam("code", types.I32))
+	// @fgets
+	t.Funcs[FGETS] = mod.NewFunc(FGETS, types.I32,
+		ir.NewParam("stream", types.I8Ptr),
+		ir.NewParam("n", types.I64),
+		ir.NewParam("file", types.I8Ptr),
+	)
+
+	// @fflush
+	t.Funcs[FFLUSH] = mod.NewFunc(FFLUSH, types.I32,
+		ir.NewParam("stream", types.I8Ptr),
+	)
+
+	// @fseek
+	t.Funcs[FSEEK] = mod.NewFunc(FSEEK, types.I32,
+		ir.NewParam("stream", types.I8Ptr),
+		ir.NewParam("offset", types.I64),
+		ir.NewParam("whence", types.I32),
+	)
 }

@@ -439,7 +439,6 @@ func (t *TypeHandler) catchIntToIntDownCast(block *bc.BlockHolder, v value.Value
 	b.NewCondBr(overflow, abort, safe)
 
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in int downcast\n")
-	abort.NewUnreachable()
 
 	vTrunc := safe.NewTrunc(v, dst)
 	block.Update(block.V, safe)
@@ -492,7 +491,6 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *bc.BlockHolder, v value.Val
 	b.NewCondBr(overflow, abort, safe)
 
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in float → int downcast\n")
-	abort.NewUnreachable()
 
 	// In safe block: do the FP->SI conversion. Use vAsDouble (double->int) which is fine.
 	// If you prefer converting from original width, you can do safe.NewFPToSI(v, dst) too;
@@ -621,7 +619,6 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *bc.BlockHolder, v value.V
 	b.NewCondBr(overflow, abort, safe)
 
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in float demotion")
-	abort.NewUnreachable()
 
 	// Safe block: actually truncate original value to dst type
 	vTrunc := safe.NewFPTrunc(v, dst)
@@ -669,7 +666,6 @@ func (t *TypeHandler) catchIntToFloatDowncast(block *bc.BlockHolder, v value.Val
 	b.NewCondBr(overflow, abort, safe)
 
 	rterr.Instance.RaiseRTError(abort, "runtime overflow converting int → float")
-	abort.NewUnreachable()
 
 	// Safe block: return converted float in requested dst width
 	res := safe.NewSIToFP(v, dst)

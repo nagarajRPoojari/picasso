@@ -20,6 +20,7 @@ const (
 	UnknownVariable                 = "unknown variable %s"
 	MainFuncError                   = "main function error: %s"
 	TypeError                       = "type error: %s: %s"
+	ParamsError                     = "params mismatch in %s: expected %v"
 )
 
 const (
