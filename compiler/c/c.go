@@ -10,6 +10,15 @@ const (
 	ALLOC        = "lang_alloc"
 	RUNTIME_INIT = "runtime_init"
 	ARRAY_ALLOC  = "lang_alloc_array"
+
+	PRINTF  = "printf"
+	MALLOC  = "malloc"
+	FREE    = "free"
+	STRLEN  = "strlen"
+	MEMCPY  = "memcpy"
+	MEMSET  = "memset"
+	MEMMOVE = "memmove"
+	EXIT    = "exit"
 )
 
 type Interface struct {

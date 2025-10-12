@@ -6,6 +6,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	typedef "github.com/nagarajRPoojari/x-lang/compiler/type"
@@ -21,19 +22,12 @@ func NewIO() *IO {
 }
 
 func (t *IO) ensurePrintf(module *ir.Module) *ir.Func {
-	for _, f := range module.Funcs {
-		if f.Name() == "printf" {
-			return f
-		}
-	}
-	printf := module.NewFunc("printf", types.I32, ir.NewParam("", types.I8Ptr))
-	printf.Sig.Variadic = true
-	return printf
+	return c.NewInterface(module).Funcs[c.PRINTF]
 }
 
 func (t *IO) ListAllFuncs() map[string]function.Func {
 	funcs := make(map[string]function.Func)
-	funcs["printf"] = t.printf
+	funcs[c.PRINTF] = t.printf
 	return funcs
 }
 
