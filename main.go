@@ -1,6 +1,8 @@
 package main
 
-import "github.com/nagarajRPoojari/x-lang/compiler"
+import (
+	"github.com/nagarajRPoojari/x-lang/compiler"
+)
 
 func main() {
 	c := compiler.NewCompiler()

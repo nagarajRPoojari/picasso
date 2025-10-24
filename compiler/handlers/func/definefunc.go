@@ -2,6 +2,8 @@ package funcs
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
@@ -65,8 +67,7 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
 
-	var f *ir.Func
-	f = t.st.MainFunc
+	var f *ir.Func = t.st.MainFunc
 	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock(constants.ENTRY)}, f.NewBlock(""))
 	t.Init(bh)
 	bh.N.NewCall(t.st.CI.Funcs[c.RUNTIME_INIT])
@@ -78,9 +79,11 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	old := bh.N
 	block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
 	bh.V.NewBr(old)
-	if fn.ReturnType == nil {
-		bh.N.NewRet(nil)
-	}
+
+	nullPtr := constant.NewNull((types.NewPointer(types.I8)))
+
+	// Return it
+	bh.N.NewRet(nullPtr)
 }
 
 func (t *FuncHandler) Init(block *bc.BlockHolder) {

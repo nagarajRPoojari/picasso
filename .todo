@@ -1,5 +1,0 @@
-1. fix many type casting issue
-    - don't allow truncating
-2. support else-if & no else cases
-3. should I support null passing ?
-4. 

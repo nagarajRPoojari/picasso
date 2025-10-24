@@ -1,0 +1,3 @@
+/workspaces/x-language/CMakeFiles/scheduler.dir
+/workspaces/x-language/CMakeFiles/edit_cache.dir
+/workspaces/x-language/CMakeFiles/rebuild_cache.dir

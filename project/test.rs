@@ -1,75 +1,39 @@
 import io from builtin;
 import array from builtin;
 
+class Worker {
+  say id: int;
+  fn Worker(id: int) {
+    this.id = id;
+  }
 
-class Any {
-  say x: int;
-  fn Any() {}
-}
+  fn do_1() {
+    foreach i in 1..1000 {
+      io.printf("--> hello_1 %d \n", i);
+    }
+  }
 
-class Integer: Any {
-  say y: int;
-  fn Integer() {
-    this.Any();
-    
+  fn do_2() {
+    foreach i in 1..1000 {
+      io.printf("--> hello_2 %d \n", i);
+    }
   }
 }
 
 
-class Student {
-  say x: int;
-  say y: int;
-  fn Class() {}
-}
 
-
-
-fn main(): int32 {
-    say size: int = 100;
-    say arr: []int = array.create(int, size);
-    say str: string = "hello world";
-    io.printf("length of %s  \n", str);
-
-    // say r: string = "";
-    // say n: int;
-
-    // io.printf("what is your name ?? \n");
-    // io.scanf("%s %d", r, n);
-
-    // io.printf("Hi, %s %d \n", r, n);
-    say name: string = "nagaraj";
-    say fp: string = io.fopen("temp.txt", "w+");
-
-
-    fprintf(fp, "Name: %s\n", name);
-    io.fflush(fp);
-    io.fseek(fp, 0, 0);
-    // fprintf(fp, "Name2: %s\n", name);
-
-
-    say r: string = "";
-
-  
-    // io.fscanf(fp, "Name: %s\n", r);
-
-    // io.printf("read from file-> %s\n", r);
-
-    io.fputs("hi hello how are you", fp);
-
-
-    say x: string = "";
-    io.fflush(fp);
-    io.fseek(fp, 0, 0);
-    
-    io.fgets(x, 20, fp);
-
-
-    io.printf("read-> %s \n", x);
+fn start(): int32 {
+    printf("started... \n");
     
 
+    say worker1: Worker = new Worker(0);
+    say worker2: Worker = new Worker(1);
 
-    io.fclose(fp);
-    return 0;
+    // worker1.do();
+
+    thread(worker1.do_1);
+    thread(worker2.do_2);
+
 }
 
 // 1447910000 -  time taken by go

@@ -13,6 +13,18 @@ func (t *Interface) registerFuncs(mod *ir.Module) {
 }
 
 func (t *Interface) initRuntime(mod *ir.Module) {
+	// @thread
+	fnType := types.NewFunc(
+		types.NewPointer(types.I8),
+		types.NewPointer(types.I8),
+	)
+	t.Funcs[THREAD] = mod.NewFunc(THREAD, types.Void,
+		ir.NewParam("", types.NewPointer(fnType)),
+	)
+
+	// @self_yield
+	t.Funcs[SELF_YIELD] = mod.NewFunc(SELF_YIELD, types.Void)
+
 	// @alloc
 	t.Funcs[ALLOC] = mod.NewFunc(ALLOC, types.I8Ptr, ir.NewParam("", types.I64))
 

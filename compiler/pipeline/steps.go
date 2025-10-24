@@ -3,6 +3,7 @@ package pipeline
 import (
 	"fmt"
 
+	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/class"
@@ -122,7 +123,7 @@ func (t *Pipeline) DefineClasses() {
 func (t *Pipeline) DefineMain() {
 	Loop(t.tree, func(st ast.FunctionDefinitionStatement) {
 		if st.Name == constants.MAIN {
-			f := t.st.Module.NewFunc(constants.MAIN, types.I32)
+			f := t.st.Module.NewFunc(constants.MAIN, types.NewPointer(types.I8), ir.NewParam("", types.NewPointer(types.I8)))
 			t.st.MainFunc = f
 			funcs.FuncHandlerInst.DefineMainFunc(&st, make(map[string]struct{}))
 		}

@@ -7,6 +7,9 @@ import (
 )
 
 const (
+	THREAD     = "thread"
+	SELF_YIELD = "self_yield"
+
 	ALLOC        = "lang_alloc"
 	RUNTIME_INIT = "runtime_init"
 	ARRAY_ALLOC  = "lang_alloc_array"
