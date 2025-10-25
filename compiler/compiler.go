@@ -6,8 +6,8 @@ import (
 
 	"github.com/go-ini/ini"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 	"github.com/nagarajRPoojari/x-lang/parser"
 )
 
@@ -59,7 +59,7 @@ func (t *Compiler) resolveImportsRecursive(module *ast.BlockStatement, imported 
 			if importStmt.From == constants.BUILTIN {
 				continue
 			}
-			errorsx.PanicCompilationError(fmt.Sprintf("invalid source %s for package %s", importStmt.From, importStmt.Name))
+			errorutils.Abort(errorutils.InvalidModulerSource, importStmt.From, importStmt.Name)
 		}
 
 		pkgName := importStmt.Name

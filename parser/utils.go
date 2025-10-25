@@ -3,6 +3,7 @@ package parser
 import (
 	"fmt"
 
+	errorsx "github.com/nagarajRPoojari/x-lang/error"
 	"github.com/nagarajRPoojari/x-lang/lexer"
 )
 
@@ -38,10 +39,9 @@ func (t *Parser) expectError(expectedKind lexer.TokenKind, err any) lexer.Token 
 
 	if kind != expectedKind {
 		if err == nil {
-			err = fmt.Sprintf("Expected %s but recieved %s instead\n", lexer.TokenKindString(expectedKind), lexer.TokenKindString(kind))
+			errString := fmt.Sprintf("Expected %s but recieved %s instead\n", lexer.TokenKindString(expectedKind), lexer.TokenKindString(kind))
+			errorsx.PanicParserError(errString)
 		}
-
-		panic(err)
 	}
 
 	return t.move()

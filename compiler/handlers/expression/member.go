@@ -59,7 +59,7 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 	fieldID := t.st.IdentifierBuilder.Attach(cls.Name, ex.Property)
 	idx, ok := classMeta.FieldIndexMap[fieldID]
 	if !ok {
-		errorutils.Abort(errorutils.UnknownClassField, cls.Name)
+		errorutils.Abort(errorutils.UnknownClassField, ex.Property, cls.Name)
 	}
 
 	// Get field type from struct UDT

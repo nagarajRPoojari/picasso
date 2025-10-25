@@ -4,6 +4,9 @@ package errorsx
 
 import (
 	"fmt"
+	"os"
+
+	"github.com/fatih/color"
 )
 
 // Phase represents the stage of compilation where an error occurred.
@@ -68,17 +71,24 @@ func NewParserError(msg string, l ...int) *Error {
 	return &Error{Phase: PhaseParser, Message: msg, Line: line, Column: col}
 }
 
-// PanicCompilationError panics with a compilation error.
-func PanicCompilationError(msg string, l ...int) {
-	panic(NewCompilationError(msg, l...))
-}
-
 // PanicLexerError panics with a lexer error.
-func PanicLexerError(msg string, l ...int) {
-	panic(NewLexerError(msg, l...))
+func PanicLexerError(msg string) {
+	redBold := color.New(color.FgRed, color.Bold).SprintFunc()
+	underlinedRed := color.New(color.FgRed, color.Underline).SprintFunc()
+
+	fmt.Print(redBold("[LEXER ERROR]: "))
+	fmt.Println(underlinedRed(msg))
+
+	os.Exit(1)
 }
 
 // PanicParserError panics with a parser error.
-func PanicParserError(msg string, l ...int) {
-	panic(NewParserError(msg, l...))
+func PanicParserError(msg string) {
+	redBold := color.New(color.FgRed, color.Bold).SprintFunc()
+	underlinedRed := color.New(color.FgRed, color.Underline).SprintFunc()
+
+	fmt.Print(redBold("[PARSER ERROR]: "))
+	fmt.Println(underlinedRed(msg))
+
+	os.Exit(1)
 }

@@ -78,6 +78,8 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 			return t.st.TypeHandler.BuildVar(bh, tf.NewType(utils.GetTypeString(ret.Type())), ret)
 		}
 
+		errorutils.Abort(errorutils.UnknownMethod, m.Value)
+
 	case ast.MemberExpression:
 		// Evaluate the base expression
 		baseVar := t.ProcessExpression(bh, m.Member)

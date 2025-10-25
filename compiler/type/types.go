@@ -1,8 +1,6 @@
 package typedef
 
 import (
-	"fmt"
-
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -14,7 +12,6 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/boolean"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/floats"
 	"github.com/nagarajRPoojari/x-lang/compiler/type/primitives/ints"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
 type Type struct {
@@ -380,9 +377,7 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		case *types.PointerType:
 			return v
 		default:
-			errorsx.PanicCompilationError(fmt.Sprintf(
-				"cannot cast %s to string", v.Type().String(),
-			))
+			errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "string")
 		}
 	case "void":
 		return nil

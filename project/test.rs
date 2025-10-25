@@ -1,32 +1,42 @@
 import io from builtin;
 import array from builtin;
 
+
 class Worker {
   say id: int;
   fn Worker(id: int) {
     this.id = id;
   }
 
-  fn do() {
-    foreach i in 1..1000 {
-      io.printf("--> hello_%d %d \n", this.id, i);
-    }
+  fn doss() {
+    printf("> %d\n", this.id);
+    this.recurse();
+  }
+
+  fn recurse() {
+
+
+    this.id = this.id - 1;
+    if(this.id == 0){
+      return;
+    }else {}
+    printf("> %d\n", this.id);
+    this.recurse();
+
   }
 }
 
 
 
-fn start(): int32 {
+
+
+fn start() {
     printf("started... \n");
-    
 
-    say worker1: Worker = new Worker(967);
-    say worker2: Worker = new Worker(1);
 
-    // worker1.do();
+    say worker: Worker = new Worker(100);
 
-    thread(worker1.do);
-    thread(worker1.do);
+    thread(worker.dos);
 
 }
 

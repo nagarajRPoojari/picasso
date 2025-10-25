@@ -6,19 +6,19 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/class"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
 	funcs "github.com/nagarajRPoojari/x-lang/compiler/handlers/func"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/state"
 	"github.com/nagarajRPoojari/x-lang/compiler/libs"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
 func (t *Pipeline) importModules(methodMap map[string]function.Func, module string) {
 	mod, ok := libs.ModuleList[module]
 	if !ok {
-		errorsx.PanicCompilationError(fmt.Sprintf("unable to find module: %s", module))
+		errorutils.Abort(errorutils.UnknownModule, module)
 	}
 	for name, f := range mod.ListAllFuncs() {
 		n := fmt.Sprintf("%s.%s", module, name)
@@ -28,7 +28,7 @@ func (t *Pipeline) importModules(methodMap map[string]function.Func, module stri
 
 func (t *Pipeline) DeclareGlobals() {
 	Loop(t.tree, func(st ast.VariableDeclarationStatement) {
-		errorsx.PanicCompilationError("global vars not allowed")
+		errorutils.Abort(errorutils.GlobalVarsNotAllowedError)
 	})
 }
 

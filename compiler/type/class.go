@@ -7,8 +7,8 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/compiler/c"
+	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
-	errorsx "github.com/nagarajRPoojari/x-lang/error"
 )
 
 // Class is a custom user defined data type
@@ -57,13 +57,13 @@ func NewClass(block *bc.BlockHolder, name string, udt types.Type) *Class {
 func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 	block := bh.N
 	if v == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("cannot update object with nil value: %v", v))
+		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("cannot update object with nil value: %v", v))
 	}
 
 	// Ensure s.UDT is pointer type
 	sPtr, ok := s.UDT.(*types.PointerType)
 	if !ok {
-		errorsx.PanicCompilationError(fmt.Sprintf("internal error: Class.UDT is not a pointer type: %T", s.UDT))
+		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not a pointer type: %T", s.UDT))
 	}
 
 	// Case: v is pointer-to-struct and matches s.UDT
@@ -92,7 +92,7 @@ func (s *Class) Load(block *bc.BlockHolder) value.Value {
 	if _, ok := s.UDT.(*types.PointerType); ok {
 		return s.Ptr
 	}
-	errorsx.PanicCompilationError(fmt.Sprintf("internal error: Class.UDT is not pointer type: %T", s.UDT))
+	errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not a pointer type: %T", s.UDT))
 	return nil
 }
 
@@ -103,7 +103,7 @@ func (s *Class) FieldPtr(block *bc.BlockHolder, idx int) value.Value {
 	// unwrap pointer-to-struct
 	sPtr, ok := s.UDT.(*types.PointerType)
 	if !ok {
-		errorsx.PanicCompilationError(fmt.Sprintf("internal error: Class.UDT is not pointer type: %T", s.UDT))
+		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not a pointer type: %T", s.UDT))
 	}
 	elem := sPtr.ElemType // struct type
 
@@ -130,7 +130,7 @@ func (s *Class) LoadField(block *bc.BlockHolder, idx int, fieldType types.Type) 
 func (s *Class) Cast(bh *bc.BlockHolder, v value.Value) (value.Value, error) {
 	block := bh.N
 	if v == nil {
-		errorsx.PanicCompilationError(fmt.Sprintf("cannot cast nil value: %v", v))
+		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("cannot cast nil value: %v", v))
 	}
 
 	sPtr, ok := s.UDT.(*types.PointerType)

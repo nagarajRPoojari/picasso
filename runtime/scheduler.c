@@ -71,10 +71,12 @@ void sigsegv_handler(int sig, siginfo_t *si, void *unused) {
     void* new_stack = (char*)mapped + PAGE_SIZE;
 
     uintptr_t sp_offset = old_stack_top - sp;
-    if (sp_offset > current_task->stack_size) {
-        fprintf(stderr, "SP offset too large\n");
-        exit(1);
-    }
+    // @todo: need to verify this
+    // stack pointer at the time of inturrupt could have crossed limit
+    // if (sp_offset > current_task->stack_size) {
+    //     fprintf(stderr, "SP offset too large\n");
+    //     exit(1);
+    // }
 
     // copy current stack content to new stack
     memcpy((char*)new_stack + new_stack_size - current_task->stack_size,
@@ -95,13 +97,13 @@ void sigsegv_handler(int sig, siginfo_t *si, void *unused) {
     // @todo: fix, may be in scheduler 
     static void* _old_stack = NULL;
     static size_t _old_stack_size = 0;
-    if(_old_stack) munmap(_old_stack, _old_stack_size);
+    // if(_old_stack) munmap(_old_stack, _old_stack_size);
     _old_stack = (char*)old_stack_base;
     _old_stack_size = old_stack_size + PAGE_SIZE;
 }
 
 
-void init_sigsegv_handler() {
+void init_stack_signal_handler() {
     // allocating alternate stack from SIG handler
     stack_t altstack;
     altstack.ss_sp = malloc(SIGSTKSZ);
@@ -177,6 +179,34 @@ void task_yield(kernel_thread_t* kt) {
 
 volatile sig_atomic_t preempt[SCHEDULER_THREAD_POOL_SIZE];
 
+
+void init_timer_signal_handler(int id) {
+    timer_t tid;
+    struct sigevent sev;
+    struct itimerspec its;
+
+    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_notify_function = timer_callback;
+    sev.sigev_notify_attributes = NULL;
+    sev.sigev_value.sival_ptr = arg;
+
+    if (timer_create(CLOCK_REALTIME, &sev, &tid) == -1) {
+        perror("timer_create");
+        pthread_exit(NULL);
+    }
+
+    its.it_value.tv_sec = 0;
+    its.it_value.tv_nsec = 50 * 1000;  // 0.05s
+    its.it_interval.tv_sec = 0;
+    its.it_interval.tv_nsec = 50 * 1000; // 0.05s
+
+    if (timer_settime(tid, 0, &its, NULL) == -1) {
+        perror("timer_settime");
+        pthread_exit(NULL);
+    }
+}
+
+
 void self_yield() {
     if(preempt[current_task->sched_id]) {
         kernel_thread_t* kt = kernel_thread_map[current_task->sched_id];
@@ -205,32 +235,10 @@ void timer_callback(union sigval sv) {
 void* scheduler_run(void* arg) {
     kernel_thread_t* kt = (kernel_thread_t*)arg;
     struct epoll_event events[MAX_EVENTS];
-
     int id = *(int *)arg;
-    timer_t tid;
-    struct sigevent sev;
-    struct itimerspec its;
 
-    sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_notify_function = timer_callback;
-    sev.sigev_notify_attributes = NULL;
-    sev.sigev_value.sival_ptr = arg;
-
-    if (timer_create(CLOCK_REALTIME, &sev, &tid) == -1) {
-        perror("timer_create");
-        pthread_exit(NULL);
-    }
-
-    its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = 50 * 1000;  // 0.05s
-    its.it_interval.tv_sec = 0;
-    its.it_interval.tv_nsec = 50 * 1000; // 0.05s
-
-    if (timer_settime(tid, 0, &its, NULL) == -1) {
-        perror("timer_settime");
-        pthread_exit(NULL);
-    }
-
+    init_stack_signal_handler();
+    init_timer_signal_handler(id)
 
     while (1) {
         task_t *t;
