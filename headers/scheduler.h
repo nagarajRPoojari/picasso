@@ -18,7 +18,7 @@ extern kernel_thread_t **kernel_thread_map;
 
 // task_create initialises task context with given 
 // function and allocates fixed stack memory
-task_t *task_create(void* (*fn)(void *), kernel_thread_t* kt);
+task_t *task_create(void* (*fn)(void *), void *this, kernel_thread_t* kt);
 
 // task_destroy deallocates memory
 void task_destroy(task_t *t);

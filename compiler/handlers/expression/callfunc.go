@@ -6,6 +6,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/utils"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
@@ -56,6 +57,15 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 	switch m := ex.Method.(type) {
 	case ast.SymbolExpression:
 		// errorutils.Abort(errorutils.MemberExpressionError, "method call should be on instance")
+		if m.Value == c.THREAD {
+			if meth, ok := t.st.CI.Funcs[m.Value]; ok {
+				v := t.ProcessExpression(bh, ex.Arguments[0])
+				raw := v.Load(bh)
+				this := t.ProcessExpression(bh, ex.Arguments[0].(ast.MemberExpression).Member)
+				bh.N.NewCall(meth, raw, this.Load(bh))
+			}
+			return nil
+		}
 
 		if meth, ok := t.st.CI.Funcs[m.Value]; ok {
 			args := make([]value.Value, 0, len(ex.Arguments)+1)

@@ -7,15 +7,9 @@ class Worker {
     this.id = id;
   }
 
-  fn do_1() {
+  fn do() {
     foreach i in 1..1000 {
-      io.printf("--> hello_1 %d \n", i);
-    }
-  }
-
-  fn do_2() {
-    foreach i in 1..1000 {
-      io.printf("--> hello_2 %d \n", i);
+      io.printf("--> hello_%d %d \n", this.id, i);
     }
   }
 }
@@ -26,13 +20,13 @@ fn start(): int32 {
     printf("started... \n");
     
 
-    say worker1: Worker = new Worker(0);
+    say worker1: Worker = new Worker(967);
     say worker2: Worker = new Worker(1);
 
     // worker1.do();
 
-    thread(worker1.do_1);
-    thread(worker2.do_2);
+    thread(worker1.do);
+    thread(worker1.do);
 
 }
 

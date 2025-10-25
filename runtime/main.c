@@ -28,9 +28,9 @@
 kernel_thread_t **kernel_thread_map;
 
 
-void thread(void*(*fn)(void*)) {
+void thread(void*(*fn)(void*), void *this) {
     int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
-    task_t *t1 = task_create(fn, kernel_thread_map[kernel_thread_id]);
+    task_t *t1 = task_create(fn, this, kernel_thread_map[kernel_thread_id]);
     t1->id = rand();
     safe_q_push(&(kernel_thread_map[kernel_thread_id]->ready_q), t1);
 }
@@ -82,7 +82,7 @@ int main() {
     init_io();
     init_scheduler();
 
-    thread(start);
+    thread(start, NULL);
 
 
     for (int i = 0; i < SCHEDULER_THREAD_POOL_SIZE; i++) {

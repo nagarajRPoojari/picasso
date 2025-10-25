@@ -122,7 +122,7 @@ void init_sigsegv_handler() {
     }
 }
 
-task_t* task_create(void* (*fn)(void *), kernel_thread_t* kt) {
+task_t* task_create(void* (*fn)(void *), void* this, kernel_thread_t* kt) {
     task_t *t = calloc(1, sizeof(*t));
     if (!t) { 
         perror("calloc"); 
@@ -158,7 +158,7 @@ task_t* task_create(void* (*fn)(void *), kernel_thread_t* kt) {
     t->ctx.uc_link = &(kt->sched_ctx);
 
     // make trampoline
-    makecontext(&t->ctx, (void(*)(void))fn, 1, t);
+    makecontext(&t->ctx, (void(*)(void))fn, 1, this);
     return t;
 }
 
