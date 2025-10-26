@@ -12,12 +12,11 @@
 #include <signal.h>
 
 #include <gc.h>
-#include <gc/gc.h>       // optional, some versions
+#include <gc/gc.h> 
 
 #include "start.h"
 #include "array.h"
 #include "ggc.h"
-#include "globals.h"
 #include "io.h"
 #include "queue.h"
 #include "scheduler.h"
@@ -27,7 +26,15 @@
 
 kernel_thread_t **kernel_thread_map;
 
-
+/**
+ * @brief Create and schedule a new task on a random scheduler thread.
+ * 
+ * Allocates a task with its own stack and context, assigns it a random
+ * ID, and pushes it onto a scheduler thread's ready queue.
+ * 
+ * @param fn   Function pointer for the task to execute.
+ * @param this Argument to pass to the task function.
+ */
 void thread(void*(*fn)(void*), void *this) {
     int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
     task_t *t1 = task_create(fn, this, kernel_thread_map[kernel_thread_id]);
@@ -36,6 +43,15 @@ void thread(void*(*fn)(void*), void *this) {
 }
 
 
+/**
+ * @brief Initialize the I/O subsystem.
+ * 
+ * - Initializes the global I/O queue.
+ * - Creates an epoll instance for monitoring file descriptors.
+ * - Launches a pool of I/O worker threads.
+ * 
+ * @return 0 on success, 1 on failure.
+ */
 int init_io() {
     safe_q_init(&io_queue, IO_QUEUE_SIZE);
     
@@ -52,6 +68,16 @@ int init_io() {
 }
 
 pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
+
+/**
+ * @brief Initialize scheduler threads.
+ * 
+ * - Allocates and initializes kernel_thread_t structures.
+ * - Initializes each scheduler's local ready queue.
+ * - Creates threads running the scheduler_run() loop.
+ * 
+ * @return 0 on success.
+ */
 int init_scheduler() {
     kernel_thread_map = calloc(4, sizeof(kernel_thread_t*));
     for (int i=0;i<SCHEDULER_THREAD_POOL_SIZE;i++) {
@@ -68,12 +94,28 @@ int init_scheduler() {
     return 0;
 }
 
+/**
+ * @brief Cleanup resources used by the scheduler.
+ * 
+ * Currently frees only the first kernel thread. In production, all
+ * threads and queues should be properly deallocated.
+ */
 void clean_scheduler() {
     free(kernel_thread_map[0]);
 }
 
 
-int main() {
+/**
+ * @brief Program entry point.
+ * 
+ * - Initializes garbage collector (Boehm GC).
+ * - Initializes I/O subsystem and scheduler threads.
+ * - Creates the first task to run the 'start' function.
+ * - Waits for all scheduler threads to complete.
+ * 
+ * @todo identify all task finish & return
+ */
+int main(void) {
     srand(time(NULL));
 
     GC_INIT();
@@ -83,7 +125,6 @@ int main() {
     init_scheduler();
 
     thread(start, NULL);
-
 
     for (int i = 0; i < SCHEDULER_THREAD_POOL_SIZE; i++) {
         pthread_join(sched_threads[i], NULL);

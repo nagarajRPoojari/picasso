@@ -201,30 +201,6 @@ runtime/ggc.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/ggc.c.s
 .PHONY : runtime/ggc.c.s
 
-runtime/globals.o: runtime/globals.c.o
-.PHONY : runtime/globals.o
-
-# target to build an object file
-runtime/globals.c.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/globals.c.o
-.PHONY : runtime/globals.c.o
-
-runtime/globals.i: runtime/globals.c.i
-.PHONY : runtime/globals.i
-
-# target to preprocess a source file
-runtime/globals.c.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/globals.c.i
-.PHONY : runtime/globals.c.i
-
-runtime/globals.s: runtime/globals.c.s
-.PHONY : runtime/globals.s
-
-# target to generate assembly for a file
-runtime/globals.c.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/globals.c.s
-.PHONY : runtime/globals.c.s
-
 runtime/io.o: runtime/io.c.o
 .PHONY : runtime/io.o
 
@@ -339,9 +315,6 @@ help:
 	@echo "... runtime/ggc.o"
 	@echo "... runtime/ggc.i"
 	@echo "... runtime/ggc.s"
-	@echo "... runtime/globals.o"
-	@echo "... runtime/globals.i"
-	@echo "... runtime/globals.s"
 	@echo "... runtime/io.o"
 	@echo "... runtime/io.i"
 	@echo "... runtime/io.s"

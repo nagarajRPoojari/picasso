@@ -12,8 +12,18 @@
 #include "scheduler.h"
 
 safe_queue_t io_queue;
+
 int epfd;
 
+/**
+ * @brief Main loop for an I/O worker thread.
+ * 
+ * Continuously pops tasks from the io_queue, performs blocking I/O,
+ * and waits for I/O readiness using epoll. Reschedules tasks when ready.
+ * 
+ * @param arg Pointer to worker thread ID or context (implementation-specific)
+ * @return Never returns under normal operation.
+ */
 void *io_worker(void *arg) {
     (void)arg;
     while (1) {
@@ -22,15 +32,27 @@ void *io_worker(void *arg) {
         // @todo: IO could be read or write, genralize
         t->nread = read(t->fd, t->buf, t->readn);
 
-        // once IO is done, push back to ready queue for 
-        // scheduler to pick up
-        // @todo: either push back to global queue or same 
-        // local queue
+        /** once IO is done, push back to ready queue for 
+         * scheduler to pick up
+         * @todo: either push back to global queue or same 
+         * local queue
+        */
         safe_q_push(&(kernel_thread_map[t->sched_id]->ready_q), t);
     }
     return NULL;
 }
 
+/**
+ * @brief Initiate an asynchronous file read task.
+ * 
+ * Schedules a read operation on the I/O queue. The actual read happens
+ * in the I/O worker thread.
+ * 
+ * @param fd     File descriptor to read from.
+ * @param buf    Buffer to store data.
+ * @param count  Number of bytes to read.
+ * @return Pointer to a task representing this async operation.
+ */
 void _async_stdin_read() {
     struct epoll_event ev;
     ev.events = EPOLLIN | EPOLLET;
@@ -40,16 +62,23 @@ void _async_stdin_read() {
     if (epoll_ctl(epfd, EPOLL_CTL_ADD, current_task->fd, &ev) == -1) {
         if (errno != EEXIST) perror("epoll_ctl ADD");
     }
-    // yield cooperatively
+    /** yield cooperatively */
     task_yield(kernel_thread_map[current_task->sched_id]);
 }
 
 void _async_file_read() {
     safe_q_push(&io_queue, current_task);
-    // yield cooperatively
+    /** yield cooperatively */ 
     task_yield(kernel_thread_map[current_task->sched_id]);
 }
 
+/**
+ * @brief Initiate an asynchronous read from stdin.
+ * 
+ * Schedules a read operation on stdin via the I/O queue.
+ * 
+ * @return Pointer to a task representing this async operation.
+ */
 void* async_file_read(int fd, char* buf, int n) {
     current_task->fd = fd;
     current_task->buf = buf;

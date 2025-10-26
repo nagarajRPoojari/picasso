@@ -129,10 +129,8 @@ CMakeFiles/scheduler.dir/runtime/scheduler.c.o: \
  /usr/local/include/gc/gc.h /usr/local/include/gc/gc_version.h \
  /usr/local/include/gc/gc_config_macros.h \
  /workspaces/x-language/headers/scheduler.h \
- /workspaces/x-language/headers/globals.h \
- /workspaces/x-language/headers/queue.h \
  /workspaces/x-language/headers/task.h \
- /workspaces/x-language/headers/scheduler.h \
+ /workspaces/x-language/headers/queue.h \
  /workspaces/x-language/headers/io.h \
  /workspaces/x-language/headers/queue.h \
  /workspaces/x-language/headers/task.h

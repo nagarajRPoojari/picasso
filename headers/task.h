@@ -3,34 +3,50 @@
 
 #include <ucontext.h>
 #include <signal.h>
+
+/* Size of per-task I/O buffer (bytes) */
 #define TASK_IO_BUFFER 256
 
+/**
+ * @struct task_t
+ * @brief Represents a single task/coroutine managed by the scheduler.
+ * 
+ * Tasks have their own stack, CPU context, and optionally perform I/O operations.
+ * They are scheduled cooperatively or preemptively on a kernel thread.
+ */
 typedef struct task {
 
-    // id to uniquely identify task
+    /* Unique identifier for the task */
     int id;
 
-    // own CPU context
+    /* CPU context used for saving/restoring execution state */
     ucontext_t ctx;
 
+    /* Size of the private stack (usable bytes, excluding guard page) */
     size_t stack_size;
-    // sched_id
+
+    /* Scheduler/kernel thread ID that owns this task */
     int sched_id;
 
-    // function to executue
+    /* Function to execute when task is scheduled */
     void* (*fn)(void *);
 
-    // private stack
+    /* Pointer to the task's private stack (after guard page) */
     char *stack;
 
-    // file descriptor if doing any io
+    /* File descriptor if the task performs I/O (otherwise -1) */
     int fd;
 
-    // buffer pool for io
+    /* Buffer for I/O operations */
     char *buf;
+
+    /* Number of bytes requested to read/write */
     ssize_t readn;
 
+    /* Number of bytes actually read or written */
     ssize_t nread;
+
+    /* Flag indicating whether epoll is used for this task */
     int use_epoll; 
 } task_t;
 

@@ -5,8 +5,6 @@ file(REMOVE_RECURSE
   "CMakeFiles/scheduler.dir/runtime/error.c.o.d"
   "CMakeFiles/scheduler.dir/runtime/ggc.c.o"
   "CMakeFiles/scheduler.dir/runtime/ggc.c.o.d"
-  "CMakeFiles/scheduler.dir/runtime/globals.c.o"
-  "CMakeFiles/scheduler.dir/runtime/globals.c.o.d"
   "CMakeFiles/scheduler.dir/runtime/io.c.o"
   "CMakeFiles/scheduler.dir/runtime/io.c.o.d"
   "CMakeFiles/scheduler.dir/runtime/main.c.o"

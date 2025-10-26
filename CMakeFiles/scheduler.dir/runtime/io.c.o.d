@@ -83,7 +83,8 @@ CMakeFiles/scheduler.dir/runtime/io.c.o: \
  /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h \
  /usr/include/aarch64-linux-gnu/bits/epoll.h \
  /workspaces/x-language/headers/io.h \
- /workspaces/x-language/headers/globals.h /usr/include/ucontext.h \
+ /workspaces/x-language/headers/queue.h \
+ /workspaces/x-language/headers/task.h /usr/include/ucontext.h \
  /usr/include/aarch64-linux-gnu/bits/indirect-return.h \
  /usr/include/aarch64-linux-gnu/sys/ucontext.h \
  /usr/include/aarch64-linux-gnu/bits/types/stack_t.h \
@@ -93,9 +94,7 @@ CMakeFiles/scheduler.dir/runtime/io.c.o: \
  /usr/include/aarch64-linux-gnu/bits/procfs.h \
  /usr/include/aarch64-linux-gnu/bits/procfs-id.h \
  /usr/include/aarch64-linux-gnu/bits/procfs-prregset.h \
- /usr/include/aarch64-linux-gnu/bits/procfs-extra.h /usr/include/string.h \
- /usr/include/strings.h /workspaces/x-language/headers/queue.h \
- /workspaces/x-language/headers/task.h /usr/include/signal.h \
+ /usr/include/aarch64-linux-gnu/bits/procfs-extra.h /usr/include/signal.h \
  /usr/include/aarch64-linux-gnu/bits/signum-generic.h \
  /usr/include/aarch64-linux-gnu/bits/signum-arch.h \
  /usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h \
@@ -123,7 +122,6 @@ CMakeFiles/scheduler.dir/runtime/io.c.o: \
  /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
  /usr/include/aarch64-linux-gnu/bits/sigthread.h \
  /usr/include/aarch64-linux-gnu/bits/signal_ext.h \
- /workspaces/x-language/headers/scheduler.h \
  /workspaces/x-language/headers/queue.h \
  /workspaces/x-language/headers/task.h \
  /workspaces/x-language/headers/scheduler.h
