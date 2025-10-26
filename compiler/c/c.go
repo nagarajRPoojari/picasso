@@ -24,6 +24,7 @@ const (
 	FCLOSE  = "fclose"
 	FFLUSH  = "fflush"
 	FSEEK   = "fseek"
+
 	MALLOC  = "malloc"
 	FREE    = "free"
 	STRLEN  = "strlen"
@@ -31,6 +32,9 @@ const (
 	MEMSET  = "memset"
 	MEMMOVE = "memmove"
 	EXIT    = "exit"
+
+	ATOMIC_STORE = "atomic_store"
+	ATOMIC_LOAD  = "atomic_load"
 )
 
 type Interface struct {

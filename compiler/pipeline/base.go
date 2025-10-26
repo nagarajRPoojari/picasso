@@ -41,17 +41,16 @@ func insertYields(m *ir.Module) {
 			var newInsts []ir.Instruction
 
 			for _, inst := range blk.Insts {
-				newInsts = append(newInsts, inst)
-
-				// === Heuristic: insert yield after every call ===
+				// If this is a call instruction, insert yield BEFORE it
 				switch inst.(type) {
 				case *ir.InstCall:
-					// Insert a call to yield_func
 					newInsts = append(newInsts, ir.NewCall(yieldFunc))
 				}
+
+				// Then append the original instruction
+				newInsts = append(newInsts, inst)
 			}
 
-			// Replace block instructions with new sequence
 			blk.Insts = newInsts
 		}
 	}

@@ -12,6 +12,7 @@ type VariableDeclarationStatement struct {
 	AssignedValue Expression
 	ExplicitType  Type
 	IsStatic      bool
+	IsAtomic      bool
 }
 
 func (VariableDeclarationStatement) stmt() {}

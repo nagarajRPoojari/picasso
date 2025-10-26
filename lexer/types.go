@@ -13,6 +13,8 @@ const (
 	STRING
 	IDENTIFIER
 
+	ATOMIC
+
 	OPEN_BRACKET
 	CLOSE_BRACKET
 	OPEN_CURLY
@@ -83,6 +85,7 @@ var reserved_keywords map[string]TokenKind = map[string]TokenKind{
 	"const":     CONST,
 	"class":     CLASS,
 	"interface": INTERFACE,
+	"atomic":    ATOMIC,
 	"is":        IS,
 	"new":       NEW,
 	"import":    IMPORT,
@@ -138,6 +141,8 @@ func TokenKindString(kind TokenKind) string {
 		return "false"
 	case IDENTIFIER:
 		return "identifier"
+	case ATOMIC:
+		return "atomic"
 	case OPEN_BRACKET:
 		return "open_bracket"
 	case CLOSE_BRACKET:

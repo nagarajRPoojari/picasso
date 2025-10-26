@@ -1,42 +1,39 @@
 import io from builtin;
 import array from builtin;
 
-
 class Worker {
-  say id: int;
+  say id: atomic int;
+  say x: atomic []int;
+
+  
   fn Worker(id: int) {
     this.id = id;
   }
 
-  fn doss() {
-    printf("> %d\n", this.id);
+  fn dos() {
     this.recurse();
   }
 
   fn recurse() {
-
-
     this.id = this.id - 1;
-    if(this.id == 0){
+    if(this.id <= 0){
       return;
     }else {}
-    printf("> %d\n", this.id);
+    io.printf("> %d\n", this.id);
     this.recurse();
-
   }
 }
 
 
 
-
 fn start() {
-    printf("started... \n");
-
+    io.printf("started... \n");
 
     say worker: Worker = new Worker(100);
 
-    thread(worker.dos);
-
+    foreach i in 0..20 {
+        thread(worker.dos);
+    }
 }
 
 // 1447910000 -  time taken by go
