@@ -204,20 +204,26 @@ CMakeFiles/scheduler.dir/runtime/io.c.o: runtime/io.c \
   /usr/include/aarch64-linux-gnu/bits/wchar.h \
   /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h \
   /usr/include/aarch64-linux-gnu/bits/epoll.h \
-  headers/io.h \
-  headers/queue.h \
-  headers/task.h \
-  /usr/include/ucontext.h \
-  /usr/include/aarch64-linux-gnu/bits/indirect-return.h \
-  /usr/include/aarch64-linux-gnu/sys/ucontext.h \
-  /usr/include/aarch64-linux-gnu/bits/types/stack_t.h \
-  /usr/include/aarch64-linux-gnu/sys/procfs.h \
-  /usr/include/aarch64-linux-gnu/sys/time.h \
-  /usr/include/aarch64-linux-gnu/sys/user.h \
-  /usr/include/aarch64-linux-gnu/bits/procfs.h \
-  /usr/include/aarch64-linux-gnu/bits/procfs-id.h \
-  /usr/include/aarch64-linux-gnu/bits/procfs-prregset.h \
-  /usr/include/aarch64-linux-gnu/bits/procfs-extra.h \
+  /usr/include/liburing.h \
+  /usr/include/aarch64-linux-gnu/sys/socket.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h \
+  /usr/include/aarch64-linux-gnu/bits/socket.h \
+  /usr/include/aarch64-linux-gnu/bits/socket_type.h \
+  /usr/include/aarch64-linux-gnu/bits/sockaddr.h \
+  /usr/include/aarch64-linux-gnu/asm/socket.h \
+  /usr/include/asm-generic/socket.h \
+  /usr/include/linux/posix_types.h \
+  /usr/include/linux/stddef.h \
+  /usr/include/aarch64-linux-gnu/asm/posix_types.h \
+  /usr/include/asm-generic/posix_types.h \
+  /usr/include/aarch64-linux-gnu/asm/bitsperlong.h \
+  /usr/include/asm-generic/bitsperlong.h \
+  /usr/include/aarch64-linux-gnu/asm/sockios.h \
+  /usr/include/asm-generic/sockios.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_osockaddr.h \
+  /usr/include/aarch64-linux-gnu/sys/stat.h \
+  /usr/include/aarch64-linux-gnu/sys/uio.h \
+  /usr/include/aarch64-linux-gnu/bits/uio_lim.h \
   /usr/include/signal.h \
   /usr/include/aarch64-linux-gnu/bits/signum-generic.h \
   /usr/include/aarch64-linux-gnu/bits/signum-arch.h \
@@ -236,19 +242,45 @@ CMakeFiles/scheduler.dir/runtime/io.c.o: runtime/io.c \
   /usr/include/aarch64-linux-gnu/asm/types.h \
   /usr/include/asm-generic/types.h \
   /usr/include/asm-generic/int-ll64.h \
-  /usr/include/aarch64-linux-gnu/asm/bitsperlong.h \
-  /usr/include/asm-generic/bitsperlong.h \
-  /usr/include/linux/posix_types.h \
-  /usr/include/linux/stddef.h \
-  /usr/include/aarch64-linux-gnu/asm/posix_types.h \
-  /usr/include/asm-generic/posix_types.h \
   /usr/include/aarch64-linux-gnu/asm/sve_context.h \
+  /usr/include/aarch64-linux-gnu/bits/types/stack_t.h \
+  /usr/include/aarch64-linux-gnu/sys/ucontext.h \
+  /usr/include/aarch64-linux-gnu/sys/procfs.h \
+  /usr/include/aarch64-linux-gnu/sys/time.h \
+  /usr/include/aarch64-linux-gnu/sys/user.h \
+  /usr/include/aarch64-linux-gnu/bits/procfs.h \
+  /usr/include/aarch64-linux-gnu/bits/procfs-id.h \
+  /usr/include/aarch64-linux-gnu/bits/procfs-prregset.h \
+  /usr/include/aarch64-linux-gnu/bits/procfs-extra.h \
   /usr/include/aarch64-linux-gnu/bits/sigstack.h \
   /usr/include/aarch64-linux-gnu/bits/sigstksz.h \
   /usr/include/aarch64-linux-gnu/bits/ss_flags.h \
   /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
   /usr/include/aarch64-linux-gnu/bits/sigthread.h \
   /usr/include/aarch64-linux-gnu/bits/signal_ext.h \
+  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdbool.h \
+  /usr/include/inttypes.h \
+  /usr/include/linux/swab.h \
+  /usr/include/aarch64-linux-gnu/asm/swab.h \
+  /usr/include/asm-generic/swab.h \
+  /usr/include/liburing/compat.h \
+  /usr/include/linux/time_types.h \
+  /usr/include/linux/openat2.h \
+  /usr/include/liburing/io_uring.h \
+  /usr/include/linux/fs.h \
+  /usr/include/linux/limits.h \
+  /usr/include/linux/ioctl.h \
+  /usr/include/aarch64-linux-gnu/asm/ioctl.h \
+  /usr/include/asm-generic/ioctl.h \
+  /usr/include/linux/fscrypt.h \
+  /usr/include/linux/mount.h \
+  /usr/include/liburing/barrier.h \
+  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h \
+  headers/io.h \
+  headers/queue.h \
+  headers/task.h \
+  /usr/include/ucontext.h \
+  /usr/include/aarch64-linux-gnu/bits/indirect-return.h \
   headers/queue.h \
   headers/task.h \
   headers/scheduler.h
@@ -398,6 +430,43 @@ CMakeFiles/scheduler.dir/runtime/main.c.o: runtime/main.c \
   /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
   /usr/include/aarch64-linux-gnu/bits/sigthread.h \
   /usr/include/aarch64-linux-gnu/bits/signal_ext.h \
+  /usr/include/liburing.h \
+  /usr/include/aarch64-linux-gnu/sys/socket.h \
+  /usr/include/aarch64-linux-gnu/bits/socket.h \
+  /usr/include/aarch64-linux-gnu/bits/socket_type.h \
+  /usr/include/aarch64-linux-gnu/bits/sockaddr.h \
+  /usr/include/aarch64-linux-gnu/asm/socket.h \
+  /usr/include/asm-generic/socket.h \
+  /usr/include/aarch64-linux-gnu/asm/sockios.h \
+  /usr/include/asm-generic/sockios.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_osockaddr.h \
+  /usr/include/aarch64-linux-gnu/sys/stat.h \
+  /usr/include/aarch64-linux-gnu/bits/statx.h \
+  /usr/include/linux/stat.h \
+  /usr/include/aarch64-linux-gnu/bits/statx-generic.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_statx_timestamp.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_statx.h \
+  /usr/include/aarch64-linux-gnu/sys/uio.h \
+  /usr/include/aarch64-linux-gnu/bits/uio_lim.h \
+  /usr/include/aarch64-linux-gnu/bits/uio-ext.h \
+  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdbool.h \
+  /usr/include/inttypes.h \
+  /usr/include/linux/swab.h \
+  /usr/include/aarch64-linux-gnu/asm/swab.h \
+  /usr/include/asm-generic/swab.h \
+  /usr/include/liburing/compat.h \
+  /usr/include/linux/time_types.h \
+  /usr/include/linux/openat2.h \
+  /usr/include/liburing/io_uring.h \
+  /usr/include/linux/fs.h \
+  /usr/include/linux/limits.h \
+  /usr/include/linux/ioctl.h \
+  /usr/include/aarch64-linux-gnu/asm/ioctl.h \
+  /usr/include/asm-generic/ioctl.h \
+  /usr/include/linux/fscrypt.h \
+  /usr/include/linux/mount.h \
+  /usr/include/liburing/barrier.h \
+  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h \
   /usr/local/include/gc.h \
   /usr/local/include/gc/gc.h \
   /usr/local/include/gc/gc_version.h \
@@ -682,13 +751,15 @@ CMakeFiles/scheduler.dir/runtime/scheduler.c.o: runtime/scheduler.c \
 
 /usr/include/aarch64-linux-gnu/bits/mman-map-flags-generic.h:
 
-/usr/include/aarch64-linux-gnu/sys/mman.h:
-
 runtime/scheduler.c:
 
 headers/start.h:
 
-/usr/include/strings.h:
+/usr/include/aarch64-linux-gnu/bits/uio-ext.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_statx.h:
+
+/usr/include/linux/stat.h:
 
 /usr/include/string.h:
 
@@ -696,9 +767,25 @@ headers/start.h:
 
 /usr/include/linux/falloc.h:
 
-/usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h:
-
 runtime/main.c:
+
+headers/task.h:
+
+/usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h:
+
+/usr/include/liburing/barrier.h:
+
+/usr/include/linux/mount.h:
+
+/usr/include/linux/openat2.h:
+
+/usr/include/linux/time_types.h:
+
+/usr/include/asm-generic/swab.h:
+
+/usr/include/aarch64-linux-gnu/asm/swab.h:
+
+/usr/include/linux/swab.h:
 
 /usr/include/aarch64-linux-gnu/bits/signal_ext.h:
 
@@ -708,25 +795,33 @@ runtime/main.c:
 
 /usr/include/aarch64-linux-gnu/bits/sigstack.h:
 
+/usr/include/aarch64-linux-gnu/bits/procfs-prregset.h:
+
+/usr/include/aarch64-linux-gnu/bits/procfs-id.h:
+
+/usr/include/aarch64-linux-gnu/sys/procfs.h:
+
+/usr/include/aarch64-linux-gnu/sys/ucontext.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/stack_t.h:
+
+/usr/include/asm-generic/ioctl.h:
+
 /usr/include/aarch64-linux-gnu/asm/sve_context.h:
 
-/usr/include/aarch64-linux-gnu/asm/posix_types.h:
-
-/usr/include/aarch64-linux-gnu/bits/mman-shared.h:
-
-/usr/include/linux/stddef.h:
-
-/usr/include/linux/posix_types.h:
-
-/usr/include/asm-generic/bitsperlong.h:
-
-/usr/include/aarch64-linux-gnu/asm/bitsperlong.h:
-
 /usr/include/aarch64-linux-gnu/asm/types.h:
+
+/usr/include/linux/ioctl.h:
+
+/usr/include/liburing/io_uring.h:
 
 /usr/include/linux/types.h:
 
 /usr/include/aarch64-linux-gnu/asm/sigcontext.h:
+
+/usr/include/aarch64-linux-gnu/bits/indirect-return.h:
+
+/usr/include/aarch64-linux-gnu/bits/sigcontext.h:
 
 /usr/include/aarch64-linux-gnu/bits/sigaction.h:
 
@@ -734,7 +829,17 @@ runtime/main.c:
 
 /usr/include/aarch64-linux-gnu/bits/types/sigevent_t.h:
 
+/usr/include/aarch64-linux-gnu/bits/siginfo-consts.h:
+
+/usr/include/aarch64-linux-gnu/bits/siginfo-arch.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/__sigval_t.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h:
+
 /usr/include/aarch64-linux-gnu/bits/pthreadtypes-arch.h:
+
+/usr/include/aarch64-linux-gnu/asm/ioctl.h:
 
 /usr/include/aarch64-linux-gnu/bits/pthreadtypes.h:
 
@@ -742,9 +847,17 @@ runtime/main.c:
 
 /usr/include/aarch64-linux-gnu/bits/types/__sigset_t.h:
 
+/usr/include/inttypes.h:
+
 /usr/include/aarch64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
 
+/usr/include/aarch64-linux-gnu/asm/posix_types.h:
+
 /usr/include/aarch64-linux-gnu/bits/types/struct_timespec.h:
+
+/usr/include/aarch64-linux-gnu/bits/signum-arch.h:
+
+/usr/include/aarch64-linux-gnu/sys/select.h:
 
 /usr/include/aarch64-linux-gnu/bits/uintn-identity.h:
 
@@ -752,7 +865,15 @@ runtime/main.c:
 
 /usr/include/aarch64-linux-gnu/bits/endianness.h:
 
-headers/task.h:
+/usr/include/aarch64-linux-gnu/sys/time.h:
+
+/usr/include/aarch64-linux-gnu/bits/socket.h:
+
+/usr/include/aarch64-linux-gnu/bits/endian.h:
+
+/usr/include/aarch64-linux-gnu/bits/procfs-extra.h:
+
+/usr/include/endian.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/time_t.h:
 
@@ -767,6 +888,8 @@ headers/task.h:
 /usr/include/errno.h:
 
 /usr/include/aarch64-linux-gnu/bits/wchar.h:
+
+/usr/include/aarch64-linux-gnu/asm/bitsperlong.h:
 
 /usr/include/aarch64-linux-gnu/bits/waitstatus.h:
 
@@ -786,15 +909,15 @@ headers/ggc.h:
 
 runtime/array.c:
 
-/usr/include/aarch64-linux-gnu/bits/stdint-intn.h:
-
-/usr/include/aarch64-linux-gnu/gnu/stubs.h:
-
 /usr/include/aarch64-linux-gnu/bits/libc-header-start.h:
 
 /usr/include/aarch64-linux-gnu/bits/long-double.h:
 
+/usr/include/aarch64-linux-gnu/bits/statx-generic.h:
+
 /usr/include/aarch64-linux-gnu/bits/types/cookie_io_functions_t.h:
+
+/usr/include/linux/limits.h:
 
 /usr/include/stdint.h:
 
@@ -816,19 +939,13 @@ runtime/array.c:
 
 /usr/include/pthread.h:
 
-/usr/include/aarch64-linux-gnu/bits/siginfo-arch.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/sig_atomic_t.h:
-
 /usr/include/aarch64-linux-gnu/bits/select.h:
 
 /usr/include/aarch64-linux-gnu/bits/timesize.h:
 
-/usr/include/aarch64-linux-gnu/sys/ucontext.h:
+/usr/include/linux/fs.h:
 
-/usr/include/asm-generic/posix_types.h:
-
-/usr/include/stdc-predef.h:
+/usr/include/aarch64-linux-gnu/sys/uio.h:
 
 /usr/include/aarch64-linux-gnu/bits/typesizes.h:
 
@@ -844,6 +961,10 @@ runtime/queue.c:
 
 /usr/include/aarch64-linux-gnu/bits/stdio.h:
 
+/usr/include/strings.h:
+
+/usr/include/aarch64-linux-gnu/sys/socket.h:
+
 /usr/include/asm-generic/int-ll64.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/timer_t.h:
@@ -853,6 +974,8 @@ runtime/queue.c:
 runtime/error.c:
 
 /usr/include/aarch64-linux-gnu/bits/errno.h:
+
+/usr/include/aarch64-linux-gnu/bits/uio_lim.h:
 
 /usr/include/aarch64-linux-gnu/bits/struct_stat.h:
 
@@ -870,17 +993,29 @@ headers/array.h:
 
 /usr/include/aarch64-linux-gnu/bits/stdio_lim.h:
 
+/usr/include/liburing/compat.h:
+
 /usr/lib/gcc/aarch64-linux-gnu/12/include/stdarg.h:
 
 /usr/lib/gcc/aarch64-linux-gnu/12/include/stddef.h:
 
-/usr/include/aarch64-linux-gnu/bits/procfs-id.h:
+/usr/include/aarch64-linux-gnu/bits/mman-shared.h:
+
+/usr/include/linux/stddef.h:
 
 /usr/include/aarch64-linux-gnu/bits/sigstksz.h:
 
 /usr/include/features-time64.h:
 
 runtime/io.c:
+
+/usr/include/aarch64-linux-gnu/bits/stdint-intn.h:
+
+/usr/include/aarch64-linux-gnu/gnu/stubs.h:
+
+/usr/include/aarch64-linux-gnu/asm/socket.h:
+
+/usr/include/asm-generic/socket.h:
 
 headers/error.h:
 
@@ -898,9 +1033,11 @@ headers/io.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h:
 
-/usr/include/aarch64-linux-gnu/bits/fcntl-linux.h:
+/usr/include/aarch64-linux-gnu/bits/statx.h:
 
 headers/queue.h:
+
+/usr/include/aarch64-linux-gnu/bits/fcntl-linux.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/__fpos64_t.h:
 
@@ -911,10 +1048,6 @@ headers/queue.h:
 /usr/include/aarch64-linux-gnu/bits/types/locale_t.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/FILE.h:
-
-/usr/include/aarch64-linux-gnu/sys/user.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/siginfo_t.h:
 
 /usr/include/aarch64-linux-gnu/bits/setjmp.h:
 
@@ -931,8 +1064,6 @@ headers/queue.h:
 /usr/include/aarch64-linux-gnu/bits/pthread_stack_min-dynamic.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/struct_sched_param.h:
-
-/usr/include/aarch64-linux-gnu/bits/cpu-set.h:
 
 /usr/include/time.h:
 
@@ -954,13 +1085,11 @@ headers/queue.h:
 
 /usr/include/aarch64-linux-gnu/bits/pthread_stack_min.h:
 
+/usr/include/liburing.h:
+
 /usr/include/aarch64-linux-gnu/bits/stat.h:
 
-/usr/include/unistd.h:
-
 /usr/include/aarch64-linux-gnu/asm/errno.h:
-
-/usr/include/aarch64-linux-gnu/bits/siginfo-consts.h:
 
 /usr/include/aarch64-linux-gnu/bits/floatn.h:
 
@@ -968,13 +1097,13 @@ headers/queue.h:
 
 /usr/include/aarch64-linux-gnu/bits/posix_opt.h:
 
+/usr/include/aarch64-linux-gnu/bits/types/struct_statx_timestamp.h:
+
 /usr/include/aarch64-linux-gnu/bits/environments.h:
 
+/usr/include/linux/fscrypt.h:
+
 /usr/include/asm-generic/errno.h:
-
-/usr/include/aarch64-linux-gnu/bits/sigcontext.h:
-
-/usr/include/aarch64-linux-gnu/bits/indirect-return.h:
 
 headers/scheduler.h:
 
@@ -984,34 +1113,48 @@ headers/scheduler.h:
 
 /usr/include/asm-generic/errno-base.h:
 
-/usr/include/aarch64-linux-gnu/bits/types/stack_t.h:
+/usr/include/aarch64-linux-gnu/asm/sockios.h:
 
 /usr/include/aarch64-linux-gnu/sys/epoll.h:
+
+/usr/include/aarch64-linux-gnu/bits/procfs.h:
+
+/usr/lib/gcc/aarch64-linux-gnu/12/include/stdint.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h:
 
 /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h:
 
-/usr/include/aarch64-linux-gnu/sys/procfs.h:
+/usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h:
 
-/usr/include/aarch64-linux-gnu/bits/endian.h:
+/usr/include/aarch64-linux-gnu/bits/cpu-set.h:
 
-/usr/include/aarch64-linux-gnu/sys/time.h:
+/usr/include/asm-generic/sockios.h:
 
-/usr/lib/gcc/aarch64-linux-gnu/12/include/stdint.h:
+/usr/lib/gcc/aarch64-linux-gnu/12/include/stdbool.h:
 
-/usr/include/aarch64-linux-gnu/bits/procfs.h:
+/usr/include/aarch64-linux-gnu/sys/user.h:
 
-/usr/include/aarch64-linux-gnu/bits/procfs-prregset.h:
+/usr/include/aarch64-linux-gnu/bits/types/siginfo_t.h:
 
-/usr/include/endian.h:
+/usr/include/aarch64-linux-gnu/bits/socket_type.h:
 
-/usr/include/aarch64-linux-gnu/bits/procfs-extra.h:
+/usr/include/aarch64-linux-gnu/sys/mman.h:
+
+/usr/include/aarch64-linux-gnu/bits/sockaddr.h:
+
+/usr/include/linux/posix_types.h:
+
+/usr/include/stdc-predef.h:
+
+/usr/include/asm-generic/posix_types.h:
+
+/usr/include/asm-generic/bitsperlong.h:
+
+/usr/include/unistd.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_osockaddr.h:
+
+/usr/include/aarch64-linux-gnu/sys/stat.h:
 
 /usr/include/signal.h:
-
-/usr/include/aarch64-linux-gnu/sys/select.h:
-
-/usr/include/aarch64-linux-gnu/bits/signum-arch.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/__sigval_t.h:

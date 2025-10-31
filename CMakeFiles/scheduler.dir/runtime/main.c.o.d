@@ -124,8 +124,37 @@ CMakeFiles/scheduler.dir/runtime/main.c.o: \
  /usr/include/aarch64-linux-gnu/bits/ss_flags.h \
  /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
  /usr/include/aarch64-linux-gnu/bits/sigthread.h \
- /usr/include/aarch64-linux-gnu/bits/signal_ext.h /usr/local/include/gc.h \
- /usr/local/include/gc/gc.h /usr/local/include/gc/gc_version.h \
+ /usr/include/aarch64-linux-gnu/bits/signal_ext.h /usr/include/liburing.h \
+ /usr/include/aarch64-linux-gnu/sys/socket.h \
+ /usr/include/aarch64-linux-gnu/bits/socket.h \
+ /usr/include/aarch64-linux-gnu/bits/socket_type.h \
+ /usr/include/aarch64-linux-gnu/bits/sockaddr.h \
+ /usr/include/aarch64-linux-gnu/asm/socket.h \
+ /usr/include/asm-generic/socket.h \
+ /usr/include/aarch64-linux-gnu/asm/sockios.h \
+ /usr/include/asm-generic/sockios.h \
+ /usr/include/aarch64-linux-gnu/bits/types/struct_osockaddr.h \
+ /usr/include/aarch64-linux-gnu/sys/stat.h \
+ /usr/include/aarch64-linux-gnu/bits/statx.h /usr/include/linux/stat.h \
+ /usr/include/aarch64-linux-gnu/bits/statx-generic.h \
+ /usr/include/aarch64-linux-gnu/bits/types/struct_statx_timestamp.h \
+ /usr/include/aarch64-linux-gnu/bits/types/struct_statx.h \
+ /usr/include/aarch64-linux-gnu/sys/uio.h \
+ /usr/include/aarch64-linux-gnu/bits/uio_lim.h \
+ /usr/include/aarch64-linux-gnu/bits/uio-ext.h \
+ /usr/lib/gcc/aarch64-linux-gnu/12/include/stdbool.h \
+ /usr/include/inttypes.h /usr/include/linux/swab.h \
+ /usr/include/aarch64-linux-gnu/asm/swab.h \
+ /usr/include/asm-generic/swab.h /usr/include/liburing/compat.h \
+ /usr/include/linux/time_types.h /usr/include/linux/openat2.h \
+ /usr/include/liburing/io_uring.h /usr/include/linux/fs.h \
+ /usr/include/linux/limits.h /usr/include/linux/ioctl.h \
+ /usr/include/aarch64-linux-gnu/asm/ioctl.h \
+ /usr/include/asm-generic/ioctl.h /usr/include/linux/fscrypt.h \
+ /usr/include/linux/mount.h /usr/include/liburing/barrier.h \
+ /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h \
+ /usr/local/include/gc.h /usr/local/include/gc/gc.h \
+ /usr/local/include/gc/gc_version.h \
  /usr/local/include/gc/gc_config_macros.h \
  /workspaces/x-language/headers/start.h \
  /workspaces/x-language/headers/array.h \
