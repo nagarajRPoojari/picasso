@@ -41,10 +41,13 @@ typedef struct task {
     char *buf;
 
     /* Number of bytes requested to read/write */
-    ssize_t readn;
+    ssize_t req_n;
 
     /* Number of bytes actually read or written */
-    ssize_t nread;
+    ssize_t done_n;
+
+    /* seek offset */
+    ssize_t offset;
 
     /* Flag indicating whether epoll is used for this task */
     int use_epoll; 

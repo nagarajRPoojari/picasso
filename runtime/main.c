@@ -10,6 +10,7 @@
 #include <pthread.h>
 #include <sys/epoll.h>
 #include <signal.h>
+#include <liburing.h>
 
 #include <gc.h>
 #include <gc/gc.h> 
@@ -25,6 +26,7 @@
 
 
 kernel_thread_t **kernel_thread_map;
+struct io_uring **io_ring_map = NULL;
 
 /**
  * @brief Create and schedule a new task on a random scheduler thread.
@@ -53,17 +55,28 @@ void thread(void*(*fn)(void*), void *this) {
  * @return 0 on success, 1 on failure.
  */
 int init_io() {
-    safe_q_init(&io_queue, IO_QUEUE_SIZE);
-    
-    epfd = epoll_create1(0);
-    if (epfd == -1) { perror("epoll_create1"); return 1; }
-    
-    pthread_t io_threads[IO_THREAD_POOL_SIZE];
-    // Thread pool
-    for (int i=0;i<IO_THREAD_POOL_SIZE;i++){
-        pthread_create(&io_threads[i], NULL, io_worker, NULL);
+    io_ring_map = calloc(IO_THREAD_POOL_SIZE, sizeof(struct io_uring*));
+    if (!io_ring_map) {
+        perror("calloc io_ring_map");
+        exit(1);
     }
 
+    pthread_t io_threads[IO_THREAD_POOL_SIZE];
+    for (int i = 0; i < IO_THREAD_POOL_SIZE; i++) {
+        io_ring_map[i] = calloc(1, sizeof(struct io_uring));
+        if (!io_ring_map[i]) {
+            perror("calloc ring");
+            exit(1);
+        }
+    }
+
+    for (int i = 0; i < IO_THREAD_POOL_SIZE; i++) {
+        int rc = pthread_create(&io_threads[i], NULL, io_worker, (void*)(intptr_t)i);
+        if (rc != 0) {
+            fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
+            exit(1);
+        }
+    }
     return 0;
 }
 
@@ -79,15 +92,14 @@ pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
  * @return 0 on success.
  */
 int init_scheduler() {
-    kernel_thread_map = calloc(4, sizeof(kernel_thread_t*));
+    kernel_thread_map = calloc(SCHEDULER_THREAD_POOL_SIZE, sizeof(kernel_thread_t*));
     for (int i=0;i<SCHEDULER_THREAD_POOL_SIZE;i++) {
         kernel_thread_map[i] = calloc(1, sizeof(kernel_thread_t));
         kernel_thread_map[i]->id = i;
         kernel_thread_map[i]->current = NULL;
-        safe_queue_t ready_q;
-        safe_q_init(&ready_q, SCHEDULER_LOCAL_QUEUE_SIZE);
 
-        kernel_thread_map[i]->ready_q = ready_q;
+        safe_q_init(&kernel_thread_map[i]->ready_q, SCHEDULER_LOCAL_QUEUE_SIZE);
+
         pthread_create(&sched_threads[i], NULL, scheduler_run, kernel_thread_map[i]);
     }
 

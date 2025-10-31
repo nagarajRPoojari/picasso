@@ -350,21 +350,11 @@ void* scheduler_run(void* arg) {
 
     while (1) {
         task_t *t;
-
         // Run ready tasks
         while ((t = safe_q_pop(&kt->ready_q)) != NULL) {
             current_task = t; // Set TLS pointer
             task_resume(t, kt);
             current_task = NULL; // Clear after task yields
-        }
-
-        // Wait for epoll events
-        int n = epoll_wait(epfd, events, MAX_EVENTS, 100);
-        for (int i = 0; i < n; i++) {
-            task_t *t = (task_t *)events[i].data.ptr;
-            t->nread = read(t->fd, t->buf, t->readn);
-            epoll_ctl(epfd, EPOLL_CTL_DEL, t->fd, NULL);
-            safe_q_push(&(kernel_thread_map[t->sched_id]->ready_q), t);
         }
     }
 }
