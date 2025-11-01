@@ -57,18 +57,20 @@ func parse_var_decl_stmt(p *Parser) ast.Statement {
 		panic("unexpected keyword in variable declaration")
 	}
 
-	var isAtomic bool
-
 	symbolName := nextToken
 	if p.currentTokenKind() == lexer.COLON {
 		p.expect(lexer.COLON)
 
+		atomic := false
 		if p.currentTokenKind() == lexer.ATOMIC {
-			isAtomic = true
+			atomic = true
 			nextToken = p.move()
 		}
 
 		explicitType = parse_type(p, default_bp)
+		if atomic {
+			explicitType.SetAtomic()
+		}
 	}
 
 	var assignmentValue ast.Expression
@@ -91,7 +93,6 @@ func parse_var_decl_stmt(p *Parser) ast.Statement {
 		AssignedValue: assignmentValue,
 		ExplicitType:  explicitType,
 		IsStatic:      isStatic,
-		IsAtomic:      isAtomic,
 	}
 }
 

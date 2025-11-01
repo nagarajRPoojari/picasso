@@ -1,6 +1,8 @@
 file(REMOVE_RECURSE
   "CMakeFiles/scheduler.dir/runtime/array.c.o"
   "CMakeFiles/scheduler.dir/runtime/array.c.o.d"
+  "CMakeFiles/scheduler.dir/runtime/atomic.c.o"
+  "CMakeFiles/scheduler.dir/runtime/atomic.c.o.d"
   "CMakeFiles/scheduler.dir/runtime/error.c.o"
   "CMakeFiles/scheduler.dir/runtime/error.c.o.d"
   "CMakeFiles/scheduler.dir/runtime/ggc.c.o"

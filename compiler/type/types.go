@@ -1,7 +1,6 @@
 package typedef
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
@@ -47,13 +46,22 @@ const (
 
 	NULL = "null"
 	VOID = "void"
+
+	ATOMIC_BOOL  = "atomic_bool_t"
+	ATOMIC_CHAR  = "atomic_char_t"
+	ATOMIC_SHORT = "atomic_short_t"
+	ATOMIC_INT   = "atomic_int_t"
+	ATOMIC_LONG  = "atomic_long_t"
+	ATOMIC_LLONG = "atomic_llong_t"
+
+	ATOMIC_FLOAT  = "atomic_float_t"
+	ATOMIC_DOUBLE = "atomic_double_t"
+
+	ATOMIC_PTR = "atomic_ptr_t"
 )
 
 type TypeHandler struct {
-	Udts   map[string]*MetaClass
-	module *ir.Module
-
-	langAlloc *ir.Func
+	Udts map[string]*MetaClass
 }
 
 func NewTypeHandler() *TypeHandler {

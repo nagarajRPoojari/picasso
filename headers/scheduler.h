@@ -84,7 +84,7 @@ void task_destroy(task_t *t);
  * @param t Pointer to the current task.
  * @return Always returns NULL after task exits.
  */
-void* task_trampoline(task_t *t);
+void* task_trampoline(task_t *t, void *this);
 
 
 /**

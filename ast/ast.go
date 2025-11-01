@@ -11,6 +11,8 @@ type Expression interface {
 }
 
 type Type interface {
+	IsAtomic() bool
+	SetAtomic()
 	Get() string
 	GetUnderlyingType() string
 }

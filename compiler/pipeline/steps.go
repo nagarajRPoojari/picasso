@@ -6,6 +6,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/class"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/constants"
@@ -13,6 +14,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/state"
 	"github.com/nagarajRPoojari/x-lang/compiler/libs"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
+	typedef "github.com/nagarajRPoojari/x-lang/compiler/type"
 )
 
 func (t *Pipeline) importModules(methodMap map[string]function.Func, module string) {
@@ -44,6 +46,24 @@ func (t *Pipeline) PredeclareClasses() {
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
 		class.ClassHandlerInst.DeclareClassUDT(st)
 	})
+}
+
+func (t *Pipeline) Register() {
+	tp := []string{c.ATOMIC_BOOL, c.ATOMIC_CHAR, c.ATOMIC_SHORT, c.ATOMIC_INT}
+	for _, tpc := range tp {
+		udt := t.st.CI.Types[tpc]
+		t.st.Module.NewTypeDef(tpc, udt)
+		mc := &typedef.MetaClass{
+			FieldIndexMap:     make(map[string]int),
+			ArrayVarsEleTypes: make(map[int]types.Type),
+			VarAST:            make(map[string]*ast.VariableDeclarationStatement),
+			UDT:               types.NewPointer(udt),
+			Methods:           make(map[string]*ir.Func),
+			Returns:           map[string]ast.Type{},
+		}
+		t.st.Classes[tpc] = mc
+		t.st.TypeHandler.Register(tpc, mc)
+	}
 }
 
 func (t *Pipeline) DeclareVars() {

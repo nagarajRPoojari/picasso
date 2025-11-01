@@ -2,9 +2,40 @@ package c
 
 import "github.com/llir/llvm/ir/types"
 
-var Array = types.NewStruct(
-	types.I64,                   // length
-	types.NewPointer(types.I8),  // data
-	types.NewPointer(types.I64), // shape (i64*)
-	types.I64,                   // rank
-)
+func (t *Interface) RegisterTypes() {
+	t.initArrayTypes()
+	t.initAtomicTypes()
+}
+
+func (t *Interface) initArrayTypes() {
+	t.Types[ARRAY] = types.NewStruct(
+		types.I64,                   // length
+		types.NewPointer(types.I8),  // data
+		types.NewPointer(types.I64), // shape (i64*)
+		types.I64,                   // rank
+	)
+}
+
+func (t *Interface) initAtomicTypes() {
+	t.Types[ATOMIC_BOOL] = types.NewStruct(types.I1)
+
+	t.Types[ATOMIC_CHAR] = types.NewStruct(types.I8)
+	t.Types[ATOMIC_INT8] = types.NewStruct(types.I8)
+
+	t.Types[ATOMIC_SHORT] = types.NewStruct(types.I16)
+	t.Types[ATOMIC_INT16] = types.NewStruct(types.I16)
+
+	t.Types[ATOMIC_INT] = types.NewStruct(types.I32)
+	t.Types[ATOMIC_INT32] = types.NewStruct(types.I32)
+
+	t.Types[ATOMIC_LONG] = types.NewStruct(types.I64)
+	t.Types[ATOMIC_INT64] = types.NewStruct(types.I64)
+
+	t.Types[ATOMIC_LLONG] = types.NewStruct(types.I64)
+
+	t.Types[ATOMIC_FLOAT] = types.NewStruct(types.Float)
+
+	t.Types[ATOMIC_DOUBLE] = types.NewStruct(types.Double)
+
+	t.Types[ATOMIC_PTR] = types.NewStruct(types.NewPointer(types.I8))
+}

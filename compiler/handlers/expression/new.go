@@ -124,7 +124,13 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 
 		var v tf.Var
 		if exp.AssignedValue == nil {
-			v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), nil)
+			var init value.Value
+			if exp.ExplicitType.IsAtomic() {
+				meta := t.st.Classes[exp.ExplicitType.Get()]
+				c := tf.NewClass(bh, exp.ExplicitType.Get(), meta.UDT)
+				init = c.Load(bh)
+			}
+			v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), init)
 		} else {
 			_v := t.ProcessExpression(bh, exp.AssignedValue)
 			v = _v

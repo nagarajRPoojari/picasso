@@ -24,11 +24,11 @@ __thread task_t* current_task;
  * @brief Entry trampoline used by tasks to invoke their function and clean up.
  * 
  * @param t Pointer to the current task.
+ * @param this Arbitary arg to be passed to func.
  * @return Always returns NULL after task exits.
  */
-void* task_trampoline(task_t *t) {
-    t->fn(t);
-    task_destroy(t);
+void* task_trampoline(task_t *t, void *this) {
+    t->fn(this);
     return NULL;
 }
 
@@ -284,7 +284,7 @@ task_t* task_create(void* (*fn)(void *), void* this, kernel_thread_t* kt) {
     t->ctx.uc_link = &(kt->sched_ctx);
 
     // make trampoline
-    makecontext(&t->ctx, (void(*)(void))fn, 1, this);
+    makecontext(&t->ctx, (void(*)(void))task_trampoline, 2, t, this);
     return t;
 }
 

@@ -31,7 +31,7 @@ func type_nud(kind lexer.TokenKind, bp BindingPower, nud_fn type_nud_handler) {
 func BuildTypeTokensTable() {
 
 	type_nud(lexer.IDENTIFIER, primary, func(p *Parser) ast.Type {
-		return ast.SymbolType{
+		return &ast.SymbolType{
 			Value: p.move().Value,
 		}
 	})
@@ -53,7 +53,7 @@ func BuildTypeTokensTable() {
 		p.expect(lexer.CLOSE_BRACKET)
 		insideType := parse_type(p, default_bp)
 
-		return ast.ListType{
+		return &ast.ListType{
 			Underlying: insideType,
 		}
 	})

@@ -17,6 +17,7 @@ func NewPipeline(st *state.State, tree ast.BlockStatement) *Pipeline {
 }
 
 func (t *Pipeline) Run() {
+	t.Register()
 	t.ImportModules()
 	t.PredeclareClasses()
 	t.DeclareVars()

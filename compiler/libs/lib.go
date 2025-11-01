@@ -4,6 +4,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/libs/array"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	"github.com/nagarajRPoojari/x-lang/compiler/libs/io"
+	"github.com/nagarajRPoojari/x-lang/compiler/libs/sync"
 	types "github.com/nagarajRPoojari/x-lang/compiler/libs/type"
 )
 
@@ -17,4 +18,5 @@ func init() {
 	ModuleList["io"] = io.NewIO()
 	ModuleList["types"] = types.NewTypeHandler()
 	ModuleList["array"] = array.NewArrayHandler()
+	ModuleList["sync"] = sync.NewSync()
 }

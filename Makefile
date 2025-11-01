@@ -153,6 +153,30 @@ runtime/array.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/array.c.s
 .PHONY : runtime/array.c.s
 
+runtime/atomic.o: runtime/atomic.c.o
+.PHONY : runtime/atomic.o
+
+# target to build an object file
+runtime/atomic.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/atomic.c.o
+.PHONY : runtime/atomic.c.o
+
+runtime/atomic.i: runtime/atomic.c.i
+.PHONY : runtime/atomic.i
+
+# target to preprocess a source file
+runtime/atomic.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/atomic.c.i
+.PHONY : runtime/atomic.c.i
+
+runtime/atomic.s: runtime/atomic.c.s
+.PHONY : runtime/atomic.s
+
+# target to generate assembly for a file
+runtime/atomic.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/atomic.c.s
+.PHONY : runtime/atomic.c.s
+
 runtime/error.o: runtime/error.c.o
 .PHONY : runtime/error.o
 
@@ -309,6 +333,9 @@ help:
 	@echo "... runtime/array.o"
 	@echo "... runtime/array.i"
 	@echo "... runtime/array.s"
+	@echo "... runtime/atomic.o"
+	@echo "... runtime/atomic.i"
+	@echo "... runtime/atomic.s"
 	@echo "... runtime/error.o"
 	@echo "... runtime/error.i"
 	@echo "... runtime/error.s"

@@ -1,6 +1,7 @@
 package statement
 
 import (
+	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	errorutils "github.com/nagarajRPoojari/x-lang/compiler/error"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
@@ -26,7 +27,13 @@ func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableD
 
 	var v tf.Var
 	if st.AssignedValue == nil {
-		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), nil)
+		var init value.Value
+		if st.ExplicitType.IsAtomic() {
+			meta := t.st.Classes[st.ExplicitType.Get()]
+			c := tf.NewClass(bh, st.ExplicitType.Get(), meta.UDT)
+			init = c.Load(bh)
+		}
+		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), init)
 	} else {
 		_v := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
 		v = _v
