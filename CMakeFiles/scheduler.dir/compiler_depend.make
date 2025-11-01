@@ -306,6 +306,10 @@ CMakeFiles/scheduler.dir/runtime/io.c.o: runtime/io.c \
   /usr/include/linux/mount.h \
   /usr/include/liburing/barrier.h \
   /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h \
+  /usr/local/include/gc.h \
+  /usr/local/include/gc/gc.h \
+  /usr/local/include/gc/gc_version.h \
+  /usr/local/include/gc/gc_config_macros.h \
   headers/io.h \
   headers/queue.h \
   headers/task.h \

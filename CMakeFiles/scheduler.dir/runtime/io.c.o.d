@@ -142,6 +142,9 @@ CMakeFiles/scheduler.dir/runtime/io.c.o: \
  /usr/include/asm-generic/ioctl.h /usr/include/linux/fscrypt.h \
  /usr/include/linux/mount.h /usr/include/liburing/barrier.h \
  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h \
+ /usr/local/include/gc.h /usr/local/include/gc/gc.h \
+ /usr/local/include/gc/gc_version.h \
+ /usr/local/include/gc/gc_config_macros.h \
  /workspaces/x-language/headers/io.h \
  /workspaces/x-language/headers/queue.h \
  /workspaces/x-language/headers/task.h /usr/include/ucontext.h \

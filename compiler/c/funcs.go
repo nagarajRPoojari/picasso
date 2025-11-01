@@ -15,6 +15,16 @@ func (t *Interface) registerFuncs(mod *ir.Module) {
 }
 
 func (t *Interface) initRuntime(mod *ir.Module) {
+
+	t.Funcs[STRLEN] = mod.NewFunc(STRLEN, types.I32, ir.NewParam("", types.NewPointer(types.I8)))
+
+	t.Funcs[MEMCPY] = mod.NewFunc("llvm.memcpy.p0i8.p0i8.i64",
+		types.Void,
+		ir.NewParam("dest", types.I8Ptr),
+		ir.NewParam("src", types.I8Ptr),
+		ir.NewParam("len", types.I64),
+		ir.NewParam("isvolatile", types.I1),
+	)
 	// @thread
 	fnType := types.NewFunc(
 		types.NewPointer(types.I8),
@@ -186,9 +196,14 @@ func (t *Interface) initStdio(mod *ir.Module) {
 	t.Funcs[PRINTF] = mod.NewFunc(PRINTF, types.I32, ir.NewParam("", types.I8Ptr))
 	t.Funcs[PRINTF].Sig.Variadic = true
 
+	t.Funcs[APRINTF] = mod.NewFunc(APRINTF, types.I32, ir.NewParam("", types.I8Ptr))
+	t.Funcs[APRINTF].Sig.Variadic = true
+
 	// @scanf
 	t.Funcs[SCANF] = mod.NewFunc(SCANF, types.I32, ir.NewParam("format", types.I8Ptr))
 	t.Funcs[SCANF].Sig.Variadic = true
+
+	t.Funcs[ASCAN] = mod.NewFunc(ASCAN, types.I8Ptr, ir.NewParam("size", types.I64))
 
 	// @fopen
 	t.Funcs[FOPEN] = mod.NewFunc(FOPEN, types.I8Ptr,
@@ -238,5 +253,12 @@ func (t *Interface) initStdio(mod *ir.Module) {
 		ir.NewParam("stream", types.I8Ptr),
 		ir.NewParam("offset", types.I64),
 		ir.NewParam("whence", types.I32),
+	)
+	// @afread
+	t.Funcs[AFREAD] = mod.NewFunc(AFREAD, types.I32,
+		ir.NewParam("fd", types.I8Ptr),
+		ir.NewParam("dest", types.I8Ptr),
+		ir.NewParam("n", types.I64),
+		ir.NewParam("offset", types.I64),
 	)
 }

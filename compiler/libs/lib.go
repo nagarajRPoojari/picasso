@@ -15,7 +15,8 @@ type Module interface {
 var ModuleList = make(map[string]Module)
 
 func init() {
-	ModuleList["io"] = io.NewIO()
+	ModuleList["syncio"] = io.NewSyncIO()
+	ModuleList["asyncio"] = io.NewAsyncIO()
 	ModuleList["types"] = types.NewTypeHandler()
 	ModuleList["array"] = array.NewArrayHandler()
 	ModuleList["sync"] = sync.NewSync()

@@ -26,13 +26,20 @@ const (
 	FFLUSH  = "fflush"
 	FSEEK   = "fseek"
 
+	// non blocking I/O calls
+	APRINTF = "aprintf"
+	ASCAN   = "ascan"
+	SCAN    = "scan" // @alias
+	AFREAD  = "afread"
+	FREAD   = "fread" // @read
+
 	// memory calls
 	MALLOC       = "malloc"
 	FREE         = "free"
 	MEMCPY       = "memcpy"
 	MEMSET       = "memset"
 	MEMMOVE      = "memmove"
-	ALLOC        = "lang_alloc"
+	ALLOC        = "lang_alloc" // gc tracked
 	RUNTIME_INIT = "runtime_init"
 	ARRAY_ALLOC  = "lang_alloc_array"
 	ARRAY        = "array"

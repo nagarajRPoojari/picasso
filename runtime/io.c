@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <sys/epoll.h>
 #include <liburing.h>
+#include <stdarg.h>
+#include <gc.h>
 
 #include "io.h"
 #include "queue.h"
@@ -211,6 +213,12 @@ void* async_stdin_read(char* buf, int n) {
     return &(current_task->done_n);
 }
 
+void* ascan(int n) {
+    char* buf = (char*)GC_MALLOC(n * sizeof(char));
+    async_stdin_read(buf, n);
+    return buf;
+}
+
 /**
  * @brief Public API for asynchronous STDOUT write using io_uring.
  *
@@ -233,6 +241,29 @@ void* async_stdout_write(const char* buf, int n) {
     return &(current_task->done_n);
 }
 
+void* aprintf(const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+
+    /** estimate needed size */
+    char tmp[1];
+    int len = vsnprintf(tmp, sizeof(tmp), fmt, ap);
+    va_end(ap);
+
+    if (len < 0) return NULL;
+
+    char* buf = malloc(len + 1);
+    if (!buf) return NULL;
+
+    va_start(ap, fmt);
+    vsnprintf(buf, len + 1, fmt, ap);
+    va_end(ap);
+
+    void* handle = async_stdout_write(buf, len);
+
+    free(buf);
+    return handle;
+}
 
 /**
  * @brief Public API for asynchronous file read.
@@ -256,6 +287,11 @@ void* async_file_read(int fd, char* buf, int n, int offset) {
     current_task->offset = offset;
     _async_file_read();
     return &(current_task->done_n);
+}
+
+void* afread(char* f, char* buf, int n, int offset) {
+    int fd = fileno((FILE*)f);
+    async_file_read(fd, buf, n, offset);
 }
 
 /**

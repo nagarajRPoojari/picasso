@@ -1,30 +1,34 @@
-import io from builtin;
+import syncio from builtin;
+import asyncio from builtin;
 import array from builtin;
 import sync from builtin;
 
 class Worker {
     say counter: atomic int;
-    say _thread_id: int;
+    say _thread_id: atomic int;
     fn Worker(count: int) {
         sync.atomic_store(this.counter, count);
+        sync.atomic_store(this._thread_id, 0);
     } 
 
     fn do() {
-        this._thread_id = this._thread_id + 1;
-        this.recurse(this._thread_id);
-    }
+        sync.atomic_add(this._thread_id, 1);
+        say id: int = sync.atomic_load(this._thread_id);
 
-    fn recurse(id: int) {
-        say c: int = sync.atomic_load(this.counter);
-        if(c < 0) {
-            return;
-        }else {
-            io.printf("[%d] step - %d \n", id, c);
-            sync.atomic_sub(this.counter, 1);
-            this.recurse(id);
+        say buff_size: int = 256;
+        say buf: []int8 = array.create(int8, buff_size);
+        say fp: string = syncio.fopen("temp.txt", "r+");
+        say seek: int = 0;
+        
+        foreach i in 1..3 {
+            asyncio.fread(fp, buf, buff_size, seek);
+            seek = seek + buff_size;
+            asyncio.printf("%d: %.*s\n", id, buff_size, buf);
         }
     }
+
 }
+
 
 
 fn start() {

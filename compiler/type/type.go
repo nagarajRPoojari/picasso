@@ -25,9 +25,6 @@ func NewTypeHolder(block *bc.BlockHolder, init value.Value) *TypeHolder {
 	block.N.NewStore(init, slot)
 
 	var s string
-	if c, ok := init.(*constant.CharArray); ok {
-		s = constantToGoString(c)
-	}
 	return &TypeHolder{
 		NativeType: types.I8Ptr,
 		Value:      slot,

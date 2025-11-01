@@ -11,6 +11,7 @@
 #include <sys/epoll.h>
 #include <signal.h>
 #include <liburing.h>
+#include <string.h> 
 
 #include <gc.h>
 #include <gc/gc.h> 

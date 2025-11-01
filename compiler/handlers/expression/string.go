@@ -4,6 +4,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	"github.com/nagarajRPoojari/x-lang/compiler/c"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
@@ -20,9 +21,9 @@ import (
 //	tf.Var - runtime string variable
 func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.StringExpression) tf.Var {
 	formatStr := ex.Value
+
 	strConst := constant.NewCharArrayFromString(formatStr + "\x00")
 	global := t.st.Module.NewGlobalDef("", strConst)
-
 	gep := bh.N.NewGetElementPtr(
 		global.ContentType,
 		global,
@@ -30,5 +31,15 @@ func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.Stri
 		constant.NewInt(types.I32, 0),
 	)
 
-	return tf.NewString(bh, gep)
+	malloc := t.st.CI.Funcs[c.ALLOC]
+	size := constant.NewInt(types.I64, int64(len(formatStr)+1))
+	heapPtr := bh.N.NewCall(malloc, size)
+
+	memcpy := t.st.CI.Funcs[c.MEMCPY]
+	i8ptr := types.NewPointer(types.I8)
+	src := bh.N.NewBitCast(gep, i8ptr)
+	dest := bh.N.NewBitCast(heapPtr, i8ptr)
+	bh.N.NewCall(memcpy, dest, src, size, constant.NewBool(false))
+
+	return tf.NewString(bh, heapPtr)
 }

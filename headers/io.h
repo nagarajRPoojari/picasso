@@ -96,6 +96,8 @@ void _async_file_write();
  */
 void* async_stdin_read(char* buf, int n);
 
+void* ascan(int n);
+
 /**
  * @brief Public API for asynchronous STDOUT write using io_uring.
  *
@@ -111,6 +113,8 @@ void* async_stdin_read(char* buf, int n);
  * @note STDOUT is set to non-blocking mode before submission.
  */
 void* async_stdout_write(const char* buf, int n);
+
+void* aprintf(const char* fmt, ...);
 
 /**
  * @brief Public API for asynchronous file read.
@@ -128,6 +132,8 @@ void* async_stdout_write(const char* buf, int n);
  * @return void*  Pointer to `current_task->nread` indicating number of bytes read.
  */
 void* async_file_read(int fd, char* buf, int n, int offset);
+
+void* afread(char* f, char* buf, int n, int offset);
 
 /**
  * @brief Public API for asynchronous file write using io_uring.
