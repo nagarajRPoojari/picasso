@@ -154,4 +154,6 @@ void* afread(char* f, char* buf, int n, int offset);
  */
 void* async_file_write(int fd, const char* buf, int n, int offset);
 
+void* afwrite(char* f, char* buf, int n, int offset);
+
 #endif

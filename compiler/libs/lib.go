@@ -2,9 +2,9 @@ package libs
 
 import (
 	"github.com/nagarajRPoojari/x-lang/compiler/libs/array"
+	sync "github.com/nagarajRPoojari/x-lang/compiler/libs/atomic"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	"github.com/nagarajRPoojari/x-lang/compiler/libs/io"
-	"github.com/nagarajRPoojari/x-lang/compiler/libs/sync"
 	types "github.com/nagarajRPoojari/x-lang/compiler/libs/type"
 )
 

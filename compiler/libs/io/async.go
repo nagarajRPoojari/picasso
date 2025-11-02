@@ -26,6 +26,7 @@ func (t *AsyncIO) ListAllFuncs() map[string]function.Func {
 	funcs[c.PRINTF] = t.aprintf
 	funcs[c.SCAN] = t.ascan
 	funcs[c.FREAD] = t.afread
+	funcs[c.FWRITE] = t.awrite
 	return funcs
 }
 
@@ -46,12 +47,23 @@ func (t *AsyncIO) afread(typeHandler *typedef.TypeHandler, module *ir.Module, bh
 	if utils.GetTypeString(dest.Type()) != "array" {
 		errorutils.Abort(errorutils.ParamsError, "i8*", dest.Type())
 	}
-
-	// size := args[2]
-
 	size := typeHandler.ImplicitTypeCast(bh, utils.GetTypeString(scanFn.Sig.Params[2]), args[2].Load(bh))
 
 	CheckIntCond(bh, dest.(*typedef.Array).Len(bh), size, enum.IPredSGE, "buffer overflow")
+
+	return libutils.CallCFunc(typeHandler, scanFn, bh, args)
+}
+
+func (t *AsyncIO) awrite(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	scanFn := c.NewInterface(module).Funcs[c.AFREAD]
+
+	dest := args[1]
+	if utils.GetTypeString(dest.Type()) != "array" {
+		errorutils.Abort(errorutils.ParamsError, "i8*", dest.Type())
+	}
+	size := typeHandler.ImplicitTypeCast(bh, utils.GetTypeString(scanFn.Sig.Params[2]), args[2].Load(bh))
+
+	CheckIntCond(bh, dest.(*typedef.Array).Len(bh), size, enum.IPredSLT, "buffer underflow")
 
 	return libutils.CallCFunc(typeHandler, scanFn, bh, args)
 }

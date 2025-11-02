@@ -254,8 +254,17 @@ func (t *Interface) initStdio(mod *ir.Module) {
 		ir.NewParam("offset", types.I64),
 		ir.NewParam("whence", types.I32),
 	)
+
 	// @afread
 	t.Funcs[AFREAD] = mod.NewFunc(AFREAD, types.I32,
+		ir.NewParam("fd", types.I8Ptr),
+		ir.NewParam("dest", types.I8Ptr),
+		ir.NewParam("n", types.I64),
+		ir.NewParam("offset", types.I64),
+	)
+
+	// @afwrite
+	t.Funcs[AFWRITE] = mod.NewFunc(AFWRITE, types.I32,
 		ir.NewParam("fd", types.I8Ptr),
 		ir.NewParam("dest", types.I8Ptr),
 		ir.NewParam("n", types.I64),

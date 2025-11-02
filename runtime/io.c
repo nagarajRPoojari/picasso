@@ -292,6 +292,7 @@ void* async_file_read(int fd, char* buf, int n, int offset) {
 void* afread(char* f, char* buf, int n, int offset) {
     int fd = fileno((FILE*)f);
     async_file_read(fd, buf, n, offset);
+    return current_task->done_n;
 }
 
 /**
@@ -318,4 +319,10 @@ void* async_file_write(int fd, const char* buf, int n, int offset) {
     current_task->offset = offset;
     _async_file_write();
     return &(current_task->done_n);
+}
+
+void* afwrite(char* f, char* buf, int n, int offset) {
+    int fd = fileno((FILE*)f);
+    async_file_write(fd, buf, n, offset);
+    return current_task->done_n;
 }

@@ -32,6 +32,8 @@ const (
 	SCAN    = "scan" // @alias
 	AFREAD  = "afread"
 	FREAD   = "fread" // @read
+	AFWRITE = "afwrite"
+	FWRITE  = "fwrite" // @read
 
 	// memory calls
 	MALLOC       = "malloc"
@@ -52,9 +54,13 @@ const (
 	// sync calls @todo
 	// atomic base operations
 	ATOMIC_STORE = "atomic_store"
+	STORE        = "store" // @alias
 	ATOMIC_LOAD  = "atomic_load"
+	LOAD         = "load" // @alias
 	ATOMIC_ADD   = "atomic_add"
+	ADD          = "add" // @alias
 	ATOMIC_SUB   = "atomic_sub"
+	SUB          = "sub" // @alias
 
 	ATOMIC_STORE_BOOL = "atomic_store_bool"
 	ATOMIC_LOAD_BOOL  = "atomic_load_bool"

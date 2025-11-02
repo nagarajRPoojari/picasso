@@ -19,11 +19,16 @@ class Worker {
         say buf: []int8 = array.create(int8, buff_size);
         say fp: string = syncio.fopen("temp.txt", "r+");
         say seek: int = 0;
-        
-        foreach i in 1..3 {
-            asyncio.fread(fp, buf, buff_size, seek);
+
+        foreach i in 1..100 {
+            say n: int = asyncio.fread(fp, buf, buff_size, seek);
+            asyncio.printf("=> done - %d \n", n);
             seek = seek + buff_size;
-            asyncio.printf("%d: %.*s\n", id, buff_size, buf);
+            asyncio.printf("%.*s\n", n, buf);
+
+            if(n<buff_size) {
+                return;
+            }else {}
         }
     }
 
@@ -34,5 +39,5 @@ class Worker {
 fn start() {
     say w1: Worker = new Worker(1000);
     thread(w1.do);
-    thread(w1.do);
+    // thread(w1.do);
 }
