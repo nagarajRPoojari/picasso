@@ -51,3 +51,25 @@ func (t *BlockHandler) processForBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.
 
 	bh.Update(loopEnd.V, loopEnd.N)
 }
+
+func (t *BlockHandler) processWhileBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.WhileStatement) {
+	t.st.Vars.AddBlock()
+	defer t.st.Vars.RemoveBlock()
+
+	condBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	bodyBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+
+	bh.N.NewBr(condBlock.N)
+
+	res := expression.ExpressionHandlerInst.ProcessExpression(condBlock, st.Condition)
+	cond := res.Load(condBlock)
+
+	condBlock.N.NewCondBr(cond, bodyBlock.N, endBlock.N)
+
+	t.ProcessBlock(fn, bodyBlock, st.Body)
+
+	bodyBlock.N.NewBr(condBlock.N)
+
+	bh.Update(endBlock.V, endBlock.N)
+}

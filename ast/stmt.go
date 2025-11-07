@@ -79,6 +79,13 @@ type ForeachStatement struct {
 
 func (n ForeachStatement) stmt() {}
 
+type WhileStatement struct {
+	Condition Expression
+	Body      []Statement
+}
+
+func (n WhileStatement) stmt() {}
+
 type ClassDeclarationStatement struct {
 	Name       string
 	Body       []Statement

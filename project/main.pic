@@ -1,43 +1,79 @@
 import syncio from builtin;
-import asyncio from builtin;
-import array from builtin;
 import sync from builtin;
+import array from builtin;
+import types from builtin;
+import asyncio from builtin;
 
-class Worker {
-    say counter: atomic int;
-    say _thread_id: atomic int;
-    fn Worker(count: int) {
-        sync.atomic_store(this.counter, count);
-        sync.atomic_store(this._thread_id, 0);
-    } 
+import crypto from builtin;
 
-    fn do() {
-        sync.atomic_add(this._thread_id, 1);
-        say id: int = sync.atomic_load(this._thread_id);
+class Node {
+    say key: string;
+    say val: int;
+    say next: Node;
 
-        say buff_size: int = 256;
-        say buf: []int8 = array.create(int8, buff_size);
-        say fp: string = syncio.fopen("temp.txt", "r+");
-        say seek: int = 0;
+    fn Node(key: string, val: int) {
+        this.key = key;
+        this.val = val;
+        this.next = null;
+    }
+}
 
-        foreach i in 1..100 {
-            say n: int = asyncio.fread(fp, buf, buff_size, seek);
-            asyncio.printf("=> done - %d \n", n);
-            seek = seek + buff_size;
-            asyncio.printf("%.*s\n", n, buf);
+class HashMap {
+    say arr: []Node;
+    say size: int;
 
-            if(n<buff_size) {
-                return;
-            }else {}
+    say n: Node;
+    fn HashMap(size: int) {
+        this.size = size;
+        this.arr = array.create(Node, size);
+        this.n = new Node("a", 10);
+
+        syncio.printf("n = > %p %d \n", this, this.size);
+    }
+
+    fn put(k: string, v: int) {
+        say h: int = crypto.hash(k, types.size(k));
+        say i: int = h % this.size;
+
+        if(this.arr[i] == null){
+            this.arr[i] = new Node(k,v);
+        }else { 
+            say head: Node = this.arr[i];
+
+            while head != null {
+                if(head.next == null) {
+                    head.next = new Node(k,v);
+                    return;
+                }
+                head = head.next;
+            }
         }
     }
 
+    fn get(k: string): int {
+        say h: int = crypto.hash(k, types.size(k));
+        say i: int = h % this.size;
+
+        say head: Node = this.arr[i];
+        while head != null {
+            syncio.printf("head.key = %p, %s \n", head.key, head.key);
+            if(strcmp(head.key, k) == 0){
+                return head.val;
+            }
+            head = head.next;
+        }
+        return -1;
+    }
 }
 
-
-
 fn start() {
-    say w1: Worker = new Worker(1000);
-    thread(w1.do);
-    // thread(w1.do);
+    say h:HashMap;
+    h = new HashMap(10);
+    h.put("hi", 1163);
+    h.put("hello", 90);
+    h.put("abc", 77);
+
+
+    syncio.printf("=> %d \n", h.get("abc"));
+
 }

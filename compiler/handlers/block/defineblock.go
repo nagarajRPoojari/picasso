@@ -48,6 +48,8 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, bh *bc.BlockHolder, sts []ast.S
 			t.processIfElseBlock(fn, bh, &st)
 		case ast.ForeachStatement:
 			t.processForBlock(fn, bh, &st)
+		case ast.WhileStatement:
+			t.processWhileBlock(fn, bh, &st)
 		case ast.ReturnStatement:
 			retType := fn.Sig.RetType
 			statement.StatementHandlerInst.Return(bh, &st, retType)

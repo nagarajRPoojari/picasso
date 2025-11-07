@@ -26,6 +26,16 @@
 
 
 
+uint64_t hash(const void *data, size_t len) {
+    const unsigned char *bytes = (const unsigned char *)data;
+    uint64_t hash = 1469598103934665603ULL;  // FNV offset basis
+    for (size_t i = 0; i < len; i++) {
+        hash ^= (uint64_t)bytes[i];
+        hash *= 1099511628211ULL;  // FNV prime
+    }
+    return hash;
+}
+
 kernel_thread_t **kernel_thread_map;
 struct io_uring **io_ring_map = NULL;
 
@@ -130,8 +140,8 @@ void clean_scheduler() {
  */
 int main(void) {
     srand(time(NULL));
-
     GC_INIT();
+    GC_disable();
     GC_allow_register_threads(); 
 
     init_io();

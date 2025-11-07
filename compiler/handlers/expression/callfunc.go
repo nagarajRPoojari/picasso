@@ -138,7 +138,7 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 		}
 
 		// Append `this` pointer as last arg
-		thisPtr := cls.Slot()
+		thisPtr := cls.Load(bh)
 		args = append(args, thisPtr)
 
 		// Call

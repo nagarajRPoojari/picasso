@@ -344,6 +344,16 @@ void* scheduler_run(void* arg) {
     kernel_thread_t* kt = (kernel_thread_t*)arg;
     struct epoll_event events[MAX_EVENTS];
     
+    struct GC_stack_base sb;
+    if (GC_get_stack_base(&sb) != 0) {
+        fprintf(stderr, "Failed to get GC stack base\n");
+        abort();
+    }
+
+    if (GC_register_my_thread(&sb) != 0) {
+        fprintf(stderr, "Failed to register thread with GC\n");
+        abort();
+    }
 
     init_stack_signal_handler();
     init_timer_signal_handler(arg);
@@ -357,4 +367,6 @@ void* scheduler_run(void* arg) {
             current_task = NULL; // Clear after task yields
         }
     }
+
+    GC_unregister_my_thread();
 }

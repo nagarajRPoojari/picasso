@@ -48,8 +48,11 @@ const (
 
 	// string
 	STRLEN = "strlen"
+	STRCMP = "strcmp"
 
 	EXIT = "exit"
+
+	HASH = "hash"
 
 	// sync calls @todo
 	// atomic base operations

@@ -3,6 +3,7 @@ package libs
 import (
 	"github.com/nagarajRPoojari/x-lang/compiler/libs/array"
 	sync "github.com/nagarajRPoojari/x-lang/compiler/libs/atomic"
+	"github.com/nagarajRPoojari/x-lang/compiler/libs/crypto"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	"github.com/nagarajRPoojari/x-lang/compiler/libs/io"
 	types "github.com/nagarajRPoojari/x-lang/compiler/libs/type"
@@ -16,6 +17,7 @@ var ModuleList = make(map[string]Module)
 
 func init() {
 	ModuleList["syncio"] = io.NewSyncIO()
+	ModuleList["crypto"] = crypto.NewCrypto()
 	ModuleList["asyncio"] = io.NewAsyncIO()
 	ModuleList["types"] = types.NewTypeHandler()
 	ModuleList["array"] = array.NewArrayHandler()

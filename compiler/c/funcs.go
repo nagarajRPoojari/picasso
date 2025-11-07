@@ -16,7 +16,10 @@ func (t *Interface) registerFuncs(mod *ir.Module) {
 
 func (t *Interface) initRuntime(mod *ir.Module) {
 
+	t.Funcs[HASH] = mod.NewFunc(HASH, types.I64, ir.NewParam("data", types.I8Ptr), ir.NewParam("len", types.I64))
+
 	t.Funcs[STRLEN] = mod.NewFunc(STRLEN, types.I32, ir.NewParam("", types.NewPointer(types.I8)))
+	t.Funcs[STRCMP] = mod.NewFunc(STRCMP, types.I32, ir.NewParam("", types.NewPointer(types.I8)), ir.NewParam("", types.NewPointer(types.I8)))
 
 	t.Funcs[MEMCPY] = mod.NewFunc("llvm.memcpy.p0i8.p0i8.i64",
 		types.Void,

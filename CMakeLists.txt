@@ -47,7 +47,8 @@ target_include_directories(scheduler PRIVATE
 target_link_libraries(scheduler PRIVATE
     /usr/local/lib/libgc.so
     pthread
-    uring                 # <-- critical
+    uring
+    m                      # <-- Add the math library for fmod(), sin(), etc.
 )
 
 # --- Compile/link options ---
@@ -57,3 +58,4 @@ target_link_options(scheduler PRIVATE -O2)
 message(STATUS "Using Boehm GC include dirs: /usr/local/include")
 message(STATUS "Using Boehm GC libraries: /usr/local/lib/libgc.so")
 message(STATUS "Linked with liburing for async I/O")
+message(STATUS "Linked with libm for math functions (fmod, etc.)")

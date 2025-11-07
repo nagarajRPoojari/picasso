@@ -64,7 +64,7 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 	}
 
 	// Append `this` pointer as the last argument
-	thisPtr := cls.Slot()
+	thisPtr := cls.Load(bh)
 	if thisPtr == nil {
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("this pointer is nil for %s", cls.Name))
 	}

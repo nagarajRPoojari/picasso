@@ -51,6 +51,7 @@ const (
 	DASH
 	SLASH
 	STAR
+	MOD
 	PERCENT
 
 	SAY
@@ -197,6 +198,8 @@ func TokenKindString(kind TokenKind) string {
 		return "minus_equals"
 	case PLUS:
 		return "plus"
+	case MOD:
+		return "mod"
 	case DASH:
 		return "dash"
 	case SLASH:

@@ -126,9 +126,10 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 				}
 			}
 
-			c := tf.NewClass(
-				bh, getClassName(fieldType), ft,
-			)
+			c := &tf.Class{
+				Name: getClassName(fieldType),
+				UDT:  ft,
+			}
 			c.Update(bh, bh.N.NewLoad(fieldType, fieldPtr))
 			return c
 		} else {

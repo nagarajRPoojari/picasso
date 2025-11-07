@@ -234,6 +234,17 @@ func parse_foreach_stmt(p *Parser) ast.Statement {
 	}
 }
 
+func parse_while_stmt(p *Parser) ast.Statement {
+	p.move()
+	condition := parse_expr(p, assignment)
+	body := ast.ExpectStmt[ast.BlockStatement](parse_block_stmt(p)).Body
+
+	return ast.WhileStatement{
+		Condition: condition,
+		Body:      body,
+	}
+}
+
 func parse_class_declaration_stmt(p *Parser) ast.Statement {
 	p.move()
 	className := p.expect(lexer.IDENTIFIER).Value

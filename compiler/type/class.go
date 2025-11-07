@@ -19,13 +19,12 @@ type Class struct {
 }
 
 func NewClass(block *bc.BlockHolder, name string, udt types.Type) *Class {
-	// Normalize udt so s.UDT is always *types.PointerType (pointer-to-struct)
+	// Normalize UDT so it's always pointer-to-struct (*types.PointerType)
 	var ptrType *types.PointerType
 	switch t := udt.(type) {
 	case *types.StructType:
 		ptrType = types.NewPointer(t)
 	case *types.PointerType:
-		// if pointer already, ensure it points to a struct (optional check)
 		if _, ok := t.ElemType.(*types.StructType); !ok {
 			panic(fmt.Sprintf("NewClass expects pointer-to-struct or struct, got pointer to %T", t.ElemType))
 		}
@@ -34,23 +33,28 @@ func NewClass(block *bc.BlockHolder, name string, udt types.Type) *Class {
 		panic(fmt.Sprintf("NewClass expects struct or pointer-to-struct, got %T", udt))
 	}
 
-	// compute allocation size: gep on element type (struct) with null pointer and index 1
+	// === Allocate heap memory for struct (runtime allocation) ===
 	zero := constant.NewNull(ptrType)
 	one := constant.NewInt(types.I32, 1)
-	// Get element ptr MUST use the element (struct) type
 	gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
 	size := constant.NewPtrToInt(gep, types.I64)
 
-	// Call GC allocator
+	// Call allocator (runtime malloc/GC alloc)
 	mem := block.N.NewCall(c.Instance.Funcs[c.ALLOC], size)
 
 	// Bitcast to your struct pointer type
 	ptr := block.N.NewBitCast(mem, ptrType)
 
+	// === Create stack slot to store the pointer ===
+	// alloca type = pointer to (pointer-to-struct)
+	alloca := block.N.NewAlloca(ptrType)
+	block.N.NewStore(ptr, alloca)
+
+	// s.Ptr now points to a memory cell that *contains* the pointer
 	return &Class{
 		Name: name,
-		UDT:  ptrType, // store pointer-to-struct type
-		Ptr:  ptr,     // pointer to allocated object
+		UDT:  ptrType, // pointer-to-struct type
+		Ptr:  alloca,  // alloca holds the runtime pointer value
 	}
 }
 
@@ -60,40 +64,40 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("cannot update object with nil value: %v", v))
 	}
 
-	// Ensure s.UDT is pointer type
 	sPtr, ok := s.UDT.(*types.PointerType)
 	if !ok {
 		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not a pointer type: %T", s.UDT))
 	}
 
-	// Case: v is pointer-to-struct and matches s.UDT
-	if pv, ok := v.Type().(*types.PointerType); ok && pv.Equal(sPtr) {
-		// load the struct value from v and store the struct into the object's address (s.Ptr)
-		s.Ptr = v
-		return
+	if s.Ptr == nil {
+		// allocate memory for the pointer-to-struct itself
+		s.Ptr = block.NewAlloca(sPtr)
 	}
 
-	// Case: v is the struct value itself (elem type)
-	if v.Type().Equal(sPtr.ElemType) {
-		// store the struct value into the object's address
+	// Case 1: v is a pointer-to-struct matching our type
+	if pv, ok := v.Type().(*types.PointerType); ok && pv.Equal(sPtr) {
+		// Load the struct from v and store it into s.Ptr
 		block.NewStore(v, s.Ptr)
 		return
 	}
 
-	// Fallback: try to convert/cast to pointer-to-struct or struct appropriately, then store
-	// If we can obtain a struct value, store it; otherwise try to bitcast ptr and load.
-	val := ensureType(bh, v, sPtr.ElemType) // try to get struct value
+	// Case 3: Fallback conversion
+	val := ensureType(bh, v, sPtr.ElemType)
 	block.NewStore(val, s.Ptr)
 }
 
-func (s *Class) Load(block *bc.BlockHolder) value.Value {
-	// Return the struct value loaded from object's address (s.Ptr).
-	// s.UDT is pointer-to-struct, so we must load ElemType.
-	if _, ok := s.UDT.(*types.PointerType); ok {
-		return s.Ptr
+func (s *Class) Load(bh *bc.BlockHolder) value.Value {
+	block := bh.N
+
+	sPtr, ok := s.UDT.(*types.PointerType)
+	if !ok {
+		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not pointer type: %T", s.UDT))
+		return nil
 	}
-	errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not a pointer type: %T", s.UDT))
-	return nil
+
+	// load runtime pointer-to-struct from stack slot
+	ptrVal := block.NewLoad(sPtr, s.Ptr)
+	return ptrVal
 }
 
 func (s *Class) FieldPtr(block *bc.BlockHolder, idx int) value.Value {
@@ -108,7 +112,8 @@ func (s *Class) FieldPtr(block *bc.BlockHolder, idx int) value.Value {
 	elem := sPtr.ElemType // struct type
 
 	// GEP: base is the pointer-to-struct (object address) and we index into the struct
-	return block.N.NewGetElementPtr(elem, s.Ptr, zero, i)
+
+	return block.N.NewGetElementPtr(elem, s.Load(block), zero, i)
 }
 
 func (s *Class) UpdateField(bh *bc.BlockHolder, idx int, v value.Value, expected types.Type) {

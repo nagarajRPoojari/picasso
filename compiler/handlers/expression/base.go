@@ -46,6 +46,9 @@ func (t *ExpressionHandler) ProcessExpression(bh *bc.BlockHolder, expI ast.Expre
 
 	switch ex := expI.(type) {
 
+	case ast.NullExpression:
+		return tf.NewNullVar(types.NewPointer(types.NewStruct()))
+
 	case ast.SymbolExpression:
 		if t.st.TypeHandler.Exists(ex.Value) {
 			return t.st.TypeHandler.BuildVar(bh, tf.NewType(ex.Value), nil)

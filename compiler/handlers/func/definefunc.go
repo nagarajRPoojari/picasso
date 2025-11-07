@@ -46,11 +46,12 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 			if clsMeta == nil {
 				errorutils.Abort(errorutils.UnknownClass, className)
 			}
-			t.st.Vars.AddNewVar(p.LocalName, &tf.Class{
+			c := &tf.Class{
 				Name: className,
 				UDT:  clsMeta.UDT,
-				Ptr:  p,
-			})
+			}
+			c.Update(bh, p)
+			t.st.Vars.AddNewVar(p.LocalName, c)
 		}
 	}
 
