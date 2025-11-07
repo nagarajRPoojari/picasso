@@ -177,6 +177,30 @@ runtime/atomic.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/atomic.c.s
 .PHONY : runtime/atomic.c.s
 
+runtime/crypto.o: runtime/crypto.c.o
+.PHONY : runtime/crypto.o
+
+# target to build an object file
+runtime/crypto.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/crypto.c.o
+.PHONY : runtime/crypto.c.o
+
+runtime/crypto.i: runtime/crypto.c.i
+.PHONY : runtime/crypto.i
+
+# target to preprocess a source file
+runtime/crypto.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/crypto.c.i
+.PHONY : runtime/crypto.c.i
+
+runtime/crypto.s: runtime/crypto.c.s
+.PHONY : runtime/crypto.s
+
+# target to generate assembly for a file
+runtime/crypto.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/crypto.c.s
+.PHONY : runtime/crypto.c.s
+
 runtime/error.o: runtime/error.c.o
 .PHONY : runtime/error.o
 
@@ -336,6 +360,9 @@ help:
 	@echo "... runtime/atomic.o"
 	@echo "... runtime/atomic.i"
 	@echo "... runtime/atomic.s"
+	@echo "... runtime/crypto.o"
+	@echo "... runtime/crypto.i"
+	@echo "... runtime/crypto.s"
 	@echo "... runtime/error.o"
 	@echo "... runtime/error.i"
 	@echo "... runtime/error.s"

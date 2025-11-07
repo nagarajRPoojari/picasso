@@ -48,6 +48,75 @@ CMakeFiles/scheduler.dir/runtime/atomic.c.o: runtime/atomic.c \
   /usr/include/aarch64-linux-gnu/bits/floatn-common.h \
   /usr/include/aarch64-linux-gnu/bits/stdio.h
 
+CMakeFiles/scheduler.dir/runtime/crypto.c.o: runtime/crypto.c \
+  /usr/include/stdc-predef.h \
+  headers/crypto.h \
+  /usr/include/stdio.h \
+  /usr/include/aarch64-linux-gnu/bits/libc-header-start.h \
+  /usr/include/features.h \
+  /usr/include/features-time64.h \
+  /usr/include/aarch64-linux-gnu/bits/wordsize.h \
+  /usr/include/aarch64-linux-gnu/bits/timesize.h \
+  /usr/include/aarch64-linux-gnu/sys/cdefs.h \
+  /usr/include/aarch64-linux-gnu/bits/long-double.h \
+  /usr/include/aarch64-linux-gnu/gnu/stubs.h \
+  /usr/include/aarch64-linux-gnu/gnu/stubs-lp64.h \
+  /usr/lib/gcc/aarch64-linux-gnu/12/include/stddef.h \
+  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdarg.h \
+  /usr/include/aarch64-linux-gnu/bits/types.h \
+  /usr/include/aarch64-linux-gnu/bits/typesizes.h \
+  /usr/include/aarch64-linux-gnu/bits/time64.h \
+  /usr/include/aarch64-linux-gnu/bits/types/__fpos_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/__mbstate_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/__fpos64_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/__FILE.h \
+  /usr/include/aarch64-linux-gnu/bits/types/FILE.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h \
+  /usr/include/aarch64-linux-gnu/bits/stdio_lim.h \
+  /usr/include/aarch64-linux-gnu/bits/floatn.h \
+  /usr/include/aarch64-linux-gnu/bits/floatn-common.h \
+  /usr/include/aarch64-linux-gnu/bits/stdio.h \
+  /usr/include/unistd.h \
+  /usr/include/aarch64-linux-gnu/bits/posix_opt.h \
+  /usr/include/aarch64-linux-gnu/bits/environments.h \
+  /usr/include/aarch64-linux-gnu/bits/confname.h \
+  /usr/include/aarch64-linux-gnu/bits/getopt_posix.h \
+  /usr/include/aarch64-linux-gnu/bits/getopt_core.h \
+  /usr/include/aarch64-linux-gnu/bits/unistd_ext.h \
+  /usr/include/stdlib.h \
+  /usr/include/aarch64-linux-gnu/bits/waitflags.h \
+  /usr/include/aarch64-linux-gnu/bits/waitstatus.h \
+  /usr/include/aarch64-linux-gnu/sys/types.h \
+  /usr/include/aarch64-linux-gnu/bits/types/clock_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/clockid_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/time_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/timer_t.h \
+  /usr/include/aarch64-linux-gnu/bits/stdint-intn.h \
+  /usr/include/endian.h \
+  /usr/include/aarch64-linux-gnu/bits/endian.h \
+  /usr/include/aarch64-linux-gnu/bits/endianness.h \
+  /usr/include/aarch64-linux-gnu/bits/byteswap.h \
+  /usr/include/aarch64-linux-gnu/bits/uintn-identity.h \
+  /usr/include/aarch64-linux-gnu/sys/select.h \
+  /usr/include/aarch64-linux-gnu/bits/select.h \
+  /usr/include/aarch64-linux-gnu/bits/types/sigset_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/__sigset_t.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_timeval.h \
+  /usr/include/aarch64-linux-gnu/bits/types/struct_timespec.h \
+  /usr/include/aarch64-linux-gnu/bits/pthreadtypes.h \
+  /usr/include/aarch64-linux-gnu/bits/thread-shared-types.h \
+  /usr/include/aarch64-linux-gnu/bits/pthreadtypes-arch.h \
+  /usr/include/aarch64-linux-gnu/bits/atomic_wide_counter.h \
+  /usr/include/aarch64-linux-gnu/bits/struct_mutex.h \
+  /usr/include/aarch64-linux-gnu/bits/struct_rwlock.h \
+  /usr/include/alloca.h \
+  /usr/include/aarch64-linux-gnu/bits/stdlib-bsearch.h \
+  /usr/include/aarch64-linux-gnu/bits/stdlib-float.h \
+  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdint.h \
+  /usr/include/stdint.h \
+  /usr/include/aarch64-linux-gnu/bits/wchar.h \
+  /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h
+
 CMakeFiles/scheduler.dir/runtime/error.c.o: runtime/error.c \
   /usr/include/stdc-predef.h \
   headers/error.h \
@@ -513,7 +582,8 @@ CMakeFiles/scheduler.dir/runtime/main.c.o: runtime/main.c \
   headers/task.h \
   headers/queue.h \
   headers/scheduler.h \
-  headers/task.h
+  headers/task.h \
+  headers/crypto.h
 
 CMakeFiles/scheduler.dir/runtime/queue.c.o: runtime/queue.c \
   /usr/include/stdc-predef.h \
@@ -875,21 +945,11 @@ headers/task.h:
 
 /usr/include/aarch64-linux-gnu/bits/uio_lim.h:
 
-/usr/include/aarch64-linux-gnu/bits/types/struct_timeval.h:
+/usr/include/linux/fs.h:
 
-/usr/include/aarch64-linux-gnu/bits/types/__sigset_t.h:
+/usr/include/aarch64-linux-gnu/sys/uio.h:
 
-/usr/include/inttypes.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
-
-/usr/include/aarch64-linux-gnu/asm/posix_types.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/struct_timespec.h:
-
-/usr/include/aarch64-linux-gnu/bits/signum-arch.h:
-
-/usr/include/aarch64-linux-gnu/sys/select.h:
+/usr/include/aarch64-linux-gnu/sys/stat.h:
 
 /usr/include/aarch64-linux-gnu/bits/uintn-identity.h:
 
@@ -903,49 +963,45 @@ headers/task.h:
 
 /usr/include/aarch64-linux-gnu/bits/endian.h:
 
-/usr/include/aarch64-linux-gnu/bits/types/time_t.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/sigset_t.h:
-
-/usr/include/aarch64-linux-gnu/bits/epoll.h:
-
 /usr/include/aarch64-linux-gnu/sys/types.h:
 
 /usr/include/aarch64-linux-gnu/bits/waitflags.h:
 
-/usr/include/errno.h:
-
 /usr/include/aarch64-linux-gnu/bits/wchar.h:
 
-/usr/include/aarch64-linux-gnu/asm/bitsperlong.h:
+/usr/include/errno.h:
 
 /usr/include/aarch64-linux-gnu/bits/waitstatus.h:
 
 /usr/include/stdlib.h:
 
-headers/ggc.h:
+/usr/include/aarch64-linux-gnu/bits/signum-arch.h:
 
-/usr/include/aarch64-linux-gnu/bits/atomic_wide_counter.h:
+/usr/include/aarch64-linux-gnu/sys/select.h:
+
+/usr/include/aarch64-linux-gnu/bits/getopt_core.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/clock_t.h:
+
+/usr/include/aarch64-linux-gnu/bits/getopt_posix.h:
+
+/usr/include/aarch64-linux-gnu/bits/confname.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_itimerspec.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/time_t.h:
+
+runtime/crypto.c:
 
 /usr/include/aarch64-linux-gnu/bits/floatn-common.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/__locale_t.h:
-
-runtime/queue.c:
-
-/usr/include/aarch64-linux-gnu/bits/stdio.h:
-
-/usr/include/strings.h:
-
-/usr/include/aarch64-linux-gnu/sys/socket.h:
 
 /usr/include/aarch64-linux-gnu/bits/stdio_lim.h:
 
 /usr/include/liburing/compat.h:
 
 /usr/lib/gcc/aarch64-linux-gnu/12/include/stdarg.h:
-
-headers/error.h:
 
 /usr/include/aarch64-linux-gnu/bits/sigstksz.h:
 
@@ -955,13 +1011,25 @@ runtime/io.c:
 
 /usr/include/asm-generic/socket.h:
 
+/usr/include/aarch64-linux-gnu/bits/procfs-extra.h:
+
+/usr/include/endian.h:
+
 /usr/include/aarch64-linux-gnu/bits/timex.h:
 
 runtime/array.c:
 
+/usr/include/ucontext.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_tm.h:
+
+/usr/include/fcntl.h:
+
 /usr/include/aarch64-linux-gnu/bits/stdint-intn.h:
 
 /usr/include/aarch64-linux-gnu/asm/socket.h:
+
+headers/crypto.h:
 
 /usr/include/aarch64-linux-gnu/gnu/stubs.h:
 
@@ -989,6 +1057,8 @@ runtime/array.c:
 
 /usr/include/aarch64-linux-gnu/bits/stdlib-bsearch.h:
 
+/usr/include/aarch64-linux-gnu/asm/errno.h:
+
 /usr/include/aarch64-linux-gnu/bits/types/FILE.h:
 
 /usr/local/include/gc/gc_version.h:
@@ -997,23 +1067,17 @@ runtime/array.c:
 
 /usr/include/pthread.h:
 
-/usr/include/aarch64-linux-gnu/bits/getopt_core.h:
-
 /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h:
 
-/usr/include/aarch64-linux-gnu/bits/select.h:
+/usr/include/aarch64-linux-gnu/bits/unistd_ext.h:
 
-/usr/include/aarch64-linux-gnu/bits/timesize.h:
+/usr/include/aarch64-linux-gnu/bits/byteswap.h:
 
-/usr/include/aarch64-linux-gnu/bits/procfs-extra.h:
+/usr/local/include/gc/gc.h:
 
-/usr/include/endian.h:
+headers/array.h:
 
 headers/atomic.h:
-
-/usr/include/linux/fs.h:
-
-/usr/include/aarch64-linux-gnu/sys/uio.h:
 
 /usr/include/aarch64-linux-gnu/bits/typesizes.h:
 
@@ -1022,6 +1086,14 @@ headers/atomic.h:
 runtime/ggc.c:
 
 /usr/include/aarch64-linux-gnu/bits/types/clockid_t.h:
+
+runtime/queue.c:
+
+/usr/include/aarch64-linux-gnu/bits/stdio.h:
+
+/usr/include/strings.h:
+
+/usr/include/aarch64-linux-gnu/sys/socket.h:
 
 /usr/include/asm-generic/int-ll64.h:
 
@@ -1033,23 +1105,15 @@ runtime/error.c:
 
 /usr/include/aarch64-linux-gnu/bits/errno.h:
 
-/usr/include/alloca.h:
-
-/usr/include/aarch64-linux-gnu/bits/time64.h:
-
 /usr/include/aarch64-linux-gnu/bits/struct_stat.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_statx_timestamp.h:
+
+/usr/include/aarch64-linux-gnu/bits/environments.h:
 
 /usr/include/stdio.h:
 
 /usr/local/include/gc.h:
-
-headers/array.h:
-
-/usr/local/include/gc/gc.h:
-
-/usr/include/aarch64-linux-gnu/bits/byteswap.h:
-
-/usr/include/aarch64-linux-gnu/bits/unistd_ext.h:
 
 /usr/lib/gcc/aarch64-linux-gnu/12/include/stddef.h:
 
@@ -1077,6 +1141,28 @@ headers/queue.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/__FILE.h:
 
+/usr/include/aarch64-linux-gnu/bits/timesize.h:
+
+/usr/include/aarch64-linux-gnu/bits/select.h:
+
+/usr/include/aarch64-linux-gnu/asm/bitsperlong.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/sigset_t.h:
+
+/usr/include/aarch64-linux-gnu/bits/epoll.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/__sigset_t.h:
+
+/usr/include/inttypes.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct___jmp_buf_tag.h:
+
+/usr/include/aarch64-linux-gnu/asm/posix_types.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_timeval.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_timespec.h:
+
 /usr/include/aarch64-linux-gnu/asm/ioctl.h:
 
 /usr/include/aarch64-linux-gnu/bits/pthreadtypes.h:
@@ -1091,11 +1177,29 @@ headers/queue.h:
 
 /usr/include/liburing.h:
 
+/usr/include/aarch64-linux-gnu/bits/atomic_wide_counter.h:
+
+headers/ggc.h:
+
 /usr/include/aarch64-linux-gnu/bits/setjmp.h:
 
 /usr/include/aarch64-linux-gnu/bits/types.h:
 
 /usr/include/aarch64-linux-gnu/bits/struct_mutex.h:
+
+/usr/include/aarch64-linux-gnu/bits/time64.h:
+
+/usr/include/alloca.h:
+
+headers/error.h:
+
+/usr/include/aarch64-linux-gnu/bits/procfs.h:
+
+/usr/lib/gcc/aarch64-linux-gnu/12/include/stdint.h:
+
+/usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h:
+
+/usr/include/aarch64-linux-gnu/bits/stdint-uintn.h:
 
 /usr/include/sched.h:
 
@@ -1111,35 +1215,15 @@ runtime/atomic.c:
 
 /usr/include/time.h:
 
-/usr/include/ucontext.h:
-
-/usr/include/fcntl.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/struct_tm.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/struct_itimerspec.h:
-
-/usr/include/aarch64-linux-gnu/bits/confname.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/clock_t.h:
-
-/usr/include/aarch64-linux-gnu/bits/getopt_posix.h:
-
 /usr/local/include/gc/gc_config_macros.h:
 
 /usr/include/aarch64-linux-gnu/bits/pthread_stack_min.h:
 
-/usr/include/aarch64-linux-gnu/asm/errno.h:
+/usr/include/aarch64-linux-gnu/bits/posix_opt.h:
 
 /usr/include/aarch64-linux-gnu/bits/floatn.h:
 
 /usr/include/aarch64-linux-gnu/bits/fcntl.h:
-
-/usr/include/aarch64-linux-gnu/bits/posix_opt.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/struct_statx_timestamp.h:
-
-/usr/include/aarch64-linux-gnu/bits/environments.h:
 
 /usr/include/linux/fscrypt.h:
 
@@ -1156,14 +1240,6 @@ headers/scheduler.h:
 /usr/include/aarch64-linux-gnu/asm/sockios.h:
 
 /usr/include/aarch64-linux-gnu/sys/epoll.h:
-
-/usr/include/aarch64-linux-gnu/bits/procfs.h:
-
-/usr/lib/gcc/aarch64-linux-gnu/12/include/stdint.h:
-
-/usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h:
-
-/usr/include/aarch64-linux-gnu/bits/stdint-uintn.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/struct_iovec.h:
 
@@ -1194,5 +1270,3 @@ headers/scheduler.h:
 /usr/include/unistd.h:
 
 /usr/include/aarch64-linux-gnu/bits/types/struct_osockaddr.h:
-
-/usr/include/aarch64-linux-gnu/sys/stat.h:
