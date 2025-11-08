@@ -6,100 +6,118 @@ import asyncio from builtin;
 
 import crypto from builtin;
 
-// class Node {
-//     say key: string;
-//     say val: int;
-//     say next: Node;
+class Node {
+    say key: string;
+    say val: int;
+    say next: Node;
 
-//     fn Node(key: string, val: int) {
-//         this.key = key;
-//         this.val = val;
-//         this.next = null;
-//     }
-// }
+    fn Node(key: string, val: int) {
+        this.key = key;
+        this.val = val;
+        this.next = null;
+    }
+}
 
-// class HashMap {
-//     say arr: []Node;
-//     say size: int; // array size
-//     say lf: double; // load factor
-//     say count: int; // occupied bucket count
-
-
-
-//     fn HashMap(lf: double, size: int) {
-//         this.size = size;
-//         this.arr = array.create(Node, size);
-//         this.lf = lf;
-//     }
-
-//     fn put(k: string, v: int) {
-//         say h: int = crypto.hash(k, types.size(k));
-//         say i: int = h % this.size;
-
-//         if(this.arr[i] == null){
-//             this.arr[i] = new Node(k,v);
-//         }else { 
-//             say head: Node = this.arr[i];
-
-//             while head != null {
-//                 if(strcmp(head.key, k) == 0){
-//                     head.val = v;
-//                     return;
-//                 }
-//                 if(head.next == null) {
-//                     head.next = new Node(k,v);
-//                     return;
-//                 }
-//                 head = head.next;
-//             }
-//         }
-
-//         this.count = this.count + 1;
-//         this.lf = this.count / this.size;
-//     }
-
-//     fn get(k: string): int {
-//         say h: int = crypto.hash(k, types.size(k));
-//         say i: int = h % this.size;
-
-//         say head: Node = this.arr[i];
-//         while head != null {
-//             if(strcmp(head.key, k) == 0){
-//                 return head.val;
-//             }
-//             head = head.next;
-//         }
-//         return -1;
-//     }
-// }
-
-// fn start() {
-//     say h:HashMap;
-//     h = new HashMap(10);
-//     h.put("hi", 1163);
-//     h.put("hello", 90);
-//     h.put("abc", 77);
+class HashMap {
+    say arr: []Node;
+    say size: int; // array size
+    say lf: double; // load factor
+    say count: int; // occupied bucket count
 
 
-//     syncio.printf("=> %d \n", h.get("abc"));
-// }
 
+    fn HashMap(lf: double, size: int) {
+        this.size = size;
+        this.arr = array.create(Node, size);
+        this.lf = lf;
+    }
+
+    fn put(k: string, v: int) {
+        say h: int = crypto.hash(k, types.size(k));
+        say i: int = h % this.size;
+
+        if(this.arr[i] == null){
+            this.arr[i] = new Node(k,v);
+        }else { 
+            say head: Node = this.arr[i];
+
+            while head != null {
+                if(strcmp(head.key, k) == 0){
+                    head.val = v;
+                    break;
+                }
+                if(head.next == null) {
+                    head.next = new Node(k,v);
+                    break;
+                }
+                head = head.next;
+            }
+        }
+
+        this.count = this.count + 1;
+        this.lf = this.count / this.size;
+    }
+
+    fn get(k: string): int {
+        say h: int = crypto.hash(k, types.size(k));
+        say i: int = h % this.size;
+
+        say head: Node = this.arr[i];
+        while head != null {
+            if(strcmp(head.key, k) == 0){
+                return head.val;
+            }
+            head = head.next;
+        }
+        return -1;
+    }
+}
 
 fn start() {
+    say h:HashMap = new HashMap(0.75, 10);
 
-    asyncio.printf("Hello world\n");
+    h.put("hi", 1163);
+    h.put("hi", 1163);
+    h.put("hello", 90);
+    h.put("abc", 77);
 
-    say y:int = 2;
-    while y > 0 {
-        say x:int = 10;
-        while x > 0 {
-            asyncio.printf("[%d, %d]\n", x, y);
-            if(x == 3){
-                break;
-            }
-            x = x - 1;
-        }
-        asyncio.printf(" === \n");
-        y = y - 1;
-    }
+
+    syncio.printf("=> %d size=%d, \n", h.get("abc"), h.count);
+
+
+    // say i:int = 100;
+    // // if (i > 0){
+    //     // while h != null {
+    //     //     asyncio.printf("hello\n");
+    //     //     if(h!=null){
+    //     //         break; 
+    //     //     }
+    //     //     //  else {
+    //     //         asyncio.printf("hello\n");
+    //     //     // }
+    //     // }  
+
+    //     // break; 
+    // // }
+
+    // if(i>0){
+    //     foreach c in 0..10 {
+    //         while h != null {
+    //             // return;
+    //             asyncio.printf("hello\n");
+    //             break;
+    //             // if(h!=null){
+    //             //     break; 
+    //             // }
+    //             //  else {
+    //                 asyncio.printf("hello\n");
+    //             // }
+    //             h = null;
+    //         } 
+
+    //         break;
+    //     }
+    // }
+
+    // asyncio.printf("DONE");
 }

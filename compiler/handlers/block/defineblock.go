@@ -56,10 +56,16 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, bh *bc.BlockHolder, sts []ast.S
 			}
 			loopend := t.st.Loopend[len(t.st.Loopend)-1]
 			bh.N.NewBr(loopend.End.N)
-			bh.Update(loopend.End.V, loopend.End.N)
+			// bh.Update(loopend.End.V, loopend.End.N)
+
+			// return from this block immediately, simply ignoring all upcomming statements
+			return
 		case ast.ReturnStatement:
 			retType := fn.Sig.RetType
 			statement.StatementHandlerInst.Return(bh, &st, retType)
+
+			// return from this block immediately, simply ignoring all upcomming statements
+			return
 		}
 	}
 }

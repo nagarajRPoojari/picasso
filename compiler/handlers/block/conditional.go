@@ -45,6 +45,7 @@ func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *a
 			t.ProcessBlock(fn, ifBlock, conseq.Body)
 		}
 	}
+	// ifBlock.N.NewBr(endBlock.N)
 	if ifBlock.N.Term == nil {
 		ifBlock.N.NewBr(endBlock.N)
 	}
