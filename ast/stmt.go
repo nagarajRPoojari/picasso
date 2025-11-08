@@ -100,3 +100,8 @@ type InterfaceDeclarationStatement struct {
 }
 
 func (n InterfaceDeclarationStatement) stmt() {}
+
+type BreakStatement struct {
+}
+
+func (n BreakStatement) stmt() {}

@@ -6,74 +6,100 @@ import asyncio from builtin;
 
 import crypto from builtin;
 
-class Node {
-    say key: string;
-    say val: int;
-    say next: Node;
+// class Node {
+//     say key: string;
+//     say val: int;
+//     say next: Node;
 
-    fn Node(key: string, val: int) {
-        this.key = key;
-        this.val = val;
-        this.next = null;
-    }
-}
+//     fn Node(key: string, val: int) {
+//         this.key = key;
+//         this.val = val;
+//         this.next = null;
+//     }
+// }
 
-class HashMap {
-    say arr: []Node;
-    say size: int;
+// class HashMap {
+//     say arr: []Node;
+//     say size: int; // array size
+//     say lf: double; // load factor
+//     say count: int; // occupied bucket count
 
-    say n: Node;
-    fn HashMap(size: int) {
-        this.size = size;
-        this.arr = array.create(Node, size);
-        this.n = new Node("a", 10);
 
-        syncio.printf("n = > %p %d \n", this, this.size);
-    }
 
-    fn put(k: string, v: int) {
-        say h: int = crypto.hash(k, types.size(k));
-        say i: int = h % this.size;
+//     fn HashMap(lf: double, size: int) {
+//         this.size = size;
+//         this.arr = array.create(Node, size);
+//         this.lf = lf;
+//     }
 
-        if(this.arr[i] == null){
-            this.arr[i] = new Node(k,v);
-        }else { 
-            say head: Node = this.arr[i];
+//     fn put(k: string, v: int) {
+//         say h: int = crypto.hash(k, types.size(k));
+//         say i: int = h % this.size;
 
-            while head != null {
-                if(head.next == null) {
-                    head.next = new Node(k,v);
-                    return;
-                }
-                head = head.next;
-            }
-        }
-    }
+//         if(this.arr[i] == null){
+//             this.arr[i] = new Node(k,v);
+//         }else { 
+//             say head: Node = this.arr[i];
 
-    fn get(k: string): int {
-        say h: int = crypto.hash(k, types.size(k));
-        say i: int = h % this.size;
+//             while head != null {
+//                 if(strcmp(head.key, k) == 0){
+//                     head.val = v;
+//                     return;
+//                 }
+//                 if(head.next == null) {
+//                     head.next = new Node(k,v);
+//                     return;
+//                 }
+//                 head = head.next;
+//             }
+//         }
 
-        say head: Node = this.arr[i];
-        while head != null {
-            syncio.printf("head.key = %p, %s \n", head.key, head.key);
-            if(strcmp(head.key, k) == 0){
-                return head.val;
-            }
-            head = head.next;
-        }
-        return -1;
-    }
-}
+//         this.count = this.count + 1;
+//         this.lf = this.count / this.size;
+//     }
+
+//     fn get(k: string): int {
+//         say h: int = crypto.hash(k, types.size(k));
+//         say i: int = h % this.size;
+
+//         say head: Node = this.arr[i];
+//         while head != null {
+//             if(strcmp(head.key, k) == 0){
+//                 return head.val;
+//             }
+//             head = head.next;
+//         }
+//         return -1;
+//     }
+// }
+
+// fn start() {
+//     say h:HashMap;
+//     h = new HashMap(10);
+//     h.put("hi", 1163);
+//     h.put("hello", 90);
+//     h.put("abc", 77);
+
+
+//     syncio.printf("=> %d \n", h.get("abc"));
+// }
+
 
 fn start() {
-    say h:HashMap;
-    h = new HashMap(10);
-    h.put("hi", 1163);
-    h.put("hello", 90);
-    h.put("abc", 77);
 
+    asyncio.printf("Hello world\n");
 
-    syncio.printf("=> %d \n", h.get("abc"));
-
+    say y:int = 2;
+    while y > 0 {
+        say x:int = 10;
+        while x > 0 {
+            asyncio.printf("[%d, %d]\n", x, y);
+            if(x == 3){
+                break;
+            }
+            x = x - 1;
+        }
+        asyncio.printf(" === \n");
+        y = y - 1;
+    }
 }

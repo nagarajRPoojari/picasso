@@ -8,6 +8,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/scope"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
+	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
 
 // State holds the global compiler/interpreter state during IR generation.
@@ -35,6 +36,13 @@ type State struct {
 	TypeHeirarchy TypeHeirarchy
 	// Garbage collector instance
 	CI *c.Interface
+
+	// loop
+	Loopend []LoopEntry
+}
+
+type LoopEntry struct {
+	End *bc.BlockHolder
 }
 
 // TypeHeirarchy stores inheritance relationships between classes.

@@ -50,6 +50,13 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, bh *bc.BlockHolder, sts []ast.S
 			t.processForBlock(fn, bh, &st)
 		case ast.WhileStatement:
 			t.processWhileBlock(fn, bh, &st)
+		case ast.BreakStatement:
+			if len(t.st.Loopend) == 0 {
+				errorutils.Abort(errorutils.InvalidBreakStatement)
+			}
+			loopend := t.st.Loopend[len(t.st.Loopend)-1]
+			bh.N.NewBr(loopend.End.N)
+			bh.Update(loopend.End.V, loopend.End.N)
 		case ast.ReturnStatement:
 			retType := fn.Sig.RetType
 			statement.StatementHandlerInst.Return(bh, &st, retType)

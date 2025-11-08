@@ -30,6 +30,7 @@ const (
 	TypeError                       = "type error: %s: %s"
 	ParamsError                     = "params mismatch in %s: expected %v"
 	GlobalVarsNotAllowedError       = "global vars not allowed"
+	InvalidBreakStatement           = "break statement not allowed here"
 )
 
 const (

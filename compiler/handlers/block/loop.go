@@ -7,6 +7,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/x-lang/ast"
 	"github.com/nagarajRPoojari/x-lang/compiler/handlers/expression"
+	"github.com/nagarajRPoojari/x-lang/compiler/handlers/state"
 	tf "github.com/nagarajRPoojari/x-lang/compiler/type"
 	bc "github.com/nagarajRPoojari/x-lang/compiler/type/block"
 )
@@ -41,7 +42,10 @@ func (t *BlockHandler) processForBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.
 	cond := loopCond.N.NewICmp(enum.IPredSLT, iVal, upperVal.Load(loopCond))
 	loopCond.N.NewCondBr(cond, loopBody.N, loopEnd.N)
 
+	t.st.Loopend = append(t.st.Loopend, state.LoopEntry{End: loopEnd})
 	t.ProcessBlock(fn, loopBody, st.Body)
+	t.st.Loopend = t.st.Loopend[:len(t.st.Loopend)-1]
+
 	loopBody.N.NewBr(loopInc.N)
 
 	iVal2 := loopInc.N.NewLoad(types.I64, iPtr)
@@ -67,7 +71,9 @@ func (t *BlockHandler) processWhileBlock(fn *ir.Func, bh *bc.BlockHolder, st *as
 
 	condBlock.N.NewCondBr(cond, bodyBlock.N, endBlock.N)
 
+	t.st.Loopend = append(t.st.Loopend, state.LoopEntry{End: endBlock})
 	t.ProcessBlock(fn, bodyBlock, st.Body)
+	t.st.Loopend = t.st.Loopend[:len(t.st.Loopend)-1]
 
 	bodyBlock.N.NewBr(condBlock.N)
 

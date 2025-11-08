@@ -32,6 +32,8 @@ const (
 	GREATER
 	GREATER_EQUALS
 
+	BREAK
+
 	OR
 	AND
 
@@ -82,6 +84,7 @@ var reserved_keywords map[string]TokenKind = map[string]TokenKind{
 	"true":      TRUE,
 	"false":     FALSE,
 	"null":      NULL,
+	"break":     BREAK,
 	"say":       SAY,
 	"const":     CONST,
 	"class":     CLASS,
@@ -140,6 +143,8 @@ func TokenKindString(kind TokenKind) string {
 		return "true"
 	case FALSE:
 		return "false"
+	case BREAK:
+		return "break"
 	case IDENTIFIER:
 		return "identifier"
 	case ATOMIC:

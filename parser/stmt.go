@@ -293,3 +293,10 @@ func parse_function_return_stmt(p *Parser) ast.Statement {
 		Value: exp,
 	}
 }
+
+func parse_break_stmt(p *Parser) ast.Statement {
+	p.expect(lexer.BREAK)
+	p.expect(lexer.SEMI_COLON)
+
+	return ast.BreakStatement{}
+}
