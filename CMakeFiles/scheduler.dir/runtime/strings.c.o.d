@@ -1,17 +1,15 @@
-CMakeFiles/scheduler.dir/runtime/ggc.c.o: \
- /workspaces/x-language/runtime/ggc.c /usr/include/stdc-predef.h \
- /workspaces/x-language/headers/ggc.h /usr/local/include/gc.h \
- /usr/local/include/gc/gc.h /usr/local/include/gc/gc_version.h \
- /usr/local/include/gc/gc_config_macros.h \
- /usr/lib/gcc/aarch64-linux-gnu/12/include/stddef.h \
+CMakeFiles/scheduler.dir/runtime/strings.c.o: \
+ /workspaces/x-language/runtime/strings.c /usr/include/stdc-predef.h \
+ /workspaces/x-language/headers/str.h /usr/include/stdio.h \
+ /usr/include/aarch64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/aarch64-linux-gnu/bits/wordsize.h \
  /usr/include/aarch64-linux-gnu/bits/timesize.h \
  /usr/include/aarch64-linux-gnu/sys/cdefs.h \
  /usr/include/aarch64-linux-gnu/bits/long-double.h \
  /usr/include/aarch64-linux-gnu/gnu/stubs.h \
- /usr/include/aarch64-linux-gnu/gnu/stubs-lp64.h /usr/include/stdio.h \
- /usr/include/aarch64-linux-gnu/bits/libc-header-start.h \
+ /usr/include/aarch64-linux-gnu/gnu/stubs-lp64.h \
+ /usr/lib/gcc/aarch64-linux-gnu/12/include/stddef.h \
  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdarg.h \
  /usr/include/aarch64-linux-gnu/bits/types.h \
  /usr/include/aarch64-linux-gnu/bits/typesizes.h \
@@ -49,4 +47,8 @@ CMakeFiles/scheduler.dir/runtime/ggc.c.o: \
  /usr/include/aarch64-linux-gnu/bits/atomic_wide_counter.h \
  /usr/include/aarch64-linux-gnu/bits/struct_mutex.h \
  /usr/include/aarch64-linux-gnu/bits/struct_rwlock.h \
- /usr/include/alloca.h /usr/include/aarch64-linux-gnu/bits/stdlib-float.h
+ /usr/include/alloca.h /usr/include/aarch64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/string.h \
+ /usr/include/aarch64-linux-gnu/bits/types/locale_t.h \
+ /usr/include/aarch64-linux-gnu/bits/types/__locale_t.h \
+ /usr/include/strings.h

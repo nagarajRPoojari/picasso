@@ -34,12 +34,11 @@ func (t *StatementHandler) AssignVariable(bh *bc.BlockHolder, st *ast.Assignment
 		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
 
 		if v.NativeTypeString() != constants.ARRAY {
-			typeName := v.NativeTypeString()
+			// typeName := v.NativeTypeString()
+			// casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
 
-			casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
-
-			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
-			v.Update(bh, rhs.Load(bh))
+			// rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
+			// v.(*tf.Class).UpdateV2(bh, rhs.(*tf.Class))
 		} else {
 			v.(*tf.Array).UpdateV2(bh, rhs.(*tf.Array))
 		}

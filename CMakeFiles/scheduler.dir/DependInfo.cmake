@@ -17,6 +17,7 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/workspaces/x-language/runtime/main.c" "CMakeFiles/scheduler.dir/runtime/main.c.o" "gcc" "CMakeFiles/scheduler.dir/runtime/main.c.o.d"
   "/workspaces/x-language/runtime/queue.c" "CMakeFiles/scheduler.dir/runtime/queue.c.o" "gcc" "CMakeFiles/scheduler.dir/runtime/queue.c.o.d"
   "/workspaces/x-language/runtime/scheduler.c" "CMakeFiles/scheduler.dir/runtime/scheduler.c.o" "gcc" "CMakeFiles/scheduler.dir/runtime/scheduler.c.o.d"
+  "/workspaces/x-language/runtime/strings.c" "CMakeFiles/scheduler.dir/runtime/strings.c.o" "gcc" "CMakeFiles/scheduler.dir/runtime/strings.c.o.d"
   )
 
 # Targets to which this target links.

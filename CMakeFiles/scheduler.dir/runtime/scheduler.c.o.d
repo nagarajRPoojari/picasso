@@ -59,18 +59,15 @@ CMakeFiles/scheduler.dir/runtime/scheduler.c.o: \
  /usr/include/aarch64-linux-gnu/bits/waitstatus.h \
  /usr/include/aarch64-linux-gnu/bits/floatn.h \
  /usr/include/aarch64-linux-gnu/bits/floatn-common.h \
- /usr/include/alloca.h \
- /usr/include/aarch64-linux-gnu/bits/stdlib-bsearch.h \
- /usr/include/aarch64-linux-gnu/bits/stdlib-float.h /usr/include/stdio.h \
- /usr/lib/gcc/aarch64-linux-gnu/12/include/stdarg.h \
+ /usr/include/alloca.h /usr/include/aarch64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/stdio.h /usr/lib/gcc/aarch64-linux-gnu/12/include/stdarg.h \
  /usr/include/aarch64-linux-gnu/bits/types/__fpos_t.h \
  /usr/include/aarch64-linux-gnu/bits/types/__mbstate_t.h \
  /usr/include/aarch64-linux-gnu/bits/types/__fpos64_t.h \
  /usr/include/aarch64-linux-gnu/bits/types/__FILE.h \
  /usr/include/aarch64-linux-gnu/bits/types/FILE.h \
  /usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h \
- /usr/include/aarch64-linux-gnu/bits/stdio_lim.h \
- /usr/include/aarch64-linux-gnu/bits/stdio.h /usr/include/string.h \
+ /usr/include/aarch64-linux-gnu/bits/stdio_lim.h /usr/include/string.h \
  /usr/include/aarch64-linux-gnu/bits/types/locale_t.h \
  /usr/include/aarch64-linux-gnu/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/errno.h \
@@ -125,11 +122,13 @@ CMakeFiles/scheduler.dir/runtime/scheduler.c.o: \
  /usr/include/aarch64-linux-gnu/bits/ss_flags.h \
  /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
  /usr/include/aarch64-linux-gnu/bits/sigthread.h \
- /usr/include/aarch64-linux-gnu/bits/signal_ext.h /usr/local/include/gc.h \
- /usr/local/include/gc/gc.h /usr/local/include/gc/gc_version.h \
+ /usr/include/aarch64-linux-gnu/bits/signal_ext.h \
+ /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h \
+ /usr/local/include/gc.h /usr/local/include/gc/gc.h \
+ /usr/local/include/gc/gc_version.h \
  /usr/local/include/gc/gc_config_macros.h \
  /workspaces/x-language/headers/scheduler.h \
- /workspaces/x-language/headers/task.h \
+ /workspaces/x-language/headers/task.h /usr/include/setjmp.h \
  /workspaces/x-language/headers/queue.h \
  /workspaces/x-language/headers/io.h \
  /workspaces/x-language/headers/queue.h \

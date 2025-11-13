@@ -60,30 +60,45 @@ func NewClass(block *bc.BlockHolder, name string, udt types.Type) *Class {
 
 func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 	block := bh.N
+
 	if v == nil {
-		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("cannot update object with nil value: %v", v))
+		errorutils.Abort(errorutils.InternalError, "cannot update object with nil value")
 	}
 
-	sPtr, ok := s.UDT.(*types.PointerType)
+	ptrType, ok := s.UDT.(*types.PointerType)
 	if !ok {
-		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not a pointer type: %T", s.UDT))
+		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not pointer-to-struct: %T", s.UDT))
 	}
 
+	// Ensure s.Ptr is allocated (holds the pointer to the struct)
 	if s.Ptr == nil {
-		// allocate memory for the pointer-to-struct itself
-		s.Ptr = block.NewAlloca(sPtr)
+		// Allocate memory for the pointer itself (stack slot)
+		s.Ptr = block.NewAlloca(ptrType)
+		// Also allocate memory for the struct instance
+		// zero := constant.NewNull(ptrType)
+		// one := constant.NewInt(types.I32, 1)
+		// gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
+		// size := constant.NewPtrToInt(gep, types.I64)
+		// mem := block.NewCall(c.Instance.Funcs[c.ALLOC], size)
+		// structPtr := block.NewBitCast(mem, ptrType)
+		// block.NewStore(structPtr, s.Ptr)
 	}
 
-	// Case 1: v is a pointer-to-struct matching our type
-	if pv, ok := v.Type().(*types.PointerType); ok && pv.Equal(sPtr) {
-		// Load the struct from v and store it into s.Ptr
+	// Case 1: v already matches our pointer-to-struct type
+	if pv, ok := v.Type().(*types.PointerType); ok && pv.Equal(ptrType) {
 		block.NewStore(v, s.Ptr)
 		return
 	}
 
-	// Case 3: Fallback conversion
-	val := ensureType(bh, v, sPtr.ElemType)
-	block.NewStore(val, s.Ptr)
+	// Case 2: v is a raw struct, not pointer – convert it
+	val := ensureType(bh, v, ptrType.ElemType)
+	// Load current struct pointer
+	currPtr := block.NewLoad(ptrType, s.Ptr)
+	block.NewStore(val, currPtr)
+}
+
+func (a *Class) UpdateV2(block *bc.BlockHolder, v *Class) {
+	*a = *v
 }
 
 func (s *Class) Load(bh *bc.BlockHolder) value.Value {

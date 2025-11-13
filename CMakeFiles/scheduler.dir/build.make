@@ -70,12 +70,12 @@ include CMakeFiles/scheduler.dir/progress.make
 include CMakeFiles/scheduler.dir/flags.make
 
 bin/output.o: bin/output.ll
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/workspaces/x-language/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Compiling LLVM IR to object"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/workspaces/x-language/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "→ Compiling LLVM IR to object file"
 	llvm-as-16 /workspaces/x-language/bin/output.ll -o /workspaces/x-language/bin/output.bc
 	llc-16 -filetype=obj /workspaces/x-language/bin/output.bc -o /workspaces/x-language/bin/output.o
 
 bin/output.ll:
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/workspaces/x-language/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Generating LLVM IR from Go"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold --progress-dir=/workspaces/x-language/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "→ Generating LLVM IR from Go"
 	go run /workspaces/x-language/main.go
 
 CMakeFiles/scheduler.dir/runtime/array.c.o: CMakeFiles/scheduler.dir/flags.make
@@ -204,6 +204,20 @@ CMakeFiles/scheduler.dir/runtime/scheduler.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/scheduler.dir/runtime/scheduler.c.s"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /workspaces/x-language/runtime/scheduler.c -o CMakeFiles/scheduler.dir/runtime/scheduler.c.s
 
+CMakeFiles/scheduler.dir/runtime/strings.c.o: CMakeFiles/scheduler.dir/flags.make
+CMakeFiles/scheduler.dir/runtime/strings.c.o: runtime/strings.c
+CMakeFiles/scheduler.dir/runtime/strings.c.o: CMakeFiles/scheduler.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/workspaces/x-language/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building C object CMakeFiles/scheduler.dir/runtime/strings.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/scheduler.dir/runtime/strings.c.o -MF CMakeFiles/scheduler.dir/runtime/strings.c.o.d -o CMakeFiles/scheduler.dir/runtime/strings.c.o -c /workspaces/x-language/runtime/strings.c
+
+CMakeFiles/scheduler.dir/runtime/strings.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/scheduler.dir/runtime/strings.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /workspaces/x-language/runtime/strings.c > CMakeFiles/scheduler.dir/runtime/strings.c.i
+
+CMakeFiles/scheduler.dir/runtime/strings.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/scheduler.dir/runtime/strings.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /workspaces/x-language/runtime/strings.c -o CMakeFiles/scheduler.dir/runtime/strings.c.s
+
 # Object files for target scheduler
 scheduler_OBJECTS = \
 "CMakeFiles/scheduler.dir/runtime/array.c.o" \
@@ -214,30 +228,32 @@ scheduler_OBJECTS = \
 "CMakeFiles/scheduler.dir/runtime/io.c.o" \
 "CMakeFiles/scheduler.dir/runtime/main.c.o" \
 "CMakeFiles/scheduler.dir/runtime/queue.c.o" \
-"CMakeFiles/scheduler.dir/runtime/scheduler.c.o"
+"CMakeFiles/scheduler.dir/runtime/scheduler.c.o" \
+"CMakeFiles/scheduler.dir/runtime/strings.c.o"
 
 # External object files for target scheduler
 scheduler_EXTERNAL_OBJECTS = \
 "/workspaces/x-language/bin/output.o"
 
-scheduler: CMakeFiles/scheduler.dir/runtime/array.c.o
-scheduler: CMakeFiles/scheduler.dir/runtime/atomic.c.o
-scheduler: CMakeFiles/scheduler.dir/runtime/crypto.c.o
-scheduler: CMakeFiles/scheduler.dir/runtime/error.c.o
-scheduler: CMakeFiles/scheduler.dir/runtime/ggc.c.o
-scheduler: CMakeFiles/scheduler.dir/runtime/io.c.o
-scheduler: CMakeFiles/scheduler.dir/runtime/main.c.o
-scheduler: CMakeFiles/scheduler.dir/runtime/queue.c.o
-scheduler: CMakeFiles/scheduler.dir/runtime/scheduler.c.o
-scheduler: bin/output.o
-scheduler: CMakeFiles/scheduler.dir/build.make
-scheduler: /usr/local/lib/libgc.so
-scheduler: CMakeFiles/scheduler.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/workspaces/x-language/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Linking C executable scheduler"
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/array.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/atomic.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/crypto.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/error.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/ggc.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/io.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/main.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/queue.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/scheduler.c.o
+bin/scheduler: CMakeFiles/scheduler.dir/runtime/strings.c.o
+bin/scheduler: bin/output.o
+bin/scheduler: CMakeFiles/scheduler.dir/build.make
+bin/scheduler: /usr/local/lib/libgc.so
+bin/scheduler: CMakeFiles/scheduler.dir/link.txt
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/workspaces/x-language/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Linking C executable bin/scheduler"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/scheduler.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
-CMakeFiles/scheduler.dir/build: scheduler
+CMakeFiles/scheduler.dir/build: bin/scheduler
 .PHONY : CMakeFiles/scheduler.dir/build
 
 CMakeFiles/scheduler.dir/clean:

@@ -24,5 +24,4 @@ CMakeFiles/scheduler.dir/runtime/atomic.c.o: \
  /usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h \
  /usr/include/aarch64-linux-gnu/bits/stdio_lim.h \
  /usr/include/aarch64-linux-gnu/bits/floatn.h \
- /usr/include/aarch64-linux-gnu/bits/floatn-common.h \
- /usr/include/aarch64-linux-gnu/bits/stdio.h
+ /usr/include/aarch64-linux-gnu/bits/floatn-common.h

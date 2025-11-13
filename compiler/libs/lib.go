@@ -6,6 +6,7 @@ import (
 	"github.com/nagarajRPoojari/x-lang/compiler/libs/crypto"
 	function "github.com/nagarajRPoojari/x-lang/compiler/libs/func"
 	"github.com/nagarajRPoojari/x-lang/compiler/libs/io"
+	"github.com/nagarajRPoojari/x-lang/compiler/libs/strings"
 	types "github.com/nagarajRPoojari/x-lang/compiler/libs/type"
 )
 
@@ -22,4 +23,5 @@ func init() {
 	ModuleList["types"] = types.NewTypeHandler()
 	ModuleList["array"] = array.NewArrayHandler()
 	ModuleList["sync"] = sync.NewSync()
+	ModuleList["strings"] = strings.NewStringHandler()
 }

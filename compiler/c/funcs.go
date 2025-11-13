@@ -12,6 +12,8 @@ func (t *Interface) registerFuncs(mod *ir.Module) {
 	t.initStdio(mod)
 	// atomic
 	t.initAtomicFuncs(mod)
+
+	t.initStrs(mod)
 }
 
 func (t *Interface) initRuntime(mod *ir.Module) {
@@ -42,6 +44,8 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 
 	// @alloc
 	t.Funcs[ALLOC] = mod.NewFunc(ALLOC, types.I8Ptr, ir.NewParam("", types.I64))
+
+	t.Funcs[MALLOC] = mod.NewFunc(MALLOC, types.I8Ptr, ir.NewParam("", types.I64))
 
 	// @runtime_init
 	t.Funcs[RUNTIME_INIT] = mod.NewFunc(RUNTIME_INIT, types.Void)
@@ -273,4 +277,23 @@ func (t *Interface) initStdio(mod *ir.Module) {
 		ir.NewParam("n", types.I64),
 		ir.NewParam("offset", types.I64),
 	)
+}
+
+func (t *Interface) initStrs(mod *ir.Module) {
+	// @format
+	t.Funcs[FORMAT] = mod.NewFunc(FORMAT, types.I8Ptr,
+		ir.NewParam("fmt", types.I8Ptr),
+	)
+
+	// @len
+	t.Funcs[LEN] = mod.NewFunc(LEN, types.I32,
+		ir.NewParam("str", types.I8Ptr),
+	)
+
+	// @compare
+	t.Funcs[COMPARE] = mod.NewFunc(COMPARE, types.I32,
+		ir.NewParam("a", types.I8Ptr),
+		ir.NewParam("b", types.I8Ptr),
+	)
+
 }

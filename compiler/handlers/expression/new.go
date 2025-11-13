@@ -147,6 +147,6 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 		t.st.Vars.AddNewVar(exp.Identifier, v)
 	}
 
-	t.callConstructor(bh, instance, ex.Instantiation)
+	// t.callConstructor(bh, instance, ex.Instantiation)
 	return instance
 }

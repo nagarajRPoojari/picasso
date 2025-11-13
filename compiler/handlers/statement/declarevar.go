@@ -39,6 +39,7 @@ func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableD
 		v = _v
 		casted := t.st.TypeHandler.ImplicitTypeCast(bh, st.ExplicitType.Get(), v.Load(bh))
 		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), casted)
+
 	}
 	t.st.Vars.AddNewVar(st.Identifier, v)
 }

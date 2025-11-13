@@ -17,10 +17,12 @@ file(REMOVE_RECURSE
   "CMakeFiles/scheduler.dir/runtime/queue.c.o.d"
   "CMakeFiles/scheduler.dir/runtime/scheduler.c.o"
   "CMakeFiles/scheduler.dir/runtime/scheduler.c.o.d"
+  "CMakeFiles/scheduler.dir/runtime/strings.c.o"
+  "CMakeFiles/scheduler.dir/runtime/strings.c.o.d"
   "bin/output.ll"
   "bin/output.o"
-  "scheduler"
-  "scheduler.pdb"
+  "bin/scheduler"
+  "bin/scheduler.pdb"
 )
 
 # Per-language clean rules from dependency scanning.

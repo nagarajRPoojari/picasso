@@ -345,6 +345,30 @@ runtime/scheduler.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/scheduler.c.s
 .PHONY : runtime/scheduler.c.s
 
+runtime/strings.o: runtime/strings.c.o
+.PHONY : runtime/strings.o
+
+# target to build an object file
+runtime/strings.c.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/strings.c.o
+.PHONY : runtime/strings.c.o
+
+runtime/strings.i: runtime/strings.c.i
+.PHONY : runtime/strings.i
+
+# target to preprocess a source file
+runtime/strings.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/strings.c.i
+.PHONY : runtime/strings.c.i
+
+runtime/strings.s: runtime/strings.c.s
+.PHONY : runtime/strings.s
+
+# target to generate assembly for a file
+runtime/strings.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/scheduler.dir/build.make CMakeFiles/scheduler.dir/runtime/strings.c.s
+.PHONY : runtime/strings.c.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -381,6 +405,9 @@ help:
 	@echo "... runtime/scheduler.o"
 	@echo "... runtime/scheduler.i"
 	@echo "... runtime/scheduler.s"
+	@echo "... runtime/strings.o"
+	@echo "... runtime/strings.i"
+	@echo "... runtime/strings.s"
 .PHONY : help
 
 

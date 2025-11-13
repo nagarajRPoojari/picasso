@@ -39,9 +39,7 @@ CMakeFiles/scheduler.dir/runtime/queue.c.o: \
  /usr/include/aarch64-linux-gnu/bits/atomic_wide_counter.h \
  /usr/include/aarch64-linux-gnu/bits/struct_mutex.h \
  /usr/include/aarch64-linux-gnu/bits/struct_rwlock.h \
- /usr/include/alloca.h \
- /usr/include/aarch64-linux-gnu/bits/stdlib-bsearch.h \
- /usr/include/aarch64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/alloca.h /usr/include/aarch64-linux-gnu/bits/stdlib-float.h \
  /usr/include/pthread.h /usr/include/sched.h \
  /usr/include/aarch64-linux-gnu/bits/sched.h \
  /usr/include/aarch64-linux-gnu/bits/types/struct_sched_param.h \
@@ -56,7 +54,11 @@ CMakeFiles/scheduler.dir/runtime/queue.c.o: \
  /usr/include/aarch64-linux-gnu/bits/pthread_stack_min-dynamic.h \
  /usr/include/aarch64-linux-gnu/bits/pthread_stack_min.h \
  /workspaces/x-language/headers/queue.h \
- /workspaces/x-language/headers/task.h /usr/include/ucontext.h \
+ /workspaces/x-language/headers/task.h /usr/include/setjmp.h \
+ /usr/lib/gcc/aarch64-linux-gnu/12/include/stdint.h /usr/include/stdint.h \
+ /usr/include/aarch64-linux-gnu/bits/wchar.h \
+ /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h \
+ /usr/include/ucontext.h \
  /usr/include/aarch64-linux-gnu/bits/indirect-return.h \
  /usr/include/aarch64-linux-gnu/sys/ucontext.h \
  /usr/include/aarch64-linux-gnu/bits/types/stack_t.h \
@@ -94,4 +96,5 @@ CMakeFiles/scheduler.dir/runtime/queue.c.o: \
  /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
  /usr/include/aarch64-linux-gnu/bits/sigthread.h \
  /usr/include/aarch64-linux-gnu/bits/signal_ext.h \
+ /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h \
  /workspaces/x-language/headers/task.h

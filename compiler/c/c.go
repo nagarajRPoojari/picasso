@@ -47,8 +47,11 @@ const (
 	ARRAY        = "array"
 
 	// string
-	STRLEN = "strlen"
-	STRCMP = "strcmp"
+	STRLEN  = "strlen"
+	FORMAT  = "format"
+	LEN     = "len"
+	COMPARE = "compare"
+	STRCMP  = "strcmp"
 
 	EXIT = "exit"
 

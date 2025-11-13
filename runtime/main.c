@@ -24,6 +24,7 @@
 #include "scheduler.h"
 #include "task.h"
 #include "crypto.h"
+#include "str.h"
 
 kernel_thread_t **kernel_thread_map;
 struct io_uring **io_ring_map = NULL;
@@ -130,7 +131,7 @@ void clean_scheduler() {
 int main(void) {
     srand(time(NULL));
     GC_INIT();
-    GC_disable();
+    // GC_disable();
     GC_allow_register_threads(); 
 
     init_io();

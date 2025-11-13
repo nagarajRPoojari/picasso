@@ -1,7 +1,9 @@
 package utils
 
 import (
+	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 )
 
 func GetTypeString(t types.Type) string {
@@ -25,4 +27,13 @@ func GetTypeString(t types.Type) string {
 		target = t.String()
 	}
 	return target
+}
+
+func IsNullConstant(v value.Value) bool {
+	switch v.(type) {
+	case *constant.Null:
+		return true
+	default:
+		return false
+	}
 }

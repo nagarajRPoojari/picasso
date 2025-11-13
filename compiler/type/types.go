@@ -260,14 +260,12 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 
 	if udt, ok := t.Udts[string(_type.T)]; ok {
 		if init == nil {
-			init = constant.NewZeroInitializer(udt.UDT)
+			init = constant.NewNull(udt.UDT.(*types.PointerType))
 		}
-
 		c := &Class{
 			Name: string(_type.T),
 			UDT:  udt.UDT,
 		}
-
 		c.Update(bh, init)
 		return c
 	}

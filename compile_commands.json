@@ -1,0 +1,52 @@
+[
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/array.c.o -c /workspaces/x-language/runtime/array.c",
+  "file": "/workspaces/x-language/runtime/array.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/atomic.c.o -c /workspaces/x-language/runtime/atomic.c",
+  "file": "/workspaces/x-language/runtime/atomic.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/crypto.c.o -c /workspaces/x-language/runtime/crypto.c",
+  "file": "/workspaces/x-language/runtime/crypto.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/error.c.o -c /workspaces/x-language/runtime/error.c",
+  "file": "/workspaces/x-language/runtime/error.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/ggc.c.o -c /workspaces/x-language/runtime/ggc.c",
+  "file": "/workspaces/x-language/runtime/ggc.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/io.c.o -c /workspaces/x-language/runtime/io.c",
+  "file": "/workspaces/x-language/runtime/io.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/main.c.o -c /workspaces/x-language/runtime/main.c",
+  "file": "/workspaces/x-language/runtime/main.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/queue.c.o -c /workspaces/x-language/runtime/queue.c",
+  "file": "/workspaces/x-language/runtime/queue.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/scheduler.c.o -c /workspaces/x-language/runtime/scheduler.c",
+  "file": "/workspaces/x-language/runtime/scheduler.c"
+},
+{
+  "directory": "/workspaces/x-language",
+  "command": "/usr/bin/cc  -I/workspaces/x-language/headers -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11 -o CMakeFiles/scheduler.dir/runtime/strings.c.o -c /workspaces/x-language/runtime/strings.c",
+  "file": "/workspaces/x-language/runtime/strings.c"
+}
+]

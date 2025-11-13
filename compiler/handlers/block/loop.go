@@ -31,10 +31,10 @@ func (t *BlockHandler) processForBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.
 	casted = t.st.TypeHandler.ImplicitTypeCast(bh, tf.INT, upperVal.Load(bh))
 	upperVal = t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT), casted)
 
-	loopCond := bc.NewBlockHolder(bh.V, fn.NewBlock("l.c"))
-	loopBody := bc.NewBlockHolder(bh.V, fn.NewBlock("l.b"))
-	loopInc := bc.NewBlockHolder(bh.V, fn.NewBlock("l.i"))
-	loopEnd := bc.NewBlockHolder(bh.V, fn.NewBlock("l.e"))
+	loopCond := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	loopBody := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	loopInc := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	loopEnd := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 
 	bh.N.NewBr(loopCond.N)
 
