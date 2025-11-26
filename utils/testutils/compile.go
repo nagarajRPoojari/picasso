@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/nagarajRPoojari/x-lang/compiler"
+	"github.com/nagarajRPoojari/x-lang/generator"
 	"github.com/nagarajRPoojari/x-lang/parser"
 )
 
@@ -30,7 +30,7 @@ func CompileAndRun(src string, dir string, libs ...string) (string, error) {
 	execFile := path.Join(dir, "output")
 
 	ast := parser.Parse(src)
-	c := compiler.NewCompiler()
+	c := generator.NewGenerator()
 	c.SetAST(ast)
 	c.Compile()
 	c.Dump(irFile)

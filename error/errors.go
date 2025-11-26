@@ -1,5 +1,5 @@
 // Package errorsx provides custom error types for compilation,
-// lexer, and parser phases of the compiler.
+// lexer, and parser phases of the generator.
 package errorsx
 
 import (
@@ -18,7 +18,7 @@ const (
 	PhaseParser      Phase = "Parser"
 )
 
-// Error represents a structured compiler error.
+// Error represents a structured generator error.
 type Error struct {
 	Phase   Phase  // Lexer / Parser / Compilation
 	Message string // Human-readable error message
