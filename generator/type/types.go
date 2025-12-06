@@ -264,7 +264,7 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		}
 		c := &Class{
 			Name: string(_type.T),
-			UDT:  udt.UDT,
+			UDT:  udt.UDT.(*types.PointerType),
 		}
 		c.Update(bh, init)
 		return c

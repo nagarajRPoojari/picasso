@@ -1,5 +1,4 @@
 #include "ggc.h"
-#include <gc.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -10,7 +9,7 @@
  * Sets up internal GC data structures and prepares the system for memory management.
  */
 void runtime_init() {
-    GC_INIT();
+    // GC_INIT();
 }
 
 /**
@@ -23,7 +22,7 @@ void runtime_init() {
  * @return Pointer to allocated memory (never NULL if GC initialized correctly).
  */
 void *lang_alloc(long size) {
-    return GC_MALLOC(size);
+    return malloc(size);
 }
 
 /**
@@ -36,7 +35,8 @@ void *lang_alloc(long size) {
  * @return Pointer to allocated memory.
  */
 void *lang_alloc_atomic(long size) {
-    return GC_MALLOC_ATOMIC(size);
+    // return GC_MALLOC_ATOMIC(size);
+    return malloc(size);
 }
 
 /**
@@ -46,5 +46,5 @@ void *lang_alloc_atomic(long size) {
  * Scans all GC roots and reclaims unreachable memory immediately.
  */
 void runtime_collect() {
-    GC_gcollect();
+    // GC_gcollect();
 }

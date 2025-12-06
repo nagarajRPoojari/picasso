@@ -19,7 +19,6 @@ file(REMOVE_RECURSE
   "CMakeFiles/scheduler.dir/runtime/scheduler.c.o.d"
   "CMakeFiles/scheduler.dir/runtime/strings.c.o"
   "CMakeFiles/scheduler.dir/runtime/strings.c.o.d"
-  "bin/output.ll"
   "bin/output.o"
   "bin/scheduler"
   "bin/scheduler.pdb"

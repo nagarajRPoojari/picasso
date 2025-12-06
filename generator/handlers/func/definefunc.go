@@ -48,7 +48,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 			}
 			c := &tf.Class{
 				Name: className,
-				UDT:  clsMeta.UDT,
+				UDT:  clsMeta.UDT.(*types.PointerType),
 			}
 			c.Update(bh, p)
 			t.st.Vars.AddNewVar(p.LocalName, c)

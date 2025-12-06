@@ -6,5 +6,5 @@ C_DEFINES =
 
 C_INCLUDES = -I/workspaces/x-language/headers
 
-C_FLAGS = -g -Wall -Wextra -Wno-unused-parameter -g -O0 -fsanitize=address -std=gnu11
+C_FLAGS = -g -g -O0 -fsanitize=address -Wall -Wextra -std=gnu11
 

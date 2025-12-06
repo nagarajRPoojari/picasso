@@ -13,8 +13,6 @@
 #include <liburing.h>
 #include <string.h> 
 
-#include <gc.h>
-#include <gc/gc.h> 
 
 #include "start.h"
 #include "array.h"
@@ -114,7 +112,7 @@ int init_scheduler() {
  * threads and queues should be properly deallocated.
  */
 void clean_scheduler() {
-    free(kernel_thread_map[0]);
+    // free(kernel_thread_map[0]);
 }
 
 
@@ -130,9 +128,6 @@ void clean_scheduler() {
  */
 int main(void) {
     srand(time(NULL));
-    GC_INIT();
-    // GC_disable();
-    GC_allow_register_threads(); 
 
     init_io();
     init_scheduler();

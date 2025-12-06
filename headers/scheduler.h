@@ -9,7 +9,7 @@
  * Initial stack size allocated per task (in bytes).
  * Includes only the usable stack, not the guard page.
  */
-#define STACK_SIZE (4*1024)
+#define STACK_SIZE (1024*1024)
 
 /** 
  * Number of scheduler threads (kernel threads) in the pool.

@@ -62,9 +62,9 @@ func (t *BlockHandler) processWhileBlock(fn *ir.Func, bh *bc.BlockHolder, st *as
 	t.st.Vars.AddBlock()
 	defer t.st.Vars.RemoveBlock()
 
-	condBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
-	bodyBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
-	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	condBlock := bc.NewBlockHolder(bh.V, fn.NewBlock("while.cond"))
+	bodyBlock := bc.NewBlockHolder(bh.V, fn.NewBlock("while.body"))
+	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock("while.end"))
 
 	bh.N.NewBr(condBlock.N)
 

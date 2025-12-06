@@ -11,53 +11,65 @@ import (
 	bc "github.com/nagarajRPoojari/x-lang/generator/type/block"
 )
 
-// Class is a custom user defined data type
 type Class struct {
-	Name string      // class name (for lookup)
-	UDT  types.Type  // always pointer-to-struct type (types.PointerType)
-	Ptr  value.Value // pointer value (pointer-to-struct, i.e. the object address)
+	Name string             // Name for debugging/lookup
+	UDT  *types.PointerType // The type of the object (e.g., %MyStruct*)
+	Ptr  value.Value        // The stack slot (alloca) holding the pointer (e.g., %MyStruct**)
 }
 
-func NewClass(block *bc.BlockHolder, name string, udt types.Type) *Class {
-	// Normalize UDT so it's always pointer-to-struct (*types.PointerType)
+// NewClass creates a new object instance.
+// 1. Allocates heap memory for the struct.
+// 2. Creates a stack slot (alloca).
+// 3. Stores the heap address into the stack slot.
+func NewClass(block *bc.BlockHolder, name string, rawType types.Type) *Class {
+
+	// 1. Normalize Type: Ensure we have a pointer-to-struct
 	var ptrType *types.PointerType
-	switch t := udt.(type) {
+	switch t := rawType.(type) {
 	case *types.StructType:
 		ptrType = types.NewPointer(t)
 	case *types.PointerType:
 		if _, ok := t.ElemType.(*types.StructType); !ok {
-			panic(fmt.Sprintf("NewClass expects pointer-to-struct or struct, got pointer to %T", t.ElemType))
+			panic(fmt.Sprintf("NewClass expects pointer-to-struct, got pointer to %T", t.ElemType))
 		}
 		ptrType = t
 	default:
-		panic(fmt.Sprintf("NewClass expects struct or pointer-to-struct, got %T", udt))
+		panic(fmt.Sprintf("NewClass expects struct or pointer-to-struct, got %T", rawType))
 	}
 
-	// === Allocate heap memory for struct (runtime allocation) ===
+	// 2. Heap Allocation (malloc)
+	// Calculate size: GetElementPtr hack to get size of the underlying struct
 	zero := constant.NewNull(ptrType)
 	one := constant.NewInt(types.I32, 1)
 	gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
 	size := constant.NewPtrToInt(gep, types.I64)
 
-	// Call allocator (runtime malloc/GC alloc)
-	mem := block.N.NewCall(c.Instance.Funcs[c.ALLOC], size)
+	// Call runtime allocator (malloc)
+	// Note: Replace c.Instance.Funcs[c.ALLOC] with your specific allocator function lookup
+	mallocCall := block.N.NewCall(c.Instance.Funcs[c.ALLOC], size)
 
-	// Bitcast to your struct pointer type
-	ptr := block.N.NewBitCast(mem, ptrType)
+	// Cast i8* (from malloc) to %MyStruct*
+	heapPtr := block.N.NewBitCast(mallocCall, ptrType)
 
-	// === Create stack slot to store the pointer ===
-	// alloca type = pointer to (pointer-to-struct)
-	alloca := block.N.NewAlloca(ptrType)
-	block.N.NewStore(ptr, alloca)
+	// 3. Stack Allocation (The "Slot")
+	// Create a slot on the stack that holds a %MyStruct*
+	// LLVM IR: %ptr = alloca %MyStruct*
+	stackSlot := block.N.NewAlloca(ptrType)
 
-	// s.Ptr now points to a memory cell that *contains* the pointer
+	// 4. Initialize Slot
+	// Store the heap address into the stack slot
+	// LLVM IR: store %MyStruct* %heapPtr, %MyStruct** %stackSlot
+	block.N.NewStore(heapPtr, stackSlot)
+
 	return &Class{
 		Name: name,
-		UDT:  ptrType, // pointer-to-struct type
-		Ptr:  alloca,  // alloca holds the runtime pointer value
+		UDT:  ptrType,   // %MyStruct*
+		Ptr:  stackSlot, // %MyStruct**
 	}
 }
 
+// Update changes the value inside the stack slot.
+// Basically: variable = newValue
 func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 	block := bh.N
 
@@ -65,54 +77,70 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 		errorutils.Abort(errorutils.InternalError, "cannot update object with nil value")
 	}
 
-	ptrType, ok := s.UDT.(*types.PointerType)
-	if !ok {
-		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not pointer-to-struct: %T", s.UDT))
-	}
-
-	// Ensure s.Ptr is allocated (holds the pointer to the struct)
+	ptrType := s.UDT
+	// Sanity check: Ensure our slot exists
 	if s.Ptr == nil {
-		// Allocate memory for the pointer itself (stack slot)
+		// A. Allocate new heap memory for the struct instance
+		zero := constant.NewNull(ptrType)
+		one := constant.NewInt(types.I32, 1)
+		gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
+		size := constant.NewPtrToInt(gep, types.I64)
+
+		// Call runtime allocator (Note: Using c.Instance.Funcs[c.ALLOC] placeholder)
+		mallocCall := block.NewCall(c.Instance.Funcs[c.ALLOC], size)
+		heapPtr := block.NewBitCast(mallocCall, ptrType) // %MyStruct*
+
+		// B. Create the stack slot (alloca)
+		// LLVM IR: %ptr_slot = alloca %MyStruct*
 		s.Ptr = block.NewAlloca(ptrType)
-		// Also allocate memory for the struct instance
-		// zero := constant.NewNull(ptrType)
-		// one := constant.NewInt(types.I32, 1)
-		// gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
-		// size := constant.NewPtrToInt(gep, types.I64)
-		// mem := block.NewCall(c.Instance.Funcs[c.ALLOC], size)
-		// structPtr := block.NewBitCast(mem, ptrType)
-		// block.NewStore(structPtr, s.Ptr)
+
+		// C. Initialize slot with the new heap pointer
+		// LLVM IR: store %MyStruct* %heapPtr, %MyStruct** %ptr_slot
+		block.NewStore(heapPtr, s.Ptr)
 	}
 
-	// Case 1: v already matches our pointer-to-struct type
-	if pv, ok := v.Type().(*types.PointerType); ok && pv.Equal(ptrType) {
+	// === Scenario 1: Input is a Pointer (e.g., %MyStruct*) ===
+	// We simply overwrite the address stored in the slot.
+	if v.Type().Equal(s.UDT) {
+		// LLVM IR: store %MyStruct* %v, %MyStruct** %s.Ptr
 		block.NewStore(v, s.Ptr)
 		return
 	}
 
-	// Case 2: v is a raw struct, not pointer – convert it
-	val := ensureType(bh, v, ptrType.ElemType)
-	// Load current struct pointer
-	currPtr := block.NewLoad(ptrType, s.Ptr)
-	block.NewStore(val, currPtr)
-}
+	// === Scenario 2: Input is a Value (e.g., %MyStruct) ===
+	// If the user passes a raw struct value, we can't store a struct into a pointer slot directly.
+	// We must allocate new heap memory for this value, then point the slot to it.
+	if v.Type().Equal(s.UDT.ElemType) {
 
-func (a *Class) UpdateV2(block *bc.BlockHolder, v *Class) {
-	*a = *v
-}
+		// 1. Allocate new heap memory
+		zero := constant.NewNull(s.UDT)
+		one := constant.NewInt(types.I32, 1)
+		gep := constant.NewGetElementPtr(s.UDT.ElemType, zero, one)
+		size := constant.NewPtrToInt(gep, types.I64)
 
-func (s *Class) Load(bh *bc.BlockHolder) value.Value {
-	block := bh.N
+		mem := block.NewCall(c.Instance.Funcs[c.ALLOC], size)
+		newHeapPtr := block.NewBitCast(mem, s.UDT)
 
-	sPtr, ok := s.UDT.(*types.PointerType)
-	if !ok {
-		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not pointer type: %T", s.UDT))
-		return nil
+		// 2. Store the raw value into the new heap memory
+		// LLVM IR: store %MyStruct %v, %MyStruct* %newHeapPtr
+		block.NewStore(v, newHeapPtr)
+
+		// 3. Update the slot to point to this new memory
+		// LLVM IR: store %MyStruct* %newHeapPtr, %MyStruct** %s.Ptr
+		block.NewStore(newHeapPtr, s.Ptr)
+		return
 	}
 
-	// load runtime pointer-to-struct from stack slot
-	ptrVal := block.NewLoad(sPtr, s.Ptr)
-	return ptrVal
+	// Error: Type mismatch
+	errorutils.Abort(errorutils.InternalError,
+		fmt.Sprintf("Type mismatch in Update. Expected %s or %s, got %s",
+			s.UDT, s.UDT.ElemType, v.Type()))
+}
+
+// Load retrieves the current object pointer from the stack slot.
+func (s *Class) Load(bh *bc.BlockHolder) value.Value {
+	// LLVM IR: %val = load %MyStruct*, %MyStruct** %s.Ptr
+	return bh.N.NewLoad(s.UDT, s.Ptr)
 }
 
 func (s *Class) FieldPtr(block *bc.BlockHolder, idx int) value.Value {
@@ -120,10 +148,7 @@ func (s *Class) FieldPtr(block *bc.BlockHolder, idx int) value.Value {
 	i := constant.NewInt(types.I32, int64(idx))
 
 	// unwrap pointer-to-struct
-	sPtr, ok := s.UDT.(*types.PointerType)
-	if !ok {
-		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("Class.UDT is not a pointer type: %T", s.UDT))
-	}
+	sPtr := s.UDT
 	elem := sPtr.ElemType // struct type
 
 	// GEP: base is the pointer-to-struct (object address) and we index into the struct
@@ -153,10 +178,7 @@ func (s *Class) Cast(bh *bc.BlockHolder, v value.Value) (value.Value, error) {
 		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("cannot cast nil value: %v", v))
 	}
 
-	sPtr, ok := s.UDT.(*types.PointerType)
-	if !ok {
-		return nil, fmt.Errorf("internal error: Class.UDT is not pointer type: %T", s.UDT)
-	}
+	sPtr := s.UDT
 
 	// If already pointer to struct (the desired pointer type)
 	if v.Type().Equal(sPtr) {

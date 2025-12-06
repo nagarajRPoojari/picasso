@@ -117,6 +117,19 @@ depend:
 .PHONY : depend
 
 #=============================================================================
+# Target rules for targets named build_go_obj
+
+# Build rule for target.
+build_go_obj: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 build_go_obj
+.PHONY : build_go_obj
+
+# fast build rule for target.
+build_go_obj/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/build_go_obj.dir/build.make CMakeFiles/build_go_obj.dir/build
+.PHONY : build_go_obj/fast
+
+#=============================================================================
 # Target rules for targets named scheduler
 
 # Build rule for target.
@@ -377,6 +390,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
+	@echo "... build_go_obj"
 	@echo "... scheduler"
 	@echo "... runtime/array.o"
 	@echo "... runtime/array.i"

@@ -122,13 +122,11 @@ CMakeFiles/scheduler.dir/runtime/scheduler.c.o: \
  /usr/include/aarch64-linux-gnu/bits/ss_flags.h \
  /usr/include/aarch64-linux-gnu/bits/types/struct_sigstack.h \
  /usr/include/aarch64-linux-gnu/bits/sigthread.h \
- /usr/include/aarch64-linux-gnu/bits/signal_ext.h \
- /usr/lib/gcc/aarch64-linux-gnu/12/include/stdatomic.h \
- /usr/local/include/gc.h /usr/local/include/gc/gc.h \
- /usr/local/include/gc/gc_version.h \
+ /usr/include/aarch64-linux-gnu/bits/signal_ext.h /usr/local/include/gc.h \
+ /usr/local/include/gc/gc.h /usr/local/include/gc/gc_version.h \
  /usr/local/include/gc/gc_config_macros.h \
  /workspaces/x-language/headers/scheduler.h \
- /workspaces/x-language/headers/task.h /usr/include/setjmp.h \
+ /workspaces/x-language/headers/task.h \
  /workspaces/x-language/headers/queue.h \
  /workspaces/x-language/headers/io.h \
  /workspaces/x-language/headers/queue.h \
