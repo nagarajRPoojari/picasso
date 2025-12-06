@@ -73,6 +73,12 @@ func NewArray(bh *bc.BlockHolder, elemType types.Type, eleSize value.Value, dims
 	)
 	bh.N.NewStore(rank, rankPtr)
 
+	lenPtr := bh.N.NewGetElementPtr(ARRAYSTRUCT, structAlloc,
+		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 0),
+	)
+	bh.N.NewStore(totalLen, lenPtr)
+
 	return &Array{
 		Ptr:       structAlloc,
 		ElemType:  elemType,

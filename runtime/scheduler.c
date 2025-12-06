@@ -49,7 +49,6 @@ void* task_trampoline(task_t *t, void *this) {
 void more_stack(int sig, siginfo_t *si, void *unused) {
     ucontext_t *ctx = (ucontext_t *)unused;
 
-    // --- 1. Calculate Old Stack Pointers and Active Data Size ---
     uintptr_t old_stack_base = (uintptr_t)current_task->stack;                  // Base of usable stack
     uintptr_t sp = (uintptr_t)ctx->uc_mcontext.sp;
 
@@ -82,7 +81,7 @@ void more_stack(int sig, siginfo_t *si, void *unused) {
         _exit(1);
     }
 
-    mprotect(old_stack_base_guard, PAGE_SIZE, PROT_NONE);
+    mprotect((void*)old_stack_base_guard, PAGE_SIZE, PROT_NONE);
 
     // Ensure we don't try to copy more than the stack size (shouldn't happen 
     // if the guard page is respected, but good for safety)
@@ -91,7 +90,6 @@ void more_stack(int sig, siginfo_t *si, void *unused) {
         exit(1);
     }
     
-    // --- 2. Allocate New Stack Memory ---
     size_t new_stack_size = old_stack_size * 2;
     size_t total_size = new_stack_size + PAGE_SIZE;
 
@@ -119,23 +117,10 @@ void more_stack(int sig, siginfo_t *si, void *unused) {
     // memcpy(destination, source, size)
     memcpy((void*)new_sp, (void*)sp, copy_size); 
 
-    // Track the old stack for asynchronous cleanup
-    old_stack_info_t old_stack_info = {
-        .base_ptr = (void*)old_stack_base_guard,
-        .total_size = old_stack_size + PAGE_SIZE
-    };
-
-    /* @danger: can't push whatever i want to safe_q (which expects only task_t*)*/
-    // Use a safe queue push if queue operations are not signal-safe (recommended)
-    safe_q_push(&old_stack_cleanup_q, &old_stack_info); 
-
     current_task->stack = new_stack_base;
     current_task->stack_size = new_stack_size;
     
     ctx->uc_mcontext.sp = new_sp;
-
-    printf("Allocated new \n");
-    printf("[0x%lx////][0x%lx/////0x%lx.......0x%lx] \n", mapped, new_stack_base, new_sp ,new_stack_top);
 }
 
 /**
@@ -172,20 +157,6 @@ void init_stack_signal_handler() {
     }
 }
 
-/**
- * @brief Clean up any old, munmap-able stacks pending cleanup.
- * @note Must be called from the scheduler thread main loop.
- */
-void cleanup_old_stacks() {
-    old_stack_info_t* info;
-    while ((info = safe_q_pop(&old_stack_cleanup_q)) != NULL) {
-        if (munmap(info->base_ptr, info->total_size) != 0) {
-            // Note: If munmap fails, it's a critical error/leak.
-            perror("munmap failed during stack cleanup");
-        }
-        // free(info); // Free the info structure if safe_q_push malloced it
-    }
-}
 
 /**
  * @brief Clean up a task and release its resources.
@@ -230,7 +201,6 @@ void init_timer_signal_handler(void *arg) {
     struct sigevent sev;
     struct itimerspec its;
 
-    int id = *(int *)arg;
     sev.sigev_notify = SIGEV_THREAD;
     sev.sigev_notify_function = force_preempt;
     sev.sigev_notify_attributes = NULL;
@@ -342,13 +312,11 @@ void task_resume(task_t *t, kernel_thread_t* kt) {
  */
 void* scheduler_run(void* arg) {
     kernel_thread_t* kt = (kernel_thread_t*)arg;
-    struct epoll_event events[MAX_EVENTS];
 
     init_stack_signal_handler();
     init_timer_signal_handler(arg);
 
     while (1) {
-        cleanup_old_stacks(); 
         task_t *t;
         while ((t = safe_q_pop(&kt->ready_q)) != NULL) {
             task_resume(t, kt);
