@@ -140,6 +140,9 @@ void more_stack(int sig, siginfo_t *si, void *unused) {
 
 /**
  * @brief Initialize alternate stack and install SIGSEGV handler.
+ * 
+ * This ensures the signal handler has a safe stack to run on if the current
+ * task stack is corrupted or overflown.
  */
 void init_stack_signal_handler() {
     // Initialize the thread-local cleanup queue
@@ -202,11 +205,26 @@ void task_destroy(task_t *t) {
 
 volatile sig_atomic_t preempt[SCHEDULER_THREAD_POOL_SIZE];
 
+/**
+ * @brief Timer callback that forces preemption of a scheduler thread.
+ * 
+ * Sets the corresponding thread’s preempt flag to 1.
+ * 
+ * @param sv Signal value passed by the POSIX timer.
+ */
 void force_preempt(union sigval sv) {
     int tid = *(int *)sv.sival_ptr;
     preempt[tid] = 1;
 }
 
+/**
+ * @brief Initialize per-thread timer signal handler.
+ * 
+ * Creates a periodic POSIX timer (SIGEV_THREAD) that triggers preemption
+ * at fixed intervals for the current scheduler thread.
+ * 
+ * @param arg Pointer to the scheduler thread ID (int*).
+ */
 void init_timer_signal_handler(void *arg) {
     timer_t tid;
     struct sigevent sev;
@@ -274,11 +292,22 @@ task_t* task_create(void* (*fn)(void *), void* this, kernel_thread_t* kt) {
     return t;
 }
 
+/**
+ * @brief Yield execution from current task back to its scheduler thread.
+ * 
+ * @param kt The kernel thread running the task.
+ */
 void task_yield(kernel_thread_t* kt) {
     if (!kt->current) return;
     swapcontext(&kt->current->ctx, &kt->sched_ctx);
 }
 
+/**
+ * @brief Cooperative preemption check.
+ * 
+ * Called periodically (e.g., via timer) to allow preemptive multitasking.
+ * If the current task’s preempt flag is set, it yields control.
+ */
 void self_yield() {
     if(preempt[current_task->sched_id]) {
         kernel_thread_t* kt = kernel_thread_map[current_task->sched_id];
@@ -288,6 +317,12 @@ void self_yield() {
     }
 }
 
+/**
+ * @brief Resume a specific task on the given scheduler thread.
+ * 
+ * @param t  Task to resume.
+ * @param kt The kernel thread executing the task.
+ */
 void task_resume(task_t *t, kernel_thread_t* kt) {
     kt->current = t;
     current_task = t;
@@ -296,6 +331,15 @@ void task_resume(task_t *t, kernel_thread_t* kt) {
     current_task = NULL;
 }
 
+/**
+ * @brief Main run loop for a scheduler worker thread.
+ * 
+ * Continuously executes ready tasks from the queue, handles preemption,
+ * and waits for epoll I/O events to resume blocked tasks.
+ * 
+ * @param arg Pointer to the kernel_thread_t structure for this thread.
+ * @return Never returns under normal operation.
+ */
 void* scheduler_run(void* arg) {
     kernel_thread_t* kt = (kernel_thread_t*)arg;
     struct epoll_event events[MAX_EVENTS];
