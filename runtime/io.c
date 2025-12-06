@@ -8,6 +8,7 @@
 #include <liburing.h>
 #include <stdarg.h>
 #include <gc.h>
+#include <string.h>
 
 #include "io.h"
 #include "queue.h"
@@ -292,7 +293,7 @@ void* async_file_read(int fd, char* buf, int n, int offset) {
 void* afread(char* f, char* buf, int n, int offset) {
     int fd = fileno((FILE*)f);
     async_file_read(fd, buf, n, offset);
-    return current_task->done_n;
+    return &current_task->done_n; /* @todo: not tested return address */
 }
 
 /**
@@ -324,5 +325,5 @@ void* async_file_write(int fd, const char* buf, int n, int offset) {
 void* afwrite(char* f, char* buf, int n, int offset) {
     int fd = fileno((FILE*)f);
     async_file_write(fd, buf, n, offset);
-    return current_task->done_n;
+    return &current_task->done_n; /* @todo: not tested return address */
 }
