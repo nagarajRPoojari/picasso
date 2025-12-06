@@ -1,7 +1,9 @@
 #include "ggc.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "alloc.h"
 
+extern __thread arena* __arena__;
 /**
  * @brief Initialize the runtime and garbage collector.
  * 
@@ -22,7 +24,7 @@ void runtime_init() {
  * @return Pointer to allocated memory (never NULL if GC initialized correctly).
  */
 void *lang_alloc(long size) {
-    return malloc(size);
+    return allocate(__arena__, size);
 }
 
 /**
@@ -36,7 +38,7 @@ void *lang_alloc(long size) {
  */
 void *lang_alloc_atomic(long size) {
     // return GC_MALLOC_ATOMIC(size);
-    return malloc(size);
+    return allocate(__arena__, size);
 }
 
 /**

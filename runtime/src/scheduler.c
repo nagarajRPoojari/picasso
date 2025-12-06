@@ -15,6 +15,7 @@
 #include "io.h"
 #include "queue.h"
 #include "task.h"
+#include "alloc.h"
 
 
 __thread task_t* current_task;
@@ -26,6 +27,7 @@ typedef struct {
 } old_stack_info_t;
 
 __thread safe_queue_t old_stack_cleanup_q;
+__thread arena* __arena__;
 
 void task_yield(kernel_thread_t* kt);
 void task_resume(task_t *t, kernel_thread_t* kt);
@@ -312,6 +314,8 @@ void task_resume(task_t *t, kernel_thread_t* kt) {
  */
 void* scheduler_run(void* arg) {
     kernel_thread_t* kt = (kernel_thread_t*)arg;
+
+    __arena__ = arena_create();
 
     init_stack_signal_handler();
     init_timer_signal_handler(arg);

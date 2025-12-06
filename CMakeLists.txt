@@ -8,11 +8,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # ------------------------------------------------------------
 # Paths
 # ------------------------------------------------------------
-set(SRC_DIR "${CMAKE_SOURCE_DIR}/runtime")
 set(BIN_DIR "${CMAKE_SOURCE_DIR}/bin")
 file(MAKE_DIRECTORY ${BIN_DIR})
 
-file(GLOB C_SOURCES "${SRC_DIR}/*.c")
+set(RUNTIME_SRC "${CMAKE_SOURCE_DIR}/runtime/src")
+set(RUNTIME_HEADERS "${CMAKE_SOURCE_DIR}/runtime/headers")
+
+set(GC_SRC "${CMAKE_SOURCE_DIR}/gc/src")
+set(GC_HEADERS "${CMAKE_SOURCE_DIR}/gc/headers")
+
+file(GLOB RUNTIME_SOURCES "${RUNTIME_SRC}/*.c")
+file(GLOB GC_SOURCES "${GC_SRC}/*.c")
 
 set(GO_MAIN "${CMAKE_SOURCE_DIR}/main.go")
 set(GO_LL   "${BIN_DIR}/output.ll")
@@ -20,7 +26,7 @@ set(GO_BC   "${BIN_DIR}/output.bc")
 set(GO_OBJ  "${BIN_DIR}/output.o")
 
 # ------------------------------------------------------------
-# Force rebuild + clean bin/ before anything
+# Clean bin/ every build (wasteful but you insisted)
 # ------------------------------------------------------------
 add_custom_target(always ALL
     COMMAND ${CMAKE_COMMAND} -E echo "Cleaning bin/ ..."
@@ -29,7 +35,7 @@ add_custom_target(always ALL
 )
 
 # ------------------------------------------------------------
-# Go → LLVM → object (forced always)
+# Go → LLVM → Object
 # ------------------------------------------------------------
 add_custom_command(
     OUTPUT ${GO_OBJ}
@@ -41,18 +47,14 @@ add_custom_command(
     DEPENDS ${GO_MAIN} always
 )
 
-# Mark as symbolic → run every build
-set_property(SOURCE ${GO_OBJ} PROPERTY SYMBOLIC TRUE)
-
-add_custom_target(build_go_obj ALL
-    DEPENDS ${GO_OBJ}
-)
+add_custom_target(build_go_obj ALL DEPENDS ${GO_OBJ})
 
 # ------------------------------------------------------------
 # Executable
 # ------------------------------------------------------------
 add_executable(scheduler
-    ${C_SOURCES}
+    ${RUNTIME_SOURCES}
+    ${GC_SOURCES}
     ${GO_OBJ}
 )
 
@@ -60,14 +62,15 @@ add_dependencies(scheduler always)
 add_dependencies(scheduler build_go_obj)
 
 target_include_directories(scheduler PRIVATE
-    ${CMAKE_SOURCE_DIR}/headers
+    ${RUNTIME_HEADERS}
+    ${GC_HEADERS}
 )
 
 # ------------------------------------------------------------
 # Link libs
 # ------------------------------------------------------------
 target_link_libraries(scheduler PRIVATE
-    /usr/local/lib/libgc.so   # Boehm GC
+    /usr/local/lib/libgc.so
     pthread
     uring
     m
