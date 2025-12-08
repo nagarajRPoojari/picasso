@@ -20,10 +20,10 @@ class Worker {
         say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
         say seek: int = 0;
 
-        foreach i in 1..100 {
+        foreach i in 1..10000 {
             say n: int = asyncio.fread(fp, buf, buff_size, seek);
-            asyncio.printf("[%d]=> done - %d \n", id, n);
-            seek = seek + buff_size;
+            syncio.printf("[%d]=> done - %d \n", id, i);
+            // seek = seek + buff_size;
             // asyncio.printf("%.*s\n", n, buf);
 
             if(n<buff_size) {
@@ -36,8 +36,9 @@ class Worker {
 fn start() {
     say w1: Worker = new Worker(1000);
     thread(w1.do);
+    thread(w1.do);
 
     // say buf: []int = array.create(int, 10);
     // syncio.printf(" size of %d \n ", array.len(buf));
-    thread(w1.do);
+    // thread(w1.do);
 }

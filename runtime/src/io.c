@@ -7,14 +7,15 @@
 #include <sys/epoll.h>
 #include <liburing.h>
 #include <stdarg.h>
-#include <gc.h>
 #include <string.h>
 
 #include "io.h"
 #include "queue.h"
 #include "task.h"
 #include "scheduler.h"
+#include "alloc.h"
 
+extern __thread arena_t* __arena__;
 
 /**
  * @brief Worker thread that waits for completed I/O events from io_uring.
@@ -215,7 +216,7 @@ void* async_stdin_read(char* buf, int n) {
 }
 
 void* ascan(int n) {
-    char* buf = (char*)GC_MALLOC(n * sizeof(char));
+    char* buf = (char*)allocate(__arena__, n * sizeof(char));
     async_stdin_read(buf, n);
     return buf;
 }
@@ -262,7 +263,7 @@ void* aprintf(const char* fmt, ...) {
 
     void* handle = async_stdout_write(buf, len);
 
-    free(buf);
+    // free(buf);
     return handle;
 }
 

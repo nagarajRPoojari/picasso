@@ -24,6 +24,7 @@
 #include "crypto.h"
 #include "str.h"
 #include "alloc.h"
+#include "gc.h"
 
 kernel_thread_t **kernel_thread_map;
 struct io_uring **io_ring_map = NULL;
@@ -134,6 +135,7 @@ int main(void) {
     init_scheduler();
 
     thread(start, NULL);
+    gc_init();
 
     for (int i = 0; i < SCHEDULER_THREAD_POOL_SIZE; i++) {
         pthread_join(sched_threads[i], NULL);

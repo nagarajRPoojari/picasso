@@ -9,13 +9,17 @@
 #include <sys/epoll.h>
 #include <sys/mman.h>
 #include <signal.h>
-#include <stdint.h> // Include for uintptr_t
+#include <stdint.h> 
+#include <semaphore.h>
+#include <stdatomic.h>
+
 
 #include "scheduler.h"
 #include "io.h"
 #include "queue.h"
 #include "task.h"
 #include "alloc.h"
+#include "gc.h"
 
 
 __thread task_t* current_task;
@@ -27,7 +31,9 @@ typedef struct {
 } old_stack_info_t;
 
 __thread safe_queue_t old_stack_cleanup_q;
-__thread arena* __arena__;
+__thread arena_t* __arena__;
+
+extern gc_state_t gc_state;
 
 void task_yield(kernel_thread_t* kt);
 void task_resume(task_t *t, kernel_thread_t* kt);
@@ -177,7 +183,6 @@ void task_destroy(task_t *t) {
 }
 
 volatile sig_atomic_t preempt[SCHEDULER_THREAD_POOL_SIZE];
-
 /**
  * @brief Timer callback that forces preemption of a scheduler thread.
  * 
@@ -281,12 +286,32 @@ void task_yield(kernel_thread_t* kt) {
  * If the current task’s preempt flag is set, it yields control.
  */
 void self_yield() {
-    if(preempt[current_task->sched_id]) {
-        kernel_thread_t* kt = kernel_thread_map[current_task->sched_id];
-        safe_q_push(&kt->ready_q, current_task);
-        preempt[current_task->sched_id] = 0;
-        task_yield(kt);
+    if (!atomic_load_explicit(&gc_state.world_stopped, memory_order_acquire)) {
+        if(preempt[current_task->sched_id]) {
+            kernel_thread_t* kt = kernel_thread_map[current_task->sched_id];
+            safe_q_push(&kt->ready_q, current_task);
+            preempt[current_task->sched_id] = 0;
+            task_yield(kt);
+        }
+        return;
     }
+
+    printf("[MUTATOR] going to stop \n");
+
+    pthread_mutex_lock(&gc_state.lock);
+
+    if (atomic_fetch_add(&gc_state.stopped_count, 1) + 1 == gc_state.total_threads){
+        printf("[MUTATOR] tell gc that I stopped \n");
+        pthread_cond_signal(&gc_state.cv_mutators_stopped);
+    }
+
+    while (atomic_load(&gc_state.world_stopped)){
+        printf("[MUTATOR] world_stopped still true \n");
+        pthread_cond_wait(&gc_state.cv_world_resumed, &gc_state.lock);
+    }
+
+    pthread_mutex_unlock(&gc_state.lock);
+    printf("[MUTATOR] DONE ..\n");
 }
 
 /**

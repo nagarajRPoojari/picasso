@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "alloc.h"
 
-extern __thread arena* __arena__;
+extern __thread arena_t* __arena__;
 /**
  * @brief Initialize the runtime and garbage collector.
  * 

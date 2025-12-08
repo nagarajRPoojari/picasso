@@ -76,7 +76,7 @@ task_t *safe_q_pop(safe_queue_t *q) {
 
     task_t *t = n->t;
 
-    free(n);
+    // free(n);
     return t;
 }
 
@@ -107,6 +107,6 @@ task_t *safe_q_pop_wait(safe_queue_t *q) {
     pthread_mutex_unlock(&q->lock);
     task_t *t = n->t;
 
-    free(n);
+    // free(n);
     return t;
 }
