@@ -1,0 +1,83 @@
+#ifndef ALLOC_H
+#define ALLOC_H
+
+#include <stdint.h>
+#include <unistd.h>
+#include <pthread.h>
+
+#define DEBUG_MODE 0
+
+#define Debug(fmt, ...) \
+    if(DEBUG_MODE) \
+        fprintf(stderr, "[%s:%d] " fmt, __func__, __LINE__, ##__VA_ARGS__)
+
+#define TEST_MODE 0
+
+#define HEAP_MIN_SIZE (32 * 1024)
+#define MMAP_THRESHOLD 131072
+#define ALIGNMENT 16 
+#define HEADER_SIZE (sizeof(size_t) * 2) // prev_size + size
+#define MIN_PAYLOAD_SIZE 16
+#define MIN_PAYLOAD_SIZE_FOR_LARGEBIN 16 + (sizeof(size_t) * 2)
+#define FASTBINS_COUNT 7
+#define SMALLBINS_COUNT 32
+#define LARGEBINS_COUNT 64
+#define SMALLBIN_MAX_SIZE 512
+#define LARGEBIN_MAX_INDEX 63
+#define HEAP_BOUNDARY_SIZE (4 * sizeof(size_t))
+
+#define __PREV_IN_USE_FLAG_MASK 0x1
+#define __CURR_IN_USE_FLAG_MASK 0x4
+#define __MMAP_ALLOCATED_FLAG_MASK 0x2
+#define __SIZE_BITS 0x7
+#define __CHUNK_SIZE_MASK (~__SIZE_BITS)
+
+typedef struct free_chunk {
+    size_t prev_size;
+    size_t size; /* contains size + flags */
+    struct free_chunk* fd;
+    struct free_chunk* bk;
+
+    /*  Only used for large bins, but defined for generic structure */
+    struct free_chunk* next_sizeptr;
+    struct free_chunk* prev_sizeptr;
+} free_chunk_t;
+
+typedef struct arena {
+    /* stores non-sentinal nodes in singly linked list */
+    free_chunk_t* fastbins[FASTBINS_COUNT];  
+
+    /* remaining heap memory */
+    free_chunk_t* top_chunk;
+
+    /* Head of the list*/
+    free_chunk_t* unsortedbin;
+    
+    free_chunk_t* smallbins[SMALLBINS_COUNT]; // Sentinels
+    free_chunk_t* largebins[LARGEBINS_COUNT]; // Sentinels
+    
+    unsigned int smallbinmap;
+    unsigned int largebinmap;
+
+    /* rwmutex to prevent two threads allocating on same arena */
+    pthread_rwlock_t mu;
+
+} arena_t;
+
+
+arena_t* arena_create(void);
+
+void release(arena_t* ar, void* ptr);
+void* allocate(arena_t* ar, size_t requested_size);
+
+// utils
+typedef struct arena_stats {
+    size_t top_chunk_size;
+    size_t total_allocated_so_far;
+    size_t total_allocated_effective;
+
+    int count_of_heap_growth;
+
+} arena_stats_t;
+
+#endif
