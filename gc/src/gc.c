@@ -4,11 +4,6 @@
 #include "alloc.h"
 #include "gc.h"
 
-#ifndef SCHEDULER_THREAD_POOL_SIZE 
-    #define SCHEDULER_THREAD_POOL_SIZE 1
-#endif
-
-
 /* expected to be initialized in gc_init */
 gc_state_t gc_state;
 
@@ -21,7 +16,7 @@ void gc_run() {
 
         gc_resume_world();
 
-        usleep(900 * 1000);
+        usleep(1200 * 1000);
     }
 }
 
@@ -32,14 +27,14 @@ void gc_init() {
 
     atomic_store(&gc_state.world_stopped, 0);
     atomic_store(&gc_state.stopped_count, 0);
-    gc_state.total_threads = SCHEDULER_THREAD_POOL_SIZE;
+    atomic_store(&gc_state.total_threads, 0);
     pthread_mutex_init(&gc_state.lock, 0);
     pthread_cond_init(&gc_state.cv_mutators_stopped, 0);
     pthread_cond_init(&gc_state.cv_world_resumed, 0);
 
 
     pthread_t t;
-    pthread_create(&t, NULL, gc_run, 0);
+    // pthread_create(&t, NULL, gc_run, 0);
 }
 
 void gc_stop_the_world() {
@@ -49,7 +44,7 @@ void gc_stop_the_world() {
     atomic_store(&gc_state.world_stopped, 1);
     
     printf("[GC-stw] wait for stopped_count to become = total_threads \n");
-    while (atomic_load(&gc_state.stopped_count) < gc_state.total_threads){
+    while (atomic_load(&gc_state.stopped_count) < atomic_load(&gc_state.total_threads)){
         printf("[GC-stw] still waiting for stopped_count to become = total_threads \n");
         pthread_cond_wait(&gc_state.cv_mutators_stopped, &gc_state.lock);
     }
@@ -72,7 +67,6 @@ void gc_resume_world() {
     printf("[GC-resume] broadcast to mutator \n");
     pthread_cond_broadcast(&gc_state.cv_world_resumed);
 
-        
     printf("[GC-resume] release lock\n");
     pthread_mutex_unlock(&gc_state.lock);
 }
