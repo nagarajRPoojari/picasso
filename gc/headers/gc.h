@@ -12,7 +12,7 @@ typedef struct gc_state {
     pthread_cond_t   cv_mutators_stopped;
     pthread_cond_t   cv_world_resumed;
 
-    int              total_threads;      // mutators only
+    atomic_int        total_threads;      // mutators only
 } gc_state_t;
 
 void gc_init();
