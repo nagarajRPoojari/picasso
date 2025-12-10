@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include "alloc.h"
 
-static arena* ar;
+static arena_t* ar;
 
 
 static int is_aligned(void* p) {
@@ -113,7 +113,7 @@ void test_smallbin_reuse(void) {
 
 
     /* consume chunk from smallbin */
-    free_chunk* x= allocate(ar, 192);
+    free_chunk_t* x= allocate(ar, 192);
     TEST_ASSERT_EQUAL_PTR(x,  ptrs[2]); /* ptrs[0] is in fastbin */
 }
 
@@ -248,7 +248,7 @@ void test_mmap(void) {
     void* p = allocate(ar, MMAP_THRESHOLD);
     TEST_ASSERT_NOT_NULL(p);
 
-    free_chunk* chunk = (free_chunk*)((char*)p - HEADER_SIZE);
+    free_chunk_t* chunk = (free_chunk_t*)((char*)p - HEADER_SIZE);
 
     TEST_ASSERT_TRUE(chunk->size & __MMAP_ALLOCATED_FLAG_MASK);
 }   
@@ -294,7 +294,7 @@ void test_no_overlap_random_allocs(void) {
 
 /* test multithreaded senarious */
 void* worker(void* arg) {
-    arena* a = arena_create();
+    arena_t* a = arena_create();
     size_t sizes[] = {1, 8, 16, 24, 32, 128, 1024};
     
     for (int i = 0; i < 7; i++) {
