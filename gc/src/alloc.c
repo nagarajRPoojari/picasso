@@ -501,10 +501,12 @@ static void* allocate_unsafe(arena_t* ar, size_t requested_size) {
     fc = split_top_chunk(ar, payload_size);
     if (fc) return (void*)((char*)fc + HEADER_SIZE);
     /* if top_chunk is not NULL push it to unsortedbin */
-    if(ar->top_chunk) {
-        insert_chunk_head(ar->unsortedbin, ar->top_chunk);
-        ar->top_chunk = NULL;
-    }
+    // if(ar->top_chunk) {
+    //     printf("7.ar->unsortedbin->fd->fd: %p \n", ar->unsortedbin->fd->fd);
+    //     insert_chunk_head(ar->unsortedbin, ar->top_chunk);
+    //     printf("6.ar->unsortedbin->fd->fd: %p \n", ar->unsortedbin->fd->fd);
+    //     ar->top_chunk = NULL;
+    // }
 
     /* grow heap & try to carve again */
     grow_heap(ar, total_size);
