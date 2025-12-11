@@ -13,7 +13,7 @@
 
 #define TEST_MODE 0
 
-#define HEAP_MIN_SIZE (32 * 1024)
+#define HEAP_MIN_SIZE (128 * 1024)
 #define MMAP_THRESHOLD 131072
 #define ALIGNMENT 16 
 #define HEADER_SIZE (sizeof(size_t) * 2) // prev_size + size
