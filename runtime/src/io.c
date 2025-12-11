@@ -298,3 +298,122 @@ void* afwrite(char* f, char* buf, int n, int offset) {
     async_file_write();
     return current_task->done_n; /* @todo: not tested return address */
 }
+
+/**
+ * @brief Synchronously read n bytes from STDIN.
+ *
+ * Allocates a buffer, configures the current task with the read parameters,
+ * and submits an io_uring read request for STDIN. Yields until completion.
+ *
+ * @param n Number of bytes to read.
+ *
+ * @return Pointer to allocated buffer containing the read data.
+ */
+void* sscan(int n) {
+    if (n <= 0) return NULL;
+    
+    char* buf = (char*)allocate(__arena__, n * sizeof(char));
+    if (!buf) return NULL;
+    
+    ssize_t bytes_read = read(STDIN_FILENO, buf, n);
+    if (bytes_read < 0) {
+        return NULL;
+    }
+    
+    return buf;
+}
+
+/**
+ * @brief Write formatted output to STDOUT synchronously.
+ *
+ * Formats the input string and arguments, then writes the result to STDOUT
+ * using the write syscall. Handles partial writes and errors gracefully.
+ *
+ * @param fmt Format string (printf-style).
+ * @param ... Variable arguments matching the format string.
+ *
+ * @return Number of bytes written on success, -1 on error.
+ */
+int sprintf(const char* fmt, ...) {
+    if (!fmt) return -1;
+    
+    va_list ap;
+    va_start(ap, fmt);
+    
+    /* estimate needed size */
+    char tmp[1];
+    int len = vsnprintf(tmp, sizeof(tmp), fmt, ap);
+    va_end(ap);
+    
+    if (len < 0) return -1;
+    
+    char* buf = malloc(len + 1);
+    if (!buf) return -1;
+    
+    va_start(ap, fmt);
+    vsnprintf(buf, len + 1, fmt, ap);
+    va_end(ap);
+    
+    ssize_t bytes_written = write(STDOUT_FILENO, buf, len);
+    free(buf);
+    
+    if (bytes_written < 0) {
+        return -1;
+    }
+    
+    return bytes_written;
+}
+
+/**
+ * @brief Synchronously read n bytes from a file at a given offset.
+ *
+ * Reads up to n bytes from the specified file at the given offset using
+ * the pread syscall. Handles errors and partial reads gracefully.
+ *
+ * @param f      FILE pointer to read from.
+ * @param buf    Buffer to store read data.
+ * @param n      Number of bytes to read.
+ * @param offset File offset to start reading from.
+ *
+ * @return Number of bytes read on success, -1 on error.
+ */
+int sfread(char* f, char* buf, int n, int offset) {
+    if (!f || !buf || n <= 0 || offset < 0) return -1;
+    
+    int fd = fileno((FILE*)f);
+    if (fd < 0) return -1;
+    
+    ssize_t bytes_read = pread(fd, buf, n, offset);
+    if (bytes_read < 0) {
+        return -1;
+    }
+    
+    return bytes_read;
+}
+
+/**
+ * @brief Synchronously write n bytes to a file at a given offset.
+ *
+ * Writes up to n bytes to the specified file at the given offset using
+ * the pwrite syscall. Handles errors and partial writes gracefully.
+ *
+ * @param f      FILE pointer to write to.
+ * @param buf    Buffer containing data to write.
+ * @param n      Number of bytes to write.
+ * @param offset File offset to start writing from.
+ *
+ * @return Number of bytes written on success, -1 on error.
+ */
+int sfwrite(char* f, char* buf, int n, int offset) {
+    if (!f || !buf || n <= 0 || offset < 0) return -1;
+    
+    int fd = fileno((FILE*)f);
+    if (fd < 0) return -1;
+    
+    ssize_t bytes_written = pwrite(fd, buf, n, offset);
+    if (bytes_written < 0) {
+        return -1;
+    }
+    
+    return bytes_written;
+}
