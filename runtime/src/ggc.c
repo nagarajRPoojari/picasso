@@ -24,7 +24,8 @@ void runtime_init() {
  * @return Pointer to allocated memory (never NULL if GC initialized correctly).
  */
 void *lang_alloc(long size) {
-    return allocate(__arena__, size);
+    /* @todo: update to use allocate & test */
+    return malloc(size);
 }
 
 /**
