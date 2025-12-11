@@ -313,7 +313,7 @@ void task_resume(task_t *t, kernel_thread_t* kt) {
 void* scheduler_run(void* arg) {
     kernel_thread_t* kt = (kernel_thread_t*)arg;
 
-    __arena__ = arena_create();
+    __arena__ = gc_create_arena();
 
     init_stack_signal_handler();
     init_timer_signal_handler(arg);

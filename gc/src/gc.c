@@ -7,16 +7,34 @@
 /* expected to be initialized in gc_init */
 gc_state_t gc_state;
 
+/* arenas to keep track of. Should be initialized by arena_create */
+arena_t* arenas[MAX_ARENAS];
+int arenas_count;
+
+arena_t* gc_create_arena() {
+    if(arenas_count + 1 > MAX_ARENAS) {
+        perror("failed to create new arena: arena count reached max\n");
+        return NULL;
+    }
+
+    arena_t* ar = arena_create();
+
+    /* register arena */
+    arenas[arenas_count++] = ar;
+    return ar;
+}
+
 void gc_run() {
     printf(" started gc \n");
     for(int i=0;i<10000;i++){
         gc_stop_the_world();
 
         printf(" STOP THE WORLD \n");
+        // mark & sweep
 
         gc_resume_world();
 
-        usleep(1200 * 1000);
+        usleep(GC_TIMEPERIOD);
     }
 }
 
@@ -34,7 +52,7 @@ void gc_init() {
 
 
     pthread_t t;
-    // pthread_create(&t, NULL, gc_run, 0);
+    pthread_create(&t, NULL, gc_run, 0);
 }
 
 void gc_stop_the_world() {
