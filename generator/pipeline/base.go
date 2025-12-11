@@ -30,7 +30,7 @@ func (t *Pipeline) Run() {
 
 func insertYields(m *ir.Module) {
 	// Define or get the yield function
-	yieldFunc := c.NewInterface(m).Funcs[c.SELF_YIELD]
+	yieldFunc := c.NewInterface(m).Funcs[c.FUNC_SELF_YIELD]
 
 	for _, fn := range m.Funcs {
 		// Skip the yield function itself

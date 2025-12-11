@@ -46,7 +46,7 @@ func NewClass(block *bc.BlockHolder, name string, rawType types.Type) *Class {
 
 	// Call runtime allocator (malloc)
 	// Note: Replace c.Instance.Funcs[c.ALLOC] with your specific allocator function lookup
-	mallocCall := block.N.NewCall(c.Instance.Funcs[c.ALLOC], size)
+	mallocCall := block.N.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
 
 	// Cast i8* (from malloc) to %MyStruct*
 	heapPtr := block.N.NewBitCast(mallocCall, ptrType)
@@ -87,7 +87,7 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 		size := constant.NewPtrToInt(gep, types.I64)
 
 		// Call runtime allocator (Note: Using c.Instance.Funcs[c.ALLOC] placeholder)
-		mallocCall := block.NewCall(c.Instance.Funcs[c.ALLOC], size)
+		mallocCall := block.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
 		heapPtr := block.NewBitCast(mallocCall, ptrType) // %MyStruct*
 
 		// B. Create the stack slot (alloca)
@@ -118,7 +118,7 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 		gep := constant.NewGetElementPtr(s.UDT.ElemType, zero, one)
 		size := constant.NewPtrToInt(gep, types.I64)
 
-		mem := block.NewCall(c.Instance.Funcs[c.ALLOC], size)
+		mem := block.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
 		newHeapPtr := block.NewBitCast(mem, s.UDT)
 
 		// 2. Store the raw value into the new heap memory

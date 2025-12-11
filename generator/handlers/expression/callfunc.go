@@ -57,7 +57,7 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 	switch m := ex.Method.(type) {
 	case ast.SymbolExpression:
 		// errorutils.Abort(errorutils.MemberExpressionError, "method call should be on instance")
-		if m.Value == c.THREAD {
+		if m.Value == c.FUNC_THREAD {
 			if meth, ok := t.st.CI.Funcs[m.Value]; ok {
 				v := t.ProcessExpression(bh, ex.Arguments[0])
 				raw := v.Load(bh)

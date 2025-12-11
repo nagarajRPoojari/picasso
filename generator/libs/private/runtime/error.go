@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	RUNTIME_ERR = "runtime_error"
+	RUNTIME_ERR = "__public__runtime_error"
 )
 
 type ErrorHandler struct {

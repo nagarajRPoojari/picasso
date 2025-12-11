@@ -49,7 +49,7 @@ func (t *Pipeline) PredeclareClasses() {
 }
 
 func (t *Pipeline) Register() {
-	tp := []string{c.ATOMIC_BOOL, c.ATOMIC_CHAR, c.ATOMIC_SHORT, c.ATOMIC_INT}
+	tp := []string{c.TYPE_ATOMIC_BOOL, c.TYPE_ATOMIC_CHAR, c.TYPE_ATOMIC_SHORT, c.TYPE_ATOMIC_INT}
 	for _, tpc := range tp {
 		udt := t.st.CI.Types[tpc]
 		t.st.Module.NewTypeDef(tpc, udt)

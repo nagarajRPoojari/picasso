@@ -71,7 +71,7 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	var f *ir.Func = t.st.MainFunc
 	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock(constants.ENTRY)}, f.NewBlock(""))
 	t.Init(bh)
-	bh.N.NewCall(t.st.CI.Funcs[c.RUNTIME_INIT])
+	bh.N.NewCall(t.st.CI.Funcs[c.FUNC_RUNTIME_INIT])
 
 	if len(fn.Parameters) != 0 {
 		errorutils.Abort(errorutils.MainFuncError, "parameters are not allowed in main function")

@@ -21,12 +21,12 @@ func NewCrypto() *Crypto {
 
 func (t *Crypto) ListAllFuncs() map[string]function.Func {
 	funcs := make(map[string]function.Func)
-	funcs[c.HASH] = t.hash
+	funcs[c.ALIAS_HASH] = t.hash
 	return funcs
 }
 
 func (t *Crypto) hash(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
-	method := c.NewInterface(module).Funcs[c.HASH]
+	method := c.NewInterface(module).Funcs[c.FUNC_HASH]
 	castedArgs := make([]value.Value, 0)
 	for i, arg := range args {
 		if i >= len(method.Sig.Params) {
