@@ -6,6 +6,6 @@
  * 
  * @param msg message to be printed in error
  */
-void runtime_error(const char* msg);
+void __public__runtime_error(const char* msg);
 
 #endif

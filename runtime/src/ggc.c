@@ -23,7 +23,7 @@ void runtime_init() {
  * @param size Number of bytes to allocate.
  * @return Pointer to allocated memory (never NULL if GC initialized correctly).
  */
-void *lang_alloc(long size) {
+void *__public__alloc(long size) {
     /* @todo: update to use allocate & test */
     return malloc(size);
 }

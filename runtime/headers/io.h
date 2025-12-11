@@ -1,5 +1,4 @@
 #ifndef IO_H
-''
 #include "queue.h"
 #include "task.h"
 
@@ -96,7 +95,7 @@ void async_file_write();
  *
  * @return void* Pointer to `current_task->nread` indicating number of bytes read.
  */
-void* ascan(int n);
+void* __public__ascan(int n);
 
 /**
  * @brief Asynchronously write formatted output to STDOUT using io_uring.
@@ -110,7 +109,7 @@ void* ascan(int n);
  *
  * @return NULL on success, NULL on allocation or formatting failure.
  */
-void* aprintf(const char* fmt, ...);
+void* __public__aprintf(const char* fmt, ...);
 
 /**
  * @brief Asynchronously read n bytes from a file at a given offset.
@@ -125,7 +124,7 @@ void* aprintf(const char* fmt, ...);
  *
  * @return Pointer to bytes read count in current task context.
  */
-void* afread(char* f, char* buf, int n, int offset);
+void* __public__afread(char* f, char* buf, int n, int offset);
 
 /**
  * @brief Public API for asynchronous file write using io_uring.
@@ -144,6 +143,61 @@ void* afread(char* f, char* buf, int n, int offset);
  *
  * @note Assumes `current_task` and its scheduler context are properly initialized.
  */
-void* afwrite(char* f, char* buf, int n, int offset);
+void* __public__afwrite(char* f, char* buf, int n, int offset);
+
+/**
+ * @brief Synchronously read n bytes from STDIN.
+ *
+ * Allocates a buffer, configures the current task with the read parameters,
+ * and submits an io_uring read request for STDIN. Yields until completion.
+ *
+ * @param n Number of bytes to read.
+ *
+ * @return Pointer to allocated buffer containing the read data.
+ */
+void* __public__sscan(int n);
+
+/**
+ * @brief Write formatted output to STDOUT synchronously.
+ *
+ * Formats the input string and arguments, then writes the result to STDOUT
+ * using the write syscall. Handles partial writes and errors gracefully.
+ *
+ * @param fmt Format string (printf-style).
+ * @param ... Variable arguments matching the format string.
+ *
+ * @return Number of bytes written on success, -1 on error.
+ */
+int __public__sprintf(const char* fmt, ...);
+
+/**
+ * @brief Synchronously read n bytes from a file at a given offset.
+ *
+ * Reads up to n bytes from the specified file at the given offset using
+ * the pread syscall. Handles errors and partial reads gracefully.
+ *
+ * @param f      FILE pointer to read from.
+ * @param buf    Buffer to store read data.
+ * @param n      Number of bytes to read.
+ * @param offset File offset to start reading from.
+ *
+ * @return Number of bytes read on success, -1 on error.
+ */
+int __public__sfread(char* f, char* buf, int n, int offset);
+
+/**
+ * @brief Synchronously write n bytes to a file at a given offset.
+ *
+ * Writes up to n bytes to the specified file at the given offset using
+ * the pwrite syscall. Handles errors and partial writes gracefully.
+ *
+ * @param f      FILE pointer to write to.
+ * @param buf    Buffer containing data to write.
+ * @param n      Number of bytes to write.
+ * @param offset File offset to start writing from.
+ *
+ * @return Number of bytes written on success, -1 on error.
+ */
+int __public__sfwrite(char* f, char* buf, int n, int offset);
 
 #endif

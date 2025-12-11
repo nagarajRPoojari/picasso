@@ -8,7 +8,7 @@
  * @param ptr Pointer to an atomic _Bool variable.
  * @param val Value to store.
  */
-void atomic_store_bool(_Atomic _Bool *ptr, _Bool val) { 
+void __public__atomic_store_bool(_Atomic _Bool *ptr, _Bool val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -16,7 +16,7 @@ void atomic_store_bool(_Atomic _Bool *ptr, _Bool val) {
  * @param ptr Pointer to an atomic _Bool variable.
  * @return The loaded boolean value.
  */
-_Bool atomic_load_bool(_Atomic _Bool *ptr) { 
+_Bool __public__atomic_load_bool(_Atomic _Bool *ptr) { 
     return atomic_load(ptr); 
 }
 
@@ -27,7 +27,7 @@ _Bool atomic_load_bool(_Atomic _Bool *ptr) {
  * @param ptr Pointer to an atomic char variable.
  * @param val Value to store.
  */
-void atomic_store_char(_Atomic char *ptr, char val) { 
+void __public__atomic_store_char(_Atomic char *ptr, char val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -35,7 +35,7 @@ void atomic_store_char(_Atomic char *ptr, char val) {
  * @param ptr Pointer to an atomic char variable.
  * @return The loaded char value.
  */
-char atomic_load_char(_Atomic char *ptr) { 
+char __public__atomic_load_char(_Atomic char *ptr) { 
     return atomic_load(ptr); 
 }
 /**
@@ -44,7 +44,7 @@ char atomic_load_char(_Atomic char *ptr) {
  * @param val Value to add.
  * @return The value of *ptr before the addition.
  */
-char atomic_add_char(_Atomic char *ptr, char val) { 
+char __public__atomic_add_char(_Atomic char *ptr, char val) { 
     return atomic_fetch_add(ptr, val); 
 }
 /**
@@ -53,7 +53,7 @@ char atomic_add_char(_Atomic char *ptr, char val) {
  * @param val Value to subtract.
  * @return The value of *ptr before the subtraction.
  */
-char atomic_sub_char(_Atomic char *ptr, char val) { 
+char __public__atomic_sub_char(_Atomic char *ptr, char val) { 
     return atomic_fetch_sub(ptr, val); 
 }
 
@@ -65,7 +65,7 @@ char atomic_sub_char(_Atomic char *ptr, char val) {
  * @param ptr Pointer to an atomic short variable.
  * @param val Value to store.
  */
-void atomic_store_short(_Atomic short *ptr, short val) { 
+void __public__atomic_store_short(_Atomic short *ptr, short val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -73,7 +73,7 @@ void atomic_store_short(_Atomic short *ptr, short val) {
  * @param ptr Pointer to an atomic short variable.
  * @return The loaded short value.
  */
-short atomic_load_short(_Atomic short *ptr) { 
+short __public__atomic_load_short(_Atomic short *ptr) { 
     return atomic_load(ptr); 
 }
 /**
@@ -82,7 +82,7 @@ short atomic_load_short(_Atomic short *ptr) {
  * @param val Value to add.
  * @return The value of *ptr before the addition.
  */
-short atomic_add_short(_Atomic short *ptr, short val) { 
+short __public__atomic_add_short(_Atomic short *ptr, short val) { 
     return atomic_fetch_add(ptr, val); 
 }
 /**
@@ -91,7 +91,7 @@ short atomic_add_short(_Atomic short *ptr, short val) {
  * @param val Value to subtract.
  * @return The value of *ptr before the subtraction.
  */
-short atomic_sub_short(_Atomic short *ptr, short val) { 
+short __public__atomic_sub_short(_Atomic short *ptr, short val) { 
     return atomic_fetch_sub(ptr, val); 
 }
 
@@ -102,7 +102,7 @@ short atomic_sub_short(_Atomic short *ptr, short val) {
  * @param ptr Pointer to an atomic int variable.
  * @param val Value to store.
  */
-void atomic_store_int(_Atomic int *ptr, int val) { 
+void __public__atomic_store_int(_Atomic int *ptr, int val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -110,7 +110,7 @@ void atomic_store_int(_Atomic int *ptr, int val) {
  * @param ptr Pointer to an atomic int variable.
  * @return The loaded int value.
  */
-int atomic_load_int(_Atomic int *ptr) { 
+int __public__atomic_load_int(_Atomic int *ptr) { 
     return atomic_load(ptr); 
 }
 /**
@@ -119,7 +119,7 @@ int atomic_load_int(_Atomic int *ptr) {
  * @param val Value to add.
  * @return The value of *ptr before the addition.
  */
-int atomic_add_int(_Atomic int *ptr, int val) { 
+int __public__atomic_add_int(_Atomic int *ptr, int val) { 
     return atomic_fetch_add(ptr, val); 
 }
 /**
@@ -128,7 +128,7 @@ int atomic_add_int(_Atomic int *ptr, int val) {
  * @param val Value to subtract.
  * @return The value of *ptr before the subtraction.
  */
-int atomic_sub_int(_Atomic int *ptr, int val) { 
+int __public__atomic_sub_int(_Atomic int *ptr, int val) { 
     return atomic_fetch_sub(ptr, val); 
 }
 
@@ -139,7 +139,7 @@ int atomic_sub_int(_Atomic int *ptr, int val) {
  * @param ptr Pointer to an atomic long variable.
  * @param val Value to store.
  */
-void atomic_store_long(_Atomic long *ptr, long val) { 
+void __public__atomic_store_long(_Atomic long *ptr, long val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -147,7 +147,7 @@ void atomic_store_long(_Atomic long *ptr, long val) {
  * @param ptr Pointer to an atomic long variable.
  * @return The loaded long value.
  */
-long atomic_load_long(_Atomic long *ptr) { 
+long __public__atomic_load_long(_Atomic long *ptr) { 
     return atomic_load(ptr); 
 }
 /**
@@ -156,7 +156,7 @@ long atomic_load_long(_Atomic long *ptr) {
  * @param val Value to add.
  * @return The value of *ptr before the addition.
  */
-long atomic_add_long(_Atomic long *ptr, long val) { 
+long __public__atomic_add_long(_Atomic long *ptr, long val) { 
     return atomic_fetch_add(ptr, val); 
 }
 /**
@@ -165,7 +165,7 @@ long atomic_add_long(_Atomic long *ptr, long val) {
  * @param val Value to subtract.
  * @return The value of *ptr before the subtraction.
  */
-long atomic_sub_long(_Atomic long *ptr, long val) { 
+long __public__atomic_sub_long(_Atomic long *ptr, long val) { 
     return atomic_fetch_sub(ptr, val); 
 }
 
@@ -176,7 +176,7 @@ long atomic_sub_long(_Atomic long *ptr, long val) {
  * @param ptr Pointer to an atomic long long variable.
  * @param val Value to store.
  */
-void atomic_store_llong(_Atomic long long *ptr, long long val) { 
+void __public__atomic_store_llong(_Atomic long long *ptr, long long val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -184,7 +184,7 @@ void atomic_store_llong(_Atomic long long *ptr, long long val) {
  * @param ptr Pointer to an atomic long long variable.
  * @return The loaded long long value.
  */
-long long atomic_load_llong(_Atomic long long *ptr) { 
+long long __public__atomic_load_llong(_Atomic long long *ptr) { 
     return atomic_load(ptr); 
 }
 /**
@@ -193,7 +193,7 @@ long long atomic_load_llong(_Atomic long long *ptr) {
  * @param val Value to add.
  * @return The value of *ptr before the addition.
  */
-long long atomic_add_llong(_Atomic long long *ptr, long long val) { 
+long long __public__atomic_add_llong(_Atomic long long *ptr, long long val) { 
     return atomic_fetch_add(ptr, val); 
 }
 /**
@@ -202,7 +202,7 @@ long long atomic_add_llong(_Atomic long long *ptr, long long val) {
  * @param val Value to subtract.
  * @return The value of *ptr before the subtraction.
  */
-long long atomic_sub_llong(_Atomic long long *ptr, long long val) { 
+long long __public__atomic_sub_llong(_Atomic long long *ptr, long long val) { 
     return atomic_fetch_sub(ptr, val); 
 }
 
@@ -213,7 +213,7 @@ long long atomic_sub_llong(_Atomic long long *ptr, long long val) {
  * @param ptr Pointer to an atomic float variable.
  * @param val Value to store.
  */
-void atomic_store_float(_Atomic float *ptr, float val) { 
+void __public__atomic_store_float(_Atomic float *ptr, float val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -221,7 +221,7 @@ void atomic_store_float(_Atomic float *ptr, float val) {
  * @param ptr Pointer to an atomic float variable.
  * @return The loaded float value.
  */
-float atomic_load_float(_Atomic float *ptr) { 
+float __public__atomic_load_float(_Atomic float *ptr) { 
     return atomic_load(ptr); 
 }
 
@@ -232,7 +232,7 @@ float atomic_load_float(_Atomic float *ptr) {
  * @param ptr Pointer to an atomic double variable.
  * @param val Value to store.
  */
-void atomic_store_double(_Atomic double *ptr, double val) { 
+void __public__atomic_store_double(_Atomic double *ptr, double val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -240,7 +240,7 @@ void atomic_store_double(_Atomic double *ptr, double val) {
  * @param ptr Pointer to an atomic double variable.
  * @return The loaded double value.
  */
-double atomic_load_double(_Atomic double *ptr) { 
+double __public__atomic_load_double(_Atomic double *ptr) { 
     return atomic_load(ptr); 
 }
 
@@ -251,7 +251,7 @@ double atomic_load_double(_Atomic double *ptr) {
  * @param ptr Pointer to an atomic pointer variable.
  * @param val Pointer value to store.
  */
-void atomic_store_ptr(_Atomic void **ptr, void *val) { 
+void __public__atomic_store_ptr(_Atomic void **ptr, void *val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -259,6 +259,6 @@ void atomic_store_ptr(_Atomic void **ptr, void *val) {
  * @param ptr Pointer to an atomic pointer variable.
  * @return The loaded pointer value.
  */
-void *atomic_load_ptr(_Atomic void **ptr) { 
+void *__public__atomic_load_ptr(_Atomic void **ptr) { 
     return atomic_load(ptr); 
 }

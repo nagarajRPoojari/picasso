@@ -18,7 +18,7 @@ void runtime_init(void);
  * @param size Number of bytes to allocate.
  * @return Pointer to allocated memory (never NULL if GC initialized correctly).
  */
-void *lang_alloc(long size);
+void *__public__alloc(long size);
 
 /**
  * @brief Allocate memory that the GC should not scan.

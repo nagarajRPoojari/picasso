@@ -204,7 +204,7 @@ void async_file_write() {
  *
  * @return Pointer to allocated buffer containing the read data.
  */
-void* ascan(int n) {
+void* __public__ascan(int n) {
     char* buf = (char*)allocate(__arena__, n * sizeof(char));
     current_task->fd = STDIN_FILENO;
     current_task->buf = buf;
@@ -225,7 +225,7 @@ void* ascan(int n) {
  *
  * @return NULL on success, NULL on allocation or formatting failure.
  */
-void* aprintf(const char* fmt, ...) {
+void* __public__aprintf(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     
@@ -265,7 +265,7 @@ void* aprintf(const char* fmt, ...) {
  *
  * @return Pointer to bytes read count in current task context.
  */
-void* afread(char* f, char* buf, int n, int offset) {
+void* __public__afread(char* f, char* buf, int n, int offset) {
     int fd = fileno((FILE*)f);
     current_task->fd = fd;
     current_task->buf = buf;
@@ -288,7 +288,7 @@ void* afread(char* f, char* buf, int n, int offset) {
  *
  * @return Pointer to bytes written count in current task context.
  */
-void* afwrite(char* f, char* buf, int n, int offset) {
+void* __public__afwrite(char* f, char* buf, int n, int offset) {
     int fd = fileno((FILE*)f);
     current_task->fd = fd;
     current_task->buf = (char*)buf;
@@ -309,7 +309,7 @@ void* afwrite(char* f, char* buf, int n, int offset) {
  *
  * @return Pointer to allocated buffer containing the read data.
  */
-void* sscan(int n) {
+void* __public__sscan(int n) {
     if (n <= 0) return NULL;
     
     char* buf = (char*)allocate(__arena__, n * sizeof(char));
@@ -334,7 +334,7 @@ void* sscan(int n) {
  *
  * @return Number of bytes written on success, -1 on error.
  */
-int sprintf(const char* fmt, ...) {
+int __public__sprintf(const char* fmt, ...) {
     if (!fmt) return -1;
     
     va_list ap;
@@ -377,7 +377,7 @@ int sprintf(const char* fmt, ...) {
  *
  * @return Number of bytes read on success, -1 on error.
  */
-int sfread(char* f, char* buf, int n, int offset) {
+int __public__sfread(char* f, char* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
@@ -404,7 +404,7 @@ int sfread(char* f, char* buf, int n, int offset) {
  *
  * @return Number of bytes written on success, -1 on error.
  */
-int sfwrite(char* f, char* buf, int n, int offset) {
+int __public__sfwrite(char* f, char* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);

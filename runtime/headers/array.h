@@ -12,10 +12,10 @@ typedef struct {
 } Array;
 
 /**
- * @brief allocate block of memory for array through GC_MALLOC 
+ * @brief allocate block of memory for array through custom allocator
  *
  * @param count length of array
  * @param elem_size size of each element
  */
-Array* lang_alloc_array(int count, int elem_size);
+Array* __public__alloc_array(int count, int elem_size);
 #endif

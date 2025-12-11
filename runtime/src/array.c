@@ -9,7 +9,7 @@
  */
 extern __thread arena_t* __arena__;
 
-Array* lang_alloc_array(int count, int elem_size) {
+Array* __public__alloc_array(int count, int elem_size) {
     Array* arr = (Array*)allocate(__arena__, sizeof(Array));
     arr->length = count;
     arr->data = allocate(__arena__, count*elem_size); /* should init with zero */
