@@ -11,18 +11,27 @@ gc_state_t gc_state;
 arena_t* arenas[MAX_ARENAS];
 int arenas_count;
 
-arena_t* gc_create_arena() {
+/* keep track of kernel/scheduler threads */
+kernel_thread_t* kts[MAX_SCHEDULERS];
+int kts_count;
+
+
+arena_t* gc_create_arena(kernel_thread_t* kt) {
+    /* register thread*/
+    kts[kts_count++] = kt;
+
     if(arenas_count + 1 > MAX_ARENAS) {
         perror("failed to create new arena: arena count reached max\n");
         return NULL;
     }
 
-    arena_t* ar = arena_create();
+    arena_t* ar = arena_create()̦;
 
     /* register arena */
     arenas[arenas_count++] = ar;
     return ar;
 }
+
 
 void gc_run() {
     printf(" started gc \n");
@@ -30,9 +39,6 @@ void gc_run() {
         gc_stop_the_world();
 
         printf(" STOP THE WORLD \n");
-        // mark & sweep
-
-        gc_resume_world();
 
         usleep(GC_TIMEPERIOD);
     }

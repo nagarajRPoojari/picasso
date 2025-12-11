@@ -3,10 +3,13 @@
 
 #include <pthread.h>
 #include <stdatomic.h>
+#include <ucontext.h>
+#include "scheduler.h" // external: runtime
+
 
 #define GC_TIMEPERIOD (1200 * 1000) // in microseconds
 #define MAX_ARENAS 12
-
+#define MAX_SCHEDULERS 12 
 
 typedef struct gc_state {
     atomic_int       world_stopped;      // 0 = running, 1 = requested stop
@@ -18,8 +21,8 @@ typedef struct gc_state {
     atomic_int        total_threads;      // mutators only
 } gc_state_t;
 
-arena_t* gc_create_arena();
-void gc_init();
+arena_t* gc_create_arena(kernel_thread_t* th);
+void gc_init(); 
 void gc_stop_the_world();
 void gc_resume_world();
 
