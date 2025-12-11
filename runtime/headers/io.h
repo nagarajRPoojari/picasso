@@ -1,12 +1,11 @@
 #ifndef IO_H
-#define IO_H
-
+''
 #include "queue.h"
 #include "task.h"
 
 
-/** Number of I/O worker threads in the pool */
-#define IO_THREAD_POOL_SIZE 1
+/** Number of I/O worker threads in the pool, must be kept equal to number of scheduler threads */
+#define IO_THREAD_POOL_SIZE 4
 
 /**  @depricated: Maximum number of events returned by epoll_wait at once */
 #define MAX_EVENTS 16
@@ -15,7 +14,10 @@
 #define IO_QUEUE_SIZE 256
 
 /** Queue depth */
-#define QUEUE_DEPTH  32
+#define QUEUE_DEPTH  256
+
+/** @deprecated: io_uring submission done when req hits this threshold */
+#define SUBMIT_THRESHOLD (256/2)
 
 extern struct io_uring **io_ring_map;
 
@@ -41,7 +43,7 @@ void *io_worker(void *arg);
  *
  * @return void
  */
-void _async_stdin_read(void);
+void async_stdin_read(void);
 
 /**
  * @brief Internal helper to asynchronously write to STDOUT using io_uring.
@@ -55,7 +57,7 @@ void _async_stdin_read(void);
  *
  * @note Exits the process if SQE allocation or submission fails.
  */
-void _async_stdout_write();
+void async_stdout_write();
 
 /**
  * @brief Internal helper to asynchronously read from a file descriptor using io_uring.
@@ -67,7 +69,7 @@ void _async_stdout_write();
  *
  * @return void
  */
-void _async_file_read(void);
+void async_file_read(void);
 
 /**
  * @brief Internal helper to asynchronously write to a file descriptor using io_uring.
@@ -80,7 +82,7 @@ void _async_file_read(void);
  *
  * @note Exits the process if SQE allocation or submission fails.
  */
-void _async_file_write();
+void async_file_write();
 
 /**
  * @brief Public API for asynchronous STDIN read.
@@ -94,45 +96,35 @@ void _async_file_write();
  *
  * @return void* Pointer to `current_task->nread` indicating number of bytes read.
  */
-void* async_stdin_read(char* buf, int n);
-
 void* ascan(int n);
 
 /**
- * @brief Public API for asynchronous STDOUT write using io_uring.
+ * @brief Asynchronously write formatted output to STDOUT using io_uring.
  *
- * Configures the current task to write `n` bytes from buffer `buf`
- * to STDOUT. Submits the write request via io_uring and yields execution
- * until the operation completes.
+ * Formats the input string and arguments, allocates a buffer for the result,
+ * configures the current task with write parameters, and submits an io_uring
+ * write request. Yields until the operation completes.
  *
- * @param buf Pointer to buffer containing data to write.
- * @param n   Number of bytes to write.
+ * @param fmt Format string (printf-style).
+ * @param ... Variable arguments matching the format string.
  *
- * @return void* Pointer to `current_task->nwrite`, which holds the number of bytes written.
- *
- * @note STDOUT is set to non-blocking mode before submission.
+ * @return NULL on success, NULL on allocation or formatting failure.
  */
-void* async_stdout_write(const char* buf, int n);
-
 void* aprintf(const char* fmt, ...);
 
 /**
- * @brief Public API for asynchronous file read.
+ * @brief Asynchronously read n bytes from a file at a given offset.
  *
- * Configures the current task context for reading `n` bytes from the
- * given file descriptor `fd` starting at `offset` into `buf`. Submits
- * the operation through io_uring and yields the current task until
- * the operation completes.
+ * Configures the current task with the file descriptor, buffer, byte count,
+ * and offset, then submits an io_uring read request. Yields until completion.
  *
- * @param fd      File descriptor to read from.
- * @param buf     Pointer to buffer where data will be stored.
- * @param n       Number of bytes to read.
- * @param offset  Offset in file to begin reading.
- * 
- * @return void*  Pointer to `current_task->nread` indicating number of bytes read.
+ * @param f      FILE pointer to read from.
+ * @param buf    Buffer to store read data.
+ * @param n      Number of bytes to read.
+ * @param offset File offset to start reading from.
+ *
+ * @return Pointer to bytes read count in current task context.
  */
-void* async_file_read(int fd, char* buf, int n, int offset);
-
 void* afread(char* f, char* buf, int n, int offset);
 
 /**
@@ -152,8 +144,6 @@ void* afread(char* f, char* buf, int n, int offset);
  *
  * @note Assumes `current_task` and its scheduler context are properly initialized.
  */
-void* async_file_write(int fd, const char* buf, int n, int offset);
-
 void* afwrite(char* f, char* buf, int n, int offset);
 
 #endif

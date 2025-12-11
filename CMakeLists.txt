@@ -61,19 +61,25 @@ add_executable(scheduler
 add_dependencies(scheduler always)
 add_dependencies(scheduler build_go_obj)
 
+# --- FIX: Manually adding the liburing include path ---
+# Common paths for liburing headers are /usr/include/liburing or /usr/local/include/liburing
 target_include_directories(scheduler PRIVATE
     ${RUNTIME_HEADERS}
     ${GC_HEADERS}
+    /usr/include/liburing  # Add liburing specific include path
 )
 
+# --- FIX: REMOVING find_package ---
+# remove the line: # find_package(liburing REQUIRED)
+
 # ------------------------------------------------------------
-# Link libs
+# Link libs (FIXED: Using direct linker name for liburing)
 # ------------------------------------------------------------
 target_link_libraries(scheduler PRIVATE
     /usr/local/lib/libgc.so
     pthread
-    uring
     m
+    /usr/lib/aarch64-linux-gnu/liburing.so 
 )
 
 # ------------------------------------------------------------

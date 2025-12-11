@@ -7,6 +7,12 @@
 /* Size of per-task I/O buffer (bytes) */
 #define TASK_IO_BUFFER 256
 
+typedef enum {
+    TASK_RUNNING, 
+    TASK_YIELDED,
+    TASK_FINISHED
+} task_state_t;
+
 /**
  * @struct task_t
  * @brief Represents a single task/coroutine managed by the scheduler.
@@ -51,6 +57,9 @@ typedef struct task {
 
     /* Flag indicating whether epoll is used for this task */
     int use_epoll; 
+
+    /* task state: RUNNING, YIELDED, TERMINATED */
+    task_state_t state;
 } task_t;
 
 #endif

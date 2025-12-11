@@ -43,7 +43,6 @@ void *io_worker(void *arg) {
             task_t *t = io_uring_cqe_get_data(cqe);
             t->done_n = cqe->res;
             io_uring_cqe_seen(io_ring_map[id], cqe);
-            
             safe_q_push(&(kernel_thread_map[t->sched_id]->ready_q), t);
         }
     }
@@ -59,9 +58,9 @@ void *io_worker(void *arg) {
  *
  * @return void
  */
-void _async_stdin_read() {
+void async_stdin_read() {
     struct io_uring_sqe *sqe;
-    while ((sqe = io_uring_get_sqe(io_ring_map[0])) == NULL) {
+    while ((sqe = io_uring_get_sqe(io_ring_map[current_task->sched_id])) == NULL) {
         task_yield(kernel_thread_map[current_task->sched_id]);
     }
 
@@ -78,7 +77,7 @@ void _async_stdin_read() {
 
     io_uring_sqe_set_data(sqe, current_task);
 
-    int ret = io_uring_submit(io_ring_map[0]);
+    int ret = io_uring_submit(io_ring_map[current_task->sched_id]);
     if (ret < 0) {
         fprintf(stderr, "io_uring_submit: %s\n", strerror(-ret));
         exit(1);
@@ -100,9 +99,9 @@ void _async_stdin_read() {
  *
  * @note Exits the process if SQE allocation or submission fails.
  */
-void _async_stdout_write() {
+void async_stdout_write() {
     struct io_uring_sqe *sqe;
-    while ((sqe = io_uring_get_sqe(io_ring_map[0])) == NULL) {
+    while ((sqe = io_uring_get_sqe(io_ring_map[current_task->sched_id])) == NULL) {
         task_yield(kernel_thread_map[current_task->sched_id]);
     }
 
@@ -119,7 +118,7 @@ void _async_stdout_write() {
 
     io_uring_sqe_set_data(sqe, current_task);
 
-    int ret = io_uring_submit(io_ring_map[0]);
+    int ret = io_uring_submit(io_ring_map[current_task->sched_id]);
     if (ret < 0) {
         fprintf(stderr, "io_uring_submit (stdout): %s\n", strerror(-ret));
         exit(1);
@@ -139,9 +138,9 @@ void _async_stdout_write() {
  *
  * @return void
  */
-void _async_file_read() {
+void async_file_read() {
     struct io_uring_sqe *sqe;
-    while ((sqe = io_uring_get_sqe(io_ring_map[0])) == NULL) {
+    while ((sqe = io_uring_get_sqe(io_ring_map[current_task->sched_id])) == NULL) {
         task_yield(kernel_thread_map[current_task->sched_id]);
     }
 
@@ -153,7 +152,7 @@ void _async_file_read() {
                     );
 
     io_uring_sqe_set_data(sqe, current_task);
-    io_uring_submit(io_ring_map[0]);
+    io_uring_submit(io_ring_map[current_task->sched_id]);
 
     task_yield(kernel_thread_map[current_task->sched_id]);
 }
@@ -169,9 +168,9 @@ void _async_file_read() {
  *
  * @note Exits the process if SQE allocation or submission fails.
  */
-void _async_file_write() {
+void async_file_write() {
     struct io_uring_sqe *sqe;
-    while ((sqe = io_uring_get_sqe(io_ring_map[0])) == NULL) {
+    while ((sqe = io_uring_get_sqe(io_ring_map[current_task->sched_id])) == NULL) {
         task_yield(kernel_thread_map[current_task->sched_id]);
     }
 
@@ -185,7 +184,7 @@ void _async_file_write() {
 
     io_uring_sqe_set_data(sqe, current_task);
 
-    int ret = io_uring_submit(io_ring_map[0]);
+    int ret = io_uring_submit(io_ring_map[current_task->sched_id]);
     if (ret < 0) {
         fprintf(stderr, "io_uring_submit (write): %s\n", strerror(-ret));
         exit(1);
@@ -196,135 +195,106 @@ void _async_file_write() {
 
 
 /**
- * @brief Public API for asynchronous STDIN read.
+ * @brief Asynchronously read n bytes from STDIN.
  *
- * Configures the current task for reading `n` bytes from STDIN into
- * the provided buffer `buf`. Submits the read request through io_uring
- * and yields until the operation completes.
+ * Allocates a buffer, configures the current task with the read parameters,
+ * and submits an io_uring read request for STDIN. Yields until completion.
  *
- * @param buf Pointer to buffer where data will be stored.
- * @param n   Number of bytes to read.
+ * @param n Number of bytes to read.
  *
- * @return void* Pointer to `current_task->done_n` indicating number of bytes read.
+ * @return Pointer to allocated buffer containing the read data.
  */
-void* async_stdin_read(char* buf, int n) {
+void* ascan(int n) {
+    char* buf = (char*)allocate(__arena__, n * sizeof(char));
     current_task->fd = STDIN_FILENO;
     current_task->buf = buf;
     current_task->req_n = n;
-    _async_stdin_read();
-    return &(current_task->done_n);
-}
-
-void* ascan(int n) {
-    char* buf = (char*)allocate(__arena__, n * sizeof(char));
-    async_stdin_read(buf, n);
+    async_stdin_read();
     return buf;
 }
 
 /**
- * @brief Public API for asynchronous STDOUT write using io_uring.
+ * @brief Asynchronously write formatted output to STDOUT using io_uring.
  *
- * Configures the current task to write `n` bytes from buffer `buf`
- * to STDOUT. Submits the write request via io_uring and yields execution
- * until the operation completes.
+ * Formats the input string and arguments, allocates a buffer for the result,
+ * configures the current task with write parameters, and submits an io_uring
+ * write request. Yields until the operation completes.
  *
- * @param buf Pointer to buffer containing data to write.
- * @param n   Number of bytes to write.
+ * @param fmt Format string (printf-style).
+ * @param ... Variable arguments matching the format string.
  *
- * @return void* Pointer to `current_task->done_n`, which holds the number of bytes written.
- *
- * @note STDOUT is set to non-blocking mode before submission.
+ * @return NULL on success, NULL on allocation or formatting failure.
  */
-void* async_stdout_write(const char* buf, int n) {
-    current_task->fd = STDOUT_FILENO;
-    current_task->buf = (char*)buf;
-    current_task->req_n = n;
-    _async_stdout_write();
-    return &(current_task->done_n);
-}
-
 void* aprintf(const char* fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-
+    
     /** estimate needed size */
     char tmp[1];
     int len = vsnprintf(tmp, sizeof(tmp), fmt, ap);
     va_end(ap);
-
+    
     if (len < 0) return NULL;
-
+    
     char* buf = malloc(len + 1);
     if (!buf) return NULL;
-
+    
     va_start(ap, fmt);
     vsnprintf(buf, len + 1, fmt, ap);
     va_end(ap);
+    
+    current_task->fd = STDOUT_FILENO;
+    current_task->buf = (char*)buf;
+    current_task->req_n = len;
+    
+    async_stdout_write();
 
-    void* handle = async_stdout_write(buf, len);
-
-    // free(buf);
-    return handle;
+    return NULL;
 }
 
 /**
- * @brief Public API for asynchronous file read.
+ * @brief Asynchronously read n bytes from a file at a given offset.
  *
- * Configures the current task context for reading `n` bytes from the
- * given file descriptor `fd` starting at `offset` into `buf`. Submits
- * the operation through io_uring and yields the current task until
- * the operation completes.
+ * Configures the current task with the file descriptor, buffer, byte count,
+ * and offset, then submits an io_uring read request. Yields until completion.
  *
- * @param fd      File descriptor to read from.
- * @param buf     Pointer to buffer where data will be stored.
- * @param n       Number of bytes to read.
- * @param offset  Offset in file to begin reading.
- * 
- * @return void*  Pointer to `current_task->done_n` indicating number of bytes read.
+ * @param f      FILE pointer to read from.
+ * @param buf    Buffer to store read data.
+ * @param n      Number of bytes to read.
+ * @param offset File offset to start reading from.
+ *
+ * @return Pointer to bytes read count in current task context.
  */
-void* async_file_read(int fd, char* buf, int n, int offset) {
+void* afread(char* f, char* buf, int n, int offset) {
+    int fd = fileno((FILE*)f);
     current_task->fd = fd;
     current_task->buf = buf;
     current_task->req_n = n;
     current_task->offset = offset;
-    _async_file_read();
-    return &(current_task->done_n);
-}
-
-void* afread(char* f, char* buf, int n, int offset) {
-    int fd = fileno((FILE*)f);
-    async_file_read(fd, buf, n, offset);
+    async_file_read();
     return current_task->done_n; /* @todo: not tested return address */
 }
 
 /**
- * @brief Public API for asynchronous file write using io_uring.
+ * @brief Asynchronously write n bytes to a file at a given offset.
  *
- * Configures the current task to write `n` bytes from buffer `buf`
- * to the specified file descriptor `fd` starting at the given `offset`.
- * Submits the write request via io_uring and yields execution until
- * the operation completes.
+ * Configures the current task with the file descriptor, buffer, byte count,
+ * and offset, then submits an io_uring write request. Yields until completion.
  *
- * @param fd      File descriptor to write to.
- * @param buf     Pointer to buffer containing data to write.
- * @param n       Number of bytes to write.
- * @param offset  File offset to begin writing from.
+ * @param f      FILE pointer to write to.
+ * @param buf    Buffer containing data to write.
+ * @param n      Number of bytes to write.
+ * @param offset File offset to start writing from.
  *
- * @return void*  Pointer to `current_task->done_n`, which holds the number of bytes written.
- *
- * @note Assumes `current_task` and its scheduler context are properly initialized.
+ * @return Pointer to bytes written count in current task context.
  */
-void* async_file_write(int fd, const char* buf, int n, int offset) {
+void* afwrite(char* f, char* buf, int n, int offset) {
+    int fd = fileno((FILE*)f);
     current_task->fd = fd;
     current_task->buf = (char*)buf;
     current_task->req_n = n;
     current_task->offset = offset;
-    _async_file_write();
-    return &(current_task->done_n);
-}
 
-void* afwrite(char* f, char* buf, int n, int offset) {
-    int fd = fileno((FILE*)f);
-    async_file_write(fd, buf, n, offset);
+    async_file_write();
     return current_task->done_n; /* @todo: not tested return address */
 }

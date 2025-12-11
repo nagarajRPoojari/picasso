@@ -12,6 +12,7 @@
 #include <stdint.h> 
 #include <semaphore.h>
 #include <stdatomic.h>
+#include <signal.h>
 
 
 #include "scheduler.h"
@@ -47,6 +48,7 @@ void task_resume(task_t *t, kernel_thread_t* kt);
  */
 void* task_trampoline(task_t *t, void *this) {
     t->fn(this);
+    t->state = TASK_FINISHED;
     return NULL;
 }
 
@@ -57,16 +59,16 @@ void* task_trampoline(task_t *t, void *this) {
 void more_stack(int sig, siginfo_t *si, void *unused) {
     ucontext_t *ctx = (ucontext_t *)unused;
 
-    uintptr_t old_stack_base = (uintptr_t)current_task->stack;                  // Base of usable stack
+    uintptr_t old_stack_base = (uintptr_t)current_task->stack;                  
     uintptr_t sp = (uintptr_t)ctx->uc_mcontext.sp;
 
     if (sp < old_stack_base) {
         sp = old_stack_base;   // clamp to prevent underflow
     }
 
-    uintptr_t old_stack_base_guard = (uintptr_t)current_task->stack - PAGE_SIZE; // Base of mmap region
+    uintptr_t old_stack_base_guard = (uintptr_t)current_task->stack - PAGE_SIZE; 
     size_t    old_stack_size = current_task->stack_size;
-    uintptr_t old_stack_top = old_stack_base + old_stack_size;                  // Top of usable stack
+    uintptr_t old_stack_top = old_stack_base + old_stack_size;                  
     uintptr_t copy_size = old_stack_top - sp;
 
 
@@ -83,52 +85,13 @@ void more_stack(int sig, siginfo_t *si, void *unused) {
        (unsigned long)(uintptr_t)sp,
        (unsigned long)(uintptr_t)old_stack_top);
 
-    // Active stack data runs from SP up to old_stack_top
-    if (copy_size > old_stack_size) {
-        // safe_debug("[FATAL] Stack pointer error: copy size exceeds task stack size.\n");
-        _exit(1);
+    if (sp > old_stack_base) {
+        return;
     }
 
-    mprotect((void*)old_stack_base_guard, PAGE_SIZE, PROT_NONE);
-
-    // Ensure we don't try to copy more than the stack size (shouldn't happen 
-    // if the guard page is respected, but good for safety)
-    if (copy_size > old_stack_size) {
-        fprintf(stderr, "[FATAL] Stack pointer error: copy size exceeds task stack size.\n");
-        exit(1);
-    }
-    
-    size_t new_stack_size = old_stack_size * 2;
-    size_t total_size = new_stack_size + PAGE_SIZE;
-
-    void* mapped = mmap(NULL, total_size, PROT_READ | PROT_WRITE,
-                        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    
-    if (mapped == MAP_FAILED) {
-        perror("mmap failed during stack growth");
-        exit(1);
-    }
-
-    // Protect the first page (GUARD_PAGE)
-    if (mprotect(mapped, PAGE_SIZE, PROT_NONE) != 0) {
-        perror("mprotect failed during stack growth");
-        exit(1);
-    }
-
-    void* new_stack_base = (char*)mapped + PAGE_SIZE;
-    uintptr_t new_stack_top = (uintptr_t)new_stack_base + new_stack_size;
-
-    // The stack grows downward. We copy only the active data (from SP to old_stack_top).
-    // The new SP must maintain the same offset from the new stack top.
-    uintptr_t new_sp = new_stack_top - copy_size;
-    
-    // memcpy(destination, source, size)
-    memcpy((void*)new_sp, (void*)sp, copy_size); 
-
-    current_task->stack = new_stack_base;
-    current_task->stack_size = new_stack_size;
-    
-    ctx->uc_mcontext.sp = new_sp;
+    /* abort for now */
+    printf("[FATAL] ================= stack over flow ================= \n" );
+    exit(1);
 }
 
 /**
@@ -179,7 +142,7 @@ void task_destroy(task_t *t) {
     if (munmap(original_base, total_size) != 0) {
         perror("munmap failed in task_destroy");
     }
-    // free(t);
+    free(t);
 }
 
 volatile sig_atomic_t preempt[SCHEDULER_THREAD_POOL_SIZE];
@@ -190,8 +153,8 @@ volatile sig_atomic_t preempt[SCHEDULER_THREAD_POOL_SIZE];
  * 
  * @param sv Signal value passed by the POSIX timer.
  */
-void force_preempt(union sigval sv) {
-    int tid = *(int *)sv.sival_ptr;
+void force_preempt(int sig, siginfo_t *si, void *uc) {
+    int tid = *(int *)si->si_value.sival_ptr; 
     preempt[tid] = 1;
 }
 
@@ -204,14 +167,24 @@ void force_preempt(union sigval sv) {
  * @param arg Pointer to the scheduler thread ID (int*).
  */
 void init_timer_signal_handler(void *arg) {
+    struct sigaction sa;
+    sa.sa_flags = SA_SIGINFO; 
+    sa.sa_sigaction = force_preempt; 
+    
+    sigemptyset(&sa.sa_mask); 
+    
+    if (sigaction(SIGRTMIN, &sa, NULL) == -1) {
+        perror("sigaction failed");
+    }
+
     timer_t tid;
     struct sigevent sev;
     struct itimerspec its;
 
-    sev.sigev_notify = SIGEV_THREAD;
-    sev.sigev_notify_function = force_preempt;
-    sev.sigev_notify_attributes = NULL;
-    sev.sigev_value.sival_ptr = arg;
+    sev.sigev_notify = SIGEV_SIGNAL;
+    sev.sigev_signo = SIGRTMIN; 
+    sev.sigev_value.sival_ptr = arg; 
+
 
     if (timer_create(CLOCK_REALTIME, &sev, &tid) == -1) {
         perror("timer_create");
@@ -219,9 +192,9 @@ void init_timer_signal_handler(void *arg) {
     }
 
     its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = 500000;  // Changed to 0.5ms (500,000ns) for less overhead
+    its.it_value.tv_nsec = 50000000;
     its.it_interval.tv_sec = 0;
-    its.it_interval.tv_nsec = 500000;
+    its.it_interval.tv_nsec = 50000000;
 
     if (timer_settime(tid, 0, &its, NULL) == -1) {
         perror("timer_settime");
@@ -300,7 +273,7 @@ void self_yield() {
 
     pthread_mutex_lock(&gc_state.lock);
 
-    if (atomic_fetch_add(&gc_state.stopped_count, 1) + 1 == gc_state.total_threads){
+    if (atomic_fetch_add(&gc_state.stopped_count, 1) + 1 == atomic_load(&gc_state.total_threads)){
         printf("[MUTATOR] tell gc that I stopped \n");
         pthread_cond_signal(&gc_state.cv_mutators_stopped);
     }
@@ -347,8 +320,15 @@ void* scheduler_run(void* arg) {
 
     while (1) {
         task_t *t;
-        while ((t = safe_q_pop(&kt->ready_q)) != NULL) {
+        while ((t = safe_q_pop_wait(&kt->ready_q)) != NULL) {
+            atomic_fetch_add(&gc_state.total_threads, 1);
+
+            t->state = TASK_RUNNING;
             task_resume(t, kt);
+            if (t->state == TASK_FINISHED) {
+                task_destroy(t);
+            }
+            atomic_fetch_sub(&gc_state.total_threads, 1);
         }
     }
     return NULL; 

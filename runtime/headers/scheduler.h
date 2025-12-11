@@ -15,14 +15,14 @@
  * Number of scheduler threads (kernel threads) in the pool.
  * Each thread manages its own local ready queue and executes tasks.
  */
-#define SCHEDULER_THREAD_POOL_SIZE 1
+#define SCHEDULER_THREAD_POOL_SIZE 4
 
 /**
  * Maximum number of tasks in a scheduler thread's local queue.
  * Tasks pushed beyond this may need to go to a global queue or block.
  * @todo: use this
  */
-#define SCHEDULER_LOCAL_QUEUE_SIZE 256
+#define SCHEDULER_LOCAL_QUEUE_SIZE 4024
 
 /** 
  * Size of the guard page used for stack overflow detection (in bytes).
@@ -139,7 +139,7 @@ void init_stack_signal_handler(void);
  * 
  * @param sv Signal value passed by the POSIX timer.
  */
-void force_preempt(union sigval sv);
+void force_preempt(int sig, siginfo_t *si, void *uc);
 
 /**
  * @brief Initialize per-thread timer signal handler.

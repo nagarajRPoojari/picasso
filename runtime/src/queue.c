@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <pthread.h>
+#include <stdio.h>
 
 #include "queue.h"
 #include "task.h"
@@ -31,7 +32,7 @@ void safe_q_init(safe_queue_t *q, int size) {
  * @param t Task to push.
  */
 void safe_q_push(safe_queue_t *q, task_t *t) {
-    task_node_t *n = malloc(sizeof(*n));
+    task_node_t *n = malloc(sizeof(*n)); /* need to be freed */
     n->t = t; n->next = NULL;
 
     pthread_mutex_lock(&q->lock);
@@ -107,6 +108,6 @@ task_t *safe_q_pop_wait(safe_queue_t *q) {
     pthread_mutex_unlock(&q->lock);
     task_t *t = n->t;
 
-    // free(n);
+    free(n);
     return t;
 }

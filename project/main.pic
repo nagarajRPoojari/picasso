@@ -15,30 +15,31 @@ class Worker {
         sync.atomic_add(this._thread_id, 1);
         say id: int = sync.atomic_load(this._thread_id);
 
-        say buff_size: int = 256;
+        say buff_size: int = 1024 ;
         say buf: []int8 = array.create(int8, buff_size);
         say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
         say seek: int = 0;
 
         foreach i in 1..10000 {
             say n: int = asyncio.fread(fp, buf, buff_size, seek);
-            syncio.printf("[%d]=> done - %d \n", id, i);
+            if(i==9999){
+                syncio.printf("=========[%d]=> done - %d \n", id, i);
+                return;
+            }
             // seek = seek + buff_size;
             // asyncio.printf("%.*s\n", n, buf);
 
-            if(n<buff_size) {
-                return;
-            }else {}
+            // if(n<buff_size) {
+            //     return;
+            // }else {}
         }
     }
 }
 
 fn start() {
     say w1: Worker = new Worker(1000);
-    thread(w1.do);
-    thread(w1.do);
 
-    // say buf: []int = array.create(int, 10);
-    // syncio.printf(" size of %d \n ", array.len(buf));
-    // thread(w1.do);
+    foreach i in 1..100 {
+       thread(w1.do);
+    }
 }
