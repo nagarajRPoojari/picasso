@@ -704,7 +704,7 @@ static void release_unsafe(arena_t* ar, void* ptr) {
     if (size <= 16 * FASTBINS_COUNT) { 
         int idx = (size >> 4) - 1;
         if (idx >= 0 && idx < FASTBINS_COUNT) {
-            printf("Releasing chunk size: %zu to fastbin  ar->fastbins[idx] = %p \n", size,  ar->fastbins[idx]);
+            Debug("Releasing chunk size: %zu to fastbin  ar->fastbins[idx] = %p \n", size,  ar->fastbins[idx]);
             fc->fd = ar->fastbins[idx];
             ar->fastbins[idx] = fc;
             return;
@@ -715,6 +715,8 @@ static void release_unsafe(arena_t* ar, void* ptr) {
     free_chunk_t* merged_chunk = coalesce(ar, fc);
     /* merged_chunk = NULL indicates, fc has been merged with top_chunk */
     if(!merged_chunk) return;
+
+    merged_chunk->size &= ~__CURR_IN_USE_FLAG_MASK;
     
     size = get_size(merged_chunk);
     Debug("Releasing chunk size (after coalescing): %zu. addr= %p \n", size, merged_chunk);

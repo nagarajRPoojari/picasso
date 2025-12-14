@@ -103,7 +103,7 @@ static int try_mark_pointer(uintptr_t val) {
 
 /* Scan a memory region (stack or other) - read words safely and test each as pointer */
 static void gc_mark_mem_region(char *start, char *end) {
-    printf("gc_mark_mem_region - [%p ... %p]\n", (char*)start, (void*)end);
+    // printf("gc_mark_mem_region - [%p ... %p]\n", (char*)start, (void*)end);
     
     // read as uintptr_t; use memcpy for safe unaligned reads on strict platforms
     for (char *p = start; p + (ptrdiff_t)sizeof(uintptr_t) <= end; p += sizeof(uintptr_t)) {
@@ -129,6 +129,24 @@ static void gc_mark_registers(ucontext_t *ctx) {
     try_mark_pointer((uintptr_t)ctx->uc_mcontext.pc);
 }
 
+static void gc_mark_task(ucontext_t *ctx) {
+    // stack
+    char *stack_bottom = (char*)ctx->uc_stack.ss_sp;             // lowest address
+    char *stack_top    = stack_bottom + ctx->uc_stack.ss_size;   // highest address
+
+    char *sp = (char*)ctx->uc_mcontext.sp;                       // current SP
+
+    if (sp < stack_bottom || sp > stack_top) {
+        perror(" wrong stack \n");
+        return;
+    }
+
+    gc_mark_mem_region(stack_bottom, stack_top);
+
+    // registers
+    gc_mark_registers(ctx);
+}
+
 static void gc_mark() {
 
     for(int kti = 0; kti < kts_count; kti++ ){
@@ -138,25 +156,21 @@ static void gc_mark() {
             return;
         }
 
-        ucontext_t *ctx = &kt->current->ctx;
+        gc_mark_task(&kt->current->ctx);
 
-        // stack
-        char *stack_bottom = (char*)ctx->uc_stack.ss_sp;             // lowest address
-        char *stack_top    = stack_bottom + ctx->uc_stack.ss_size;   // highest address
-
-        char *sp = (char*)ctx->uc_mcontext.sp;                       // current SP
-
-        if (sp < stack_bottom || sp > stack_top) {
-            perror(" wrong stack \n");
-            return;
+        /* It took 9hr to debug the issue. previously scanning only RUNNING task stack, 
+        need to scan all task stack. */
+        task_node_t* head = kt->ready_q.head;
+        while(head) {
+            task_t* t = head->t;
+            gc_mark_task(&t->ctx);
+            head = head->next;
         }
-        gc_mark_mem_region(sp, stack_top);
-
-        // registers
-        gc_mark_registers(ctx);
     }
     
 }
+
+
 
 static void gc_sweep() {
 
@@ -181,8 +195,8 @@ static void gc_sweep() {
                 if( chunk->prev_size & __GC_MARK_FLAG_MASK || !(chunk->size & __CURR_IN_USE_FLAG_MASK)) {
                     chunk->prev_size & ~__GC_MARK_FLAG_MASK;
                 } else {
+                    // printf("[gc] releasing %p [size=%zu] \n", (char*)chunk + HEADER_SIZE, chunk->size & __CHUNK_SIZE_MASK);
                     release(ar, (char*)chunk + HEADER_SIZE);
-                    return;
                 }
 
                 scan += HEADER_SIZE + payload_size;

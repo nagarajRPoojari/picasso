@@ -28,17 +28,17 @@ class Worker {
         sync.atomic_add(this._thread_id, 1);
         say id: int = sync.atomic_load(this._thread_id);
 
-        say buff_size: int = 64;
+        say buff_size: int = 256;
         say buf: []int8 = array.create(int8, buff_size);
 
-        asyncio.printf(" value of array = %p \n", buf);
+        syncio.printf(" value of array = %p \n", buf);
         say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
         say seek: int = 0;
 
-        foreach i in 1..100000 {
-            say n: int = syncio.fread(fp, buf, buff_size, seek);
-            if(i==99999){
-                syncio.printf("=========[%d]=> done - %d \n", id, i);
+        foreach i in 1..10000 {
+            say n: int = asyncio.fread(fp, buf, buff_size, seek);
+            if(i==9999){
+                syncio.printf("=========[%d]=> done - %d buf = %p\n", id, i, buf);
                 return;
             }
             // seek = seek + buff_size;
