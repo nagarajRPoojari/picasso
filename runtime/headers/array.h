@@ -1,14 +1,16 @@
 #ifndef ARRAY_H
 #define ARRAY_H
+#include <stdint.h> 
 
 /**
  * @struct Array
  */
+
 typedef struct {
-    int length;
-    void* data;
-    int* shape; /** int64 block of memory, e.g [3,3,4] */
-    int rank;   /** dimension of the array */
+    int8_t* data;
+    int64_t* shape; 
+    int64_t length; 
+    int64_t rank;  
 } Array;
 
 /**
@@ -17,5 +19,13 @@ typedef struct {
  * @param count length of array
  * @param elem_size size of each element
  */
-Array* __public__alloc_array(int count, int elem_size);
+Array* __public__alloc_array(int count, int elem_size, int rank);
+
+
+/**
+ * @brief utility func to print array information
+ * 
+ * @param arr array struct instance
+ */
+void __public__debug_array_info(Array* arr);
 #endif
