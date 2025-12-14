@@ -236,7 +236,7 @@ void* __public__aprintf(const char* fmt, ...) {
     
     if (len < 0) return NULL;
     
-    char* buf = malloc(len + 1);
+    char* buf = allocate(__arena__, len + 1);
     if (!buf) return NULL;
     
     va_start(ap, fmt);
@@ -347,7 +347,7 @@ int __public__sprintf(const char* fmt, ...) {
     
     if (len < 0) return -1;
     
-    char* buf = malloc(len + 1);
+    char* buf = allocate(__arena__, len + 1);
     if (!buf) return -1;
     
     va_start(ap, fmt);
@@ -355,7 +355,6 @@ int __public__sprintf(const char* fmt, ...) {
     va_end(ap);
     
     ssize_t bytes_written = write(STDOUT_FILENO, buf, len);
-    free(buf);
     
     if (bytes_written < 0) {
         return -1;
