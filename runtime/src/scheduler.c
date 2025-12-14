@@ -106,7 +106,7 @@ void init_stack_signal_handler() {
 
     // allocating alternate stack for SIG handler
     stack_t altstack;
-    altstack.ss_sp = malloc(SIGSTKSZ); // This is safe because it runs on the kernel stack
+    altstack.ss_sp = allocate(__arena__, SIGSTKSZ); // This is safe because it runs on the kernel stack
     if (altstack.ss_sp == NULL) {
         perror("malloc for altstack");
         exit(1);
@@ -235,6 +235,7 @@ task_t* task_create(void* (*fn)(void *), void* this, kernel_thread_t* kt) {
     getcontext(&t->ctx);
     t->ctx.uc_stack.ss_sp = t->stack;
     t->ctx.uc_stack.ss_size = t->stack_size;
+    printf(" [task %p] got [%p ... %p] \n", t, t->ctx.uc_stack.ss_sp,t->ctx.uc_stack.ss_sp + t->ctx.uc_stack.ss_size);
     t->ctx.uc_link = &(kt->sched_ctx);
 
     // make trampoline
@@ -313,9 +314,9 @@ void task_resume(task_t *t, kernel_thread_t* kt) {
 void* scheduler_run(void* arg) {
     kernel_thread_t* kt = (kernel_thread_t*)arg;
 
-    __arena__ = gc_create_arena(&(kt->current->ctx));
+    __arena__ = gc_create_arena(kt);
 
-    init_stack_signal_handler();
+    // init_stack_signal_handler();
     init_timer_signal_handler(arg);
 
     while (1) {
