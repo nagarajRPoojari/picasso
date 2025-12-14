@@ -49,12 +49,17 @@ func NewLLVM() *LLVM {
 
 	rterr.Instance = rterr.NewErrorHandler(m)
 
-	st.Module.NewTypeDef("array", types.NewStruct(
-		types.I64,                   // length
+	m.TargetTriple = "aarch64-unknown-linux-gnu"
+	m.DataLayout = "e-m:e-i64:64-n32:64-S128"
+
+	// @todo: this is not the right place
+	ax := types.NewStruct(
 		types.NewPointer(types.I8),  // data
-		types.NewPointer(types.I64), // shape (i64*)
+		types.NewPointer(types.I64), // shape pointer
+		types.I64,                   // length
 		types.I64,                   // rank
-	))
+	)
+	st.Module.NewTypeDef("array", ax)
 
 	return &LLVM{st: st}
 }
