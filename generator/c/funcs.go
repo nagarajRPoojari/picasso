@@ -51,7 +51,12 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	t.Funcs[FUNC_RUNTIME_INIT] = mod.NewFunc(FUNC_RUNTIME_INIT, types.Void)
 
 	// @array_alloc
-	t.Funcs[FUNC_ARRAY_ALLOC] = mod.NewFunc(FUNC_ARRAY_ALLOC, types.NewPointer(t.Types[TYPE_ARRAY]), ir.NewParam("", types.I64), ir.NewParam("", types.I64))
+	t.Funcs[FUNC_ARRAY_ALLOC] = mod.NewFunc(FUNC_ARRAY_ALLOC, types.NewPointer(t.Types[TYPE_ARRAY]), ir.NewParam("", types.I32), ir.NewParam("", types.I32), ir.NewParam("", types.I32))
+
+	t.Funcs[__UTILS__FUNC_DEBUG_ARRAY_INFO] = mod.NewFunc(
+		__UTILS__FUNC_DEBUG_ARRAY_INFO,
+		types.Void, ir.NewParam("", types.NewPointer(t.Types[TYPE_ARRAY])),
+	)
 }
 
 func (t *Interface) initAtomicFuncs(mod *ir.Module) {

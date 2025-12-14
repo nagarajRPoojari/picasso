@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	__UTILS__FUNC_DEBUG_ARRAY_INFO = "__public__debug_array_info"
+
 	FUNC_THREAD  = "thread"
 	ALIAS_THREAD = "thread"
 
