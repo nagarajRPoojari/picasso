@@ -5,7 +5,6 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	function "github.com/nagarajRPoojari/x-lang/generator/libs/func"
-	tf "github.com/nagarajRPoojari/x-lang/generator/type"
 	typedef "github.com/nagarajRPoojari/x-lang/generator/type"
 	bc "github.com/nagarajRPoojari/x-lang/generator/type/block"
 	"github.com/nagarajRPoojari/x-lang/generator/type/primitives/ints"
@@ -25,7 +24,7 @@ func (t *TypeHandler) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *TypeHandler) Size(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+func (t *TypeHandler) Size(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	// assume args[0] holds the type or var we want sizeof
 	typ := args[0].Type() // this should be `types.Type`
 
@@ -45,7 +44,7 @@ func (t *TypeHandler) Size(typeHandler *tf.TypeHandler, module *ir.Module, bh *b
 	}
 }
 
-func (t *TypeHandler) TypeOf(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+func (t *TypeHandler) TypeOf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	typ := args[0].NativeTypeString()
 
 	strConst := constant.NewCharArrayFromString(typ + "\x00")
@@ -58,5 +57,5 @@ func (t *TypeHandler) TypeOf(typeHandler *tf.TypeHandler, module *ir.Module, bh 
 		constant.NewInt(types.I32, 0),
 	)
 
-	return tf.NewString(bh, gep)
+	return typedef.NewString(bh, gep)
 }
