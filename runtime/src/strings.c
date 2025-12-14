@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
+#include <pthread.h>
+#include "alloc.h"
+
+extern __thread arena_t* __arena__;
 
 char* format(const char* fmt, ...) {
     va_list args;
@@ -14,7 +18,7 @@ char* format(const char* fmt, ...) {
     if (len < 0) return NULL;
 
     // Allocate memory
-    char* buf = malloc(len + 1);
+    char* buf = allocate(__arena__, len + 1);
     if (!buf) return NULL;
 
     // Format the string
