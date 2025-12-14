@@ -81,14 +81,14 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 	// Sanity check: Ensure our slot exists
 	if s.Ptr == nil {
 		// A. Allocate new heap memory for the struct instance
-		zero := constant.NewNull(ptrType)
-		one := constant.NewInt(types.I32, 1)
-		gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
-		size := constant.NewPtrToInt(gep, types.I64)
+		// zero := constant.NewNull(ptrType)
+		// one := constant.NewInt(types.I32, 1)
+		// gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
+		// size := constant.NewPtrToInt(gep, types.I64)
 
 		// Call runtime allocator (Note: Using c.Instance.Funcs[c.ALLOC] placeholder)
-		mallocCall := block.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
-		heapPtr := block.NewBitCast(mallocCall, ptrType) // %MyStruct*
+		// mallocCall := block.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
+		// heapPtr := block.NewBitCast(mallocCall, ptrType) // %MyStruct*
 
 		// B. Create the stack slot (alloca)
 		// LLVM IR: %ptr_slot = alloca %MyStruct*
@@ -96,7 +96,7 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 
 		// C. Initialize slot with the new heap pointer
 		// LLVM IR: store %MyStruct* %heapPtr, %MyStruct** %ptr_slot
-		block.NewStore(heapPtr, s.Ptr)
+		// block.NewStore(heapPtr, s.Ptr)
 	}
 
 	// === Scenario 1: Input is a Pointer (e.g., %MyStruct*) ===
@@ -113,21 +113,21 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 	if v.Type().Equal(s.UDT.ElemType) {
 
 		// 1. Allocate new heap memory
-		zero := constant.NewNull(s.UDT)
-		one := constant.NewInt(types.I32, 1)
-		gep := constant.NewGetElementPtr(s.UDT.ElemType, zero, one)
-		size := constant.NewPtrToInt(gep, types.I64)
+		// zero := constant.NewNull(s.UDT)
+		// one := constant.NewInt(types.I32, 1)
+		// gep := constant.NewGetElementPtr(s.UDT.ElemType, zero, one)
+		// size := constant.NewPtrToInt(gep, types.I64)
 
-		mem := block.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
-		newHeapPtr := block.NewBitCast(mem, s.UDT)
+		// mem := block.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
+		// newHeapPtr := block.NewBitCast(mem, s.UDT)
 
 		// 2. Store the raw value into the new heap memory
 		// LLVM IR: store %MyStruct %v, %MyStruct* %newHeapPtr
-		block.NewStore(v, newHeapPtr)
+		// block.NewStore(v, newHeapPtr)
 
 		// 3. Update the slot to point to this new memory
 		// LLVM IR: store %MyStruct* %newHeapPtr, %MyStruct** %s.Ptr
-		block.NewStore(newHeapPtr, s.Ptr)
+		block.NewStore(v, s.Ptr)
 		return
 	}
 
@@ -169,6 +169,7 @@ func (s *Class) UpdateField(bh *bc.BlockHolder, idx int, v value.Value, expected
 
 func (s *Class) LoadField(block *bc.BlockHolder, idx int, fieldType types.Type) value.Value {
 	fieldPtr := s.FieldPtr(block, idx)
+
 	return block.N.NewLoad(fieldType, fieldPtr)
 }
 
