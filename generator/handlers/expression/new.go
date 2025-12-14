@@ -6,10 +6,13 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/x-lang/ast"
+	"github.com/nagarajRPoojari/x-lang/generator/c"
 	errorutils "github.com/nagarajRPoojari/x-lang/generator/error"
 	"github.com/nagarajRPoojari/x-lang/generator/handlers/constants"
 	"github.com/nagarajRPoojari/x-lang/generator/handlers/utils"
+	"github.com/nagarajRPoojari/x-lang/generator/libs/io"
 	tf "github.com/nagarajRPoojari/x-lang/generator/type"
+	typedef "github.com/nagarajRPoojari/x-lang/generator/type"
 	bc "github.com/nagarajRPoojari/x-lang/generator/type/block"
 )
 
@@ -62,6 +65,9 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 		}
 		args = append(args, raw)
 	}
+
+	s := ExpressionHandlerInst.ProcessStringLiteral(bh, ast.StringExpression{Value: " ====. value of class instance %p .-==== \n"})
+	io.NewSyncIO().ListAllFuncs()[c.ALIAS_PRINTF](t.st.TypeHandler, t.st.Module, bh, []typedef.Var{s, cls})
 
 	// Append `this` pointer as the last argument
 	thisPtr := cls.Load(bh)
@@ -124,16 +130,24 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 
 		var v tf.Var
 		if exp.AssignedValue == nil {
+			// var init value.Value
+			// if exp.ExplicitType.IsAtomic() {
+			// 	meta := t.st.Classes[exp.ExplicitType.Get()]
+			// 	c := tf.NewClass(bh, exp.ExplicitType.Get(), meta.UDT)
+			// 	init = c.Load(bh)
+			// }
+			// v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), init)
+
+			// @todo: this need to be verified
 			var init value.Value
 			if exp.ExplicitType.IsAtomic() {
 				meta := t.st.Classes[exp.ExplicitType.Get()]
-				c := tf.NewClass(bh, exp.ExplicitType.Get(), meta.UDT)
-				init = c.Load(bh)
+				v = tf.NewClass(bh, exp.ExplicitType.Get(), meta.UDT)
+			} else {
+				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), init)
 			}
-			v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), init)
 		} else {
-			_v := t.ProcessExpression(bh, exp.AssignedValue)
-			v = _v
+			v = t.ProcessExpression(bh, exp.AssignedValue)
 
 			if v.NativeTypeString() != constants.ARRAY {
 				casted := t.st.TypeHandler.ImplicitTypeCast(bh, exp.ExplicitType.Get(), v.Load(bh))
@@ -144,6 +158,7 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 			}
 		}
 		instance.UpdateField(bh, index, v.Load(bh), fieldType)
+
 		t.st.Vars.AddNewVar(exp.Identifier, v)
 	}
 
