@@ -1,7 +1,6 @@
 CMakeFiles/scheduler.dir/runtime/src/array.c.o: \
  /workspaces/x-language/runtime/src/array.c /usr/include/stdc-predef.h \
  /workspaces/x-language/runtime/headers/array.h \
- /workspaces/x-language/gc/headers/alloc.h \
  /usr/lib/gcc/aarch64-linux-gnu/12/include/stdint.h /usr/include/stdint.h \
  /usr/include/aarch64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
@@ -16,7 +15,8 @@ CMakeFiles/scheduler.dir/runtime/src/array.c.o: \
  /usr/include/aarch64-linux-gnu/bits/time64.h \
  /usr/include/aarch64-linux-gnu/bits/wchar.h \
  /usr/include/aarch64-linux-gnu/bits/stdint-intn.h \
- /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h /usr/include/unistd.h \
+ /usr/include/aarch64-linux-gnu/bits/stdint-uintn.h \
+ /workspaces/x-language/gc/headers/alloc.h /usr/include/unistd.h \
  /usr/include/aarch64-linux-gnu/bits/posix_opt.h \
  /usr/include/aarch64-linux-gnu/bits/environments.h \
  /usr/lib/gcc/aarch64-linux-gnu/12/include/stddef.h \
@@ -61,4 +61,13 @@ CMakeFiles/scheduler.dir/runtime/src/array.c.o: \
  /usr/include/aarch64-linux-gnu/bits/select.h \
  /usr/include/aarch64-linux-gnu/bits/types/sigset_t.h \
  /usr/include/aarch64-linux-gnu/bits/types/struct_timeval.h \
- /usr/include/alloca.h /usr/include/aarch64-linux-gnu/bits/stdlib-float.h
+ /usr/include/alloca.h /usr/include/aarch64-linux-gnu/bits/stdlib-float.h \
+ /usr/include/string.h /usr/include/strings.h /usr/include/stdio.h \
+ /usr/lib/gcc/aarch64-linux-gnu/12/include/stdarg.h \
+ /usr/include/aarch64-linux-gnu/bits/types/__fpos_t.h \
+ /usr/include/aarch64-linux-gnu/bits/types/__mbstate_t.h \
+ /usr/include/aarch64-linux-gnu/bits/types/__fpos64_t.h \
+ /usr/include/aarch64-linux-gnu/bits/types/__FILE.h \
+ /usr/include/aarch64-linux-gnu/bits/types/FILE.h \
+ /usr/include/aarch64-linux-gnu/bits/types/struct_FILE.h \
+ /usr/include/aarch64-linux-gnu/bits/stdio_lim.h

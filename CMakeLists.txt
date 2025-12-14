@@ -89,13 +89,13 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
 endif()
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(scheduler PRIVATE -g -O0 -fsanitize=address -Wall -Wextra)
-    target_link_options(scheduler PRIVATE -g -O0 -fsanitize=address)
-else()
-    target_compile_options(scheduler PRIVATE -O2 -Wall -Wextra)
-    target_link_options(scheduler PRIVATE -O2)
-endif()
+# if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+#     target_compile_options(scheduler PRIVATE -g -O0 -fsanitize=address -Wall -Wextra)
+#     target_link_options(scheduler PRIVATE -g -O0 -fsanitize=address)
+# else()
+#     target_compile_options(scheduler PRIVATE -O2 -Wall -Wextra)
+#     target_link_options(scheduler PRIVATE -O2)
+# endif()
 
 # ------------------------------------------------------------
 # Output dir

@@ -6,5 +6,5 @@ C_DEFINES =
 
 C_INCLUDES = -I/workspaces/x-language/runtime/headers -I/workspaces/x-language/gc/headers -I/usr/include/liburing
 
-C_FLAGS = -g -g -O0 -fsanitize=address -Wall -Wextra -std=gnu11
+C_FLAGS = -g -std=gnu11
 

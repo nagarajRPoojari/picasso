@@ -3,10 +3,23 @@ import asyncio from builtin;
 import array from builtin;
 import sync from builtin;
 
+
+class Node {
+    say x: int = 90;
+    fn Node() {
+        
+    }
+}
+
 class Worker {
+    say x: Node;
+
     say counter: atomic int;
     say _thread_id: atomic int;
+
     fn Worker(count: int) {
+        syncio.printf(" value of this.counter: %p [class = %p]\n", this.counter, this);
+        syncio.printf(" value of _thread_id: %p [class = %p]\n", this._thread_id, this);
         sync.atomic_store(this.counter, count);
         sync.atomic_store(this._thread_id, 0);
     } 
@@ -15,14 +28,16 @@ class Worker {
         sync.atomic_add(this._thread_id, 1);
         say id: int = sync.atomic_load(this._thread_id);
 
-        say buff_size: int = 1024 ;
+        say buff_size: int = 64;
         say buf: []int8 = array.create(int8, buff_size);
+
+        asyncio.printf(" value of array = %p \n", buf);
         say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
         say seek: int = 0;
 
-        foreach i in 1..10000 {
+        foreach i in 1..100000 {
             say n: int = syncio.fread(fp, buf, buff_size, seek);
-            if(i==9999){
+            if(i==99999){
                 syncio.printf("=========[%d]=> done - %d \n", id, i);
                 return;
             }

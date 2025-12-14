@@ -235,7 +235,6 @@ task_t* task_create(void* (*fn)(void *), void* this, kernel_thread_t* kt) {
     getcontext(&t->ctx);
     t->ctx.uc_stack.ss_sp = t->stack;
     t->ctx.uc_stack.ss_size = t->stack_size;
-    printf(" [task %p] got [%p ... %p] \n", t, t->ctx.uc_stack.ss_sp,t->ctx.uc_stack.ss_sp + t->ctx.uc_stack.ss_size);
     t->ctx.uc_link = &(kt->sched_ctx);
 
     // make trampoline
@@ -270,22 +269,17 @@ void self_yield() {
         return;
     }
 
-    printf("[MUTATOR] going to stop \n");
-
     pthread_mutex_lock(&gc_state.lock);
 
     if (atomic_fetch_add(&gc_state.stopped_count, 1) + 1 == atomic_load(&gc_state.total_threads)){
-        printf("[MUTATOR] tell gc that I stopped \n");
         pthread_cond_signal(&gc_state.cv_mutators_stopped);
     }
 
     while (atomic_load(&gc_state.world_stopped)){
-        printf("[MUTATOR] world_stopped still true \n");
         pthread_cond_wait(&gc_state.cv_world_resumed, &gc_state.lock);
     }
 
     pthread_mutex_unlock(&gc_state.lock);
-    printf("[MUTATOR] DONE ..\n");
 }
 
 /**
