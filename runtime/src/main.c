@@ -133,8 +133,8 @@ int main(void) {
     init_io();
     init_scheduler();
 
-    thread(start, NULL);
     gc_init();
+    thread(start, NULL);
 
     for (int i = 0; i < SCHEDULER_THREAD_POOL_SIZE; i++) {
         pthread_join(sched_threads[i], NULL);
