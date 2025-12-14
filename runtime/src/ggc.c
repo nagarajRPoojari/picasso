@@ -1,6 +1,8 @@
 #include "ggc.h"
 #include <stdio.h>
+#include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 #include "alloc.h"
 
 extern __thread arena_t* __arena__;
@@ -25,7 +27,7 @@ void runtime_init() {
  */
 void *__public__alloc(long size) {
     /* @todo: update to use allocate & test */
-    return malloc(size);
+    return allocate(__arena__, size);
 }
 
 /**
