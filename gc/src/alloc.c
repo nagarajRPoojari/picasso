@@ -8,6 +8,138 @@
 #include "alloc.h"
 
 
+
+static inline size_t __dump__chunk_size(size_t raw) {
+    // Clears the lowest 3 bits (P, M, Non-Main/C flags)
+    return raw & __CHUNK_SIZE_MASK;
+}
+
+static inline int __dump__chunk_flag_prev_inuse(size_t raw) {
+    return raw & 1; // P-Flag
+}
+
+static inline int __dump__chunk_flag_mmapped(size_t raw) {
+    return raw & 2; // M-Flag
+}
+
+static inline int __dump__chunk_flag_non_main(size_t raw) {
+    return raw & 4; // C-Flag (Non-Main/Corrupted/Current in Use)
+}
+
+/* ------------ chunk type detection (UNUSED) ------------ */
+// Static helper is unused, kept for completeness.
+static int __dump__is_free_chunk(free_chunk_t *c) {
+    /* The heap walker below uses the P-Flag of the previous chunk 
+       to determine which structure to print, which is a common 
+       simplification for ptmalloc-style debugging. 
+       A free chunk *must* have valid fd/bk pointers. */
+    (void)c; // Avoid unused variable warning
+    return 1;
+}
+
+
+static void __dump__print_free_chunk(free_chunk_t *c) {
+    size_t raw = c->size;
+
+    printf("FREE  chunk @ %p\n", (void*)c);
+    printf("  prev_size     = %zu\n", c->prev_size);
+    printf("  size          = %zu\n", __dump__chunk_size(raw));
+    printf("  flags         = [prev_inuse=%d mmapped=%d non_main=%d]\n",
+             __dump__chunk_flag_prev_inuse(raw),
+             __dump__chunk_flag_mmapped(raw),
+             __dump__chunk_flag_non_main(raw));
+    printf("  fd            = %p\n", (void*)c->fd);
+    printf("  bk            = %p\n", (void*)c->bk);
+    printf("  next_sizeptr  = %p\n", (void*)c->next_sizeptr);
+    printf("  prev_sizeptr  = %p\n", (void*)c->prev_sizeptr);
+}
+
+static void __dump__print_inuse_chunk(free_chunk_t *c) {
+    size_t raw = c->size;
+
+    printf("INUSE  chunk @ %p\n", (void*)c);
+    printf("  prev_size     = %zu\n", c->prev_size);
+    printf("  size          = %zu\n", __dump__chunk_size(raw));
+    printf("  flags         = [prev_inuse=%d mmapped=%d non_main=%d]\n",
+             __dump__chunk_flag_prev_inuse(raw),
+             __dump__chunk_flag_mmapped(raw),
+             __dump__chunk_flag_non_main(raw));
+    printf("  fd            = %p\n", (void*)c->fd);
+    printf("  bk            = %p\n", (void*)c->bk);
+    printf("  next_sizeptr  = %p\n", (void*)c->next_sizeptr);
+    printf("  prev_sizeptr  = %p\n", (void*)c->prev_sizeptr);
+}
+
+static int failed;
+
+void __dump__heap_layout(const alloced_heap_t *h) {
+    char *p     = h->start;
+    char *limit = h->end;
+
+    printf("\n================ HEAP SEGMENT ================\n");
+    printf("start=%p end=%p size=%zu\n",
+           (void*)h->start, (void*)h->end, (size_t)(h->end - h->start));
+
+    // Must be enough space for at least the header (prev_size + size)
+    while (p + sizeof(size_t)*2 <= limit) {
+        free_chunk_t *fc = (free_chunk_t*)p;
+        size_t raw_size  = fc->size;   /* same header for free/inuse */
+        size_t csize     = __dump__chunk_size(raw_size);
+
+        if (csize < sizeof(size_t)*2 || p + csize > limit) {
+            printf("CORRUPTION: chunk @ %p has invalid size=%zu (limit=%p)\n",
+                   (void*)p, csize, (void*)limit);
+        
+            int ex = 0;
+            if(!failed) {
+                failed = 1;
+            }else {
+                ex = 1;
+            }
+
+            if(ex)
+                exit(1);
+        }
+
+        int curr_inuse = raw_size & __CURR_IN_USE_FLAG_MASK;
+
+        if (!curr_inuse) {
+            __dump__print_free_chunk(fc);
+        } else {
+            __dump__print_inuse_chunk(p);
+        }
+
+        printf("  span = [%p..%p... %p)\n",
+               (void*)p,
+               (void*)(p + HEADER_SIZE),
+               (void*)(p + csize + HEADER_SIZE));
+
+        printf("\n");
+
+        p += csize + HEADER_SIZE;
+    }
+}
+
+
+void __dump__arena(arena_t *a) {
+    printf("\n===============================================\n");
+    printf("              ARENA DUMP\n");
+    printf("===============================================\n");
+
+    printf("arena at %p\n", (void*)a);
+    printf("smallbin map = 0x%x\n", a->smallbinmap);
+    printf("largebin map = 0x%x\n", a->largebinmap);
+    printf("top_chunk    = %p\n", (void*)a->top_chunk);
+
+    
+    printf("\n====== FULL HEAP MEMORY LAYOUT ======\n");
+    for (int i = 0; i < a->alloced_heap_count; i++) {
+        __dump__heap_layout(&a->alloced_heaps[i]);
+    }
+
+    printf("\n===============================================\n");
+}
+
 /* utils */
 static inline size_t align16(size_t size) {
     return (size + 15) & ~(size_t)15;
@@ -128,7 +260,7 @@ static free_chunk_t* request_chunk_by_mmap(size_t size){
     if (!p) return NULL;
 
     free_chunk_t* fc = (free_chunk_t*) p;
-    fc->size = total_size - HEADER_SIZE;
+    fc->size = size;
     fc->size |= __MMAP_ALLOCATED_FLAG_MASK;
     fc->fd = fc->bk = NULL;
 
@@ -147,6 +279,10 @@ static free_chunk_t* split_top_chunk(arena_t* ar, size_t payload_size) {
     
     if (available_total >= required_total) {
         size_t remaining_total = available_total - required_total;
+
+        // victim->fd = victim->bk = NULL; /* highly important, idk why */
+        // victim->fd = victim->bk = 0x111111111;
+
 
         victim->size = (payload_size | (victim->size & __PREV_IN_USE_FLAG_MASK));
         set_curr_inuse(victim);
@@ -395,22 +531,46 @@ static free_chunk_t* find_in_unsortedbin(arena_t* ar, size_t payload_size) {
     return victim;
 }
 
-static void grow_heap(arena_t* ar, size_t size_needed) {
+static void grow_heap(arena_t* ar) {
+    /* exponential doubling till 64MB then increase by constant 64MB */
+    size_t next_heap_size;
 
-    size_t request = (size_needed > HEAP_MIN_SIZE) ? size_needed : HEAP_MIN_SIZE;
-    free_chunk_t* new_block = request_chunk_by_mmap(request + HEAP_BOUNDARY_SIZE);
+    if (HEAP_BASE_SIZE << ar->heap_expo_growth_iters <= HEAP_EXPONENTIAL_GROWTH_LIMIT) {
+        next_heap_size = HEAP_BASE_SIZE << ar->heap_expo_growth_iters;
+        ar->heap_expo_growth_iters++;
+    } else {
+        next_heap_size = HEAP_EXPONENTIAL_GROWTH_LIMIT + HEAP_CONSTANT_GROWTH * ar->heap_constant_growth_iters;
+        ar->heap_constant_growth_iters++;
+    }
+
+    if(next_heap_size > HEAP_MAX_SIZE) {
+        perror("heap overflow \n");
+    }
+
+    free_chunk_t* new_block = request_chunk_by_mmap(next_heap_size + HEAP_BOUNDARY_SIZE);
     
+    new_block->fd = new_block->bk = NULL;
+
     if (new_block) {
-        free_chunk_t* boundary = (free_chunk_t*)((char*)new_block + request);
+        free_chunk_t* boundary = (free_chunk_t*)((char*)new_block + next_heap_size + HEADER_SIZE);
         boundary->size = 0;
         boundary->fd = boundary->bk = NULL; /* important */
 
         ar->top_chunk = new_block;
-        ar->top_chunk->size = request | __PREV_IN_USE_FLAG_MASK;
+        ar->top_chunk->size = next_heap_size | __PREV_IN_USE_FLAG_MASK;
 
         /* need to unset mmap flag */
         ar->top_chunk->size &= ~__MMAP_ALLOCATED_FLAG_MASK;
 
+
+        /* register alloced heap */
+        ar->alloced_heaps[ar->alloced_heap_count++] = (alloced_heap_t){
+            .start = (char*)new_block, 
+            .end = (char*)new_block + next_heap_size + HEADER_SIZE 
+        };
+
+    }else {
+        perror("failed to allocate heap \n");
     }
 
 }
@@ -480,8 +640,7 @@ static void* allocate_unsafe(arena_t* ar, size_t requested_size) {
         if (fc) return (void*)((char*)fc + HEADER_SIZE);
     }
     
-    /* scan unsorted bins */
-
+    // /* scan unsorted bins */
     fc = find_in_unsortedbin(ar, payload_size);
     if (fc) return (void*)((char*)fc + HEADER_SIZE);
 
@@ -501,15 +660,13 @@ static void* allocate_unsafe(arena_t* ar, size_t requested_size) {
     fc = split_top_chunk(ar, payload_size);
     if (fc) return (void*)((char*)fc + HEADER_SIZE);
     /* if top_chunk is not NULL push it to unsortedbin */
-    // if(ar->top_chunk) {
-    //     printf("7.ar->unsortedbin->fd->fd: %p \n", ar->unsortedbin->fd->fd);
-    //     insert_chunk_head(ar->unsortedbin, ar->top_chunk);
-    //     printf("6.ar->unsortedbin->fd->fd: %p \n", ar->unsortedbin->fd->fd);
-    //     ar->top_chunk = NULL;
-    // }
+    if(ar->top_chunk) {
+        insert_chunk_head(ar->unsortedbin, ar->top_chunk);
+        ar->top_chunk = NULL;
+    }
 
     /* grow heap & try to carve again */
-    grow_heap(ar, total_size);
+    grow_heap(ar);
     fc = split_top_chunk(ar, payload_size);
 
     return (fc) ? (void*)((char*)fc + HEADER_SIZE) : NULL;
@@ -534,7 +691,7 @@ static void release_unsafe(arena_t* ar, void* ptr) {
     }
 
 
-    /* check whether allocation is from mmap, then unmap immediately*/
+    // /* check whether allocation is from mmap, then unmap immediately*/
     if(fc->size & __MMAP_ALLOCATED_FLAG_MASK) {
         munmap(fc, get_size(fc) + HEADER_SIZE);
 
@@ -542,12 +699,12 @@ static void release_unsafe(arena_t* ar, void* ptr) {
     }
 
     size_t size = get_size(fc);
-    
+
     /* add to fastbin */
     if (size <= 16 * FASTBINS_COUNT) { 
         int idx = (size >> 4) - 1;
         if (idx >= 0 && idx < FASTBINS_COUNT) {
-            Debug("Releasing chunk size: %zu to fastbin \n", size);
+            printf("Releasing chunk size: %zu to fastbin  ar->fastbins[idx] = %p \n", size,  ar->fastbins[idx]);
             fc->fd = ar->fastbins[idx];
             ar->fastbins[idx] = fc;
             return;
@@ -623,10 +780,7 @@ arena_t* arena_create(void) {
     }
 
     /* initialize top chunk */
-    a->top_chunk = request_chunk_by_mmap(HEAP_MIN_SIZE + HEAP_BOUNDARY_SIZE);
-    a->top_chunk->size = HEAP_MIN_SIZE | __PREV_IN_USE_FLAG_MASK;
-    /* unset mmap flag */
-    a->top_chunk->size &= ~__MMAP_ALLOCATED_FLAG_MASK;
+    grow_heap(a);
 
     free_chunk_t* sentinel = (free_chunk_t*)curs;
     sentinel->fd = sentinel;

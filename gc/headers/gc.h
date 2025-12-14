@@ -7,9 +7,15 @@
 #include "scheduler.h" // external: runtime
 
 
-#define GC_TIMEPERIOD (1200 * 1000) // in microseconds
+#define GC_TIMEPERIOD (900* 1000) // in microseconds
 #define MAX_ARENAS 12
 #define MAX_SCHEDULERS 12 
+
+#ifndef GC_PTR_ALIGNMENT
+#define GC_PTR_ALIGNMENT 8
+#endif
+#define GC_ALIGN_MASK (GC_PTR_ALIGNMENT - 1)
+
 
 typedef struct gc_state {
     atomic_int       world_stopped;      // 0 = running, 1 = requested stop
