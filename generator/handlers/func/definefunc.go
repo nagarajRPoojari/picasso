@@ -26,7 +26,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 		return
 	}
 
-	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock("")}, f.NewBlock(constants.ENTRY))
+	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock("")}, f.NewBlock(""))
 
 	if className == fn.Name {
 		t.initTypes(bh, className)
@@ -46,12 +46,12 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 			if clsMeta == nil {
 				errorutils.Abort(errorutils.UnknownClass, className)
 			}
-			c := &tf.Class{
+			cls := &tf.Class{
 				Name: className,
 				UDT:  clsMeta.UDT.(*types.PointerType),
 			}
-			c.Update(bh, p)
-			t.st.Vars.AddNewVar(p.LocalName, c)
+			cls.Update(bh, p)
+			t.st.Vars.AddNewVar(p.LocalName, cls)
 		}
 	}
 
