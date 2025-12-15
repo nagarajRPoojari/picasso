@@ -1,0 +1,9 @@
+package function
+
+import (
+	"github.com/llir/llvm/ir"
+	typedef "github.com/nagarajRPoojari/niyama/frontend/codegen/type"
+	bc "github.com/nagarajRPoojari/niyama/frontend/codegen/type/block"
+)
+
+type Func func(typeHandler *typedef.TypeHandler, module *ir.Module, block *bc.BlockHolder, args []typedef.Var) typedef.Var
