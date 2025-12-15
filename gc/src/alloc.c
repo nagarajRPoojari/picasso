@@ -734,10 +734,7 @@ static void release_unsafe(arena_t* ar, void* ptr) {
     next_chunk->prev_size = size;
     next_chunk->size &= ~__PREV_IN_USE_FLAG_MASK;
 
-    /* insert to unsortedbins only if it is not coalesced i.e, independent chunk */
-    if(fc == merged_chunk) {
-        insert_chunk_head(ar->unsortedbin, fc);
-    }
+    insert_chunk_head(ar->unsortedbin, merged_chunk);
 }
 
 void release(arena_t* ar, void* ptr) {
