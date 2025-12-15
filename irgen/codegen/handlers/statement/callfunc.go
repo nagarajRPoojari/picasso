@@ -1,0 +1,12 @@
+package statement
+
+import (
+	"github.com/nagarajRPoojari/niyama/irgen/ast"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/expression"
+	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+)
+
+func (t *StatementHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) tf.Var {
+	return expression.ExpressionHandlerInst.CallFunc(bh, ex)
+}
