@@ -153,7 +153,7 @@ static void gc_mark() {
 
         kernel_thread_t* kt = kts[kti];
         if (!kt->current) {
-            return;
+            continue; 
         }
 
         gc_mark_task(&kt->current->ctx);
