@@ -579,9 +579,11 @@ static free_chunk_t* coalesce(arena_t* ar, free_chunk_t* chunk){
     size_t chunk_size = get_size(chunk);
 
     if (!(chunk->size & __PREV_IN_USE_FLAG_MASK)) {
-        free_chunk_t* prev_chunk = (free_chunk_t*)((char*)chunk - chunk->prev_size - HEADER_SIZE);
-        // unlink_chunk(prev_chunk);
-        size_t prev_size = get_size(prev_chunk);
+        size_t chunk_prev_size = chunk->prev_size & __CHUNK_SIZE_MASK;
+        free_chunk_t* prev_chunk = (free_chunk_t*)((char*)chunk - chunk_prev_size - HEADER_SIZE);
+
+        unlink_chunk(prev_chunk); /* unlink because, I will put merged chunk again in unsortedbin next */
+        size_t prev_size = get_size(prev_chunk); /* must be same as chunk_prev_size */
         size_t merged_size = prev_size + HEADER_SIZE + chunk_size;
         prev_chunk->size = (prev_chunk->size & __SIZE_BITS) | merged_size;
         chunk = prev_chunk;
@@ -589,6 +591,7 @@ static free_chunk_t* coalesce(arena_t* ar, free_chunk_t* chunk){
     }
 
     free_chunk_t* next_chunk = (free_chunk_t*)((char*)chunk + HEADER_SIZE + chunk_size);
+    size_t next_chunk_size = get_size(next_chunk);
 
     if (next_chunk == ar->top_chunk) {
         size_t top_size = get_size(next_chunk);
@@ -598,7 +601,12 @@ static free_chunk_t* coalesce(arena_t* ar, free_chunk_t* chunk){
         return NULL;
     }
 
-    if (!(next_chunk->size & __CURR_IN_USE_FLAG_MASK)) {
+    /** 
+     * next_chunk_size > 16 * FASTBINS_COUNT shouldn't be in fastbin.
+     * but this condition not needed while merging with previous one because it's prev_insuse won't be
+     * set to true while adding fastbins.
+    */
+    if (!(next_chunk->size & __CURR_IN_USE_FLAG_MASK) && next_chunk_size > 16 * FASTBINS_COUNT) {
         unlink_chunk(next_chunk);
         size_t next_size = get_size(next_chunk);
         size_t merged_size = chunk_size + HEADER_SIZE + next_size;
