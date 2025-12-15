@@ -24,6 +24,8 @@ int main(int argc, char **argv) {
         const char *file = argv[2];
 
         if (system("mkdir -p .niyama") != 0) die("mkdir");
+        if (system("touch .niyama/out.ll") != 0) die("touch");
+
 
         char cmd[1024];
         snprintf(cmd, sizeof(cmd),
