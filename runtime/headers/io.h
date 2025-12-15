@@ -183,7 +183,7 @@ ssize_t __public__sprintf(const char *fmt, ...) ;
  *
  * @return Number of bytes read on success, -1 on error.
  */
-int __public__sfread(char* f, char* buf, int n, int offset);
+ssize_t __public__sfread(char* f, char* buf, int n, int offset);
 
 /**
  * @brief Synchronously write n bytes to a file at a given offset.
@@ -198,6 +198,5 @@ int __public__sfread(char* f, char* buf, int n, int offset);
  *
  * @return Number of bytes written on success, -1 on error.
  */
-int __public__sfwrite(char* f, char* buf, int n, int offset);
-
+ssize_t __public__sfwrite(char* f, char* buf, int n, int offset);
 #endif
