@@ -302,26 +302,35 @@ void* __public__afwrite(char* f, char* buf, int n, int offset) {
 /**
  * @brief Synchronously read n bytes from STDIN.
  *
- * Allocates a buffer, configures the current task with the read parameters,
- * and submits an io_uring read request for STDIN. Yields until completion.
- *
+ * uses blocking read() syscall to read n bytes. while reading from tty Input is line-buffered by 
+ * the kernel read() typically returns as soon as a line is available. so it doesn't wait till n bytes 
+ * are availanbe. __public__sscan can do multiple read() calls to read in case of EINTR errors.
  * @param n Number of bytes to read.
  *
  * @return Pointer to allocated buffer containing the read data.
  */
 void* __public__sscan(int n) {
     if (n <= 0) return NULL;
-    
-    char* buf = (char*)allocate(__arena__, n * sizeof(char));
+
+    char *buf = allocate(__arena__, (size_t)n + 1);
     if (!buf) return NULL;
-    
-    ssize_t bytes_read = read(STDIN_FILENO, buf, n);
-    if (bytes_read < 0) {
-        return NULL;
+
+    ssize_t r;
+
+    for (;;) {
+        r = read(STDIN_FILENO, buf, (size_t)n);
+        if (r < 0) {
+            if (errno == EINTR)
+                continue;
+            return NULL;
+        }
+        break;
     }
-    
+
+    buf[r] = '\0';
     return buf;
 }
+
 
 /**
  * @brief Write formatted output to STDOUT synchronously.
