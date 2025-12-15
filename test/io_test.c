@@ -122,10 +122,32 @@ void test__public__sprintf(void) {
     TEST_ASSERT_EQUAL_STRING("hello 42 world", buf);
 }
 
+void test__public__sfread(void) {
+    FILE* file = fopen("/workspaces/x-language/test/data/test__public__sfread.txt", "r+");
+
+    char* buf = allocate(__arena__, 1024);
+    ssize_t r = __public__sfread((char*)file, buf, 1024, 0);
+    
+    TEST_ASSERT_EQUAL(57, r);
+    TEST_ASSERT_EQUAL_STRING("Synchronously read n bytes from a file at a given offset.", buf);
+}
+
+void test__public__sfwrite(void) {
+    FILE* file = fopen("/workspaces/x-language/test/data/test__public__swrite.txt", "w");
+    
+    char buf[10];
+    for(int i=0; i<10; i++) buf[i] = 'a' + i%26;
+    ssize_t r = __public__sfwrite((char*)file, buf, 10, 0);
+    
+    TEST_ASSERT_EQUAL(10, r);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test__public__sscan);
-
+    RUN_TEST(test__public__sprintf);
+    RUN_TEST(test__public__sfread);
+    RUN_TEST(test__public__sfwrite);
     return UNITY_END();
 }

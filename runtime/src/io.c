@@ -393,18 +393,26 @@ ssize_t __public__sprintf(const char *fmt, ...) {
  *
  * @return Number of bytes read on success, -1 on error.
  */
-int __public__sfread(char* f, char* buf, int n, int offset) {
+ssize_t __public__sfread(char* f, char* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
     if (fd < 0) return -1;
     
-    ssize_t bytes_read = pread(fd, buf, n, offset);
-    if (bytes_read < 0) {
-        return -1;
+    size_t total = 0;
+    char *p = buf;
+
+    while (total < n) {
+        ssize_t r = pread(fd, p + total, n - total, offset);
+        if (r < 0) {
+            if (errno == EINTR) continue;
+            return -1;
+        }
+        if (r == 0) break; // EOF
+        total += r;
+        offset += r;
     }
-    
-    return bytes_read;
+    return total;
 }
 
 /**
@@ -420,16 +428,24 @@ int __public__sfread(char* f, char* buf, int n, int offset) {
  *
  * @return Number of bytes written on success, -1 on error.
  */
-int __public__sfwrite(char* f, char* buf, int n, int offset) {
+ssize_t __public__sfwrite(char* f, char* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
     if (fd < 0) return -1;
     
-    ssize_t bytes_written = pwrite(fd, buf, n, offset);
-    if (bytes_written < 0) {
-        return -1;
+    size_t total = 0;
+    const char *p = buf;
+
+    while (total < n) {
+        ssize_t w = pwrite(fd, p + total, n - total, offset + total);
+        if (w < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        total += (size_t)w;
     }
-    
-    return bytes_written;
+
+    return (ssize_t)total;
 }
