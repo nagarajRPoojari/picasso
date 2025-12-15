@@ -168,7 +168,7 @@ void* __public__sscan(int n);
  *
  * @return Number of bytes written on success, -1 on error.
  */
-int __public__sprintf(const char* fmt, ...);
+ssize_t __public__sprintf(const char *fmt, ...) ;
 
 /**
  * @brief Synchronously read n bytes from a file at a given offset.

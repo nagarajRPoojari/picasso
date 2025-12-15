@@ -336,40 +336,48 @@ void* __public__sscan(int n) {
  * @brief Write formatted output to STDOUT synchronously.
  *
  * Formats the input string and arguments, then writes the result to STDOUT
- * using the write syscall. Handles partial writes and errors gracefully.
+ * using the write syscall. Can do multiple syscalls for full n byte write.
  *
  * @param fmt Format string (printf-style).
  * @param ... Variable arguments matching the format string.
  *
  * @return Number of bytes written on success, -1 on error.
  */
-int __public__sprintf(const char* fmt, ...) {
-    if (!fmt) return -1;
-    
+ssize_t __public__sprintf(const char *fmt, ...) {
+    if (!fmt)
+        return -1;
+
     va_list ap;
     va_start(ap, fmt);
-    
-    /* estimate needed size */
-    char tmp[1];
-    int len = vsnprintf(tmp, sizeof(tmp), fmt, ap);
+
+    /* get required length (excluding NUL) */
+    int len = vsnprintf(NULL, 0, fmt, ap);
     va_end(ap);
-    
-    if (len < 0) return -1;
-    
-    char* buf = allocate(__arena__, len + 1);
-    if (!buf) return -1;
-    
-    va_start(ap, fmt);
-    vsnprintf(buf, len + 1, fmt, ap);
-    va_end(ap);
-    
-    ssize_t bytes_written = write(STDOUT_FILENO, buf, len);
-    
-    if (bytes_written < 0) {
+
+    if (len < 0)
         return -1;
+
+    char *buf = allocate(__arena__, (size_t)len + 1);
+    if (!buf)
+        return -1;
+
+    va_start(ap, fmt);
+    vsnprintf(buf, (size_t)len + 1, fmt, ap);
+    va_end(ap);
+
+    /* write all bytes */
+    size_t total = 0;
+    while (total < (size_t)len) {
+        ssize_t w = write(STDOUT_FILENO, buf + total, (size_t)len - total);
+        if (w < 0) {
+            if (errno == EINTR)
+                continue;
+            return -1;
+        }
+        total += (size_t)w;
     }
-    
-    return bytes_written;
+
+    return (ssize_t)total;
 }
 
 /**
