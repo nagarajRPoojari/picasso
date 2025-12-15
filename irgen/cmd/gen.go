@@ -22,7 +22,7 @@ to quickly create a Cobra application.`,
 		c := generator.NewGenerator()
 		c.Build(args[0])
 		c.Compile()
-		c.Dump("output.ll")
+		c.Dump(args[1])
 	},
 }
 

@@ -1,105 +1,79 @@
-cmake_minimum_required(VERSION 3.10)
-project(Scheduler C)
+cmake_minimum_required(VERSION 3.16)
+project(niyama C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# ------------------------------------------------------------
-# Paths
-# ------------------------------------------------------------
-set(BIN_DIR "${CMAKE_SOURCE_DIR}/bin")
+find_library(LIBURING_LIB uring REQUIRED)
+find_library(LIBGC_LIB gc REQUIRED)
+find_package(Threads REQUIRED)
+
+set(BIN_DIR ${CMAKE_BINARY_DIR}/bin)
 file(MAKE_DIRECTORY ${BIN_DIR})
 
-set(RUNTIME_SRC "${CMAKE_SOURCE_DIR}/runtime/src")
-set(RUNTIME_HEADERS "${CMAKE_SOURCE_DIR}/runtime/headers")
-
-set(GC_SRC "${CMAKE_SOURCE_DIR}/gc/src")
-set(GC_HEADERS "${CMAKE_SOURCE_DIR}/gc/headers")
-
-file(GLOB RUNTIME_SOURCES "${RUNTIME_SRC}/*.c")
-file(GLOB GC_SOURCES "${GC_SRC}/*.c")
-
-set(GO_MAIN "${CMAKE_SOURCE_DIR}/main.go")
-set(GO_LL   "${BIN_DIR}/output.ll")
-set(GO_BC   "${BIN_DIR}/output.bc")
-set(GO_OBJ  "${BIN_DIR}/output.o")
-
-# ------------------------------------------------------------
-# Clean bin/ every build (wasteful but you insisted)
-# ------------------------------------------------------------
-add_custom_target(always ALL
-    COMMAND ${CMAKE_COMMAND} -E echo "Cleaning bin/ ..."
-    COMMAND ${CMAKE_COMMAND} -E rm -rf ${BIN_DIR}/*
-    COMMAND ${CMAKE_COMMAND} -E echo "Forcing rebuild..."
-)
-
-# ------------------------------------------------------------
-# Go → LLVM → Object
-# ------------------------------------------------------------
 add_custom_command(
-    OUTPUT ${GO_OBJ}
-    COMMAND ${CMAKE_COMMAND} -E echo "Building Go → LLVM → Object"
-    COMMAND go run ${GO_MAIN}
-    COMMAND llvm-as-16 ${GO_LL} -o ${GO_BC}
-    COMMAND llc-16 -filetype=obj ${GO_BC} -o ${GO_OBJ}
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    DEPENDS ${GO_MAIN} always
+    OUTPUT ${BIN_DIR}/irgen
+    COMMAND go build -o ${BIN_DIR}/irgen ${CMAKE_SOURCE_DIR}/irgen/main.go
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/irgen
+    DEPENDS
+        ${CMAKE_SOURCE_DIR}/irgen/main.go
+        ${CMAKE_SOURCE_DIR}/irgen/go.mod
 )
 
-add_custom_target(build_go_obj ALL DEPENDS ${GO_OBJ})
+add_custom_target(irgen ALL
+    DEPENDS ${BIN_DIR}/irgen
+)
 
-# ------------------------------------------------------------
-# Executable
-# ------------------------------------------------------------
-add_executable(scheduler
+
+file(GLOB RUNTIME_SOURCES
+    runtime/src/*.c
+    gc/src/*.c
+)
+
+add_library(runtime STATIC
     ${RUNTIME_SOURCES}
-    ${GC_SOURCES}
-    ${GO_OBJ}
 )
 
-add_dependencies(scheduler always)
-add_dependencies(scheduler build_go_obj)
-
-# --- FIX: Manually adding the liburing include path ---
-# Common paths for liburing headers are /usr/include/liburing or /usr/local/include/liburing
-target_include_directories(scheduler PRIVATE
-    ${RUNTIME_HEADERS}
-    ${GC_HEADERS}
-    /usr/include/liburing  # Add liburing specific include path
+target_include_directories(runtime PUBLIC
+    runtime/headers
+    gc/headers
+    # Note: If liburing headers are in standard paths (/usr/include), 
+    # we don't strictly need to add them, but it's safe to keep.
 )
 
-# --- FIX: REMOVING find_package ---
-# remove the line: # find_package(liburing REQUIRED)
+# Even though it's static, we tell CMake that 'runtime' needs uring.
+# This helps if you ever link runtime into a CMake target, 
+# but it DOES NOT help when you manually invoke ld in your CLI.
+target_link_libraries(runtime PRIVATE 
+    ${LIBURING_LIB}
+)
 
-# ------------------------------------------------------------
-# Link libs (FIXED: Using direct linker name for liburing)
-# ------------------------------------------------------------
-target_link_libraries(scheduler PRIVATE
-    /usr/local/lib/libgc.so
-    pthread
+set_target_properties(runtime PROPERTIES
+    ARCHIVE_OUTPUT_DIRECTORY ${BIN_DIR}
+)
+
+add_executable(niyama
+    cli/main.c
+)
+
+target_link_libraries(niyama PRIVATE
+    ${LIBGC_LIB}
+    Threads::Threads
     m
-    /usr/lib/aarch64-linux-gnu/liburing.so 
+    ${LIBURING_LIB}
 )
 
-# ------------------------------------------------------------
-# Flags
-# ------------------------------------------------------------
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "" FORCE)
-endif()
+add_dependencies(niyama irgen)
 
-# if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-#     target_compile_options(scheduler PRIVATE -g -O0 -fsanitize=address -Wall -Wextra)
-#     target_link_options(scheduler PRIVATE -g -O0 -fsanitize=address)
-# else()
-#     target_compile_options(scheduler PRIVATE -O2 -Wall -Wextra)
-#     target_link_options(scheduler PRIVATE -O2)
-# endif()
-
-# ------------------------------------------------------------
-# Output dir
-# ------------------------------------------------------------
-set_target_properties(scheduler PROPERTIES
+set_target_properties(niyama PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}
+)
+
+install(TARGETS niyama
+    RUNTIME DESTINATION bin
+)
+
+install(TARGETS runtime
+    ARCHIVE DESTINATION lib
 )
