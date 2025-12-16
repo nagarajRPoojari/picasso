@@ -8,24 +8,12 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
-/**
- * @brief raises runtime error
- * 
- * @param msg message to be printed in error
- */
-void __public__runtime_error(const char* msg) {
-    fprintf(stderr, "%s\n", msg);
-    exit(1);
-}
-
 
 static void print_stacktrace(void) {
     unw_cursor_t cursor;
     unw_context_t context;
 
     flockfile(stderr);
-
-    write(STDERR_FILENO, "\n*** FATAL SIGNAL ***\n", 22);
 
     if(unw_getcontext(&context) < 0) {
         fprintf(stderr, "unw_getcontext failed\n");
@@ -57,9 +45,9 @@ static void print_stacktrace(void) {
         unw_get_reg(&cursor, UNW_REG_SP, &sp);
         
         if (unw_get_proc_name(&cursor, func_name, sizeof(func_name), NULL) == 0) {
-            fprintf(stderr, "#%02d  %p  %s (SP=%p)\n", frame++, (void*)ip, func_name, (void*)sp);
+            fprintf(stderr, "\t#%02d  %p  %s (SP=%p)\n", frame++, (void*)ip, func_name, (void*)sp);
         } else {
-            fprintf(stderr, "#%02d  %p  <unknown> (SP=%p)\n", frame++, (void*)ip, (void*)sp);
+            fprintf(stderr, "\t#%02d  %p  <unknown> (SP=%p)\n", frame++, (void*)ip, (void*)sp);
         }
     }
     fprintf(stderr, "=======================\n");
@@ -101,6 +89,20 @@ static void setup_altstack(void) {
         _exit(1);
     }
 }
+
+/**
+ * @brief raises runtime error
+ * 
+ * @param msg message to be printed in error
+ */
+void __public__runtime_error(const char* msg) {
+    fprintf(stderr, "%s", msg);
+    print_stacktrace();
+
+    exit(1);
+}
+
+
 /**
  * @brief registers error handlers for common signals.
  */
