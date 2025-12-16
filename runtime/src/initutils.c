@@ -138,3 +138,14 @@ int init_scheduler() {
 void clean_scheduler() {
     // free(kernel_thread_map[0]);
 }
+
+/**
+ * @brief wait for all schedulers to join.
+ */
+int wait_for_schedulers() {
+    for (int i = 0; i < SCHEDULER_THREAD_POOL_SIZE; i++) {
+        pthread_join(sched_threads[i], NULL);
+    }
+
+    return 0;
+}

@@ -27,9 +27,7 @@ int main(void) {
     thread(start, NULL);
     gc_init();
 
-    for (int i = 0; i < SCHEDULER_THREAD_POOL_SIZE; i++) {
-        pthread_join(sched_threads[i], NULL);
-    }
+    wait_for_schedulers();
 
     clean_scheduler();
     return 0;
