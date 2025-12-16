@@ -30,6 +30,7 @@
 
 extern kernel_thread_t **kernel_thread_map;
 extern struct io_uring **io_ring_map;
+extern atomic_int task_count;
 
 extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
 
@@ -43,6 +44,18 @@ extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
  * @param this Argument to pass to the task function.
  */
 void thread(void*(*fn)(void*), void *this);
+
+/**
+ * @brief Create and schedule a main task on a random scheduler thread.
+ * 
+ * Allocates a task with its own stack and context, assigns it a random
+ * ID, and pushes it onto a scheduler thread's ready queue.
+ * daemon is not blocking in nature. life ends with main loop.
+ * 
+ * @param fn   Function pointer for the task to execute.
+ * @param this Argument to pass to the task function.
+ */
+ void orphan(void*(*fn)(void*), void *this);
 
 /**
  * @brief Initialize the I/O subsystem.
