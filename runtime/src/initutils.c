@@ -29,11 +29,14 @@
 kernel_thread_t **kernel_thread_map;
 struct io_uring **io_ring_map = NULL;
 
+atomic_int task_count;
 /**
  * @brief Create and schedule a new task on a random scheduler thread.
  * 
  * Allocates a task with its own stack and context, assigns it a random
  * ID, and pushes it onto a scheduler thread's ready queue.
+ * Each task is blocking in nature, main loop waits for its completion before
+ * terminating program.
  * 
  * @param fn   Function pointer for the task to execute.
  * @param this Argument to pass to the task function.
@@ -42,9 +45,27 @@ void thread(void*(*fn)(void*), void *this) {
     int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
     task_t *t1 = task_create(fn, this, kernel_thread_map[kernel_thread_id]);
     t1->id = rand();
+
+    atomic_fetch_add(&task_count, 1);
     safe_q_push(&(kernel_thread_map[kernel_thread_id]->ready_q), t1);
 }
 
+/**
+ * @brief Create and schedule a main task on a random scheduler thread.
+ * 
+ * Allocates a task with its own stack and context, assigns it a random
+ * ID, and pushes it onto a scheduler thread's ready queue.
+ * daemon is not blocking in nature. life ends with main loop.
+ * 
+ * @param fn   Function pointer for the task to execute.
+ * @param this Argument to pass to the task function.
+ */
+ void orphan(void*(*fn)(void*), void *this) {
+    int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
+    task_t *t1 = task_create(fn, this, kernel_thread_map[kernel_thread_id]);
+    t1->id = rand();
+    safe_q_push(&(kernel_thread_map[kernel_thread_id]->ready_q), t1);
+}
 
 /**
  * @brief Initialize the I/O subsystem.
@@ -93,6 +114,8 @@ pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
  * @return 0 on success.
  */
 int init_scheduler() {
+    atomic_init(&task_count, 0);
+
     kernel_thread_map = calloc(SCHEDULER_THREAD_POOL_SIZE, sizeof(kernel_thread_t*));
     for (int i=0;i<SCHEDULER_THREAD_POOL_SIZE;i++) {
         kernel_thread_map[i] = calloc(1, sizeof(kernel_thread_t));

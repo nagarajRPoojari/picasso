@@ -21,7 +21,7 @@
 #include "task.h"
 #include "alloc.h"
 #include "gc.h"
-
+#include "initutils.h"
 
 __thread task_t* current_task;
 
@@ -315,13 +315,26 @@ void* scheduler_run(void* arg) {
 
     while (1) {
         task_t *t;
-        while ((t = safe_q_pop_wait(&kt->ready_q)) != NULL) {
+        while (1) {
+            t = safe_q_pop_wait(&kt->ready_q);
+            if(!t) {
+                return;
+            }
+
             atomic_fetch_add(&gc_state.total_threads, 1);
 
             t->state = TASK_RUNNING;
             task_resume(t, kt);
             if (t->state == TASK_FINISHED) {
+                /* @verify: this doesn't seems to be efficient way */
                 task_destroy(t);
+                atomic_fetch_sub(&task_count, 1);
+                if(!atomic_load(&task_count)) {
+                    for(int i=0; i<SCHEDULER_THREAD_POOL_SIZE; i++) {
+                        safe_q_push(&kernel_thread_map[i]->ready_q, NULL);
+                    }
+                    return;
+                }
             }
             atomic_fetch_sub(&gc_state.total_threads, 1);
         }
