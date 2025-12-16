@@ -22,6 +22,7 @@
 #include "alloc.h"
 #include "gc.h"
 #include "initutils.h"
+#include "sigerr.h"
 
 __thread task_t* current_task;
 
@@ -312,6 +313,7 @@ void* scheduler_run(void* arg) {
 
     // init_stack_signal_handler();
     init_timer_signal_handler(arg);
+    init_error_handlers();
 
     while (1) {
         task_t *t;
