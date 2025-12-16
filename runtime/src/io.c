@@ -30,284 +30,459 @@ extern __thread arena_t* __arena__;
  */
 void *io_worker(void *arg) {
     int id = (int)(intptr_t)arg;
-    int ret = io_uring_queue_init(QUEUE_DEPTH, io_ring_map[id], 0);
-    if (ret < 0) {
+
+    if (io_uring_queue_init(QUEUE_DEPTH, io_ring_map[id], 0) < 0) {
         perror("io_uring_queue_init");
-        exit(1);
+        abort();
     }
     struct io_uring_cqe *cqe;
 
-    while (1) {
+    for (;;) {
         int ret = io_uring_wait_cqe(io_ring_map[id], &cqe);
-        if (ret == 0) {
-            task_t *t = io_uring_cqe_get_data(cqe);
+        if (ret < 0)
+            continue;
+
+        task_t *t = io_uring_cqe_get_data(cqe);
+
+        if (cqe->res < 0) {
+            t->io_err = -cqe->res;
+            t->done_n = -1;
+        } else {
             t->done_n = cqe->res;
-            io_uring_cqe_seen(io_ring_map[id], cqe);
-            safe_q_push(&(kernel_thread_map[t->sched_id]->ready_q), t);
+            t->io_err = 0;
         }
+
+        t->io_done = 1;
+
+        io_uring_cqe_seen(io_ring_map[id], cqe);
+
+        safe_q_push(&kernel_thread_map[t->sched_id]->ready_q, t);
     }
-    return NULL;
 }
 
+
 /**
- * @brief Internal helper to asynchronously read from STDIN using io_uring.
+ * @brief Submit an asynchronous STDIN read for the current task.
  *
- * Prepares and submits a read request for the current task’s buffer from STDIN.
- * STDIN is set to non-blocking mode for safety. Upon submission, the current
- * task yields control to the scheduler until the I/O operation completes.
+ * Prepares and submits an io_uring read request on STDIN for the
+ * current task’s buffer. The read follows normal read(2) semantics:
+ * it may complete with fewer bytes than requested and may block
+ * internally if STDIN is a TTY.
+ *
+ * This function does NOT modify STDIN file descriptor flags
+ * (e.g. O_NONBLOCK) and does not provide true asynchronous behavior
+ * for terminal input. The calling task explicitly yields and will be
+ * resumed by the scheduler once the io_uring completion is processed
+ * by the I/O worker thread.
+ *
+ * Completion status (bytes read or error) is stored in the task
+ * structure and must be examined after the task resumes.
  *
  * @return void
  */
-void async_stdin_read() {
+void async_stdin_read(task_t *t) {
+    struct io_uring *ring = io_ring_map[t->sched_id];
     struct io_uring_sqe *sqe;
-    while ((sqe = io_uring_get_sqe(io_ring_map[current_task->sched_id])) == NULL) {
-        task_yield(kernel_thread_map[current_task->sched_id]);
-    }
 
-    /** Make stdin non-blocking for safety */
-    fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
+    while ((sqe = io_uring_get_sqe(ring)) == NULL) {
+        task_yield(kernel_thread_map[t->sched_id]);
+    }
 
     io_uring_prep_read(
         sqe,
-        STDIN_FILENO,            /** fd */
-        current_task->buf,       /** buffer */
-        current_task->req_n,     /** bytes to read */
-        0                        /** stdin is not seekable */
+        STDIN_FILENO,
+        t->buf,
+        t->req_n,
+        0   /* ignored for stdin */
     );
 
-    io_uring_sqe_set_data(sqe, current_task);
+    io_uring_sqe_set_data(sqe, t);
 
-    int ret = io_uring_submit(io_ring_map[current_task->sched_id]);
+    int ret = io_uring_submit(ring);
     if (ret < 0) {
-        fprintf(stderr, "io_uring_submit: %s\n", strerror(-ret));
-        exit(1);
+        t->io_err = -ret;
+        t->done_n = -1;
+        t->io_done = 1;
+        return;
     }
 
-    task_yield(kernel_thread_map[current_task->sched_id]);
+    task_yield(kernel_thread_map[t->sched_id]);
 }
 
 
+
 /**
- * @brief Internal helper to asynchronously write to STDOUT using io_uring.
+ * @brief Submit an io_uring write request to STDOUT for the current task.
  *
- * This function prepares and submits a non-blocking write request 
- * for the current task’s buffer to STDOUT. STDOUT is set to non-blocking 
- * mode before the operation. Once submitted, the current task yields 
- * control back to the scheduler until the write completes.
+ * Prepares and submits a write request for the current task’s buffer
+ * to STDOUT at the current file offset. The task yields execution
+ * to allow other tasks to run while the I/O completes.
+ *
+ * Notes:
+ *  - Partial writes are possible; actual bytes written are stored in
+ *    current_task->done_n after completion.
+ *  - I/O errors are reported via current_task->io_err.
+ *  - The task will be resumed by the scheduler once the I/O worker
+ *    processes the completion.
+ *  - True asynchronous non-blocking behavior depends on the underlying file descriptor
+ *    (TTY writes may still block internally).
+ *  - The function does **not** exit the process on SQE allocation or submission failure;
+ *    errors are propagated to the task structure instead.
  *
  * @return void
- *
- * @note Exits the process if SQE allocation or submission fails.
  */
 void async_stdout_write() {
+    task_t *t = current_task;
     struct io_uring_sqe *sqe;
-    while ((sqe = io_uring_get_sqe(io_ring_map[current_task->sched_id])) == NULL) {
-        task_yield(kernel_thread_map[current_task->sched_id]);
+    struct io_uring *ring = io_ring_map[t->sched_id];
+
+    /* acquire SQE */
+    while ((sqe = io_uring_get_sqe(ring)) == NULL) {
+        task_yield(kernel_thread_map[t->sched_id]);
     }
 
-    /** set stdout non blocking */
-    fcntl(STDOUT_FILENO, F_SETFL, O_NONBLOCK);
+    /* prepare write (stdout is not seekable) */
+    io_uring_prep_write(sqe, STDOUT_FILENO, t->buf, t->req_n, 0);
+    io_uring_sqe_set_data(sqe, t);
 
-    io_uring_prep_write(
-        sqe,
-        STDOUT_FILENO,
-        current_task->buf,
-        current_task->req_n,
-        0  /** stdout is not seekable */
-    );
-
-    io_uring_sqe_set_data(sqe, current_task);
-
-    int ret = io_uring_submit(io_ring_map[current_task->sched_id]);
+    int ret = io_uring_submit(ring);
     if (ret < 0) {
-        fprintf(stderr, "io_uring_submit (stdout): %s\n", strerror(-ret));
-        exit(1);
+        t->io_err = -ret;
+        t->done_n = -1;
+        t->io_done = 1;
+        return;
     }
 
-    task_yield(kernel_thread_map[current_task->sched_id]);
+    task_yield(kernel_thread_map[t->sched_id]);
 }
 
 
+
 /**
- * @brief Internal helper to asynchronously read from a file descriptor using io_uring.
+ * @brief Submit an io_uring read request on a file descriptor for the current task.
  *
- * Prepares and submits a read request for the current task’s buffer.
- * The request is configured to read from the given file descriptor at
- * the specified offset. After submission, the task yields execution
- * to allow other tasks to run.
+ * Prepares and submits a read request for the current task’s buffer
+ * from the specified file descriptor at the given offset. The task
+ * yields execution to allow other tasks to run while the I/O completes.
+ *
+ * Notes:
+ *  - Partial reads are possible; the actual number of bytes read is
+ *    stored in current_task->done_n after completion.
+ *  - I/O errors are reported via current_task->io_err.
+ *  - The task will be resumed by the scheduler once the I/O worker
+ *    processes the completion.
  *
  * @return void
  */
 void async_file_read() {
+    task_t *t = current_task;
+    struct io_uring *ring = io_ring_map[t->sched_id];
     struct io_uring_sqe *sqe;
-    while ((sqe = io_uring_get_sqe(io_ring_map[current_task->sched_id])) == NULL) {
-        task_yield(kernel_thread_map[current_task->sched_id]);
+
+    /* wait for a submission queue entry */
+    while ((sqe = io_uring_get_sqe(ring)) == NULL) {
+        task_yield(kernel_thread_map[t->sched_id]);
     }
 
+    /* prepare read at specified offset */
     io_uring_prep_read(sqe,
-                       current_task->fd,
-                       current_task->buf,
-                       current_task->req_n,
-                       current_task->offset  
-                    );
+                       t->fd,
+                       t->buf,
+                       t->req_n,
+                       t->offset);
 
-    io_uring_sqe_set_data(sqe, current_task);
-    io_uring_submit(io_ring_map[current_task->sched_id]);
+    io_uring_sqe_set_data(sqe, t);
 
-    task_yield(kernel_thread_map[current_task->sched_id]);
+    int ret = io_uring_submit(ring);
+    if (ret < 0) {
+        t->io_err  = -ret;
+        t->done_n  = -1;
+        t->io_done = 1;
+    }
+
+    task_yield(kernel_thread_map[t->sched_id]);
 }
 
+
 /**
- * @brief Internal helper to asynchronously write to a file descriptor using io_uring.
+ * @brief Submit an io_uring write request on a file descriptor for the current task.
  *
- * Prepares and submits an asynchronous write request for the current task’s buffer
- * to the specified file descriptor at the given offset. Once the request is submitted,
- * the current task yields execution to the scheduler until the write operation completes.
+ * Prepares and submits a write request for the current task’s buffer
+ * to the specified file descriptor at the given offset. The task
+ * yields execution to allow other tasks to run while the I/O completes.
+ *
+ * Notes:
+ *  - Partial writes may occur; actual bytes written are stored in
+ *    current_task->done_n.
+ *  - I/O errors are reported via current_task->io_err.
+ *  - The task will be resumed by the scheduler once the I/O worker
+ *    processes the completion.
+ *  - True asynchronous non-blocking behavior depends on the file type.
  *
  * @return void
- *
- * @note Exits the process if SQE allocation or submission fails.
  */
 void async_file_write() {
+    task_t *t = current_task;
+    struct io_uring *ring = io_ring_map[t->sched_id];
     struct io_uring_sqe *sqe;
-    while ((sqe = io_uring_get_sqe(io_ring_map[current_task->sched_id])) == NULL) {
-        task_yield(kernel_thread_map[current_task->sched_id]);
+
+    /* wait for a submission queue entry */
+    while ((sqe = io_uring_get_sqe(ring)) == NULL) {
+        task_yield(kernel_thread_map[t->sched_id]);
     }
 
+    /* prepare write at specified offset */
     io_uring_prep_write(
         sqe,
-        current_task->fd,
-        current_task->buf,
-        current_task->req_n,
-        current_task->offset
+        t->fd,
+        t->buf,
+        t->req_n,
+        t->offset
     );
 
-    io_uring_sqe_set_data(sqe, current_task);
+    io_uring_sqe_set_data(sqe, t);
 
-    int ret = io_uring_submit(io_ring_map[current_task->sched_id]);
+    int ret = io_uring_submit(ring);
     if (ret < 0) {
-        fprintf(stderr, "io_uring_submit (write): %s\n", strerror(-ret));
-        exit(1);
+        t->io_err  = -ret;
+        t->done_n  = -1;
+        t->io_done = 1;
+        return;
     }
 
-    task_yield(kernel_thread_map[current_task->sched_id]);
+    task_yield(kernel_thread_map[t->sched_id]);
 }
 
 
+
 /**
- * @brief Asynchronously read n bytes from STDIN.
+ * @brief Read up to n bytes from STDIN and suspend the current task.
  *
- * Allocates a buffer, configures the current task with the read parameters,
- * and submits an io_uring read request for STDIN. Yields until completion.
+ * Allocates a buffer and submits an io_uring read request on STDIN for the
+ * current task. The task yields execution and is resumed by the scheduler
+ * once the I/O completion is processed by the I/O worker thread.
  *
- * @param n Number of bytes to read.
+ * The read follows read(2) semantics: it may complete with fewer than n
+ * bytes and does not guarantee true asynchronous behavior for terminal
+ * input. The returned buffer is NUL-terminated based on the number of
+ * bytes actually read.
  *
- * @return Pointer to allocated buffer containing the read data.
+ * @param n Maximum number of bytes to read.
+ *
+ * @return Pointer to the allocated buffer on success, or NULL on error.
  */
 void* __public__ascan(int n) {
-    char* buf = (char*)allocate(__arena__, n * sizeof(char));
-    current_task->fd = STDIN_FILENO;
-    current_task->buf = buf;
-    current_task->req_n = n;
-    async_stdin_read();
+    if (n <= 0)
+        return NULL;
+
+    task_t *t = current_task;
+
+    /* +1 for NUL */
+    char *buf = (char*)allocate(__arena__, n + 1);
+    if (!buf)
+        return NULL;
+
+    /* setup task I/O state */
+    t->fd      = STDIN_FILENO;
+    t->buf     = buf;
+    t->req_n   = n;
+    t->done_n  = 0;
+    t->io_err  = 0;
+    t->io_done = 0;
+
+    /* submit async read */
+    async_stdin_read(t);
+
+    /* resumed after io_worker enqueues us */
+    if (t->done_n < 0)
+        return NULL;
+
+    /* NUL terminate */
+    if ((size_t)t->done_n < (size_t)n)
+        buf[t->done_n] = '\0';
+    else
+        buf[n] = '\0';
+
     return buf;
 }
 
+
 /**
- * @brief Asynchronously write formatted output to STDOUT using io_uring.
+ * @brief Format and write output to STDOUT, suspending the current task until done.
  *
- * Formats the input string and arguments, allocates a buffer for the result,
- * configures the current task with write parameters, and submits an io_uring
- * write request. Yields until the operation completes.
+ * Formats the input string and arguments into a dynamically allocated buffer,
+ * sets up the current task for an io_uring write to STDOUT, and submits it.
+ * The task yields execution and will be resumed by the scheduler once the
+ * write completes.
+ *
+ * Note:
+ *  - The write may be partial; actual bytes written are stored in
+ *    current_task->done_n.
+ *  - The returned buffer is owned by the task/runtime; do not free manually.
+ *  - True asynchronous non-blocking behavior is only possible for
+ *    non-TTY fds.
  *
  * @param fmt Format string (printf-style).
- * @param ... Variable arguments matching the format string.
+ * @param ... Arguments matching the format string.
  *
- * @return NULL on success, NULL on allocation or formatting failure.
+ * @return Number of bytes successfully written on success, or -1 on error.
  */
-void* __public__aprintf(const char* fmt, ...) {
+ssize_t __public__aprintf(const char* fmt, ...) {
+    if (!fmt) return NULL;
+
     va_list ap;
     va_start(ap, fmt);
-    
-    /** estimate needed size */
+
+    /* estimate needed buffer size */
     char tmp[1];
     int len = vsnprintf(tmp, sizeof(tmp), fmt, ap);
     va_end(ap);
-    
+
     if (len < 0) return NULL;
-    
+
     char* buf = allocate(__arena__, len + 1);
     if (!buf) return NULL;
-    
+
     va_start(ap, fmt);
     vsnprintf(buf, len + 1, fmt, ap);
     va_end(ap);
-    
-    current_task->fd = STDOUT_FILENO;
-    current_task->buf = (char*)buf;
-    current_task->req_n = len;
-    
+
+    task_t *t = current_task;
+
+    /* setup task for stdout write */
+    t->fd = STDOUT_FILENO;
+    t->buf = buf;
+    t->req_n = len;
+    t->done_n = 0;
+    t->io_err = 0;
+    t->io_done = 0;
+
     async_stdout_write();
 
-    return NULL;
+    /* task resumes here after write completion */
+    if (t->done_n < 0)
+        return NULL;
+
+    return t->done_n;
 }
 
+
 /**
- * @brief Asynchronously read n bytes from a file at a given offset.
+ * @brief Read up to n bytes from a file at a given offset, suspending the current task.
  *
  * Configures the current task with the file descriptor, buffer, byte count,
- * and offset, then submits an io_uring read request. Yields until completion.
+ * and offset, then submits an io_uring read request. The task yields execution
+ * and will be resumed by the scheduler once the read completes.
+ *
+ * Notes:
+ *  - Partial reads are possible; actual bytes read are stored in
+ *    current_task->done_n.
+ *  - I/O errors are reported via current_task->io_err.
+ *  - True asynchronous non-blocking behavior depends on the file type.
  *
  * @param f      FILE pointer to read from.
  * @param buf    Buffer to store read data.
- * @param n      Number of bytes to read.
+ * @param n      Maximum number of bytes to read.
  * @param offset File offset to start reading from.
  *
- * @return Pointer to bytes read count in current task context.
+ * @return Number of bytes read on success (ssize_t), or -1 on error.
  */
-void* __public__afread(char* f, char* buf, int n, int offset) {
+ssize_t __public__afread(char* f, char* buf, int n, int offset) {
+    if (!f || !buf || n <= 0 || offset < 0)
+        return -1;
+
     int fd = fileno((FILE*)f);
-    current_task->fd = fd;
-    current_task->buf = buf;
-    current_task->req_n = n;
-    current_task->offset = offset;
+    if (fd < 0)
+        return -1;
+
+    task_t *t = current_task;
+
+    /* setup task I/O state */
+    t->fd      = fd;
+    t->buf     = buf;
+    t->req_n   = n;
+    t->offset  = offset;
+    t->done_n  = 0;
+    t->io_err  = 0;
+    t->io_done = 0;
+
+    /* submit async read */
     async_file_read();
-    return current_task->done_n; /* @todo: not tested return address */
+
+    /* task resumes here after I/O completion */
+    if (t->done_n < 0)
+        return -1;
+
+    return t->done_n;
 }
 
+
 /**
- * @brief Asynchronously write n bytes to a file at a given offset.
+ * @brief Write up to n bytes to a file at a given offset, suspending the current task.
  *
  * Configures the current task with the file descriptor, buffer, byte count,
- * and offset, then submits an io_uring write request. Yields until completion.
+ * and offset, then submits an io_uring write request. The task yields execution
+ * and will be resumed by the scheduler once the write completes.
+ *
+ * Notes:
+ *  - Partial writes are possible; actual bytes written are stored in
+ *    current_task->done_n.
+ *  - I/O errors are reported via current_task->io_err.
+ *  - True asynchronous non-blocking behavior depends on the file type.
  *
  * @param f      FILE pointer to write to.
  * @param buf    Buffer containing data to write.
- * @param n      Number of bytes to write.
+ * @param n      Maximum number of bytes to write.
  * @param offset File offset to start writing from.
  *
- * @return Pointer to bytes written count in current task context.
+ * @return Number of bytes written on success (ssize_t), or -1 on error.
  */
-void* __public__afwrite(char* f, char* buf, int n, int offset) {
-    int fd = fileno((FILE*)f);
-    current_task->fd = fd;
-    current_task->buf = (char*)buf;
-    current_task->req_n = n;
-    current_task->offset = offset;
+ssize_t __public__afwrite(char* f, const char* buf, int n, int offset) {
+    if (!f || !buf || n <= 0 || offset < 0)
+        return -1;
 
+    int fd = fileno((FILE*)f);
+    if (fd < 0)
+        return -1;
+
+    task_t *t = current_task;
+
+    /* setup task I/O state */
+    t->fd      = fd;
+    t->buf     = (char*)buf;
+    t->req_n   = n;
+    t->offset  = offset;
+    t->done_n  = 0;
+    t->io_err  = 0;
+    t->io_done = 0;
+
+    /* submit async write */
     async_file_write();
-    return current_task->done_n; /* @todo: not tested return address */
+
+    /* task resumes here after I/O completion */
+    if (t->done_n < 0)
+        return -1;
+
+    return t->done_n;
 }
 
+
 /**
- * @brief Synchronously read n bytes from STDIN.
+ * @brief Synchronously read up to n bytes from STDIN.
  *
- * uses blocking read() syscall to read n bytes. while reading from tty Input is line-buffered by 
- * the kernel read() typically returns as soon as a line is available. so it doesn't wait till n bytes 
- * are availanbe. __public__sscan can do multiple read() calls to read in case of EINTR errors.
- * @param n Number of bytes to read.
+ * Allocates a buffer of size n+1 and performs a blocking read() from STDIN.
+ * Notes on behavior:
+ *  - When reading from a TTY, input is typically line-buffered. The read() syscall
+ *    may return fewer than n bytes as soon as a line is available.
+ *  - If read() is interrupted by a signal (errno == EINTR), the function retries
+ *    the read automatically.
+ *  - The returned buffer is NUL-terminated at the position corresponding to
+ *    the number of bytes actually read.
  *
- * @return Pointer to allocated buffer containing the read data.
+ * @param n Maximum number of bytes to read.
+ *
+ * @return Pointer to the allocated buffer containing the read data on success,
+ *         or NULL on allocation failure or read error.
  */
 void* __public__sscan(int n) {
     if (n <= 0) return NULL;
@@ -333,15 +508,22 @@ void* __public__sscan(int n) {
 
 
 /**
- * @brief Write formatted output to STDOUT synchronously.
+ * @brief Synchronously write formatted output to STDOUT.
  *
- * Formats the input string and arguments, then writes the result to STDOUT
- * using the write syscall. Can do multiple syscalls for full n byte write.
+ * Formats the input string and arguments into a dynamically allocated buffer,
+ * then writes the entire result to STDOUT using the write() syscall. The function
+ * ensures that all bytes are written, retrying as needed in case of partial writes
+ * or EINTR interruptions.
+ *
+ * Notes:
+ *  - The buffer is NUL-terminated internally for formatting purposes,
+ *    but the NUL byte is not written to STDOUT.
+ *  - The function may perform multiple write() syscalls to complete the output.
  *
  * @param fmt Format string (printf-style).
- * @param ... Variable arguments matching the format string.
+ * @param ... Arguments matching the format string.
  *
- * @return Number of bytes written on success, -1 on error.
+ * @return Number of bytes successfully written on success, or -1 on error.
  */
 ssize_t __public__sprintf(const char *fmt, ...) {
     if (!fmt)
@@ -381,17 +563,25 @@ ssize_t __public__sprintf(const char *fmt, ...) {
 }
 
 /**
- * @brief Synchronously read n bytes from a file at a given offset.
+ * @brief Synchronously read up to n bytes from a file at a given offset.
  *
- * Reads up to n bytes from the specified file at the given offset using
- * the pread syscall. Handles errors and partial reads gracefully.
+ * Reads from the specified FILE pointer into the provided buffer using the
+ * pread() syscall. The function handles partial reads and EINTR interruptions,
+ * and continues reading until either n bytes are read or end-of-file is reached.
+ *
+ * Notes:
+ *  - The file descriptor offset is updated internally after each read.
+ *  - Partial reads are handled transparently; the function loops until
+ *    the requested byte count is satisfied or EOF occurs.
+ *  - The buffer is not NUL-terminated; it contains raw file data.
  *
  * @param f      FILE pointer to read from.
  * @param buf    Buffer to store read data.
- * @param n      Number of bytes to read.
+ * @param n      Maximum number of bytes to read.
  * @param offset File offset to start reading from.
  *
- * @return Number of bytes read on success, -1 on error.
+ * @return Number of bytes actually read on success (0 indicates EOF),
+ *         or -1 on error.
  */
 ssize_t __public__sfread(char* f, char* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
@@ -416,17 +606,25 @@ ssize_t __public__sfread(char* f, char* buf, int n, int offset) {
 }
 
 /**
- * @brief Synchronously write n bytes to a file at a given offset.
+ * @brief Synchronously write up to n bytes to a file at a given offset.
  *
- * Writes up to n bytes to the specified file at the given offset using
- * the pwrite syscall. Handles errors and partial writes gracefully.
+ * Writes data from the provided buffer to the specified FILE pointer using
+ * the pwrite() syscall. The function handles partial writes and EINTR
+ * interruptions, looping until either all n bytes are written or an error occurs.
+ *
+ * Notes:
+ *  - The file offset is updated internally for each pwrite() call.
+ *  - Partial writes are handled transparently; the function ensures that
+ *    the full requested byte count is written unless an error occurs.
+ *  - The buffer is not modified by the function.
  *
  * @param f      FILE pointer to write to.
  * @param buf    Buffer containing data to write.
  * @param n      Number of bytes to write.
  * @param offset File offset to start writing from.
  *
- * @return Number of bytes written on success, -1 on error.
+ * @return Number of bytes actually written on success,
+ *         or -1 on error.
  */
 ssize_t __public__sfwrite(char* f, char* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;

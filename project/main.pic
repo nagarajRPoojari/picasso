@@ -38,7 +38,7 @@ class Worker {
         foreach i in 1..10000 {
             say n: int = syncio.fread(fp, buf, buff_size, seek);
             if(i==9999){
-                syncio.printf("=========[%d]=> done - %d buf = %p\n", id, i, buf);
+                asyncio.printf("=========[%d]=> done - %d buf = %p\n", id, i, buf);
                 return;
             }
             // seek = seek + buff_size;
