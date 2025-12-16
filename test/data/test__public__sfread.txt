@@ -1,0 +1,1 @@
+Synchronously read n bytes from a file at a given offset.

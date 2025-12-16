@@ -26,10 +26,9 @@ int main(int argc, char **argv) {
         if (system("mkdir -p .niyama") != 0) die("mkdir");
         if (system("touch .niyama/out.ll") != 0) die("touch");
 
-
         char cmd[1024];
         snprintf(cmd, sizeof(cmd),
-            "bin/irgen gen %s .niyama/out.ll", file);
+                 "bin/irgen gen %s .niyama/out.ll", file);
         if (system(cmd) != 0) die("irgen");
 
         if (system("llvm-as-16 .niyama/out.ll -o .niyama/out.bc") != 0)
@@ -38,7 +37,7 @@ int main(int argc, char **argv) {
         if (system("llc-16 -filetype=obj .niyama/out.bc -o .niyama/out.o") != 0)
             die("llc");
 
-        if (system("cc .niyama/out.o ./bin/libruntime.a -o .niyama/a.out -luring -lpthread -lm") != 0)
+        if (system("cc .niyama/out.o ./bin/libruntime.a -o .niyama/a.out -luring -lunwind-aarch64 -lpthread -lm") != 0)
             die("link");
 
         return 0;

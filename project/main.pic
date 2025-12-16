@@ -24,7 +24,17 @@ class Worker {
         sync.atomic_store(this._thread_id, 0);
     } 
 
+    fn raiseErr() {
+        say y: int = 10 / 0;
+    }
+
+    fn raiseBeforeErr() {
+        this.raiseErr();
+    }
+
     fn do() {
+
+        this.raiseBeforeErr();
         sync.atomic_add(this._thread_id, 1);
         say id: int = sync.atomic_load(this._thread_id);
 
