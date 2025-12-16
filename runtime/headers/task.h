@@ -55,11 +55,12 @@ typedef struct task {
     /* seek offset */
     ssize_t offset;
 
-    /* Flag indicating whether epoll is used for this task */
-    int use_epoll; 
-
     /* task state: RUNNING, YIELDED, TERMINATED */
     task_state_t state;
+
+    int io_err;
+
+    volatile int io_done;
 } task_t;
 
 #endif

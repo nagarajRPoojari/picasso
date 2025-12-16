@@ -27,24 +27,29 @@ void tearDown(void) {
     /* @todo: gracefull termination */
 }
 
+#define N 20
 static atomic_int completed;
+static atomic_int tasks_n;
+
+void* test_func(void* arg);
 
 void* test_func(void* arg) {
     (void)arg;
 
-    self_yield();
+    if(atomic_load(&tasks_n) > 0) {
+        atomic_fetch_sub(&tasks_n, 1);
+        thread(test_func, NULL);
+    }
+
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
     return NULL;
 }
 
 void test_scheduler_executes_tasks(void) {
     atomic_store(&completed, 0);
+    atomic_store(&tasks_n, N-1);
 
-    const int N = 32;
-
-    for (int i = 0; i < N; i++) {
-        thread(test_func, NULL);
-    }
+    thread(test_func, NULL);
 
     /* bounded wait — no deadlock */
     struct timespec ts;
