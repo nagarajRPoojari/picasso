@@ -88,5 +88,9 @@ int init_scheduler();
  */
 void clean_scheduler();
 
+/**
+ * @brief wait for all schedulers to join.
+ */
+int wait_for_schedulers();
 
 #endif

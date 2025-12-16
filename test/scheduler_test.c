@@ -6,49 +6,67 @@
 #include <unistd.h>
 #include <assert.h>
 #include <pthread.h>
+#include <stdatomic.h>
+#include <time.h>
 #include "io.h"
 #include "alloc.h"
+#include "gc.h"
 #include "initutils.h"
-
-
-extern kernel_thread_t **kernel_thread_map;
-extern struct io_uring **io_ring_map;
-
-extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
-
 
 __thread arena_t* __global__arena__;
 
 void setUp(void) {
     __global__arena__ = arena_create();
-
     init_io();
     init_scheduler();
+    gc_init();
 }
 
 void tearDown(void) {
     __global__arena__ = NULL;
+    /* @todo: gracefull termination */
 }
 
-void* test_func(void*) {
-    printf("hello world\n");
+static atomic_int completed;
 
+void* test_func(void* arg) {
+    (void)arg;
+
+    self_yield();
+    atomic_fetch_add_explicit(&completed, 1, memory_order_release);
     return NULL;
 }
 
-void test_scheduler(void) {
-    thread(test_func, NULL);
+void test_scheduler_executes_tasks(void) {
+    atomic_store(&completed, 0);
 
-    for (int i = 0; i < SCHEDULER_THREAD_POOL_SIZE; i++) {
-        pthread_join(sched_threads[i], NULL);
+    const int N = 32;
+
+    for (int i = 0; i < N; i++) {
+        thread(test_func, NULL);
     }
-}
 
+    /* bounded wait — no deadlock */
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 1000000; /* 1ms */
+
+    int spins = 0;
+    while (atomic_load_explicit(&completed, memory_order_acquire) < N) {
+        nanosleep(&ts, NULL);
+        spins++;
+        if (spins > 5000) { /* ~5s */
+            TEST_FAIL_MESSAGE("scheduler did not complete tasks");
+        }
+    }
+
+    TEST_ASSERT_EQUAL_INT(N, atomic_load(&completed));
+}
 
 int main(void) {
     UNITY_BEGIN();
 
-    RUN_TEST(test_scheduler);
+    RUN_TEST(test_scheduler_executes_tasks);
 
     return UNITY_END();
 }
