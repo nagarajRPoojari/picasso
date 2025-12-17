@@ -1,9 +1,12 @@
-class Adder {
-    fn Adder() {
+import utils;
 
+class Adder {
+    say u: Utils;
+    fn Adder() {
+        this.u = new Utils();
     }
 
     fn add(a: int, b: int): int {
-        return a + b;
+        return a + b + this.u.giveOne();
     }
 }

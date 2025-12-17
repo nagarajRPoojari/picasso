@@ -23,7 +23,8 @@ import (
 
 // LLVM parses abstract syntax tree to generate llvm IR
 type LLVM struct {
-	st *state.State
+	st         *state.State
+	ModuleName string
 }
 
 func NewLLVM(pkgName string) *LLVM {
@@ -53,7 +54,7 @@ func NewLLVM(pkgName string) *LLVM {
 	m.TargetTriple = "aarch64-unknown-linux-gnu"
 	m.DataLayout = "e-m:e-i64:64-n32:64-S128"
 
-	return &LLVM{st: st}
+	return &LLVM{st: st, ModuleName: pkgName}
 }
 
 func (t *LLVM) Dump(outputDir string, file string) {
