@@ -5,17 +5,17 @@ import (
 	"github.com/llir/llvm/ir/types"
 )
 
+// registerFuncs orchestrates the declaration of all external symbols within the
+// current LLVM module. It partitions declarations into logical runtime domains.
 func (t *Interface) registerFuncs(mod *ir.Module) {
-	// custom runtime
-	t.initRuntime(mod)
-	// stdio
-	t.initStdio(mod)
-	// atomic
-	t.initAtomicFuncs(mod)
-
-	t.initStrs(mod)
+	t.initRuntime(mod)     // Core lifecycle and memory
+	t.initStdio(mod)       // File and Console I/O
+	t.initAtomicFuncs(mod) // Thread-safe primitives
+	t.initStrs(mod)        // High-level string manipulation
 }
 
+// initRuntime declares core engine functions including memory management (malloc/alloc),
+// threading, process synchronization, and essential libc utilities like memcpy.
 func (t *Interface) initRuntime(mod *ir.Module) {
 
 	t.Funcs[FUNC_HASH] = mod.NewFunc(FUNC_HASH, types.I64, ir.NewParam("data", types.I8Ptr), ir.NewParam("len", types.I64))
@@ -59,6 +59,9 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	)
 }
 
+// initAtomicFuncs defines the interface for thread-safe memory operations.
+// It maps atomic aliases (like INT8/CHAR) to the same underlying runtime
+// implementations and handles type-specific pointer signatures for atomic stores/loads.
 func (t *Interface) initAtomicFuncs(mod *ir.Module) {
 	// --- @bool ---
 	t.Funcs[ATOMIC_STORE_BOOL] = mod.NewFunc(ATOMIC_STORE_BOOL,
@@ -203,6 +206,9 @@ func (t *Interface) initAtomicFuncs(mod *ir.Module) {
 	)
 }
 
+// initStdio declares standard input/output operations. It includes support
+// for both blocking (Standard C) and non-blocking/asynchronous (prefixed with 'a')
+// I/O calls, as well as variadic signatures for formatted printing.
 func (t *Interface) initStdio(mod *ir.Module) {
 	// @fopen
 	t.Funcs[FUNC_FOPEN] = mod.NewFunc(FUNC_FOPEN, types.I8Ptr,
@@ -271,6 +277,8 @@ func (t *Interface) initStdio(mod *ir.Module) {
 	)
 }
 
+// initStrs defines high-level string utilities that operate on it's
+// string representation, providing abstraction over raw C-string pointers.
 func (t *Interface) initStrs(mod *ir.Module) {
 	// @format
 	t.Funcs[FUNC_FORMAT] = mod.NewFunc(FUNC_FORMAT, types.I8Ptr,
@@ -287,5 +295,4 @@ func (t *Interface) initStrs(mod *ir.Module) {
 		ir.NewParam("a", types.I8Ptr),
 		ir.NewParam("b", types.I8Ptr),
 	)
-
 }
