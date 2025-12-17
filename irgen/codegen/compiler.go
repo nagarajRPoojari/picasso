@@ -131,6 +131,7 @@ func (t *generator) recursiveTransitiveDeclaration(pkgName string, llvm *LLVM, d
 	pipeline.NewPipeline(llvm.st, pkgAST).Declare()
 }
 
+// importBasePackages resolve base module imports.
 func (t *generator) importBasePackages(methodMap map[string]function.Func, module string) {
 	mod, ok := libs.ModuleList[module]
 	if !ok {
@@ -142,10 +143,12 @@ func (t *generator) importBasePackages(methodMap map[string]function.Func, modul
 	}
 }
 
+// compile passes tree through all steps to output IR
 func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
 	llvm.ParseAST(tree)
 }
 
+// LoadPackages loads package with their AST by going through project.ini file
 func LoadPackages(packagePath string) map[string]ast.BlockStatement {
 	cfg, err := ini.Load(packagePath)
 	if err != nil {
@@ -160,6 +163,8 @@ func LoadPackages(packagePath string) map[string]ast.BlockStatement {
 			panic(fmt.Sprintf("unable to read: %v", err))
 		}
 		source := string(sourceBytes)
+
+		// parse source code to generate AST
 		tree := parser.Parse(source)
 		m[section.Name()] = tree
 	}
