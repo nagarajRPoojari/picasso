@@ -7,13 +7,11 @@ import (
 	funcs "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func"
 )
 
-// DefineClass generates IR definitions for all methods of a class.
-// It defines both the class's own functions and inherited ones from its parent,
-// ensuring that duplicates are avoided by tracking already-defined names.
-//
-// Params:
-//
-//	cls – the AST ClassDeclarationStatement representing the class
+// DefineClass triggers the emission of concrete LLVM IR function bodies for
+// all methods belonging to a class. It handles the traversal of both local
+// definitions and inherited parent methods, using a tracking map to ensure
+// that overridden methods are defined only once using the most specific
+// implementation.
 func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
 	avoid := make(map[string]struct{}, 0)
 	for _, stI := range cls.Body {
@@ -32,21 +30,21 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
 	}
 }
 
-// DefineClassUDT finalizes the LLVM struct definition for a user-defined class.
-// It assigns struct field indices for variables and methods, validates overrides,
-// incorporates fields and methods from the parent class, and updates the
-// opaque UDT created earlier in DeclareClassUDT with concrete field types.
+// DefineClassUDT performs the "lowering" of high-level class definitions into
+// concrete LLVM struct layouts. It handles the structural aspects of inheritance
+// by flattening parent fields into the child struct, mapping field identifiers
+// to numerical indices (for GEP instructions), and calculating the memory
+// footprint for function pointers used in method dispatch.
 //
-// Behavior:
-//   - Inherits fields and methods from the parent class, extending the struct.
-//   - Registers new fields from the class body, ensuring no duplicates.
-//   - Adds function pointers for methods, validating method overrides
-//     (signature must match).
-//   - Updates the underlying LLVM struct with all collected field types.
-//
-// Params:
-//
-//	cls – the AST ClassDeclarationStatement representing the class
+// Key Logic:
+//   - Structural Inheritance: Deeply copies field types from the parent UDT to
+//     ensure binary compatibility for polymorphism.
+//   - Member Indexing: Assigns monotonically increasing indices to fields and
+//     methods to facilitate GetElementPtr (GEP) offset calculations.
+//   - Signature Validation: Uses method hashes to verify that overrides match
+//     the parent signature, aborting on interface mismatches.
+//   - Opaque Resolution: Updates the previously declared opaque struct with
+//     the finalized field set, completing the type definition in the LLVM module.
 func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 	mc := t.st.Classes[cls.Name]
 	fieldTypes := make([]types.Type, 0)
@@ -57,6 +55,10 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 	i := 0
 
 	parentClass := t.st.Classes[cls.Implements]
+
+	// If current class inherits pull its fields to current class
+	// DefineClassUDT is expected to be called in the order of inheritance, so
+	// no need to recursively pull higher parent classes.
 	if parentClass != nil {
 		for _, stI := range t.st.TypeHeirarchy.ClassDefs[t.st.TypeHeirarchy.Parent[cls.Name]].Body {
 			switch st := stI.(type) {
@@ -88,6 +90,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 		fieldTypes = append(fieldTypes, st.Fields...)
 	}
 
+	// Opaque resolution: define concrete types of all fields
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
