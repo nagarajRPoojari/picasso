@@ -5,7 +5,7 @@ import sync from builtin;
 
 
 import math;
-
+import dummy;
 // using "math/random" as rand;
 // using "builtin/syncio";
 
@@ -48,7 +48,8 @@ class Node {
 
     fn len(s: string): int {
         say ad: Adder = new Adder();
-        return ad.add(10 , 20);
+        say c: Dummy = new Dummy();
+        return ad.add(10 , 20) + c.giveTwo();
 
     }
 }
