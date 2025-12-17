@@ -1,10 +1,10 @@
 package generator
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/block"
@@ -26,10 +26,13 @@ type LLVM struct {
 	st *state.State
 }
 
-func NewLLVM() *LLVM {
+func NewLLVM(pkgName string) *LLVM {
 	m := ir.NewModule()
 	tree := scope.NewVarTree()
-	// tree.()
+	m.SourceFilename = pkgName
+
+	rterr.NewErrorHandler(m)
+	c.NewInterface(m)
 
 	st := &state.State{
 		Module:            m,
@@ -38,7 +41,7 @@ func NewLLVM() *LLVM {
 		Classes:           make(map[string]*tf.MetaClass),
 		IdentifierBuilder: identifier.NewIdentifierBuilder(MAIN),
 		LibMethods:        make(map[string]function.Func),
-		CI:                c.NewInterface(m),
+		CI:                c.Instance,
 	}
 
 	expression.ExpressionHandlerInst = expression.NewExpressionHandler(st)
@@ -47,25 +50,14 @@ func NewLLVM() *LLVM {
 	block.BlockHandlerInst = block.NewBlockHandler(st)
 	class.ClassHandlerInst = class.NewClassHandler(st)
 
-	rterr.Instance = rterr.NewErrorHandler(m)
-
 	m.TargetTriple = "aarch64-unknown-linux-gnu"
 	m.DataLayout = "e-m:e-i64:64-n32:64-S128"
-
-	// @todo: this is not the right place
-	ax := types.NewStruct(
-		types.NewPointer(types.I8),  // data
-		types.NewPointer(types.I64), // shape pointer
-		types.I64,                   // length
-		types.I64,                   // rank
-	)
-	st.Module.NewTypeDef("array", ax)
 
 	return &LLVM{st: st}
 }
 
-func (t *LLVM) Dump(file string) {
-	f, err := os.Create(file)
+func (t *LLVM) Dump(outputDir string, file string) {
+	f, err := os.Create(fmt.Sprintf("%s/%s.ll", outputDir, file))
 	if err != nil {
 		panic(err)
 	}

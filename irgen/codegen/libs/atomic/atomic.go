@@ -33,25 +33,25 @@ func (t *Sync) ListAllFuncs() map[string]function.Func {
 
 func (t *Sync) atomicStore(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
 	dest := utils.GetTypeString(args[0].Type())
-	method := c.NewInterface(module).Funcs[fmt.Sprintf("__public__atomic_store_%s", extractBetween(dest, "_", "_"))]
+	method := c.Instance.Funcs[fmt.Sprintf("__public__atomic_store_%s", extractBetween(dest, "_", "_"))]
 	return libutils.CallCFunc(typeHandler, method, bh, args)
 }
 
 func (t *Sync) atomicLoad(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
 	dest := utils.GetTypeString(args[0].Type())
-	method := c.NewInterface(module).Funcs[fmt.Sprintf("__public__atomic_load_%s", extractBetween(dest, "_", "_"))]
+	method := c.Instance.Funcs[fmt.Sprintf("__public__atomic_load_%s", extractBetween(dest, "_", "_"))]
 	return libutils.CallCFunc(typeHandler, method, bh, args)
 }
 
 func (t *Sync) atomicAdd(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
 	dest := utils.GetTypeString(args[0].Type())
-	method := c.NewInterface(module).Funcs[fmt.Sprintf("__public__atomic_add_%s", extractBetween(dest, "_", "_"))]
+	method := c.Instance.Funcs[fmt.Sprintf("__public__atomic_add_%s", extractBetween(dest, "_", "_"))]
 	return libutils.CallCFunc(typeHandler, method, bh, args)
 }
 
 func (t *Sync) atomicSub(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
 	dest := utils.GetTypeString(args[0].Type())
-	method := c.NewInterface(module).Funcs[fmt.Sprintf("__public__atomic_sub_%s", extractBetween(dest, "_", "_"))]
+	method := c.Instance.Funcs[fmt.Sprintf("__public__atomic_sub_%s", extractBetween(dest, "_", "_"))]
 	return libutils.CallCFunc(typeHandler, method, bh, args)
 }
 

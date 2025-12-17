@@ -24,24 +24,30 @@ int main(int argc, char **argv) {
         const char *file = argv[2];
 
         if (system("mkdir -p .niyama") != 0) die("mkdir");
-        if (system("touch .niyama/out.ll") != 0) die("touch");
 
         char cmd[1024];
         snprintf(cmd, sizeof(cmd),
-                 "bin/irgen gen %s .niyama/out.ll", file);
+                "bin/irgen gen %s ./bin", file);
         if (system(cmd) != 0) die("irgen");
 
-        if (system("llvm-as-16 .niyama/out.ll -o .niyama/out.bc") != 0)
+        if (system("for f in ./bin/*.ll; do "
+                "llvm-as-16 \"$f\" -o \"${f%.ll}.bc\" || exit 1; "
+                "done") != 0)
             die("llvm-as");
 
-        if (system("llc-16 -filetype=obj .niyama/out.bc -o .niyama/out.o") != 0)
+        if (system("for f in ./bin/*.bc; do "
+                "llc-16 -filetype=obj \"$f\" -o \"${f%.bc}.o\" || exit 1; "
+                "done") != 0)
             die("llc");
 
-        if (system("cc .niyama/out.o ./bin/libruntime.a -o .niyama/a.out -luring -lunwind-aarch64 -lpthread -lm") != 0)
+        if (system("cc ./bin/*.o ./bin/libruntime.a "
+                "-o .niyama/a.out "
+                "-luring -lunwind-aarch64 -lpthread -lm") != 0)
             die("link");
 
         return 0;
     }
+
 
     if (!strcmp(argv[1], "exec")) {
         // Run the generated binary

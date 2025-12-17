@@ -4,10 +4,52 @@ import array from builtin;
 import sync from builtin;
 
 
+import math;
+
+// using "math/random" as rand;
+// using "builtin/syncio";
+
+
+// TODO:
+// // refactor all go code. c is good
+// // fix that packages & import things
+
+// // write base c modules
+// // write tire-0 modules
+
+
+// base c modules: import like "builtin/os", "builtin/io"..
+// os // expose all syscalls & os level extra info
+// io // fileio, netio, stdinio
+// atomic // for atomic types & ops 
+// sync // synchronization primitives e.g, mutex, locks
+// crypto // basic hash functions etc.. optional
+// array // basic array ops, len(), bound check etc..
+// string // basic string ops, len(), modifications , mutable vs immutable, need to see
+
+
+// tier-0: import like "os", "io"..
+// os // wrap "builtin/os" & provide interface for io 
+//     os/syscalls
+//     os/io 
+
+class Next {
+    say y: int = 90;
+    fn Next() {
+
+    }
+}
+
 class Node {
-    say x: int = 90;
+    say y: Next = new Next();
     fn Node() {
         
+    }
+
+    fn len(s: string): int {
+        say ad: Adder = new Adder();
+        return ad.add(10 , 20);
+
     }
 }
 
@@ -22,6 +64,8 @@ class Worker {
         syncio.printf(" value of _thread_id: %p [class = %p]\n", this._thread_id, this);
         sync.atomic_store(this.counter, count);
         sync.atomic_store(this._thread_id, 0);
+
+        this.x = new Node();
     } 
 
     fn raiseErr() {
@@ -29,42 +73,45 @@ class Worker {
     }
 
     fn raiseBeforeErr() {
-        this.raiseErr();
+        // this.raiseErr();
+        syncio.printf("length = %d %d \n", this.x.len("something"), this.x.y.y);
+
     }
 
     fn do() {
 
         this.raiseBeforeErr();
-        sync.atomic_add(this._thread_id, 1);
-        say id: int = sync.atomic_load(this._thread_id);
+        // sync.atomic_add(this._thread_id, 1);
+        // say id: int = sync.atomic_load(this._thread_id);
 
-        say buff_size: int = 256;
-        say buf: []int8 = array.create(int8, buff_size);
+        // say buff_size: int = 256;
+        // say buf: []int8 = array.create(int8, buff_size);
 
-        syncio.printf(" value of array = %p \n", buf);
-        say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
-        say seek: int = 0;
+        // syncio.printf(" value of array = %p \n", buf);
+        // say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
+        // say seek: int = 0;
 
-        foreach i in 1..10000 {
-            say n: int = syncio.fread(fp, buf, buff_size, seek);
-            if(i==9999){
-                asyncio.printf("=========[%d]=> done - %d buf = %p\n", id, i, buf);
-                return;
-            }
-            // seek = seek + buff_size;
-            // asyncio.printf("%.*s\n", n, buf);
+        // foreach i in 1..10000 {
+        //     say n: int = syncio.fread(fp, buf, buff_size, seek);
+        //     if(i==9999){
+        //         asyncio.printf("=========[%d]=> done - %d buf = %p\n", id, i, buf);
+        //         return;
+        //     }
+        //     // seek = seek + buff_size;
+        //     // asyncio.printf("%.*s\n", n, buf);
 
-            // if(n<buff_size) {
-            //     return;
-            // }else {}
-        }
+        //     // if(n<buff_size) {
+        //     //     return;
+        //     // }else {}
+        // }
     }
 }
 
 fn start() {
     say w1: Worker = new Worker(1000);
 
-    foreach i in 1..100 {
-       thread(w1.do);
-    }
+    w1.do();
+    // foreach i in 1..100 {
+    //    thread(w1.do);
+    // }
 }

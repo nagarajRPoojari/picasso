@@ -31,17 +31,17 @@ func (t *AsyncIO) ListAllFuncs() map[string]function.Func {
 }
 
 func (t *AsyncIO) aprintf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	printfFn := c.NewInterface(module).Funcs[c.FUNC_APRINTF]
+	printfFn := c.Instance.Funcs[c.FUNC_APRINTF]
 	return libutils.CallCFunc(typeHandler, printfFn, bh, args)
 }
 
 func (t *AsyncIO) ascan(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	scanFn := c.NewInterface(module).Funcs[c.FUNC_ASCAN]
+	scanFn := c.Instance.Funcs[c.FUNC_ASCAN]
 	return libutils.CallCFunc(typeHandler, scanFn, bh, args)
 }
 
 func (t *AsyncIO) afread(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	scanFn := c.NewInterface(module).Funcs[c.FUNC_AFREAD]
+	scanFn := c.Instance.Funcs[c.FUNC_AFREAD]
 
 	dest := args[1]
 	if utils.GetTypeString(dest.Type()) != "array" {
@@ -56,7 +56,7 @@ func (t *AsyncIO) afread(typeHandler *typedef.TypeHandler, module *ir.Module, bh
 
 // @todo: fix
 func (t *AsyncIO) awrite(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	scanFn := c.NewInterface(module).Funcs[c.FUNC_AFWRITE]
+	scanFn := c.Instance.Funcs[c.FUNC_AFWRITE]
 
 	dest := args[1]
 	if utils.GetTypeString(dest.Type()) != "array" {

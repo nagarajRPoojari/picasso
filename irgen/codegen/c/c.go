@@ -1,8 +1,6 @@
 package c
 
 import (
-	"sync"
-
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
@@ -191,16 +189,15 @@ type Interface struct {
 }
 
 var Instance *Interface
-var once sync.Once
 
 func NewInterface(mod *ir.Module) *Interface {
 	t := &Interface{}
-	once.Do(func() {
-		t.Funcs = make(map[string]*ir.Func)
-		t.Types = make(map[string]types.Type)
-		t.RegisterTypes()
-		t.registerFuncs(mod)
-		Instance = t
-	})
+	t.Funcs = make(map[string]*ir.Func)
+	t.Types = make(map[string]types.Type)
+
+	t.registerTypes(mod)
+	t.registerFuncs(mod)
+
+	Instance = t
 	return Instance
 }

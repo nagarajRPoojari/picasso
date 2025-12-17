@@ -1,22 +1,27 @@
 package c
 
-import "github.com/llir/llvm/ir/types"
+import (
+	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
+)
 
-func (t *Interface) RegisterTypes() {
-	t.initArrayTypes()
-	t.initAtomicTypes()
+func (t *Interface) registerTypes(mod *ir.Module) {
+	t.initArrayTypes(mod)
+	t.initAtomicTypes(mod)
 }
 
-func (t *Interface) initArrayTypes() {
+func (t *Interface) initArrayTypes(mod *ir.Module) {
 	t.Types[TYPE_ARRAY] = types.NewStruct(
-		types.I64,                   // length
 		types.NewPointer(types.I8),  // data
 		types.NewPointer(types.I64), // shape (i64*)
+		types.I64,                   // length
 		types.I64,                   // rank
 	)
+
+	mod.NewTypeDef(TYPE_ARRAY, t.Types[TYPE_ARRAY])
 }
 
-func (t *Interface) initAtomicTypes() {
+func (t *Interface) initAtomicTypes(mod *ir.Module) {
 	t.Types[TYPE_ATOMIC_BOOL] = types.NewStruct(types.I1)
 
 	t.Types[TYPE_ATOMIC_CHAR] = types.NewStruct(types.I8)

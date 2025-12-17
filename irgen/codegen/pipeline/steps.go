@@ -7,48 +7,20 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/class"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
 	funcs "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs"
-	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
 	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 )
 
-func (t *Pipeline) importModules(methodMap map[string]function.Func, module string) {
-	mod, ok := libs.ModuleList[module]
-	if !ok {
-		errorutils.Abort(errorutils.UnknownModule, module)
-	}
-	for name, f := range mod.ListAllFuncs() {
-		n := fmt.Sprintf("%s.%s", module, name)
-		methodMap[n] = f
-	}
-}
-
-func (t *Pipeline) DeclareGlobals() {
-	Loop(t.tree, func(st ast.VariableDeclarationStatement) {
-		errorutils.Abort(errorutils.GlobalVarsNotAllowedError)
-	})
-}
-
-func (t *Pipeline) ImportModules() {
-	Loop(t.tree, func(st ast.ImportStatement) {
-		if st.From == constants.BUILTIN {
-			t.importModules(t.st.LibMethods, st.Name)
-		}
-	})
-}
-
-func (t *Pipeline) PredeclareClasses() {
+func (t *Pipeline) predeclareClasses() {
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
 		class.ClassHandlerInst.DeclareClassUDT(st)
 	})
 }
 
-func (t *Pipeline) Register() {
+func (t *Pipeline) registerTypes() {
 	tp := []string{c.TYPE_ATOMIC_BOOL, c.TYPE_ATOMIC_CHAR, c.TYPE_ATOMIC_SHORT, c.TYPE_ATOMIC_INT}
 	for _, tpc := range tp {
 		udt := t.st.CI.Types[tpc]
@@ -66,7 +38,7 @@ func (t *Pipeline) Register() {
 	}
 }
 
-func (t *Pipeline) DeclareVars() {
+func (t *Pipeline) declareVars() {
 	parent := make(map[string]string)
 	classDefs := make(map[string]ast.ClassDeclarationStatement)
 	childs := make(map[string][]ast.ClassDeclarationStatement)
@@ -124,7 +96,7 @@ func traverse(parent ast.ClassDeclarationStatement, childs map[string][]ast.Clas
 	}
 }
 
-func (t *Pipeline) DeclareFuncs() {
+func (t *Pipeline) declareFuncs() {
 	for _, i := range t.st.TypeHeirarchy.Roots {
 		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
 			class.ClassHandlerInst.DeclareFunctions(st)
@@ -132,7 +104,7 @@ func (t *Pipeline) DeclareFuncs() {
 	}
 }
 
-func (t *Pipeline) DefineClasses() {
+func (t *Pipeline) defineClasses() {
 	for _, i := range t.st.TypeHeirarchy.Roots {
 		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
 			class.ClassHandlerInst.DefineClass(st)
@@ -140,7 +112,7 @@ func (t *Pipeline) DefineClasses() {
 	}
 }
 
-func (t *Pipeline) DefineMain() {
+func (t *Pipeline) defineMain() {
 	Loop(t.tree, func(st ast.FunctionDefinitionStatement) {
 		if st.Name == constants.MAIN {
 			f := t.st.Module.NewFunc(constants.MAIN, types.NewPointer(types.I8), ir.NewParam("", types.NewPointer(types.I8)))
@@ -148,6 +120,36 @@ func (t *Pipeline) DefineMain() {
 			funcs.FuncHandlerInst.DefineMainFunc(&st, make(map[string]struct{}))
 		}
 	})
+}
+
+func (t *Pipeline) insertYields() {
+	m := t.st.Module
+	// Define or get the yield function
+	yieldFunc := c.Instance.Funcs[c.FUNC_SELF_YIELD]
+
+	for _, fn := range m.Funcs {
+		// Skip the yield function itself
+		if fn.Name() == yieldFunc.Name() {
+			continue
+		}
+
+		for _, blk := range fn.Blocks {
+			var newInsts []ir.Instruction
+
+			for _, inst := range blk.Insts {
+				// If this is a call instruction, insert yield BEFORE it
+				switch inst.(type) {
+				case *ir.InstCall:
+					newInsts = append(newInsts, ir.NewCall(yieldFunc))
+				}
+
+				// Then append the original instruction
+				newInsts = append(newInsts, inst)
+			}
+
+			blk.Insts = newInsts
+		}
+	}
 }
 
 func Loop[T ast.Statement](tree ast.BlockStatement, fn func(T)) {
