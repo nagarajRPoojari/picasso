@@ -13,7 +13,22 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
-// defineFunc does concrete function declaration
+// DefineFunc generates the concrete LLVM IR body for a class method or constructor.
+// It initializes the function's entry blocks, populates the local symbol table with
+// parameters (including the implicit 'this' pointer), and delegates statement
+// lowering to the BlockHandler.
+//
+// Technical Logic:
+//   - Scope Management: Opens a fresh 'Func' level variable scope, ensuring local
+//     variables do not leak between function boundaries.
+//   - Entry Point Logic: Creates two initial blocks—one for stack allocations (Alloca)
+//     and one for the actual execution logic (the entry block).
+//   - Constructor Initialization: If the method is identified as a constructor
+//     (name matches class name), it triggers 'initTypes' to set up class-specific defaults.
+//   - Parameter Binding: Iterates through LLVM formal parameters to register them
+//     in the symbol table. It distinguishes between standard user-defined parameters
+//     and the implicit 'this' pointer, which is wrapped in a tf.Class container.
+//   - Terminal Handling: Automatically injects a 'void' return if no explicit
 func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionStatement, avoid map[string]struct{}) {
 	// new level for function block
 	t.st.Vars.AddFunc()
@@ -63,6 +78,19 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	}
 }
 
+// DefineMainFunc generates the entry point for the executable. Unlike standard
+// class methods, the main function is responsible for bootstrapping the
+// Niyama runtime and initializing global state before executing the user's code.
+//
+// Technical Logic:
+//   - Runtime Bootstrapping: Injects a call to the internal runtime initialization
+//     function (e.g., GC setup, thread pool init) as the first action.
+//   - Entry Block Management: Creates a dedicated 'entry' block for variable
+//     allocations to ensure all stack pointers are resolved at the start of the function.
+//   - Signature Enforcement: Strictly validates that the main function
+//     contains no parameters, ensuring compliance with the language spec.
+//   - Exit Strategy: Automatically returns a null pointer (i8*) upon completion,
+//     serving as the standard exit signal for the host environment.
 func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid map[string]struct{}) {
 	// new level for function block
 	t.st.Vars.AddFunc()
@@ -88,6 +116,7 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 }
 
 func (t *FuncHandler) Init(block *bc.BlockHolder) {
+	// initTypes are to create special variables of named primitive types.
 	tps := []string{"int64", "int32", "int16", "int8", "string"}
 	for _, tp := range tps {
 		t.initTypes(block, tp)
