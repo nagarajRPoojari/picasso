@@ -39,12 +39,12 @@ func (t *SyncIO) ListAllFuncs() map[string]function.Func {
 }
 
 func (t *SyncIO) sprintf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	printfFn := c.NewInterface(module).Funcs[c.FUNC_SPRINTF]
+	printfFn := c.Instance.Funcs[c.FUNC_SPRINTF]
 	return libutils.CallCFunc(typeHandler, printfFn, bh, args)
 }
 
 func (t *SyncIO) sscanf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	scanfFunc := c.NewInterface(module).Funcs[c.FUNC_SSCAN]
+	scanfFunc := c.Instance.Funcs[c.FUNC_SSCAN]
 
 	format := args[0].Load(bh)
 	callArgs := []value.Value{format}
@@ -66,27 +66,27 @@ func (t *SyncIO) sscanf(typeHandler *typedef.TypeHandler, module *ir.Module, bh 
 }
 
 func (t *SyncIO) sfread(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	printfFn := c.NewInterface(module).Funcs[c.FUNC_SFREAD]
+	printfFn := c.Instance.Funcs[c.FUNC_SFREAD]
 	return libutils.CallCFunc(typeHandler, printfFn, bh, args)
 }
 
 func (t *SyncIO) sfwrite(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	printfFn := c.NewInterface(module).Funcs[c.FUNC_SFWRITE]
+	printfFn := c.Instance.Funcs[c.FUNC_SFWRITE]
 	return libutils.CallCFunc(typeHandler, printfFn, bh, args)
 }
 
 func (t *SyncIO) fopen(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	fopenFunc := c.NewInterface(module).Funcs[c.FUNC_FOPEN]
+	fopenFunc := c.Instance.Funcs[c.FUNC_FOPEN]
 	return libutils.CallCFunc(typeHandler, fopenFunc, bh, args)
 }
 
 func (t *SyncIO) sfprintf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	fprintfFn := c.NewInterface(module).Funcs[c.FUNC_FPRINTF]
+	fprintfFn := c.Instance.Funcs[c.FUNC_FPRINTF]
 	return libutils.CallCFunc(typeHandler, fprintfFn, bh, args)
 }
 
 func (t *SyncIO) sfscanf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	fscanfFunc := c.NewInterface(module).Funcs[c.FUNC_FSCANF]
+	fscanfFunc := c.Instance.Funcs[c.FUNC_FSCANF]
 
 	file := args[0].Load(bh)
 	format := args[1].Load(bh)
@@ -109,26 +109,26 @@ func (t *SyncIO) sfscanf(typeHandler *typedef.TypeHandler, module *ir.Module, bh
 }
 
 func (t *SyncIO) fclose(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	fscloseFunc := c.NewInterface(module).Funcs[c.FUNC_FCLOSE]
+	fscloseFunc := c.Instance.Funcs[c.FUNC_FCLOSE]
 	return libutils.CallCFunc(typeHandler, fscloseFunc, bh, args)
 }
 
 func (t *SyncIO) sfputs(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	fputsFunc := c.NewInterface(module).Funcs[c.FUNC_FPUTS]
+	fputsFunc := c.Instance.Funcs[c.FUNC_FPUTS]
 	return libutils.CallCFunc(typeHandler, fputsFunc, bh, args)
 }
 
 func (t *SyncIO) sfgets(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	fgetsFunc := c.NewInterface(module).Funcs[c.FUNC_FGETS]
+	fgetsFunc := c.Instance.Funcs[c.FUNC_FGETS]
 	return libutils.CallCFunc(typeHandler, fgetsFunc, bh, args)
 }
 
 func (t *SyncIO) fflush(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	fflushFunc := c.NewInterface(module).Funcs[c.FUNC_FFLUSH]
+	fflushFunc := c.Instance.Funcs[c.FUNC_FFLUSH]
 	return libutils.CallCFunc(typeHandler, fflushFunc, bh, args)
 }
 
 func (t *SyncIO) fseek(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	fseekFunc := c.NewInterface(module).Funcs[c.FUNC_FSEEK]
+	fseekFunc := c.Instance.Funcs[c.FUNC_FSEEK]
 	return libutils.CallCFunc(typeHandler, fseekFunc, bh, args)
 }

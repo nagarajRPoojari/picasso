@@ -6,13 +6,10 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/io"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
@@ -65,10 +62,6 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 		}
 		args = append(args, raw)
 	}
-
-	s := ExpressionHandlerInst.ProcessStringLiteral(bh, ast.StringExpression{Value: " ====. value of class instance %p .-==== \n"})
-	io.NewSyncIO().ListAllFuncs()[c.ALIAS_PRINTF](t.st.TypeHandler, t.st.Module, bh, []typedef.Var{s, cls})
-
 	// Append `this` pointer as the last argument
 	thisPtr := cls.Load(bh)
 	if thisPtr == nil {

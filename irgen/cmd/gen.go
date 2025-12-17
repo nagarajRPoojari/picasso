@@ -14,10 +14,8 @@ var genCmd = &cobra.Command{
 	Short: "generate IR",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		c := generator.NewGenerator()
-		c.Build(args[0])
-		c.Compile()
-		c.Dump(args[1])
+		c := generator.NewGenerator(args[0], args[1])
+		c.BuildAll()
 	},
 }
 

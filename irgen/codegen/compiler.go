@@ -8,93 +8,67 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs"
+	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/pipeline"
 	"github.com/nagarajRPoojari/niyama/irgen/parser"
 )
 
 type generator struct {
-	llvm     *LLVM
-	packages map[string]ast.BlockStatement
-	tree     ast.BlockStatement
+	packages  map[string]ast.BlockStatement
+	outputDir string
 }
 
-func NewGenerator() *generator {
-	return &generator{
-		llvm: NewLLVM(),
+func NewGenerator(path string, outputDir string) *generator {
+	return &generator{packages: LoadPackages(path), outputDir: outputDir}
+}
+
+func (t *generator) BuildAll() {
+	for name, pkg := range t.packages {
+		llvm := NewLLVM(name)
+		t.build(pkg, llvm)
+		t.compile(pkg, llvm)
+
+		llvm.Dump(t.outputDir, name)
 	}
 }
 
-func (t *generator) Build(path string) {
-	m := LoadPackages(path)
-	t.packages = m
-	t.SetAST(t.BuildUniModule())
-}
-
-func (t *generator) SetAST(tree ast.BlockStatement) {
-	t.tree = tree
-}
-
-func (t *generator) Compile() {
-	t.llvm.ParseAST(t.tree)
-}
-
-func (t *generator) BuildUniModule() ast.BlockStatement {
-	mainModule := t.packages[constants.MAIN]
-	imported := make(map[string]struct{})
-	stack := make(map[string]struct{})
-	t.resolveImportsRecursive(&mainModule, imported, stack)
-	return mainModule
-}
-
-// resolveImportsRecursive traverses imports in `module` and inlines their bodies.
-func (t *generator) resolveImportsRecursive(module *ast.BlockStatement, imported map[string]struct{}, stack map[string]struct{}) {
-	for i := 0; i < len(module.Body); i++ {
-		st := module.Body[i]
-
-		importStmt, ok := st.(ast.ImportStatement)
-		if !ok {
-			continue
-		}
-
-		if importStmt.From != importStmt.Name {
-			if importStmt.From == constants.BUILTIN {
-				continue
+func (t *generator) build(tree ast.BlockStatement, llvm *LLVM) {
+	userModules := map[string]struct{}{}
+	for _, st := range tree.Body {
+		if stc, ok := st.(ast.ImportStatement); ok {
+			if stc.From == constants.BUILTIN {
+				t.importBaseModules(llvm.st.LibMethods, stc.Name)
+			} else {
+				userModules[stc.Name] = struct{}{}
 			}
-			errorutils.Abort(errorutils.InvalidModulerSource, importStmt.From, importStmt.Name)
 		}
+	}
+	t.ImportUserModules(userModules, llvm)
+}
 
-		pkgName := importStmt.Name
-		if _, seen := stack[pkgName]; seen {
-			panic("recursive import detected: " + pkgName)
-		}
-
-		if _, seen := imported[pkgName]; seen {
-			// already imported
-			continue
-		}
-
-		pkgModule, exists := t.packages[pkgName]
-		if !exists {
-			// might be a native library
-			continue
-		}
-
-		stack[pkgName] = struct{}{}
-		imported[pkgName] = struct{}{}
-		t.resolveImportsRecursive(&pkgModule, imported, stack)
-
-		module.Body = append(
-			module.Body[:i],
-			append(pkgModule.Body, module.Body[i+1:]...)...,
-		)
-
-		i += len(pkgModule.Body) - 1
-
-		delete(stack, pkgName)
+func (t *generator) importBaseModules(methodMap map[string]function.Func, module string) {
+	mod, ok := libs.ModuleList[module]
+	if !ok {
+		errorutils.Abort(errorutils.UnknownModule, module)
+	}
+	for name, f := range mod.ListAllFuncs() {
+		n := fmt.Sprintf("%s.%s", module, name)
+		methodMap[n] = f
 	}
 }
 
-func (t *generator) Dump(file string) {
-	t.llvm.Dump(file)
+func (t *generator) ImportUserModules(userModules map[string]struct{}, llvm *LLVM) {
+	for pkgName, pkg := range t.packages {
+		if _, ok := userModules[pkgName]; !ok {
+			continue
+		}
+		pipeline.NewPipeline(llvm.st, pkg).Declare()
+	}
+}
+
+func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
+	llvm.ParseAST(tree)
 }
 
 func LoadPackages(packagePath string) map[string]ast.BlockStatement {

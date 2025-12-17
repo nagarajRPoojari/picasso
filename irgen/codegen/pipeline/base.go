@@ -1,9 +1,7 @@
 package pipeline
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 )
 
@@ -16,43 +14,28 @@ func NewPipeline(st *state.State, tree ast.BlockStatement) *Pipeline {
 	return &Pipeline{st: st, tree: tree}
 }
 
-func (t *Pipeline) Run() {
-	t.Register()
-	t.ImportModules()
-	t.PredeclareClasses()
-	t.DeclareVars()
-	t.DeclareFuncs()
-	t.DefineClasses()
-	t.DefineMain()
-
-	insertYields(t.st.Module)
+func (t *Pipeline) Register() {
+	t.registerTypes()
 }
 
-func insertYields(m *ir.Module) {
-	// Define or get the yield function
-	yieldFunc := c.NewInterface(m).Funcs[c.FUNC_SELF_YIELD]
+func (t *Pipeline) Declare() {
+	t.predeclareClasses()
+	t.declareVars()
+	t.declareFuncs()
+}
 
-	for _, fn := range m.Funcs {
-		// Skip the yield function itself
-		if fn.Name() == yieldFunc.Name() {
-			continue
-		}
+func (t *Pipeline) Define() {
+	t.defineClasses()
+	t.defineMain()
+}
 
-		for _, blk := range fn.Blocks {
-			var newInsts []ir.Instruction
+func (t *Pipeline) Optimize() {
+	t.insertYields()
+}
 
-			for _, inst := range blk.Insts {
-				// If this is a call instruction, insert yield BEFORE it
-				switch inst.(type) {
-				case *ir.InstCall:
-					newInsts = append(newInsts, ir.NewCall(yieldFunc))
-				}
-
-				// Then append the original instruction
-				newInsts = append(newInsts, inst)
-			}
-
-			blk.Insts = newInsts
-		}
-	}
+func (t *Pipeline) Run() {
+	t.Register()
+	t.Declare()
+	t.Define()
+	t.Optimize()
 }
