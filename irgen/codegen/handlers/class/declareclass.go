@@ -9,15 +9,16 @@ import (
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 )
 
-// DeclareClassUDT registers a new user-defined class type in the module.
-// It creates an opaque LLVM struct for the class, wraps it in a pointer type,
-// and stores metadata including fields, variables, and methods.
+// DeclareClassUDT registers a new User-Defined Type (UDT) within the LLVM module.
+// It initializes the class as an opaque struct to allow for recursive type
+// definitions (pointers to self) and prepares a MetaClass container to hold
+// field offsets, method symbols, and type metadata for semantic resolution.
 //
-// If the class name already exists in the symbol table, it does nothing.
-//
-// Params:
-//
-//	cls – the AST ClassDeclarationStatement defining the class
+// Key Logic:
+//   - Validates class uniqueness to prevent symbol collisions.
+//   - Defines a named opaque struct in the LLVM module.
+//   - Maps the class name to its MetaClass metadata in the global state for
+//     future field lookups and method dispatch.
 func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement) {
 	if _, ok := t.st.Classes[cls.Name]; ok {
 		errorutils.Abort(errorutils.ClassRedeclaration, cls.Name)
@@ -36,13 +37,17 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement) {
 	t.st.TypeHandler.Register(cls.Name, mc)
 }
 
-// DeclareFunctions declares all functions (methods) of a class in the IR.
-// It processes both the functions defined directly in the class body and
-// any functions inherited from its parent class.
+// DeclareFunctions orchestrates the declaration of all member functions
+// associated with a class. It performs a pass over the class body and
+// inherited definitions to populate the function symbol table before
+// actual function bodies are emitted.
 //
-// Params:
-//
-//	cls – the AST ClassDeclarationStatement for which functions are declared
+// Key Logic:
+//   - Iterates through the local AST body to register member functions.
+//   - Traverses the Type Hierarchy to pull in parent class method signatures,
+//     facilitating inheritance and polymorphism in the generated IR.
+//   - Delegates signature creation to the FuncHandler to ensure consistent
+//     ABI naming and parameter lowering.
 func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement) {
 
 	for _, stI := range cls.Body {
