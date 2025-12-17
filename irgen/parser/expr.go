@@ -9,7 +9,7 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/lexer"
 )
 
-func parse_expr(p *Parser, bp BindingPower) ast.Expression {
+func parseExpr(p *Parser, bp BindingPower) ast.Expression {
 	tokenKind := p.currentTokenKind()
 	nud_fn, exists := nud_table[tokenKind]
 
@@ -32,9 +32,9 @@ func parse_expr(p *Parser, bp BindingPower) ast.Expression {
 	return left
 }
 
-func parse_prefix_expr(p *Parser) ast.Expression {
+func parsePrefixExpr(p *Parser) ast.Expression {
 	operatorToken := p.move()
-	expr := parse_expr(p, unary)
+	expr := parseExpr(p, unary)
 
 	return ast.PrefixExpression{
 		Operator: operatorToken,
@@ -42,9 +42,9 @@ func parse_prefix_expr(p *Parser) ast.Expression {
 	}
 }
 
-func parse_assignment_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
+func parseAssignmentExpr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
 	p.move()
-	rhs := parse_expr(p, bp)
+	rhs := parseExpr(p, bp)
 
 	return ast.AssignmentExpression{
 		Assignee:      left,
@@ -52,20 +52,20 @@ func parse_assignment_expr(p *Parser, left ast.Expression, bp BindingPower) ast.
 	}
 }
 
-func parse_range_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
+func parseRangeExpr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
 	p.move()
 	return ast.RangeExpression{
 		Lower: left,
-		Upper: parse_expr(p, bp),
+		Upper: parseExpr(p, bp),
 	}
 }
 
-func parse_binary_expr(p *Parser, left ast.Expression, _ BindingPower) ast.Expression {
+func parseBinaryExpr(p *Parser, left ast.Expression, _ BindingPower) ast.Expression {
 	operatorToken := p.move()
 	op_bp := bp_table[operatorToken.Kind]
 
 	// For left-associative operators, parse RHS with lower precedence
-	right := parse_expr(p, op_bp-1)
+	right := parseExpr(p, op_bp-1)
 
 	return ast.BinaryExpression{
 		Left:     left,
@@ -73,7 +73,7 @@ func parse_binary_expr(p *Parser, left ast.Expression, _ BindingPower) ast.Expre
 		Right:    right,
 	}
 }
-func parse_primary_expr(p *Parser) ast.Expression {
+func parsePrimaryExpr(p *Parser) ast.Expression {
 	switch p.currentTokenKind() {
 	case lexer.NUMBER:
 		number, _ := strconv.ParseFloat(p.move().Value, 64)
@@ -98,18 +98,18 @@ func parse_primary_expr(p *Parser) ast.Expression {
 	}
 }
 
-func parse_member_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
+func parseMemberExpr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
 	isComputed := p.move().Kind == lexer.OPEN_BRACKET
 
 	if isComputed {
 		rhsList := make([]ast.Expression, 0)
-		rhsList = append(rhsList, parse_expr(p, bp))
+		rhsList = append(rhsList, parseExpr(p, bp))
 		for {
 			if p.currentTokenKind() == lexer.CLOSE_BRACKET {
 				break
 			}
 			p.expect(lexer.COMMA)
-			rhsList = append(rhsList, parse_expr(p, bp))
+			rhsList = append(rhsList, parseExpr(p, bp))
 		}
 		p.expect(lexer.CLOSE_BRACKET)
 		return ast.ComputedExpression{
@@ -124,12 +124,12 @@ func parse_member_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expr
 	}
 }
 
-func parse_array_literal_expr(p *Parser) ast.Expression {
+func parseArrayLiteralExpr(p *Parser) ast.Expression {
 	p.expect(lexer.OPEN_BRACKET)
 	arrayContents := make([]ast.Expression, 0)
 
 	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_BRACKET {
-		arrayContents = append(arrayContents, parse_expr(p, logical))
+		arrayContents = append(arrayContents, parseExpr(p, logical))
 
 		if !p.currentToken().IsOneOfMany(lexer.EOF, lexer.CLOSE_BRACKET) {
 			p.expect(lexer.COMMA)
@@ -143,14 +143,14 @@ func parse_array_literal_expr(p *Parser) ast.Expression {
 	}
 }
 
-func parse_grouping_expr(p *Parser) ast.Expression {
+func parseGroupingExpr(p *Parser) ast.Expression {
 	p.expect(lexer.OPEN_PAREN)
-	expr := parse_expr(p, default_bp)
+	expr := parseExpr(p, default_bp)
 	p.expect(lexer.CLOSE_PAREN)
 	return expr
 }
 
-func parse_null_expr(p *Parser) ast.Expression {
+func parseNullExpr(p *Parser) ast.Expression {
 	p.expect(lexer.NULL)
 	return ast.NullExpression{}
 }
@@ -160,7 +160,7 @@ func parse_call_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expres
 	arguments := make([]ast.Expression, 0)
 
 	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_PAREN {
-		arguments = append(arguments, parse_expr(p, assignment))
+		arguments = append(arguments, parseExpr(p, assignment))
 
 		if !p.currentToken().IsOneOfMany(lexer.EOF, lexer.CLOSE_PAREN) {
 			p.expect(lexer.COMMA)
@@ -174,9 +174,9 @@ func parse_call_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expres
 	}
 }
 
-func parse_fn_expr(p *Parser) ast.Expression {
+func parseFuncExpr(p *Parser) ast.Expression {
 	p.expect(lexer.FN)
-	functionParams, returnType, functionBody := parse_fn_params_and_body(p)
+	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
 
 	return ast.FunctionExpression{
 		Parameters: functionParams,

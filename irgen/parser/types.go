@@ -7,36 +7,36 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/lexer"
 )
 
-type type_nud_handler func(p *Parser) ast.Type
-type type_led_handler func(p *Parser, left ast.Type, bp BindingPower) ast.Type
+type typeNudHandler func(p *Parser) ast.Type
+type typeLedHandler func(p *Parser, left ast.Type, bp BindingPower) ast.Type
 
-type type_nud_lookup map[lexer.TokenKind]type_nud_handler
-type type_led_lookup map[lexer.TokenKind]type_led_handler
-type type_bp_lookup map[lexer.TokenKind]BindingPower
+type typeNudLookUp map[lexer.TokenKind]typeNudHandler
+type typeLedLookUp map[lexer.TokenKind]typeLedHandler
+type typeBpLookUp map[lexer.TokenKind]BindingPower
 
-var type_by_table = type_bp_lookup{}
-var type_nud_table = type_nud_lookup{}
-var type_led_table = type_led_lookup{}
+var typeByTable = typeBpLookUp{}
+var typeNudTable = typeNudLookUp{}
+var typeLedTable = typeLedLookUp{}
 
-func type_led(kind lexer.TokenKind, bp BindingPower, led_fn type_led_handler) {
-	type_by_table[kind] = bp
-	type_led_table[kind] = led_fn
+func typeLed(kind lexer.TokenKind, bp BindingPower, led_fn typeLedHandler) {
+	typeByTable[kind] = bp
+	typeLedTable[kind] = led_fn
 }
 
-func type_nud(kind lexer.TokenKind, bp BindingPower, nud_fn type_nud_handler) {
-	type_by_table[kind] = primary
-	type_nud_table[kind] = nud_fn
+func typeNud(kind lexer.TokenKind, bp BindingPower, nud_fn typeNudHandler) {
+	typeByTable[kind] = primary
+	typeNudTable[kind] = nud_fn
 }
 
 func BuildTypeTokensTable() {
 
-	type_nud(lexer.IDENTIFIER, primary, func(p *Parser) ast.Type {
+	typeNud(lexer.IDENTIFIER, primary, func(p *Parser) ast.Type {
 		return &ast.SymbolType{
 			Value: p.move().Value,
 		}
 	})
 
-	type_nud(lexer.OPEN_BRACKET, member, func(p *Parser) ast.Type {
+	typeNud(lexer.OPEN_BRACKET, member, func(p *Parser) ast.Type {
 		p.move()
 		// token := p.currentToken()
 		// var size int
@@ -61,7 +61,7 @@ func BuildTypeTokensTable() {
 
 func parse_type(p *Parser, bp BindingPower) ast.Type {
 	tokenKind := p.currentTokenKind()
-	nud_fn, exists := type_nud_table[tokenKind]
+	nud_fn, exists := typeNudTable[tokenKind]
 
 	if !exists {
 		panic(fmt.Sprintf("type: NUD Handler expected for token %s\n", lexer.TokenKindString(tokenKind)))
@@ -69,9 +69,9 @@ func parse_type(p *Parser, bp BindingPower) ast.Type {
 
 	left := nud_fn(p)
 
-	for type_by_table[p.currentTokenKind()] > bp {
+	for typeByTable[p.currentTokenKind()] > bp {
 		tokenKind = p.currentTokenKind()
-		led_fn, exists := type_led_table[tokenKind]
+		led_fn, exists := typeLedTable[tokenKind]
 
 		if !exists {
 			panic(fmt.Sprintf("type: LED Handler expected for token %s\n", lexer.TokenKindString(tokenKind)))

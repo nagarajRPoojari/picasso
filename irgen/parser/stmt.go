@@ -7,18 +7,18 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/lexer"
 )
 
-func parse_stmt(p *Parser) ast.Statement {
+func parseStmt(p *Parser) ast.Statement {
 	stmt_fn, exists := statement_table[p.currentTokenKind()]
 
 	if exists {
 		return stmt_fn(p)
 	}
 
-	return parse_expression_stmt(p)
+	return parseExpressionStmt(p)
 }
 
-func parse_expression_stmt(p *Parser) ast.ExpressionStatement {
-	expression := parse_expr(p, default_bp)
+func parseExpressionStmt(p *Parser) ast.ExpressionStatement {
+	expression := parseExpr(p, default_bp)
 	p.expect(lexer.SEMI_COLON)
 
 	return ast.ExpressionStatement{
@@ -26,12 +26,12 @@ func parse_expression_stmt(p *Parser) ast.ExpressionStatement {
 	}
 }
 
-func parse_block_stmt(p *Parser) ast.Statement {
+func parseBlockStmt(p *Parser) ast.Statement {
 	p.expect(lexer.OPEN_CURLY)
 	body := []ast.Statement{}
 
 	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_CURLY {
-		body = append(body, parse_stmt(p))
+		body = append(body, parseStmt(p))
 	}
 
 	p.expect(lexer.CLOSE_CURLY)
@@ -40,7 +40,7 @@ func parse_block_stmt(p *Parser) ast.Statement {
 	}
 }
 
-func parse_var_decl_stmt(p *Parser) ast.Statement {
+func parseVarDeclStmt(p *Parser) ast.Statement {
 	var explicitType ast.Type
 
 	startToken := p.move().Kind
@@ -76,7 +76,7 @@ func parse_var_decl_stmt(p *Parser) ast.Statement {
 	var assignmentValue ast.Expression
 	if p.currentTokenKind() != lexer.SEMI_COLON {
 		p.expect(lexer.ASSIGNMENT)
-		assignmentValue = parse_expr(p, assignment)
+		assignmentValue = parseExpr(p, assignment)
 	} else if explicitType == nil {
 		panic("Missing explicit type for variable declaration.")
 	}
@@ -96,7 +96,7 @@ func parse_var_decl_stmt(p *Parser) ast.Statement {
 	}
 }
 
-func parse_fn_params_and_body(p *Parser) ([]ast.Parameter, ast.Type, []ast.Statement) {
+func parseFnParamsAndBody(p *Parser) ([]ast.Parameter, ast.Type, []ast.Statement) {
 	functionParams := make([]ast.Parameter, 0)
 
 	p.expect(lexer.OPEN_PAREN)
@@ -123,12 +123,12 @@ func parse_fn_params_and_body(p *Parser) ([]ast.Parameter, ast.Type, []ast.State
 		returnType = parse_type(p, default_bp)
 	}
 
-	functionBody := ast.ExpectStmt[ast.BlockStatement](parse_block_stmt(p)).Body
+	functionBody := ast.ExpectStmt[ast.BlockStatement](parseBlockStmt(p)).Body
 
 	return functionParams, returnType, functionBody
 }
 
-func parse_fn_declaration(p *Parser) ast.Statement {
+func parseFuncDeclaration(p *Parser) ast.Statement {
 	p.move()
 	startToken := p.move()
 	var isStatic bool
@@ -143,7 +143,7 @@ func parse_fn_declaration(p *Parser) ast.Statement {
 			panic("unexpected keyword after fn")
 		}
 	}
-	functionParams, returnType, functionBody := parse_fn_params_and_body(p)
+	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
 
 	return ast.FunctionDefinitionStatement{
 		Parameters: functionParams,
@@ -151,11 +151,11 @@ func parse_fn_declaration(p *Parser) ast.Statement {
 		Body:       functionBody,
 		Name:       functionName,
 		IsStatic:   isStatic,
-		Hash:       func_hash(functionParams, returnType),
+		Hash:       funcHash(functionParams, returnType),
 	}
 }
 
-func func_hash(params []ast.Parameter, ret ast.Type) uint32 {
+func funcHash(params []ast.Parameter, ret ast.Type) uint32 {
 	var s = ""
 	if ret != nil {
 		s = ret.Get()
@@ -169,19 +169,19 @@ func func_hash(params []ast.Parameter, ret ast.Type) uint32 {
 	return h.Sum32()
 }
 
-func parse_if_stmt(p *Parser) ast.Statement {
+func parseIfStmt(p *Parser) ast.Statement {
 	p.move()
-	condition := parse_expr(p, assignment)
-	consequent := parse_block_stmt(p)
+	condition := parseExpr(p, assignment)
+	consequent := parseBlockStmt(p)
 
 	var alternate ast.Statement
 	if p.currentTokenKind() == lexer.ELSE {
 		p.move()
 
 		if p.currentTokenKind() == lexer.IF {
-			alternate = parse_if_stmt(p)
+			alternate = parseIfStmt(p)
 		} else {
-			alternate = parse_block_stmt(p)
+			alternate = parseBlockStmt(p)
 		}
 	}
 
@@ -192,7 +192,7 @@ func parse_if_stmt(p *Parser) ast.Statement {
 	}
 }
 
-func parse_import_stmt(p *Parser) ast.Statement {
+func parseImportStmt(p *Parser) ast.Statement {
 	p.move()
 	var importFrom string
 	importName := p.expect(lexer.IDENTIFIER).Value
@@ -211,7 +211,7 @@ func parse_import_stmt(p *Parser) ast.Statement {
 	}
 }
 
-func parse_foreach_stmt(p *Parser) ast.Statement {
+func parseForeachStmt(p *Parser) ast.Statement {
 	p.move()
 	valueName := p.expect(lexer.IDENTIFIER).Value
 
@@ -223,8 +223,8 @@ func parse_foreach_stmt(p *Parser) ast.Statement {
 	}
 
 	p.expect(lexer.IN)
-	iterable := parse_expr(p, default_bp)
-	body := ast.ExpectStmt[ast.BlockStatement](parse_block_stmt(p)).Body
+	iterable := parseExpr(p, default_bp)
+	body := ast.ExpectStmt[ast.BlockStatement](parseBlockStmt(p)).Body
 
 	return ast.ForeachStatement{
 		Value:    valueName,
@@ -234,10 +234,10 @@ func parse_foreach_stmt(p *Parser) ast.Statement {
 	}
 }
 
-func parse_while_stmt(p *Parser) ast.Statement {
+func parseWhileStmt(p *Parser) ast.Statement {
 	p.move()
-	condition := parse_expr(p, assignment)
-	body := ast.ExpectStmt[ast.BlockStatement](parse_block_stmt(p)).Body
+	condition := parseExpr(p, assignment)
+	body := ast.ExpectStmt[ast.BlockStatement](parseBlockStmt(p)).Body
 
 	return ast.WhileStatement{
 		Condition: condition,
@@ -245,7 +245,7 @@ func parse_while_stmt(p *Parser) ast.Statement {
 	}
 }
 
-func parse_class_declaration_stmt(p *Parser) ast.Statement {
+func parseClassDeclStmt(p *Parser) ast.Statement {
 	p.move()
 	className := p.expect(lexer.IDENTIFIER).Value
 	var implements string
@@ -253,7 +253,7 @@ func parse_class_declaration_stmt(p *Parser) ast.Statement {
 		p.move()
 		implements = p.expect(lexer.IDENTIFIER).Value
 	}
-	classBody := parse_block_stmt(p)
+	classBody := parseBlockStmt(p)
 
 	return ast.ClassDeclarationStatement{
 		Name:       className,
@@ -262,10 +262,10 @@ func parse_class_declaration_stmt(p *Parser) ast.Statement {
 	}
 }
 
-func parse_interface_declaration_stmt(p *Parser) ast.Statement {
+func parseInterfaceDeclStmt(p *Parser) ast.Statement {
 	p.move()
 	interfaceName := p.expect(lexer.IDENTIFIER).Value
-	interfaceBody := parse_block_stmt(p)
+	interfaceBody := parseBlockStmt(p)
 
 	return ast.InterfaceDeclarationStatement{
 		Name: interfaceName,
@@ -273,7 +273,7 @@ func parse_interface_declaration_stmt(p *Parser) ast.Statement {
 	}
 }
 
-func parse_function_return_stmt(p *Parser) ast.Statement {
+func parseFuncReturnStmt(p *Parser) ast.Statement {
 	p.expect(lexer.RETURN)
 
 	if p.currentTokenKind() == lexer.NULL {
@@ -287,14 +287,14 @@ func parse_function_return_stmt(p *Parser) ast.Statement {
 			IsVoid: true,
 		}
 	}
-	exp := parse_expression_stmt(p)
+	exp := parseExpressionStmt(p)
 
 	return ast.ReturnStatement{
 		Value: exp,
 	}
 }
 
-func parse_break_stmt(p *Parser) ast.Statement {
+func parseBreakStmt(p *Parser) ast.Statement {
 	p.expect(lexer.BREAK)
 	p.expect(lexer.SEMI_COLON)
 

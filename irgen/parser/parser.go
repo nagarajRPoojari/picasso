@@ -28,7 +28,7 @@ func Parse(source string) ast.BlockStatement {
 	body := make([]ast.Statement, 0)
 
 	for p.hasTokens() {
-		body = append(body, parse_stmt(p))
+		body = append(body, parseStmt(p))
 	}
 
 	return ast.BlockStatement{
