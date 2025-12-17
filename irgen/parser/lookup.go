@@ -53,69 +53,69 @@ func statement(kind lexer.TokenKind, stmt_fn statement_handler) {
 
 func BuildTokensTable() {
 	// Assignment
-	led(lexer.ASSIGNMENT, assignment, parse_assignment_expr)
-	led(lexer.PLUS_EQUALS, assignment, parse_assignment_expr)
-	led(lexer.MINUS_EQUALS, assignment, parse_assignment_expr)
+	led(lexer.ASSIGNMENT, assignment, parseAssignmentExpr)
+	led(lexer.PLUS_EQUALS, assignment, parseAssignmentExpr)
+	led(lexer.MINUS_EQUALS, assignment, parseAssignmentExpr)
 
 	// Logical
-	led(lexer.AND, logical, parse_binary_expr)
-	led(lexer.OR, logical, parse_binary_expr)
-	led(lexer.DOT_DOT, logical, parse_range_expr)
+	led(lexer.AND, logical, parseBinaryExpr)
+	led(lexer.OR, logical, parseBinaryExpr)
+	led(lexer.DOT_DOT, logical, parseRangeExpr)
 
 	// Relational
-	led(lexer.LESS, relational, parse_binary_expr)
-	led(lexer.LESS_EQUALS, relational, parse_binary_expr)
-	led(lexer.GREATER, relational, parse_binary_expr)
-	led(lexer.GREATER_EQUALS, relational, parse_binary_expr)
-	led(lexer.EQUALS, relational, parse_binary_expr)
-	led(lexer.NOT_EQUALS, relational, parse_binary_expr)
+	led(lexer.LESS, relational, parseBinaryExpr)
+	led(lexer.LESS_EQUALS, relational, parseBinaryExpr)
+	led(lexer.GREATER, relational, parseBinaryExpr)
+	led(lexer.GREATER_EQUALS, relational, parseBinaryExpr)
+	led(lexer.EQUALS, relational, parseBinaryExpr)
+	led(lexer.NOT_EQUALS, relational, parseBinaryExpr)
 
 	// Additive & Multiplicitave
-	led(lexer.PLUS, additive, parse_binary_expr)
-	led(lexer.DASH, additive, parse_binary_expr)
-	led(lexer.SLASH, multiplicative, parse_binary_expr)
-	led(lexer.STAR, multiplicative, parse_binary_expr)
-	led(lexer.PERCENT, multiplicative, parse_binary_expr)
+	led(lexer.PLUS, additive, parseBinaryExpr)
+	led(lexer.DASH, additive, parseBinaryExpr)
+	led(lexer.SLASH, multiplicative, parseBinaryExpr)
+	led(lexer.STAR, multiplicative, parseBinaryExpr)
+	led(lexer.PERCENT, multiplicative, parseBinaryExpr)
 
 	// Literals & Symbols
-	nud(lexer.NUMBER, parse_primary_expr)
-	nud(lexer.STRING, parse_primary_expr)
-	nud(lexer.IDENTIFIER, parse_primary_expr)
+	nud(lexer.NUMBER, parsePrimaryExpr)
+	nud(lexer.STRING, parsePrimaryExpr)
+	nud(lexer.IDENTIFIER, parsePrimaryExpr)
 
 	// Unary/Prefix
-	nud(lexer.TYPEOF, parse_prefix_expr)
-	nud(lexer.DASH, parse_prefix_expr)
-	nud(lexer.NOT, parse_prefix_expr)
-	nud(lexer.OPEN_BRACKET, parse_array_literal_expr)
+	nud(lexer.TYPEOF, parsePrefixExpr)
+	nud(lexer.DASH, parsePrefixExpr)
+	nud(lexer.NOT, parsePrefixExpr)
+	nud(lexer.OPEN_BRACKET, parseArrayLiteralExpr)
 
 	// Member / Computed // Call
-	led(lexer.DOT, member, parse_member_expr)
-	led(lexer.OPEN_BRACKET, member, parse_member_expr)
+	led(lexer.DOT, member, parseMemberExpr)
+	led(lexer.OPEN_BRACKET, member, parseMemberExpr)
 	led(lexer.OPEN_PAREN, call, parse_call_expr)
 
-	nud(lexer.NULL, parse_null_expr)
+	nud(lexer.NULL, parseNullExpr)
 	// Grouping Expr
-	nud(lexer.OPEN_PAREN, parse_grouping_expr)
-	nud(lexer.FN, parse_fn_expr)
+	nud(lexer.OPEN_PAREN, parseGroupingExpr)
+	nud(lexer.FN, parseFuncExpr)
 	nud(lexer.NEW, func(p *Parser) ast.Expression {
 		p.move()
-		classInstantiation := parse_expr(p, default_bp)
+		classInstantiation := parseExpr(p, default_bp)
 
 		return ast.NewExpression{
 			Instantiation: ast.ExpectExpr[ast.CallExpression](classInstantiation),
 		}
 	})
 
-	statement(lexer.OPEN_CURLY, parse_block_stmt)
-	statement(lexer.SAY, parse_var_decl_stmt)
-	statement(lexer.CONST, parse_var_decl_stmt)
-	statement(lexer.FN, parse_fn_declaration)
-	statement(lexer.IF, parse_if_stmt)
-	statement(lexer.IMPORT, parse_import_stmt)
-	statement(lexer.FOREACH, parse_foreach_stmt)
-	statement(lexer.WHILE, parse_while_stmt)
-	statement(lexer.CLASS, parse_class_declaration_stmt)
-	statement(lexer.INTERFACE, parse_interface_declaration_stmt)
-	statement(lexer.RETURN, parse_function_return_stmt)
-	statement(lexer.BREAK, parse_break_stmt)
+	statement(lexer.OPEN_CURLY, parseBlockStmt)
+	statement(lexer.SAY, parseVarDeclStmt)
+	statement(lexer.CONST, parseVarDeclStmt)
+	statement(lexer.FN, parseFuncDeclaration)
+	statement(lexer.IF, parseIfStmt)
+	statement(lexer.IMPORT, parseImportStmt)
+	statement(lexer.FOREACH, parseForeachStmt)
+	statement(lexer.WHILE, parseWhileStmt)
+	statement(lexer.CLASS, parseClassDeclStmt)
+	statement(lexer.INTERFACE, parseInterfaceDeclStmt)
+	statement(lexer.RETURN, parseFuncReturnStmt)
+	statement(lexer.BREAK, parseBreakStmt)
 }
