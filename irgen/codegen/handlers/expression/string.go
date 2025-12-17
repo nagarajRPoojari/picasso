@@ -2,6 +2,7 @@ package expression
 
 import (
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
@@ -24,6 +25,7 @@ func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.Stri
 
 	strConst := constant.NewCharArrayFromString(formatStr + "\x00")
 	global := t.st.Module.NewGlobalDef("", strConst)
+	global.Linkage = enum.LinkageInternal
 	gep := bh.N.NewGetElementPtr(
 		global.ContentType,
 		global,
