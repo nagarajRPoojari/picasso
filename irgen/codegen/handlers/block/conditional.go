@@ -8,19 +8,17 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
-// processIfElseBlock generates LLVM IR for an if-else statement.
-// It builds condition evaluation, branching, and merges control flow
-// into a common end block.
+// processIfElseBlock orchestrates the generation of branching control flow in LLVM IR.
+// It handles the evaluation of the boolean condition, creates discrete basic blocks
+// for 'if' and 'else' execution paths, and ensures that all paths eventually
+// synchronize at a common successor (phi-convergence) block.
 //
-// Params:
-//
-//	fn    – the LLVM function being built
-//	bh – the current IR basic block before the if-statement
-//	st    – the AST IfStatement to process
-//
-// Return:
-//
-//	A new IR basic block representing the merge point after the if-else.
+// Technical logic:
+//   - Coerces the condition expression to a 1-bit integer (i1) via implicit casting.
+//   - Automatically generates terminal jump instructions (Br) for blocks lacking a
+//     explicit return or break, preventing malformed LLVM IR.
+//   - Updates the provided BlockHolder to point to the 'end' block, allowing
+//     subsequent statements to continue linearly.
 func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.IfStatement) {
 	ifBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))

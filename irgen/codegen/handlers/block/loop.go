@@ -12,6 +12,19 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
+// processForBlock implements the IR lowering for 'foreach' style range loops.
+// It transforms a high-level range expression into a classic four-block
+// loop structure: Header (Condition), Body, Increment (Latch), and Exit.
+//
+// Key logic:
+//   - Range Lowering: Evaluates the 'Lower' and 'Upper' expressions and casts
+//     them to standard integer types for comparison logic.
+//   - Iterator Management: Allocates a stack slot for the loop variable and
+//     registers it in a new lexical scope so it is accessible within the body.
+//   - Control Flow: Manages the 'Loopend' stack to support 'break' statements
+//     inside the loop body, ensuring they jump to the correct exit block.
+//   - Increment Logic: Automatically generates the i++ logic and branches
+//     back to the header to re-evaluate the loop invariant.
 func (t *BlockHandler) processForBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.ForeachStatement) {
 	t.st.Vars.AddBlock()
 	defer t.st.Vars.RemoveBlock()
@@ -58,13 +71,27 @@ func (t *BlockHandler) processForBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.
 	bh.Update(loopEnd.V, loopEnd.N)
 }
 
+// processWhileBlock generates the LLVM IR representation for a while-loop construct.
+// It establishes a cyclic control flow graph by partitioning the loop into
+// three distinct basic blocks: a condition header, the loop body, and a
+// post-loop exit block.
+//
+// Key logic:
+//   - Header Branching: Creates a dedicated 'condBlock' to re-evaluate the
+//     boolean condition at the start of every iteration.
+//   - Scope Integrity: Manages a fresh variable block to isolate local
+//     declarations defined within the loop body.
+//   - Break Support: Pushes the 'endBlock' onto the Loopend stack, enabling
+//     nested statements to resolve the correct jump target for 'break' commands.
+//   - Back-edge Generation: Automatically injects an unconditional branch from
+//     the end of the body back to the condition header, ensuring the loop persists.
 func (t *BlockHandler) processWhileBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.WhileStatement) {
 	t.st.Vars.AddBlock()
 	defer t.st.Vars.RemoveBlock()
 
-	condBlock := bc.NewBlockHolder(bh.V, fn.NewBlock("while.cond"))
-	bodyBlock := bc.NewBlockHolder(bh.V, fn.NewBlock("while.body"))
-	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock("while.end"))
+	condBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	bodyBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 
 	bh.N.NewBr(condBlock.N)
 
