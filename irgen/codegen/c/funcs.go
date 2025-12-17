@@ -18,7 +18,7 @@ func (t *Interface) registerFuncs(mod *ir.Module) {
 // threading, process synchronization, and essential libc utilities like memcpy.
 func (t *Interface) initRuntime(mod *ir.Module) {
 
-	t.Funcs[funcHash] = mod.NewFunc(funcHash, types.I64, ir.NewParam("data", types.I8Ptr), ir.NewParam("len", types.I64))
+	t.Funcs[FUNC_HASH] = mod.NewFunc(FUNC_HASH, types.I64, ir.NewParam("data", types.I8Ptr), ir.NewParam("len", types.I64))
 
 	t.Funcs[FUNC_STRLEN] = mod.NewFunc(FUNC_STRLEN, types.I32, ir.NewParam("", types.NewPointer(types.I8)))
 	t.Funcs[FUNC_STRCMP] = mod.NewFunc(FUNC_STRCMP, types.I32, ir.NewParam("", types.NewPointer(types.I8)), ir.NewParam("", types.NewPointer(types.I8)))
