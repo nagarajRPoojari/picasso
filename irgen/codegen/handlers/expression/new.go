@@ -13,6 +13,21 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
+// callConstructor executes the class constructor immediately following allocation.
+// In the Niyama object model, constructors are stored as function pointers within
+// the class struct itself. This method retrieves that pointer, prepares the
+// user-provided arguments, and injects the 'this' pointer to initialize the
+// instance's internal state.
+//
+// Technical Logic:
+//   - Symbol Resolution: Maps the class name to its constructor symbol (usually
+//     mangled as ClassName.ClassName) via the IdentifierBuilder.
+//   - Dynamic Dispatch: Loads the constructor function pointer from the instance's
+//     allocated memory using its pre-calculated struct index.
+//   - Argument Marshalling: Evaluates constructor arguments and performs implicit
+//     casting to ensure binary compatibility with the LLVM function signature.
+//   - Instance Binding: Follows the method ABI by appending the allocated
+//     instance pointer as the final 'hidden' argument to the call.
 func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, ex ast.CallExpression) {
 	// Get the method symbol and metadata
 	m := ex.Method.(ast.SymbolExpression)
@@ -20,7 +35,6 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 	meta := t.st.Classes[cls.Name]
 	idx := meta.FieldIndexMap[meth]
 
-	// Get struct and field type
 	st := meta.StructType()
 	fieldType := st.Fields[idx]
 
@@ -41,7 +55,6 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
 	}
 
-	// Build arguments
 	args := make([]value.Value, 0, len(ex.Arguments)+1)
 	for i, argExp := range ex.Arguments {
 		v := t.ProcessExpression(bh, argExp)
@@ -73,30 +86,20 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 	bh.N.NewCall(fnVal, args...)
 }
 
-// ProcessNewExpression handles the creation of a new class instance (`new` expression).
+// ProcessNewExpression orchestrates the lifecycle of a new class instance.
+// It performs heap allocation (via tf.NewClass), initializes the internal
+// struct fields with default values or initializers defined in the AST,
+// and finally executes the class constructor.
 //
-// Steps:
-//  1. Adds a new function scope for variables and ensures cleanup via defer.
-//  2. Resolves the class metadata for the given instantiation method.
-//  3. Allocates a new class instance and initializes its underlying struct type.
-//  4. Iterates over all fields defined in the class:
-//     - For fields with assigned AST values, evaluates the expression, performs
-//     implicit type casting if necessary, and stores the value.
-//     - For fields without assigned values, initializes a default variable
-//     using the explicit type specified in the AST.
-//     - For method fields, updates the instance with the function pointer.
-//  5. Registers each initialized variable in the current scope.
-//  6. Invokes the class constructor if specified via `callConstructor`.
-//
-// Parameters:
-//
-//	block - the current IR block where the new instance and field assignments are emitted
-//	ex    - the AST `NewExpression` node containing instantiation details
-//
-// Returns:
-//
-//	tf.Var     - the newly created class instance
-//	*ir.Block  - the updated IR block after field initialization and constructor call
+// Technical Logic:
+//   - Memory Setup: Allocates the underlying LLVM struct and manages a
+//     temporary function-level variable scope for the initialization phase.
+//   - Field Initialization: Iterates through the MetaClass field map to
+//     differentiate between data fields (variables) and method pointers.
+//   - Recursive Type Support: Handles atomic vs. complex type initialization
+//     and performs implicit type casting for assigned initial values.
+//   - Constructor Dispatch: Finalizes the object state by calling the
+//     corresponding constructor method with the 'this' pointer
 func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewExpression) tf.Var {
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
@@ -107,11 +110,16 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 		errorutils.Abort(errorutils.UnknownClass, meth.Value)
 	}
 
+	// tf.NewClass allocates memory for class instance in heap internally.
+	// & holds heap pointer in a stack slot.
 	instance := tf.NewClass(bh, meth.Value, classMeta.UDT)
 	structType := classMeta.StructType()
 	meta := t.st.Classes[meth.Value]
 
 	for name, index := range meta.FieldIndexMap {
+		// if field is not found in meta.VarAST indicating func type, update instance
+		// to point to the function. future function calls on that instance will directly
+		// refer to this pointed function.
 		exp, ok := meta.VarAST[name]
 		if !ok {
 			f := t.st.Classes[meth.Value].Methods[name]
@@ -119,39 +127,40 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 			instance.UpdateField(bh, index, f, fieldType)
 			continue
 		}
-		fieldType := structType.Fields[index]
 
+		// handling initialized & uninitialized variables.
+		fieldType := structType.Fields[index]
 		var v tf.Var
 		if exp.AssignedValue == nil {
-			// var init value.Value
-			// if exp.ExplicitType.IsAtomic() {
-			// 	meta := t.st.Classes[exp.ExplicitType.Get()]
-			// 	c := tf.NewClass(bh, exp.ExplicitType.Get(), meta.UDT)
-			// 	init = c.Load(bh)
-			// }
-			// v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), init)
-
 			// @todo: this need to be verified
 			var init value.Value
+
+			// atomic data types are special class types & are not expected to be initialized with
+			// new keyword. e.g, say x: atomic int; should do the instantiaion job though it is just
+			// a declaration. therefore instantiate with NewClass.
 			if exp.ExplicitType.IsAtomic() {
 				meta := t.st.Classes[exp.ExplicitType.Get()]
 				v = tf.NewClass(bh, exp.ExplicitType.Get(), meta.UDT)
 			} else {
+
+				// remaining vars without assignedvalues holds its corresponding zero values.
+				// @todo: list zero values for all data types somewehere in docs to look at.
 				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), init)
 			}
 		} else {
 			v = t.ProcessExpression(bh, exp.AssignedValue)
 
+			// data types other than array, like primitives, object types are typecasted implicitly
+			// before assignment.
 			if v.NativeTypeString() != constants.ARRAY {
 				casted := t.st.TypeHandler.ImplicitTypeCast(bh, exp.ExplicitType.Get(), v.Load(bh))
 				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get()), casted)
 			} else {
-				// no need to cast, but does type check
+				// no need to cast array type, but do a base type check.
 				t.st.TypeHandler.ImplicitTypeCast(bh, exp.ExplicitType.Get(), v.Load(bh))
 			}
 		}
 		instance.UpdateField(bh, index, v.Load(bh), fieldType)
-
 		t.st.Vars.AddNewVar(exp.Identifier, v)
 	}
 

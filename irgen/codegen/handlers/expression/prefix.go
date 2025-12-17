@@ -12,20 +12,19 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats"
 )
 
-// ProcessPrefixExpression evaluates a unary (prefix) expression and returns the result.
+// ProcessPrefixExpression generates LLVM IR for unary operations such as
+// numerical negation (-) and logical NOT (!). It evaluates the operand,
+// performs the necessary type promotion, and applies the operator using
+// specific LLVM instructions like FNeg or Xor.
 //
-// Supported operators:
-//   - "-" : negates a numeric operand (Float64)
-//   - "!" : logical NOT on a boolean operand (Boolean)
-//
-// Parameters:
-//
-//	block - current IR block
-//	ex    - AST PrefixExpression node
-//
-// Returns:
-//
-//	tf.Var - result variable
+// Technical Logic:
+//   - Numerical Negation: Coerces the operand to a double-precision float
+//     and emits an 'fneg' instruction to maintain consistency with the
+//     compiler's floating-point-first arithmetic strategy.
+//   - Logical NOT: Coerces the operand to a 1-bit integer (i1) and performs
+//     an 'xor' operation with a constant 1 (true) to flip the boolean state.
+//   - Result Storage: Allocates a new stack slot (alloca) for the result
+//     to ensure the returned value is addressable as a tf.Var.
 func (t *ExpressionHandler) ProcessPrefixExpression(bh *bc.BlockHolder, ex ast.PrefixExpression) tf.Var {
 	operand := t.ProcessExpression(bh, ex.Operand)
 

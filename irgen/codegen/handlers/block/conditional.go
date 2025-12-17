@@ -19,6 +19,9 @@ import (
 //     explicit return or break, preventing malformed LLVM IR.
 //   - Updates the provided BlockHolder to point to the 'end' block, allowing
 //     subsequent statements to continue linearly.
+//
+// todo:
+//   - support elseif chain
 func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.IfStatement) {
 	ifBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
@@ -57,5 +60,6 @@ func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *a
 		}
 	}
 
+	// update current blockHolder to point to end block
 	bh.Update(endBlock.V, endBlock.N)
 }
