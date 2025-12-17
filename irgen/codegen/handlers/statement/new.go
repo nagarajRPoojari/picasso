@@ -7,6 +7,8 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
+// ProcessNewExpression simply delegates call to new expression handler ignoring return type (instance)
+// in runtime.
 func (t *StatementHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewExpression) tf.Var {
 	return expression.ExpressionHandlerInst.ProcessNewExpression(bh, ex)
 }

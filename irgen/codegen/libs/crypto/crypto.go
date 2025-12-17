@@ -26,7 +26,7 @@ func (t *Crypto) ListAllFuncs() map[string]function.Func {
 }
 
 func (t *Crypto) hash(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
-	method := c.Instance.Funcs[c.FUNC_HASH]
+	method := c.Instance.Funcs[c.ALIAS_HASH]
 	castedArgs := make([]value.Value, 0)
 	for i, arg := range args {
 		if i >= len(method.Sig.Params) {
