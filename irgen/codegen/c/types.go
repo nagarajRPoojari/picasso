@@ -5,11 +5,18 @@ import (
 	"github.com/llir/llvm/ir/types"
 )
 
+// registerTypes initializes the type system for the LLVM module. It ensures
+// that complex structures like arrays and synchronization primitives are
+// defined before they are referenced by instructions.
 func (t *Interface) registerTypes(mod *ir.Module) {
 	t.initArrayTypes(mod)
 	t.initAtomicTypes(mod)
 }
 
+// initArrayTypes defines the internal representation of the Niyama array.
+// It creates a struct containing a generic data pointer, a shape descriptor,
+// the flat length, and the dimensional rank. This definition is registered
+// as a named type in the LLVM module for cross-function consistency
 func (t *Interface) initArrayTypes(mod *ir.Module) {
 	t.Types[TYPE_ARRAY] = types.NewStruct(
 		types.NewPointer(types.I8),  // data
@@ -21,6 +28,10 @@ func (t *Interface) initArrayTypes(mod *ir.Module) {
 	mod.NewTypeDef(TYPE_ARRAY, t.Types[TYPE_ARRAY])
 }
 
+// initAtomicTypes wraps fundamental scalar types in LLVM structures to
+// represent atomic variables. Wrapping these in structs provides a clear
+// distinction between standard and thread-safe variables during type
+// checking and IR lowering.
 func (t *Interface) initAtomicTypes(mod *ir.Module) {
 	t.Types[TYPE_ATOMIC_BOOL] = types.NewStruct(types.I1)
 
