@@ -1,20 +1,11 @@
 /*
 Package c provides the Foreign Function Interface (FFI) and Runtime Bridge for
-the Niyama compiler. It serves as the single source of truth for mapping
-high-level language constructs to LLVM IR types and C-standard library symbols.
-
-Core Responsibilities:
-  - Registry: Maintains a global lookup table (Interface) for all external
-    function declarations and custom struct definitions.
-  - Memory Layout: Defines the binary representation of complex types, such as
-    N-dimensional arrays and atomic synchronization primitives.
-  - Runtime Linking: Provides the mapping between internal compiler aliases
-    (e.g., ALIAS_MALLOC) and concrete target symbols (e.g., "malloc").
-
-Usage:
-The package is typically initialized once per LLVM module via NewInterface(mod),
-which populates the module with necessary external declarations before
-code generation begins.
+compiler. Exposes set of functions & types from c code.
+Notes:
+  - it is expected to link corresponding c binaries during runtime
+  - functions are accessed through libs defined in libs/ directory
+  - __public__ identifier indicates c functions name while corresponding alias
+    used as exposed name
 */
 package c
 

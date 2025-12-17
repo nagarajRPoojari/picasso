@@ -1,3 +1,10 @@
+/*
+Package expression provides the logic for evaluating AST expressions and
+lowering them into LLVM IR values. It serves as the primary recursive
+engine for the backend, translating high-level constructs like function
+calls, member access, and arithmetic operations into addressable
+memory slots or register values.
+*/
 package expression
 
 import (
@@ -10,12 +17,20 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
+// ExpressionHandler encapsulates the state required to generate IR
+// for diverse expressions. It maintains a reference to the global
+// compiler state to resolve types, symbols, and class metadata.
 type ExpressionHandler struct {
 	st *state.State
 }
 
+// ExpressionHandlerInst is the global singleton utilized throughout
+// the code generation phase to process nested expressions.
 var ExpressionHandlerInst *ExpressionHandler
 
+// NewExpressionHandler initializes the handler and populates the
+// operator lookup tables (arithmetic, logical, and comparison)
+// used during binary expression processing.
 func NewExpressionHandler(st *state.State) *ExpressionHandler {
 	initOpLookUpTables()
 	return &ExpressionHandler{
@@ -23,22 +38,18 @@ func NewExpressionHandler(st *state.State) *ExpressionHandler {
 	}
 }
 
-// ProcessExpression evaluates an AST expression node within the given IR block
-// and produces a corresponding runtime variable along with the (possibly updated) block.
+// ProcessExpression acts as the central dispatcher for the expression
+// sub-system. It performs a type switch on the AST node to delegate
+// code generation to specialized handlers, returning a tf.Var
+// which abstracts the underlying LLVM value and its Niyama type.
 //
-// It serves as a central dispatcher, delegating handling of each expression type
-// (symbols, literals, function calls, object creation, operators, etc.) to the
-// appropriate specialized method.
-//
-// Parameters:
-//
-//	block - the current IR block in which code generation should occur
-//	expI  - the AST expression to evaluate (nil-safe)
-//
-// Returns:
-//
-//	tf.Var     - the resulting typed variable representing the expression
-//	*ir.Block  - the (possibly modified) IR block after processing
+// Technical Logic:
+//   - Recursion: Evaluates complex, nested expressions by drilling
+//     down into sub-expressions (e.g., arguments in a call).
+//   - Null Handling: Automatically wraps nil or null expressions
+//     into an opaque pointer structure.
+//   - Default Numerics: Coerces raw number literals to float64 (Double)
+//     to maintain the language's uniform numeric behavior.
 func (t *ExpressionHandler) ProcessExpression(bh *bc.BlockHolder, expI ast.Expression) tf.Var {
 	if expI == nil {
 		return tf.NewNullVar(types.NewPointer(types.NewStruct()))

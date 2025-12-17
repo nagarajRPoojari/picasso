@@ -30,8 +30,8 @@ type Type interface {
 	SetAtomic()
 	// Get returns the string representation of the type name.
 	Get() string
-	// GetUnderlyingType returns the base type, resolving any aliases
-	// or pointers to find the core data structure.
+	// GetUnderlyingType returns the base type, resolving composite types like array
+	// to its base type.
 	GetUnderlyingType() string
 }
 

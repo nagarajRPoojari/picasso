@@ -14,27 +14,20 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
 )
 
-// ProcessMemberExpression evaluates a member access expression (e.g., obj.field)
-// and returns a typed runtime variable corresponding to the accessed field.
+// ProcessMemberExpression generates LLVM IR to access a specific field of a class instance.
+// It performs a metadata lookup to find the structural offset of the property,
+// calculates the field's memory address, and wraps the resulting pointer into
+// a Niyama-specific type container (Var) based on the field's underlying LLVM type.
 //
-// Behavior:
-//   - Recursively evaluates the base expression (`ex.Member`) to get the object instance.
-//   - Validates that the base is a class instance (`*tf.Class`).
-//   - Resolves the field index and type from class metadata.
-//   - Obtains a pointer to the field and wraps it in the appropriate tf.Var type:
-//   - Integer types (Int8, Int16, Int32, Int64, Boolean)
-//   - Floating-point types (Float16, Float32, Float64)
-//   - Struct pointers → wrapped as a new tf.Class instance
-//   - Other pointer types → wrapped as a tf.String
-//
-// Parameters:
-//
-//	block - the current IR block for code generation
-//	ex    - the AST member expression node
-//
-// Returns:
-//
-//	tf.Var - a runtime variable representing the field
+// Technical Logic:
+//   - Property Mapping: Uses the IdentifierBuilder to resolve the mangled field name
+//     and retrieves its index from the class's FieldIndexMap.
+//   - Pointer Arithmetic: Invokes FieldPtr to emit a GetElementPtr (GEP) instruction,
+//     targeting the specific index within the class struct.
+//   - Type Wrapping: Inspects the LLVM type of the field (Int, Float, Pointer, etc.)
+//     and initializes the corresponding high-level wrapper (e.g., ints.Int32 or tf.Class).
+//   - Recursive Resolution: For complex fields like nested classes or arrays, it
+//     performs the necessary 'load' instructions to return an addressable instance.
 func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.MemberExpression) tf.Var {
 	// Evaluate the base expression
 	baseVar := t.ProcessExpression(bh, ex.Member)
@@ -86,6 +79,9 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 	}
 
 	// Wrap into appropriate Var
+	// @fix: i already have reusable piece of code for this job, need to replace
+	// this below code & test.
+	// @fix: test atomic var return.
 	switch ft := fieldType.(type) {
 	case *types.IntType:
 		switch ft.BitSize {

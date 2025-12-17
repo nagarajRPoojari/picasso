@@ -13,33 +13,26 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
-// CallFunc handles invocation of a function or method call expression.
+// CallFunc orchestrates function and method invocation in the LLVM IR.
+// It resolves function symbols across three primary domains:
+// 1. External Library/Imported Methods (Namespace-prefixed)
+// 2. Global/Built-in Symbols (Direct symbols or runtime intrinsics)
+// 3. Class Instance Methods (Dynamic dispatch via function pointers in structs)
 //
-// Supports two main cases:
-//  1. Calls to imported library methods (resolved via t.st.LibMethods)
-//  2. Calls to class instance methods (resolved through class metadata and vtable-like lookup)
-//
-// Steps:
-//   - If the call looks like a library call (e.g., module.func), resolve and invoke directly.
-//   - Otherwise, evaluate the base expression, resolve the class metadata, locate the method
-//     function pointer, perform argument type-casting, and emit a call instruction.
-//   - Appends the `this` pointer automatically as the final argument for instance methods.
-//   - Returns a wrapped runtime variable if the function has a return type; otherwise returns nil.
-//
-// Parameters:
-//
-//	block - the current IR block in which code generation should occur
-//	ex    - the call expression AST node
-//
-// Returns:
-//
-//	tf.Var     - the resulting variable if the function returns a value, otherwise nil
-//	*ir.Block  - the (possibly updated) IR block after processing
+// Technical Logic:
+//   - Method Resolution: For class members, it fetches the function pointer from
+//     the struct layout using GEP (GetElementPtr) via LoadField.
+//   - Calling Convention: Implements the "hidden this" pattern by appending the
+//     instance pointer as the final argument to method calls.
+//   - Type Safety: Performs implicit type casting of arguments to match the
+//     formal parameters defined in the function signature.
 func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) tf.Var {
-	// check if imported modules
+
+	// check imported base modules for method resolution
 	if m, ok := ex.Method.(ast.MemberExpression); ok {
 		x, ok := m.Member.(ast.SymbolExpression)
 		if ok {
+			// base module func calls are strictly expected to be in module_name.func() format. e.g, syncio.printf
 			fName := fmt.Sprintf("%s.%s", x.Value, m.Property)
 			if f, ok := t.st.LibMethods[fName]; ok {
 				args := make([]tf.Var, 0)
@@ -51,12 +44,13 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 				return ret
 			}
 		}
-
 	}
 
 	switch m := ex.Method.(type) {
 	case ast.SymbolExpression:
-		// errorutils.Abort(errorutils.MemberExpressionError, "method call should be on instance")
+		// @fix: refactor this piece of code
+		// thread() special functions comes from base modules but exception for module_name.func() format
+		// in future i might add many such special funcs, so need to be kept somewhere else.
 		if m.Value == c.FUNC_THREAD {
 			if meth, ok := t.st.CI.Funcs[m.Value]; ok {
 				v := t.ProcessExpression(bh, ex.Arguments[0])
@@ -67,6 +61,8 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 			return nil
 		}
 
+		// support for direct c call.
+		// @fix: need to be removed as it is completely unsafe.
 		if meth, ok := t.st.CI.Funcs[m.Value]; ok {
 			args := make([]value.Value, 0, len(ex.Arguments)+1)
 			for _, argExp := range ex.Arguments {

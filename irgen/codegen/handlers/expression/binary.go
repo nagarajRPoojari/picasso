@@ -22,26 +22,18 @@ var arithmatic map[lexer.TokenKind]BinaryOperation
 var comparision map[lexer.TokenKind]BinaryOperation
 var logical map[lexer.TokenKind]BinaryOperation
 
-// ProcessBinaryExpression handles evaluation of a binary operation expression.
+// ProcessBinaryExpression generates LLVM IR for operations involving two operands.
+// It handles arithmetic, comparison, and logical operators by performing the
+// necessary type promotions (e.g., coercing numeric types to float64) and
+// emitting the corresponding LLVM instructions.
 //
-// It recursively processes the left and right operands, performs type-safe casting,
-// applies the corresponding operator (arithmetic, comparison, or logical),
-// and produces a new runtime variable with the result.
-//
-// Supported categories:
-//   - Arithmetic (e.g., +, -, *, /) → result as Float64
-//   - Comparison (e.g., <, >, ==)   → result as Boolean (I1)
-//   - Logical (e.g., &&, ||)        → result as Boolean (I1)
-//
-// Parameters:
-//
-//	block - the current IR block in which code generation should occur
-//	ex    - the binary expression AST node
-//
-// Returns:
-//
-//	tf.Var     - the resulting variable (float64 or boolean depending on operator)
-//	*ir.Block  - the (possibly updated) IR block after processing
+// Key Logic:
+//   - Evaluation Order: Recursively processes Left and Right expressions before
+//     performing the operation.
+//   - Type Coercion: Standardizes numeric operations to Double (float64) and
+//     logical operations to i1 (boolean) to ensure ABI compatibility.
+//   - Memory Allocation: Automatically allocates stack space (alloca) for the
+//     result, returning a wrapped tf.Var for subsequent use in the pipeline.
 func (t *ExpressionHandler) ProcessBinaryExpression(bh *bc.BlockHolder, ex ast.BinaryExpression) tf.Var {
 	left := t.ProcessExpression(bh, ex.Left)
 
@@ -70,6 +62,8 @@ func (t *ExpressionHandler) ProcessBinaryExpression(bh *bc.BlockHolder, ex ast.B
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
+		// arithmetic operations are allways done in float64, so results are allways in float64
+		// @fix: this implementation is inefficient for lower types.
 		ptr := bh.V.NewAlloca(types.Double)
 		bh.N.NewStore(res, ptr)
 		return &floats.Float64{NativeType: types.Double, Value: ptr}
@@ -77,6 +71,9 @@ func (t *ExpressionHandler) ProcessBinaryExpression(bh *bc.BlockHolder, ex ast.B
 	} else if op, ok := comparision[ex.Operator.Kind]; ok {
 		var res value.Value
 		var err error
+		// comparisions are allowed for only pointer types & float types.
+		// pointer types includes string, object comparisions.
+		// for other types operands will be typecasted to float64
 		if isPointer(rv.Type()) && isPointer(lv.Type()) {
 			res, err = op(bh.N, lv, rv)
 			if err != nil {

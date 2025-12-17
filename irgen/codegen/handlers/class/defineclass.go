@@ -56,7 +56,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement) {
 
 	parentClass := t.st.Classes[cls.Implements]
 
-	// If current class inherits pull its fields to current class
+	// If current class inherits pull its fields to current class.
 	// DefineClassUDT is expected to be called in the order of inheritance, so
 	// no need to recursively pull higher parent classes.
 	if parentClass != nil {
