@@ -17,13 +17,13 @@ type Class struct {
 	Ptr  value.Value        // The stack slot (alloca) holding the pointer (e.g., %MyStruct**)
 }
 
-// NewClass creates a new object instance.
-// 1. Allocates heap memory for the struct.
-// 2. Creates a stack slot (alloca).
-// 3. Stores the heap address into the stack slot.
+// NewClass creates a new object instance by allocation memory in heap.
+// Key Logic:
+//   - Allocate memory in heap & store its pointer in stack slot.
+//   - Memory not deallocated even if pointer in stack slot goes out of scope.
 func NewClass(block *bc.BlockHolder, name string, rawType types.Type) *Class {
 
-	// 1. Normalize Type: Ensure we have a pointer-to-struct
+	// normalize Type: Ensure we have a pointer-to-struct
 	var ptrType *types.PointerType
 	switch t := rawType.(type) {
 	case *types.StructType:
@@ -37,26 +37,19 @@ func NewClass(block *bc.BlockHolder, name string, rawType types.Type) *Class {
 		panic(fmt.Sprintf("NewClass expects struct or pointer-to-struct, got %T", rawType))
 	}
 
-	// 2. Heap Allocation (malloc)
 	// Calculate size: GetElementPtr hack to get size of the underlying struct
 	zero := constant.NewNull(ptrType)
 	one := constant.NewInt(types.I32, 1)
 	gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
 	size := constant.NewPtrToInt(gep, types.I64)
 
-	// Call runtime allocator (malloc)
-	// Note: Replace c.Instance.Funcs[c.ALLOC] with your specific allocator function lookup
 	mallocCall := block.N.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
-
-	// Cast i8* (from malloc) to %MyStruct*
 	heapPtr := block.N.NewBitCast(mallocCall, ptrType)
 
-	// 3. Stack Allocation (The "Slot")
 	// Create a slot on the stack that holds a %MyStruct*
 	// LLVM IR: %ptr = alloca %MyStruct*
 	stackSlot := block.N.NewAlloca(ptrType)
 
-	// 4. Initialize Slot
 	// Store the heap address into the stack slot
 	// LLVM IR: store %MyStruct* %heapPtr, %MyStruct** %stackSlot
 	block.N.NewStore(heapPtr, stackSlot)
@@ -78,60 +71,26 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 	}
 
 	ptrType := s.UDT
-	// Sanity check: Ensure our slot exists
 	if s.Ptr == nil {
-		// A. Allocate new heap memory for the struct instance
-		// zero := constant.NewNull(ptrType)
-		// one := constant.NewInt(types.I32, 1)
-		// gep := constant.NewGetElementPtr(ptrType.ElemType, zero, one)
-		// size := constant.NewPtrToInt(gep, types.I64)
-
-		// Call runtime allocator (Note: Using c.Instance.Funcs[c.ALLOC] placeholder)
-		// mallocCall := block.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
-		// heapPtr := block.NewBitCast(mallocCall, ptrType) // %MyStruct*
-
-		// B. Create the stack slot (alloca)
-		// LLVM IR: %ptr_slot = alloca %MyStruct*
+		// cases do exist where we need to create Class instance with memory allocated beforehand.
+		// example in assignment, where i avoid NewClass to avoid heap allocation, in such cases s.Ptr
+		// remains null, so allocate stack slot.
 		s.Ptr = block.NewAlloca(ptrType)
-
-		// C. Initialize slot with the new heap pointer
-		// LLVM IR: store %MyStruct* %heapPtr, %MyStruct** %ptr_slot
-		// block.NewStore(heapPtr, s.Ptr)
 	}
 
-	// === Scenario 1: Input is a Pointer (e.g., %MyStruct*) ===
 	// We simply overwrite the address stored in the slot.
 	if v.Type().Equal(s.UDT) {
-		// LLVM IR: store %MyStruct* %v, %MyStruct** %s.Ptr
 		block.NewStore(v, s.Ptr)
 		return
 	}
 
-	// === Scenario 2: Input is a Value (e.g., %MyStruct) ===
 	// If the user passes a raw struct value, we can't store a struct into a pointer slot directly.
-	// We must allocate new heap memory for this value, then point the slot to it.
+	// I must allocate new heap memory for this value, then point the slot to it.
 	if v.Type().Equal(s.UDT.ElemType) {
-
-		// 1. Allocate new heap memory
-		// zero := constant.NewNull(s.UDT)
-		// one := constant.NewInt(types.I32, 1)
-		// gep := constant.NewGetElementPtr(s.UDT.ElemType, zero, one)
-		// size := constant.NewPtrToInt(gep, types.I64)
-
-		// mem := block.NewCall(c.Instance.Funcs[c.FUNC_ALLOC], size)
-		// newHeapPtr := block.NewBitCast(mem, s.UDT)
-
-		// 2. Store the raw value into the new heap memory
-		// LLVM IR: store %MyStruct %v, %MyStruct* %newHeapPtr
-		// block.NewStore(v, newHeapPtr)
-
-		// 3. Update the slot to point to this new memory
-		// LLVM IR: store %MyStruct* %newHeapPtr, %MyStruct** %s.Ptr
 		block.NewStore(v, s.Ptr)
 		return
 	}
 
-	// Error: Type mismatch
 	errorutils.Abort(errorutils.InternalError,
 		fmt.Sprintf("Type mismatch in Update. Expected %s or %s, got %s",
 			s.UDT, s.UDT.ElemType, v.Type()))
@@ -152,7 +111,6 @@ func (s *Class) FieldPtr(block *bc.BlockHolder, idx int) value.Value {
 	elem := sPtr.ElemType // struct type
 
 	// GEP: base is the pointer-to-struct (object address) and we index into the struct
-
 	return block.N.NewGetElementPtr(elem, s.Load(block), zero, i)
 }
 
@@ -217,6 +175,7 @@ func (s *Class) Type() types.Type {
 	return s.UDT
 }
 
+// heuristic type check for Class types.
 func ensureType(block *bc.BlockHolder, v value.Value, target types.Type) value.Value {
 	srcType := v.Type()
 

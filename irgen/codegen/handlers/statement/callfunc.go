@@ -7,6 +7,8 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
+// CallFunc statements just uses function call expression handler ignoring return type of
+// function in runtime.
 func (t *StatementHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) tf.Var {
 	return expression.ExpressionHandlerInst.CallFunc(bh, ex)
 }

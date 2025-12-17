@@ -11,15 +11,9 @@ import (
 
 // DeclareVariable handles variable declarations, optionally initializing
 // them with an assigned value.
-//
-// Parameters:
-//
-//	block - the current IR block
-//	st    - the AST VariableDeclarationStatement node
-//
-// Returns:
-//
-//	*ir.Block - the updated IR block after declaration
+// Key Logic:
+//   - For unassigned vars initialize then with corresponding zero value, except atomic types.
+//   - Do implicit typecasting for assigned vars.
 func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableDeclarationStatement) {
 	if t.st.Vars.Exists(st.Identifier) {
 		errorutils.Abort(errorutils.VariableRedeclaration, st.Identifier)
@@ -29,6 +23,9 @@ func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableD
 	if st.AssignedValue == nil {
 		var init value.Value
 		if st.ExplicitType.IsAtomic() {
+			// atomic data types are special class types & are not expected to be initialized with
+			// new keyword. e.g, say x: atomic int; should do the instantiaion job though it is just
+			// a declaration. therefore instantiate with NewClass.
 			meta := t.st.Classes[st.ExplicitType.Get()]
 			c := tf.NewClass(bh, st.ExplicitType.Get(), meta.UDT)
 			init = c.Load(bh)
