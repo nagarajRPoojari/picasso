@@ -111,7 +111,7 @@ func BuildTokensTable() {
 	statement(lexer.CONST, parseVarDeclStmt)
 	statement(lexer.FN, parseFuncDeclaration)
 	statement(lexer.IF, parseIfStmt)
-	statement(lexer.IMPORT, parseImportStmt)
+	statement(lexer.USING, parseImportStmt)
 	statement(lexer.FOREACH, parseForeachStmt)
 	statement(lexer.WHILE, parseWhileStmt)
 	statement(lexer.CLASS, parseClassDeclStmt)

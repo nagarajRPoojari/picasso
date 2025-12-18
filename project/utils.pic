@@ -1,12 +1,12 @@
-import syncio from builtin;
-import dummy;
+using "builtin/syncio";
+using "dummy";
 
 class Utils {
     fn Utils() {
     }
 
     fn giveOne(): int {
-        say x: Dummy = new Dummy();
+        say x: dummy.Dummy = new dummy.Dummy();
 
         syncio.printf(" this is in utils.Utils.giveOne \n");  
 

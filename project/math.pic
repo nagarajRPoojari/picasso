@@ -1,10 +1,11 @@
-import syncio from builtin;
-import utils;
+using "builtin/syncio";
+using "utils";
 
 class Adder {
-    say u: Utils;
+    say u: utils.Utils;
+    say x: int;
     fn Adder() {
-        this.u = new Utils();
+        this.u = new utils.Utils();
     }
 
     fn add(a: int, b: int): int {

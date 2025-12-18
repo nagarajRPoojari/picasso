@@ -2,6 +2,7 @@ package parser
 
 import (
 	"hash/fnv"
+	"strings"
 
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/lexer"
@@ -194,20 +195,22 @@ func parseIfStmt(p *Parser) ast.Statement {
 
 func parseImportStmt(p *Parser) ast.Statement {
 	p.move()
-	var importFrom string
-	importName := p.expect(lexer.IDENTIFIER).Value
+	var importAlias string
+	importName := strings.ReplaceAll(p.expect(lexer.STRING).Value, "/", ".")
+	importName = importName[1 : len(importName)-1]
 
-	if p.currentTokenKind() == lexer.FROM {
+	if p.currentTokenKind() == lexer.AS {
 		p.move()
-		importFrom = p.expect(lexer.IDENTIFIER).Value
+		importAlias = p.expect(lexer.IDENTIFIER).Value
 	} else {
-		importFrom = importName
+		paths := strings.Split(importName, ".")
+		importAlias = paths[len(paths)-1]
 	}
 
 	p.expect(lexer.SEMI_COLON)
 	return ast.ImportStatement{
-		Name: importName,
-		From: importFrom,
+		Name:  importName,
+		Alias: importAlias,
 	}
 }
 
@@ -251,7 +254,12 @@ func parseClassDeclStmt(p *Parser) ast.Statement {
 	var implements string
 	if p.currentTokenKind() == lexer.COLON {
 		p.move()
-		implements = p.expect(lexer.IDENTIFIER).Value
+		implementsList := []string{p.expect(lexer.IDENTIFIER).Value}
+		for p.currentTokenKind() == lexer.DOT {
+			p.move()
+			implementsList = append(implementsList, p.expect(lexer.IDENTIFIER).Value)
+		}
+		implements = strings.Join(implementsList, ".")
 	}
 	classBody := parseBlockStmt(p)
 
