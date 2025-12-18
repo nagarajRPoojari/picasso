@@ -62,7 +62,7 @@ const (
 	INTERFACE
 	IS
 	NEW
-	IMPORT
+	USING
 	FROM
 	FN
 	IF
@@ -73,6 +73,7 @@ const (
 	EXPORT
 	TYPEOF
 	IN
+	AS
 
 	RETURN
 	STATIC
@@ -92,7 +93,8 @@ var reserved_keywords map[string]TokenKind = map[string]TokenKind{
 	"atomic":    ATOMIC,
 	"is":        IS,
 	"new":       NEW,
-	"import":    IMPORT,
+	"using":     USING,
+	"as":        AS,
 	"from":      FROM,
 	"fn":        FN,
 	"if":        IF,
@@ -225,8 +227,10 @@ func TokenKindString(kind TokenKind) string {
 		return "is"
 	case NEW:
 		return "new"
-	case IMPORT:
-		return "import"
+	case USING:
+		return "using"
+	case AS:
+		return "as"
 	case FROM:
 		return "from"
 	case FN:

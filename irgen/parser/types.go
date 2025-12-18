@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/lexer"
@@ -67,7 +68,21 @@ func parse_type(p *Parser, bp BindingPower) ast.Type {
 		panic(fmt.Sprintf("type: NUD Handler expected for token %s\n", lexer.TokenKindString(tokenKind)))
 	}
 
-	left := nud_fn(p)
+	var identifierList []string
+	if p.currentTokenKind() == lexer.IDENTIFIER {
+		identifierList = append(identifierList, p.expect(lexer.IDENTIFIER).Value)
+		for p.currentTokenKind() == lexer.DOT {
+			p.move()
+			identifierList = append(identifierList, p.expect(lexer.IDENTIFIER).Value)
+		}
+	}
+
+	var left ast.Type
+	if len(identifierList) > 0 {
+		left = &ast.SymbolType{Value: strings.Join(identifierList, ".")}
+	} else {
+		left = nud_fn(p)
+	}
 
 	for typeByTable[p.currentTokenKind()] > bp {
 		tokenKind = p.currentTokenKind()
