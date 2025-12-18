@@ -2,12 +2,15 @@ package generator
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-ini/ini"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs"
 	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/pipeline"
@@ -84,7 +87,7 @@ func (t *generator) extractUserImports(tree ast.BlockStatement) []string {
 	var imports []string
 	for _, st := range tree.Body {
 		if stc, ok := st.(ast.ImportStatement); ok {
-			if stc.From != constants.BUILTIN {
+			if !stc.IsBasePkg() {
 				imports = append(imports, stc.Name)
 			}
 		}
@@ -97,8 +100,11 @@ func (t *generator) resolveImports(tree ast.BlockStatement, directUserImports []
 	declared := make(map[string]struct{})
 
 	for _, st := range tree.Body {
-		if stc, ok := st.(ast.ImportStatement); ok && stc.From == constants.BUILTIN {
-			t.importBasePackages(llvm.st.LibMethods, stc.Name)
+		if stc, ok := st.(ast.ImportStatement); ok {
+			if stc.IsBasePkg() {
+				t.importBasePackages(llvm.st.LibMethods, stc.EndName())
+			}
+			llvm.AddImportEntry(state.ImportEntry{Name: stc.Name, Identifier: stc.Alias})
 		}
 	}
 
@@ -123,12 +129,12 @@ func (t *generator) recursiveTransitiveDeclaration(pkgName string, llvm *LLVM, d
 	}
 
 	for _, st := range pkgAST.Body {
-		if stc, ok := st.(ast.ImportStatement); ok && stc.From == constants.BUILTIN {
-			t.importBasePackages(llvm.st.LibMethods, stc.Name)
+		if stc, ok := st.(ast.ImportStatement); ok && stc.IsBasePkg() {
+			t.importBasePackages(llvm.st.LibMethods, stc.EndName())
 		}
 	}
 
-	pipeline.NewPipeline(llvm.st, pkgAST).Declare()
+	pipeline.NewPipeline(llvm.st, pkgAST).Declare(pkgName)
 }
 
 // importBasePackages resolve base module imports.
@@ -138,7 +144,7 @@ func (t *generator) importBasePackages(methodMap map[string]function.Func, modul
 		errorutils.Abort(errorutils.UnknownModule, module)
 	}
 	for name, f := range mod.ListAllFuncs() {
-		n := fmt.Sprintf("%s.%s", module, name)
+		n := fmt.Sprintf("builtin.%s.%s", module, name)
 		methodMap[n] = f
 	}
 }
@@ -149,25 +155,59 @@ func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
 }
 
 // LoadPackages loads package with their AST by going through project.ini file
-func LoadPackages(packagePath string) map[string]ast.BlockStatement {
-	cfg, err := ini.Load(packagePath)
+func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
+	cfg, err := ini.Load(projectIniPath)
 	if err != nil {
-		panic("failed to read package.ini")
+		panic("failed to read project.ini")
 	}
 
-	m := make(map[string]ast.BlockStatement, 0)
+	rootDir := cfg.Section("root").Key("path").String()
+	if rootDir == "" {
+		panic("root.path is empty in project.ini")
+	}
 
-	for _, section := range cfg.Sections()[1:] {
-		sourceBytes, err := os.ReadFile(section.Key("path").String())
+	pkgs := make(map[string]ast.BlockStatement)
+
+	err = filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			panic(fmt.Sprintf("unable to read: %v", err))
+			return err
 		}
-		source := string(sourceBytes)
 
-		// parse source code to generate AST
+		if d.IsDir() {
+			return nil
+		}
+
+		if filepath.Ext(path) != ".pic" {
+			return nil
+		}
+
+		sourceBytes, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("unable to read %s: %w", path, err)
+		}
+
+		source := string(sourceBytes)
 		tree := parser.Parse(source)
-		m[section.Name()] = tree
+
+		// relative path from root
+		rel, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return err
+		}
+
+		// remove extension
+		rel = strings.TrimSuffix(rel, ".pic")
+
+		// normalize to forward slashes for package name
+		pkgName := filepath.ToSlash(rel)
+
+		pkgs[pkgName] = tree
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
 	}
 
-	return m
+	return pkgs
 }
