@@ -11,22 +11,22 @@ import (
 
 func parseExpr(p *Parser, bp BindingPower) ast.Expression {
 	tokenKind := p.currentTokenKind()
-	nud_fn, exists := nud_table[tokenKind]
+	nudFn, exists := nud_table[tokenKind]
 
 	if !exists {
 		errorsx.PanicParserError(fmt.Sprintf("NUD Handler expected for token %s\n", lexer.TokenKindString(tokenKind)))
 	}
 
-	left := nud_fn(p)
+	left := nudFn(p)
 	for bp_table[p.currentTokenKind()] > bp {
 		tokenKind = p.currentTokenKind()
-		led_fn, exists := led_table[tokenKind]
+		ledFn, exists := led_table[tokenKind]
 
 		if !exists {
 			errorsx.PanicParserError(fmt.Sprintf("LED Handler expected for token %s\n", lexer.TokenKindString(tokenKind)))
 		}
 
-		left = led_fn(p, left, bp)
+		left = ledFn(p, left, bp)
 	}
 
 	return left
@@ -155,7 +155,7 @@ func parseNullExpr(p *Parser) ast.Expression {
 	return ast.NullExpression{}
 }
 
-func parse_call_expr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
+func parseCallExpr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
 	p.move()
 	arguments := make([]ast.Expression, 0)
 

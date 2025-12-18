@@ -22,26 +22,26 @@ const (
 )
 
 type statement_handler func(p *Parser) ast.Statement
-type nud_handler func(p *Parser) ast.Expression
-type led_handler func(p *Parser, left ast.Expression, bp BindingPower) ast.Expression
+type nudHandler func(p *Parser) ast.Expression
+type ledHandler func(p *Parser, left ast.Expression, bp BindingPower) ast.Expression
 
-type statement_lookup map[lexer.TokenKind]statement_handler
-type nud_lookup map[lexer.TokenKind]nud_handler
-type led_lookup map[lexer.TokenKind]led_handler
+type stmtLookUp map[lexer.TokenKind]statement_handler
+type nudLookUp map[lexer.TokenKind]nudHandler
+type ledLookUp map[lexer.TokenKind]ledHandler
 
 type bp_lookup map[lexer.TokenKind]BindingPower
 
 var bp_table = bp_lookup{}
-var nud_table = nud_lookup{}
-var led_table = led_lookup{}
-var statement_table = statement_lookup{}
+var nud_table = nudLookUp{}
+var led_table = ledLookUp{}
+var statement_table = stmtLookUp{}
 
-func led(kind lexer.TokenKind, bp BindingPower, led_fn led_handler) {
+func led(kind lexer.TokenKind, bp BindingPower, led_fn ledHandler) {
 	bp_table[kind] = bp
 	led_table[kind] = led_fn
 }
 
-func nud(kind lexer.TokenKind, nud_fn nud_handler) {
+func nud(kind lexer.TokenKind, nud_fn nudHandler) {
 	bp_table[kind] = primary
 	nud_table[kind] = nud_fn
 }
@@ -91,7 +91,7 @@ func BuildTokensTable() {
 	// Member / Computed // Call
 	led(lexer.DOT, member, parseMemberExpr)
 	led(lexer.OPEN_BRACKET, member, parseMemberExpr)
-	led(lexer.OPEN_PAREN, call, parse_call_expr)
+	led(lexer.OPEN_PAREN, call, parseCallExpr)
 
 	nud(lexer.NULL, parseNullExpr)
 	// Grouping Expr
