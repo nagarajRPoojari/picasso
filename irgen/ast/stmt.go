@@ -1,5 +1,9 @@
 package ast
 
+import (
+	"strings"
+)
+
 // BlockStatement represents a sequence of statements enclosed in braces.
 // In most languages, this construct introduces a new lexical scope.
 type BlockStatement struct {
@@ -82,13 +86,22 @@ type IfStatement struct {
 func (IfStatement) stmt() {}
 
 // ImportStatement represents a dependency on an external module or file.
-// 'From' typically represents the path, while 'Name' is the local alias.
+// e.g, using "os/bin" as bin;
 type ImportStatement struct {
-	Name string
-	From string
+	Name  string
+	Alias string
 }
 
 func (ImportStatement) stmt() {}
+
+func (t ImportStatement) IsBasePkg() bool {
+	return strings.HasPrefix(t.Name, "builtin")
+}
+
+func (t ImportStatement) EndName() string {
+	pathSplit := strings.Split(t.Name, ".")
+	return pathSplit[len(pathSplit)-1]
+}
 
 // ForeachStatement represents a collection-based loop. If Index is true,
 // the iteration provides the current offset or key.

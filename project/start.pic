@@ -1,11 +1,14 @@
-import syncio from builtin;
-import asyncio from builtin;
-import array from builtin;
-import sync from builtin;
 
 
-import math;
-import dummy;
+using "builtin/syncio";
+using "builtin/asyncio";
+using "builtin/array";
+using "builtin/sync";
+
+
+using "math";
+using "dummy";
+using "utils";
 // using "math/random" as rand;
 // using "builtin/syncio";
 
@@ -33,7 +36,7 @@ import dummy;
 //     os/syscalls
 //     os/io 
 
-class Next {
+class Next: utils.Utils {
     say y: int = 90;
     fn Next() {
 
@@ -41,21 +44,24 @@ class Next {
 }
 
 class Node {
-    say y: Next = new Next();
+    say y: start.Next = new start.Next();
     fn Node() {
         
     }
 
     fn len(s: string): int {
-        say ad: Adder = new Adder();
-        say c: Dummy = new Dummy();
+        say ad: math.Adder = new math.Adder();
+        say c: dummy.Dummy = new dummy.Dummy();
+
+        ad.u.giveOne();
+
         return ad.add(10 , 20) + c.giveTwo();
 
     }
 }
 
 class Worker {
-    say x: Node;
+    say x: start.Node;
 
     say counter: atomic int;
     say _thread_id: atomic int;
@@ -66,7 +72,7 @@ class Worker {
         sync.atomic_store(this.counter, count);
         sync.atomic_store(this._thread_id, 0);
 
-        this.x = new Node();
+        this.x = new start.Node();
     } 
 
     fn raiseErr() {
@@ -82,34 +88,34 @@ class Worker {
     fn do() {
 
         this.raiseBeforeErr();
-        // sync.atomic_add(this._thread_id, 1);
-        // say id: int = sync.atomic_load(this._thread_id);
+        sync.atomic_add(this._thread_id, 1);
+        say id: int = sync.atomic_load(this._thread_id);
 
-        // say buff_size: int = 256;
-        // say buf: []int8 = array.create(int8, buff_size);
+        say buff_size: int = 256;
+        say buf: []int8 = array.create(int8, buff_size);
 
-        // syncio.printf(" value of array = %p \n", buf);
-        // say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
-        // say seek: int = 0;
+        syncio.printf(" value of array = %p \n", buf);
+        say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
+        say seek: int = 0;
 
-        // foreach i in 1..10000 {
-        //     say n: int = syncio.fread(fp, buf, buff_size, seek);
-        //     if(i==9999){
-        //         asyncio.printf("=========[%d]=> done - %d buf = %p\n", id, i, buf);
-        //         return;
-        //     }
-        //     // seek = seek + buff_size;
-        //     // asyncio.printf("%.*s\n", n, buf);
+        foreach i in 1..10000 {
+            say n: int = syncio.fread(fp, buf, buff_size, seek);
+            if(i==9999){
+                asyncio.printf("=========[%d]=> done - %d buf = %p\n", id, i, buf);
+                return;
+            }
+            // seek = seek + buff_size;
+            // asyncio.printf("%.*s\n", n, buf);
 
-        //     // if(n<buff_size) {
-        //     //     return;
-        //     // }else {}
-        // }
+            // if(n<buff_size) {
+            //     return;
+            // }else {}
+        }
     }
 }
 
 fn start() {
-    say w1: Worker = new Worker(1000);
+    say w1: start.Worker = new start.Worker(1000);
 
     w1.do();
     // foreach i in 1..100 {
