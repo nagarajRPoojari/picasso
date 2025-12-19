@@ -13,6 +13,17 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
+func buildAliasNameFromMemExp(m ast.Expression) (string, string) {
+	switch mc := m.(type) {
+	case ast.SymbolExpression:
+		return mc.Value, mc.Value
+	case ast.MemberExpression:
+		res, _ := buildAliasNameFromMemExp(mc.Member)
+		return fmt.Sprintf("%s.%s", res, mc.Property), mc.Property
+	}
+	return "", ""
+}
+
 // callConstructor executes the class constructor immediately following allocation.
 // In the Niyama object model, constructors are stored as function pointers within
 // the class struct itself. This method retrieves that pointer, prepares the
@@ -30,10 +41,13 @@ import (
 //     instance pointer as the final 'hidden' argument to the call.
 func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, ex ast.CallExpression) {
 	// Get the method symbol and metadata
-	m := ex.Method.(ast.SymbolExpression)
-	meth := t.st.IdentifierBuilder.Attach(m.Value, m.Value)
-	meta := t.st.Classes[cls.Name]
-	idx := meta.FieldIndexMap[meth]
+
+	aliasClsName, methodName := buildAliasNameFromMemExp(ex.Method)
+	aliasConstructorName := fmt.Sprintf("%s.%s", aliasClsName, methodName)
+
+	meta := t.st.Classes[aliasClsName]
+
+	idx := meta.FieldIndexMap[aliasConstructorName]
 
 	st := meta.StructType()
 	fieldType := st.Fields[idx]
@@ -41,7 +55,7 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 	// Load the function pointer directly from the struct field (single load)
 	fnVal := cls.LoadField(bh, idx, fieldType)
 	if fnVal == nil {
-		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, m.Value))
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, aliasClsName))
 	}
 
 	// Ensure field type is pointer-to-function
@@ -59,11 +73,11 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 	for i, argExp := range ex.Arguments {
 		v := t.ProcessExpression(bh, argExp)
 		if v == nil {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("nil arg %d for %s", i, m.Value))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("nil arg %d for %s", i, aliasClsName))
 		}
 		raw := v.Load(bh)
 		if raw == nil {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("loaded nil arg %d for %s", i, m.Value))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("loaded nil arg %d for %s", i, aliasClsName))
 		}
 
 		// Implicit type cast if needed
@@ -104,17 +118,18 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
 
-	meth := ex.Instantiation.Method.(ast.SymbolExpression)
-	classMeta := t.st.Classes[meth.Value]
+	aliasClsName, _ := buildAliasNameFromMemExp(ex.Instantiation.Method)
+
+	classMeta := t.st.Classes[aliasClsName]
 	if classMeta == nil {
-		errorutils.Abort(errorutils.UnknownClass, meth.Value)
+		errorutils.Abort(errorutils.UnknownClass, aliasClsName)
 	}
 
 	// tf.NewClass allocates memory for class instance in heap internally.
 	// & holds heap pointer in a stack slot.
-	instance := tf.NewClass(bh, meth.Value, classMeta.UDT)
+	instance := tf.NewClass(bh, aliasClsName, classMeta.UDT)
 	structType := classMeta.StructType()
-	meta := t.st.Classes[meth.Value]
+	meta := t.st.Classes[aliasClsName]
 
 	for name, index := range meta.FieldIndexMap {
 		// if field is not found in meta.VarAST indicating func type, update instance
@@ -122,8 +137,8 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 		// refer to this pointed function.
 		exp, ok := meta.VarAST[name]
 		if !ok {
-			f := t.st.Classes[meth.Value].Methods[name]
-			fieldType := t.st.Classes[meth.Value].StructType().Fields[index]
+			f := t.st.Classes[aliasClsName].Methods[name]
+			fieldType := t.st.Classes[aliasClsName].StructType().Fields[index]
 			instance.UpdateField(bh, index, f, fieldType)
 			continue
 		}

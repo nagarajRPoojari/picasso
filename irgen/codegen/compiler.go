@@ -215,9 +215,6 @@ func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
 		}
 
 		source := string(sourceBytes)
-
-		fmt.Println(source)
-
 		tree := parser.Parse(source)
 
 		// relative path from root

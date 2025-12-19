@@ -40,62 +40,25 @@ func (t *Pipeline) registerTypes() {
 }
 
 func (t *Pipeline) declareVars(sourcePkg state.PackageEntry) {
-	parent := make(map[string]string)
 	classDefs := make(map[string]ast.ClassDeclarationStatement)
-	childs := make(map[string][]ast.ClassDeclarationStatement)
 	roots := make([]ast.ClassDeclarationStatement, 0)
-	orphans := make([]ast.ClassDeclarationStatement, 0)
 
 	for _, i := range t.tree.Body {
 		if st, ok := i.(ast.ClassDeclarationStatement); ok {
 			aliasClsName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(st.Name)
-
-			parent[aliasClsName] = st.Implements
-			if st.Implements != "" {
-				if _, ok := childs[st.Implements]; !ok {
-					childs[st.Implements] = make([]ast.ClassDeclarationStatement, 0)
-				}
-				childs[st.Implements] = append(childs[st.Implements], st)
-			} else {
-				roots = append(roots, st)
-			}
+			roots = append(roots, st)
 			classDefs[aliasClsName] = st
 		}
 	}
 
-	// orphans are the one whose parent class resides in different module. so its
-	// parent class ast is unavailble. I can safely traverse without bothering about its
-	// order since it's parent class (from imported module) is already declared.
-	for i := range classDefs {
-		if _, ok := classDefs[parent[i]]; !ok {
-			orphans = append(orphans, classDefs[i])
-		}
-	}
-
-	// for inheritance involving only current packages, I can safely check its
-	// cyclic inheritance condition. @todo: need to check cyclic inheritance
-	// involving classes from other modules.
-	for i := range parent {
-		cyclicCheck(i, parent, make(map[string]struct{}))
-	}
-
 	t.st.TypeHeirarchy = state.TypeHeirarchy{
-		Parent:    parent,
 		Roots:     roots,
-		Childs:    childs,
 		ClassDefs: classDefs,
-		Orphans:   orphans,
 	}
 
 	for _, i := range roots {
-		traverse(i, childs, func(st ast.ClassDeclarationStatement) {
-			class.ClassHandlerInst.DefineClassUDT(st, sourcePkg)
-		})
-	}
-	for _, i := range orphans {
 		class.ClassHandlerInst.DefineClassUDT(i, sourcePkg)
 	}
-
 }
 
 func cyclicCheck(child string, parent map[string]string, isV map[string]struct{}) {
@@ -110,36 +73,15 @@ func cyclicCheck(child string, parent map[string]string, isV map[string]struct{}
 	delete(isV, child)
 }
 
-func traverse(parent ast.ClassDeclarationStatement, childs map[string][]ast.ClassDeclarationStatement, fn func(ast.ClassDeclarationStatement)) {
-	fn(parent)
-	for _, c := range childs[parent.Name] {
-		traverse(c, childs, fn)
-	}
-}
-
 func (t *Pipeline) declareFuncs(sourcePkg state.PackageEntry) {
 	for _, i := range t.st.TypeHeirarchy.Roots {
-		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
-			class.ClassHandlerInst.DeclareFunctions(st, sourcePkg)
-		})
-	}
-	for _, i := range t.st.TypeHeirarchy.Orphans {
-		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
-			class.ClassHandlerInst.DeclareFunctions(st, sourcePkg)
-		})
+		class.ClassHandlerInst.DeclareFunctions(i, sourcePkg)
 	}
 }
 
 func (t *Pipeline) defineClasses() {
 	for _, i := range t.st.TypeHeirarchy.Roots {
-		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
-			class.ClassHandlerInst.DefineClass(st)
-		})
-	}
-	for _, i := range t.st.TypeHeirarchy.Orphans {
-		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
-			class.ClassHandlerInst.DefineClass(st)
-		})
+		class.ClassHandlerInst.DefineClass(i)
 	}
 }
 

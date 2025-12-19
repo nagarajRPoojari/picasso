@@ -33,7 +33,7 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 		x, ok := m.Member.(ast.SymbolExpression)
 		if ok {
 			// base module func calls are strictly expected to be in module_name.func() format. e.g, syncio.printf
-			fName := fmt.Sprintf("%s.%s", x.Value, m.Property)
+			fName := fmt.Sprintf("%s.%s", t.st.Imports[x.Value].Name, m.Property)
 			if f, ok := t.st.LibMethods[fName]; ok {
 				args := make([]tf.Var, 0)
 				for _, v := range ex.Arguments {
@@ -97,7 +97,7 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "unknown class metadata: "+cls.Name)
 		}
 
-		methodKey := t.st.IdentifierBuilder.Attach(cls.Name, m.Property)
+		methodKey := fmt.Sprintf("%s.%s", cls.Name, m.Property)
 		idx, ok := classMeta.FieldIndexMap[methodKey]
 
 		if !ok {
