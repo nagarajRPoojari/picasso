@@ -1,11 +1,15 @@
 package funcs
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 )
 
 // DeclareFunc registers a method's signature within the LLVM module and the class metadata.
@@ -22,17 +26,21 @@ import (
 //     name (e.g., "ClassName.MethodName") to avoid global symbol collisions.
 //   - Memoization: Checks the existing Method map to prevent redundant declarations
 //     and stores the resulting function symbol for the definition pass.
-func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement) {
+func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement, sourcePkg state.PackageEntry) {
+	fqClsName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(cls)
+	aliasClsName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(cls)
+
 	params := make([]*ir.Param, 0)
 	for _, p := range st.Parameters {
 		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(p.Type.Get())))
 	}
 
 	// at the end pass `this` parameter representing current object
-	udt := t.st.Classes[cls].UDT
+	udt := t.st.Classes[aliasClsName].UDT
 	params = append(params, ir.NewParam(constants.THIS, udt))
 
-	name := t.st.IdentifierBuilder.Attach(cls, st.Name)
+	fqFuncName := fmt.Sprintf("%s.%s", fqClsName, st.Name)
+	aliasFuncName := fmt.Sprintf("%s.%s", aliasClsName, st.Name)
 
 	var retType types.Type
 	if st.ReturnType != nil {
@@ -43,9 +51,13 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 
 	// store current functions so that later during class instantiation instance
 	// can be made pointing to the functions.
-	if _, ok := t.st.Classes[cls].Methods[name]; !ok {
-		f := t.st.Module.NewFunc(name, retType, params...)
-		t.st.Classes[cls].Methods[name] = f
-		t.st.Classes[cls].Returns[name] = st.ReturnType
+	if _, ok := t.st.Classes[aliasClsName].Methods[aliasFuncName]; !ok {
+		f, ok := t.st.GlobalFuncList[fqFuncName]
+		if !ok {
+			f = t.st.Module.NewFunc(fqFuncName, retType, params...)
+			t.st.GlobalFuncList[fqFuncName] = f
+		}
+		t.st.Classes[aliasClsName].Methods[aliasFuncName] = f
+		t.st.Classes[aliasClsName].Returns[aliasFuncName] = st.ReturnType
 	}
 }

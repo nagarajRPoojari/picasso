@@ -1,6 +1,8 @@
 package funcs
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
@@ -34,9 +36,10 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
 
-	name := t.st.IdentifierBuilder.Attach(className, fn.Name)
+	name := fmt.Sprintf("%s.%s", className, fn.Name)
 	var f *ir.Func
 	f = t.st.Classes[className].Methods[name]
+
 	if _, ok := avoid[fn.Name]; ok {
 		return
 	}

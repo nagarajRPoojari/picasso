@@ -13,6 +13,9 @@ const (
 	STRING
 	IDENTIFIER
 
+	BREAK
+	CONTINUE
+
 	ATOMIC
 
 	OPEN_BRACKET
@@ -31,8 +34,6 @@ const (
 	LESS_EQUALS
 	GREATER
 	GREATER_EQUALS
-
-	BREAK
 
 	OR
 	AND
@@ -87,6 +88,7 @@ var reserved_keywords map[string]TokenKind = map[string]TokenKind{
 	"null":      NULL,
 	"break":     BREAK,
 	"say":       SAY,
+	"continue":  CONTINUE,
 	"const":     CONST,
 	"class":     CLASS,
 	"interface": INTERFACE,
@@ -145,10 +147,12 @@ func TokenKindString(kind TokenKind) string {
 		return "true"
 	case FALSE:
 		return "false"
-	case BREAK:
-		return "break"
 	case IDENTIFIER:
 		return "identifier"
+	case BREAK:
+		return "break"
+	case CONTINUE:
+		return "continue"
 	case ATOMIC:
 		return "atomic"
 	case OPEN_BRACKET:
