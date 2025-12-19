@@ -21,14 +21,6 @@ func (t *Parser) hasTokens() bool {
 	return t.pos < len(t.tokens) && t.currentTokenKind() != lexer.EOF
 }
 
-func (t *Parser) nextToken() lexer.Token {
-	return t.tokens[t.pos+1]
-}
-
-func (t *Parser) previousToken() lexer.Token {
-	return t.tokens[t.pos-1]
-}
-
 func (t *Parser) currentTokenKind() lexer.TokenKind {
 	return t.tokens[t.pos].Kind
 }

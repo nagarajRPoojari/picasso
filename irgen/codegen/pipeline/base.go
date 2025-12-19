@@ -18,24 +18,34 @@ func (t *Pipeline) Register() {
 	t.registerTypes()
 }
 
-func (t *Pipeline) Declare() {
-	t.predeclareClasses()
-	t.declareVars()
-	t.declareFuncs()
+// Declare emits llvm declaration instructions.
+// sourcePkg indciates where those type/functions definitions comes from.
+// it is needed to determine its fully qualified name.
+// e.g, using "os/io"; declaration should be os.io.ABC etc..
+func (t *Pipeline) Declare(sourcePkg state.PackageEntry) {
+	t.predeclareClasses(sourcePkg)
+	t.declareVars(sourcePkg)
+	t.declareFuncs(sourcePkg)
 }
 
+// Definitions are called for own module which emits definition
+// instructions in llvm.
 func (t *Pipeline) Define() {
 	t.defineClasses()
 	t.defineMain()
 }
 
 func (t *Pipeline) Optimize() {
+	// inserts safepoints based on some predefined heuristics.
 	t.insertYields()
 }
 
-func (t *Pipeline) Run() {
+// Run will be called only for own module which does both
+// declaration & definition. It is expected that all imported
+// types/funcs are already declared.
+func (t *Pipeline) Run(sourcePkg state.PackageEntry) {
 	t.Register()
-	t.Declare()
+	t.Declare(sourcePkg)
 	t.Define()
 	t.Optimize()
 }

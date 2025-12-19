@@ -18,13 +18,21 @@ import (
 )
 
 type generator struct {
-	packages  map[string]ast.BlockStatement
-	llvms     map[string]*LLVM
+	// ast of all packages involved in the project.s
+	packages map[string]ast.BlockStatement
+
+	// llvm instance of all packages.
+	llvms map[string]*LLVM
+
+	// outputDir is directory where IR & info files will be dumped.
 	outputDir string
 
 	// builtPkgs tracks packages that are completely built and compiled
+	// key should be fully qualified name of package. e.g, os.io
 	builtPkgs map[string]struct{}
+
 	// visitingPkgs tracks packages currently in the recursion stack (for cycle detection)
+	// key should be fully qualified name of package. e.g, os.io
 	visitingPkgs map[string]struct{}
 }
 
@@ -39,11 +47,18 @@ func NewGenerator(path string, outputDir string) *generator {
 }
 
 func (t *generator) BuildAll() {
-	t.buildPackage("start")
+	// main file is expected to be named as start.pic.
+	// @todo: main.pic would be a good choise, why did I even replace
+	// all 'main' with 'start'?
+	t.buildPackage(state.PackageEntry{Name: "start", Alias: "start"})
 }
 
 // buildPackage implements Post-Order Traversal (Bottom-Up) to ensure global state integrity.
-func (t *generator) buildPackage(pkgName string) {
+// LLVM maintains some global state unique to that module, traversing bottom up avoids
+// such global val overriding.
+// maintaining global is a design limitation that need to be fixed in future @todo.
+func (t *generator) buildPackage(pkg state.PackageEntry) {
+	pkgName := pkg.Name
 	if _, ok := t.builtPkgs[pkgName]; ok {
 		return
 	}
@@ -65,7 +80,7 @@ func (t *generator) buildPackage(pkgName string) {
 	}
 
 	// Create new LLVM context for this package (Safe, as children are finished)
-	llvm := NewLLVM(pkgName)
+	llvm := NewLLVM(pkgName, t.outputDir)
 	t.llvms[pkgName] = llvm
 
 	// Resolve Imports: Declare symbols from direct and transitive dependencies (B and C)
@@ -83,20 +98,25 @@ func (t *generator) buildPackage(pkgName string) {
 }
 
 // extractUserImports returns only the names of non-builtin imported packages.
-func (t *generator) extractUserImports(tree ast.BlockStatement) []string {
-	var imports []string
+func (t *generator) extractUserImports(tree ast.BlockStatement) []state.PackageEntry {
+	var imports []state.PackageEntry
 	for _, st := range tree.Body {
 		if stc, ok := st.(ast.ImportStatement); ok {
 			if !stc.IsBasePkg() {
-				imports = append(imports, stc.Name)
+				imports = append(imports, state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
 			}
 		}
 	}
 	return imports
 }
 
-func (t *generator) resolveImports(tree ast.BlockStatement, directUserImports []string, llvm *LLVM) {
+func (t *generator) resolveImports(tree ast.BlockStatement, directUserImports []state.PackageEntry, llvm *LLVM) {
 	// declared map tracks all packages added to this module's symbol table to prevent redundancy
+	// key should be alias name. resolveImports is called specific to a module & its imported
+	// packages must be tracked with its alias names instead of fully qualified name.
+	// e.g issue, imported package 'a' could have been imported multiple times in lower levels, tracking its
+	// declaration by fully qualified name prevents running .Declare with alias. therefore track with
+	// alias name
 	declared := make(map[string]struct{})
 
 	for _, st := range tree.Body {
@@ -104,7 +124,7 @@ func (t *generator) resolveImports(tree ast.BlockStatement, directUserImports []
 			if stc.IsBasePkg() {
 				t.importBasePackages(llvm.st.LibMethods, stc.EndName())
 			}
-			llvm.AddImportEntry(state.ImportEntry{Name: stc.Name, Identifier: stc.Alias})
+			llvm.AddImportEntry(state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
 		}
 	}
 
@@ -115,13 +135,16 @@ func (t *generator) resolveImports(tree ast.BlockStatement, directUserImports []
 
 // recursiveTransitiveDeclaration declares symbols of pkgName and all its dependencies (C)
 // into the current module (A). This is the key to fixing the transitive dependency issue.
-func (t *generator) recursiveTransitiveDeclaration(pkgName string, llvm *LLVM, declared map[string]struct{}) {
-	if _, ok := declared[pkgName]; ok {
+func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm *LLVM, declared map[string]struct{}) {
+	pkgFullName := pkg.Name
+	pkgAliasName := pkg.Alias
+
+	if _, ok := declared[pkgAliasName]; ok {
 		return
 	}
-	declared[pkgName] = struct{}{}
+	declared[pkgAliasName] = struct{}{}
 
-	pkgAST := t.packages[pkgName]
+	pkgAST := t.packages[pkgFullName]
 
 	subImports := t.extractUserImports(pkgAST)
 	for _, sub := range subImports {
@@ -134,7 +157,10 @@ func (t *generator) recursiveTransitiveDeclaration(pkgName string, llvm *LLVM, d
 		}
 	}
 
-	pipeline.NewPipeline(llvm.st, pkgAST).Declare(pkgName)
+	// since i am tracking packages with alias names, this func might be called multiple times
+	// for a package. .Declare() is assumed to avoid multiple llvm type/func declarations, otherwise
+	// which is fatal.
+	pipeline.NewPipeline(llvm.st, pkgAST).Declare(pkg)
 }
 
 // importBasePackages resolve base module imports.
@@ -155,6 +181,8 @@ func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
 }
 
 // LoadPackages loads package with their AST by going through project.ini file
+// Packages will be named will modified by replacing '/' with '.' resulting
+// in something like os.io instead of os/io.
 func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
 	cfg, err := ini.Load(projectIniPath)
 	if err != nil {
@@ -187,6 +215,9 @@ func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
 		}
 
 		source := string(sourceBytes)
+
+		fmt.Println(source)
+
 		tree := parser.Parse(source)
 
 		// relative path from root
@@ -199,7 +230,7 @@ func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
 		rel = strings.TrimSuffix(rel, ".pic")
 
 		// normalize to forward slashes for package name
-		pkgName := filepath.ToSlash(rel)
+		pkgName := strings.ReplaceAll(filepath.ToSlash(rel), "/", ".")
 
 		pkgs[pkgName] = tree
 		return nil
