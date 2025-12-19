@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/block"
@@ -21,13 +22,18 @@ import (
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 )
 
+const (
+	TARGETARCH   = "aarch64-unknown-linux-gnu"
+	TARGETLAYOUT = "e-m:e-i64:64-n32:64-S128"
+)
+
 // LLVM parses abstract syntax tree to generate llvm IR
 type LLVM struct {
 	st         *state.State
 	ModuleName string
 }
 
-func NewLLVM(pkgName string) *LLVM {
+func NewLLVM(pkgName string, outputDir string) *LLVM {
 	m := ir.NewModule()
 	tree := scope.NewVarTree()
 	m.SourceFilename = pkgName
@@ -36,13 +42,18 @@ func NewLLVM(pkgName string) *LLVM {
 	c.NewInterface(m)
 
 	st := &state.State{
+		OutputDir:         outputDir,
+		GlobalTypeList:    make(map[string]types.Type),
+		GlobalFuncList:    make(map[string]*ir.Func),
+		ModuleName:        pkgName,
 		Module:            m,
 		TypeHandler:       tf.NewTypeHandler(),
 		Vars:              tree,
 		Classes:           make(map[string]*tf.MetaClass),
-		IdentifierBuilder: identifier.NewIdentifierBuilder(MAIN),
+		IdentifierBuilder: identifier.NewIdentifierBuilder(pkgName),
 		LibMethods:        make(map[string]function.Func),
 		CI:                c.Instance,
+		Imports:           make(map[string]state.PackageEntry),
 	}
 
 	expression.ExpressionHandlerInst = expression.NewExpressionHandler(st)
@@ -51,10 +62,14 @@ func NewLLVM(pkgName string) *LLVM {
 	block.BlockHandlerInst = block.NewBlockHandler(st)
 	class.ClassHandlerInst = class.NewClassHandler(st)
 
-	m.TargetTriple = "aarch64-unknown-linux-gnu"
-	m.DataLayout = "e-m:e-i64:64-n32:64-S128"
+	m.TargetTriple = TARGETARCH
+	m.DataLayout = TARGETLAYOUT
 
 	return &LLVM{st: st, ModuleName: pkgName}
+}
+
+func (t *LLVM) AddImportEntry(entry state.PackageEntry) {
+	t.st.Imports[entry.Alias] = entry
 }
 
 func (t *LLVM) Dump(outputDir string, file string) {
@@ -64,8 +79,9 @@ func (t *LLVM) Dump(outputDir string, file string) {
 	}
 	defer f.Close()
 	f.WriteString(t.st.Module.String())
+	t.st.DumpInfo(outputDir)
 }
 
 func (t *LLVM) ParseAST(tree ast.BlockStatement) {
-	pipeline.NewPipeline(t.st, tree).Run()
+	pipeline.NewPipeline(t.st, tree).Run(state.PackageEntry{Name: t.ModuleName, Alias: t.ModuleName})
 }

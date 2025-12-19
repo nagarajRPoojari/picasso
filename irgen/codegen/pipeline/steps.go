@@ -10,13 +10,14 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/class"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
 	funcs "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 )
 
-func (t *Pipeline) predeclareClasses() {
+func (t *Pipeline) predeclareClasses(sourcePkg state.PackageEntry) {
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
-		class.ClassHandlerInst.DeclareClassUDT(st)
+		class.ClassHandlerInst.DeclareClassUDT(st, sourcePkg)
 	})
 }
 
@@ -38,15 +39,18 @@ func (t *Pipeline) registerTypes() {
 	}
 }
 
-func (t *Pipeline) declareVars() {
+func (t *Pipeline) declareVars(sourcePkg state.PackageEntry) {
 	parent := make(map[string]string)
 	classDefs := make(map[string]ast.ClassDeclarationStatement)
 	childs := make(map[string][]ast.ClassDeclarationStatement)
 	roots := make([]ast.ClassDeclarationStatement, 0)
+	orphans := make([]ast.ClassDeclarationStatement, 0)
 
 	for _, i := range t.tree.Body {
 		if st, ok := i.(ast.ClassDeclarationStatement); ok {
-			parent[st.Name] = st.Implements
+			aliasClsName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(st.Name)
+
+			parent[aliasClsName] = st.Implements
 			if st.Implements != "" {
 				if _, ok := childs[st.Implements]; !ok {
 					childs[st.Implements] = make([]ast.ClassDeclarationStatement, 0)
@@ -55,9 +59,22 @@ func (t *Pipeline) declareVars() {
 			} else {
 				roots = append(roots, st)
 			}
-			classDefs[st.Name] = st
+			classDefs[aliasClsName] = st
 		}
 	}
+
+	// orphans are the one whose parent class resides in different module. so its
+	// parent class ast is unavailble. I can safely traverse without bothering about its
+	// order since it's parent class (from imported module) is already declared.
+	for i := range classDefs {
+		if _, ok := classDefs[parent[i]]; !ok {
+			orphans = append(orphans, classDefs[i])
+		}
+	}
+
+	// for inheritance involving only current packages, I can safely check its
+	// cyclic inheritance condition. @todo: need to check cyclic inheritance
+	// involving classes from other modules.
 	for i := range parent {
 		cyclicCheck(i, parent, make(map[string]struct{}))
 	}
@@ -67,12 +84,16 @@ func (t *Pipeline) declareVars() {
 		Roots:     roots,
 		Childs:    childs,
 		ClassDefs: classDefs,
+		Orphans:   orphans,
 	}
 
 	for _, i := range roots {
 		traverse(i, childs, func(st ast.ClassDeclarationStatement) {
-			class.ClassHandlerInst.DefineClassUDT(st)
+			class.ClassHandlerInst.DefineClassUDT(st, sourcePkg)
 		})
+	}
+	for _, i := range orphans {
+		class.ClassHandlerInst.DefineClassUDT(i, sourcePkg)
 	}
 
 }
@@ -96,16 +117,26 @@ func traverse(parent ast.ClassDeclarationStatement, childs map[string][]ast.Clas
 	}
 }
 
-func (t *Pipeline) declareFuncs() {
+func (t *Pipeline) declareFuncs(sourcePkg state.PackageEntry) {
 	for _, i := range t.st.TypeHeirarchy.Roots {
 		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
-			class.ClassHandlerInst.DeclareFunctions(st)
+			class.ClassHandlerInst.DeclareFunctions(st, sourcePkg)
+		})
+	}
+	for _, i := range t.st.TypeHeirarchy.Orphans {
+		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
+			class.ClassHandlerInst.DeclareFunctions(st, sourcePkg)
 		})
 	}
 }
 
 func (t *Pipeline) defineClasses() {
 	for _, i := range t.st.TypeHeirarchy.Roots {
+		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
+			class.ClassHandlerInst.DefineClass(st)
+		})
+	}
+	for _, i := range t.st.TypeHeirarchy.Orphans {
 		traverse(i, t.st.TypeHeirarchy.Childs, func(st ast.ClassDeclarationStatement) {
 			class.ClassHandlerInst.DefineClass(st)
 		})
