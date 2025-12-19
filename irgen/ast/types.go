@@ -1,6 +1,9 @@
 package ast
 
-import "fmt"
+import (
+	"encoding/gob"
+	"fmt"
+)
 
 // SymbolType represents a named type in the Niyama type system.
 // It can represent either a primitive/built-in type (Atomic) or
@@ -70,3 +73,8 @@ func (t *ListType) GetUnderlyingType() string {
 
 // Get returns the generic string identifier for list structures.
 func (t *ListType) Get() string { return "array" }
+
+func init() {
+	gob.Register(&SymbolType{})
+	gob.Register(&ListType{})
+}
