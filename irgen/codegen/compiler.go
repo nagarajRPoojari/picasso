@@ -36,9 +36,11 @@ type generator struct {
 	visitingPkgs map[string]struct{}
 }
 
-func NewGenerator(path string, outputDir string) *generator {
+func NewGenerator(projectDir string) *generator {
+	outputDir := filepath.Join(projectDir, "build")
+
 	return &generator{
-		packages:     LoadPackages(path),
+		packages:     LoadPackages(projectDir),
 		llvms:        make(map[string]*LLVM),
 		outputDir:    outputDir,
 		builtPkgs:    make(map[string]struct{}),
@@ -183,8 +185,10 @@ func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
 // LoadPackages loads package with their AST by going through project.ini file
 // Packages will be named will modified by replacing '/' with '.' resulting
 // in something like os.io instead of os/io.
-func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
-	cfg, err := ini.Load(projectIniPath)
+func LoadPackages(projectDir string) map[string]ast.BlockStatement {
+	projectInitPath := filepath.Join(projectDir, "project.ini")
+	cfg, err := ini.Load(projectInitPath)
+	fmt.Println(projectInitPath)
 	if err != nil {
 		panic("failed to read project.ini")
 	}

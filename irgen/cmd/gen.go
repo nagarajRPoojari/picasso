@@ -15,11 +15,10 @@ var genCmd = &cobra.Command{
 
 Example:
     niyama gen ./main.niy ./build/main.ll`,
-	Args: cobra.ExactArgs(2),
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		// args[0] is the input source file path.
-		// args[1] is the target destination for the generated IR.
-		c := generator.NewGenerator(args[0], args[1])
+		c := generator.NewGenerator(args[0])
 		c.BuildAll()
 	},
 }
