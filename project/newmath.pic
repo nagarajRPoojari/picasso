@@ -1,0 +1,15 @@
+using "builtin/syncio";
+using "utils";
+
+class Adder {
+    say u: utils.Utils;
+    say x: int;
+    fn Adder() {
+        this.u = new utils.Utils();
+    }
+
+    fn add(a: int, b: int): int {
+        syncio.printf(" this is in math.Adder.add \n");
+        return a + b + this.u.giveOne();
+    }
+}
