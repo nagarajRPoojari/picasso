@@ -17,43 +17,75 @@ int main(int argc, char **argv) {
 
     if (!strcmp(argv[1], "build")) {
         if (argc != 3) {
-            fprintf(stderr, "niyama build <file.ini>\n");
+            fprintf(stderr, "niyama build <project root dir>\n");
             return 1;
         }
 
-        const char *file = argv[2];
+        const char *dir = argv[2];
 
-        if (system("mkdir -p .niyama") != 0) die("mkdir");
+        char buildDir[1024];
+        snprintf(buildDir, sizeof(buildDir), "%s/build", dir);
 
-        char cmd[1024];
+        char cmd[4096];
+
+        /* create build dir */
+        snprintf(cmd, sizeof(cmd), "mkdir -p \"%s\"", buildDir);
+        if (system(cmd) != 0) die("mkdir build");
+
+        /* generate LLVM IR (.ll) */
         snprintf(cmd, sizeof(cmd),
-                "bin/irgen gen %s ./bin", file);
+                "bin/irgen gen \"%s\"",
+                dir);
         if (system(cmd) != 0) die("irgen");
 
-        if (system("for f in ./bin/*.ll; do "
-                "llvm-as-16 \"$f\" -o \"${f%.ll}.bc\" || exit 1; "
-                "done") != 0)
-            die("llvm-as");
+        /* .ll -> .bc */
+        snprintf(cmd, sizeof(cmd),
+            "set -e; "
+            "for f in \"%s\"/*.ll; do "
+            "  base=$(basename \"$f\" .ll); "
+            "  llvm-as-16 \"$f\" -o \"%s/$base.bc\"; "
+            "done",
+            buildDir, buildDir);
+        if (system(cmd) != 0) die("llvm-as");
 
-        if (system("for f in ./bin/*.bc; do "
-                "llc-16 -filetype=obj \"$f\" -o \"${f%.bc}.o\" || exit 1; "
-                "done") != 0)
-            die("llc");
+        /* .bc -> .o */
+        snprintf(cmd, sizeof(cmd),
+            "set -e; "
+            "for f in \"%s\"/*.bc; do "
+            "  base=$(basename \"$f\" .bc); "
+            "  llc-16 -filetype=obj \"$f\" -o \"%s/$base.o\"; "
+            "done",
+            buildDir, buildDir);
+        if (system(cmd) != 0) die("llc");
 
-        if (system("cc ./bin/*.o ./bin/libruntime.a "
-                "-o .niyama/a.out "
-                "-luring -lunwind-aarch64 -lpthread -lm") != 0)
-            die("link");
+        /* link */
+        snprintf(cmd, sizeof(cmd),
+            "cc \"%s\"/*.o bin/libruntime.a "
+            "-o \"%s\"/a.out "
+            "-luring -lunwind-aarch64 -lpthread -lm",
+            buildDir, buildDir);
+        if (system(cmd) != 0) die("link");
 
         return 0;
     }
 
 
+
     if (!strcmp(argv[1], "exec")) {
-        // Run the generated binary
-        execl("./.niyama/a.out", "./.niyama/a.out", NULL);
+        if (argc != 3) {
+            fprintf(stderr, "niyama exec <project root dir>\n");
+            return 1;
+        }
+
+        const char *dir = argv[2];
+
+        char exe[1024];
+        snprintf(exe, sizeof(exe), "%s/build/a.out", dir);
+
+        execl(exe, exe, (char *)NULL);
         die("exec");
     }
+
 
     fprintf(stderr, "unknown command\n");
     return 1;

@@ -22,13 +22,35 @@ func createParser(tokens []lexer.Token) *Parser {
 	return p
 }
 
-func Parse(source string) ast.BlockStatement {
+func ParseAll(source string) ast.BlockStatement {
 	tokens := lexer.Tokenize(source)
 	p := createParser(tokens)
 	body := make([]ast.Statement, 0)
 
 	for p.hasTokens() {
 		body = append(body, parseStmt(p))
+	}
+
+	return ast.BlockStatement{
+		Body: body,
+	}
+}
+
+func ParseImports(source string) ast.BlockStatement {
+	tokens := lexer.Tokenize(source)
+	p := createParser(tokens)
+	body := make([]ast.Statement, 0)
+
+	for p.hasTokens() {
+		stmt := parseStmt(p)
+		// as soon as I see non-import statement then stop parsing
+		// @todo: ideally don't accept source string, it could be too big
+		// I should read incrementely
+		// @todo: don't even need full tokenizing
+		if _, ok := stmt.(ast.ImportStatement); !ok {
+			break
+		}
+		body = append(body, stmt)
 	}
 
 	return ast.BlockStatement{

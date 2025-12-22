@@ -1,5 +1,5 @@
 {
-    "simpleCodingTimeTracker.inactivityTimeout": 10,
+    "simpleCodingTimeTracker.inactivityTimeout": 5,
     "simpleCodingTimeTracker.focusTimeout": 3,
     "simpleCodingTimeTracker.health.enableNotifications": false,
     "simpleCodingTimeTracker.health.modalNotifications": true,

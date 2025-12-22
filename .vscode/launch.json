@@ -5,7 +5,7 @@
             "name": "(GDB) Launch Scheduler (AArch64 Linux)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/scheduler",
+            "program": "${workspaceFolder}/project/build/a.out",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

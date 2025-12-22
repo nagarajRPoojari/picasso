@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/go-ini/ini"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
@@ -14,18 +15,25 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs"
 	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/pipeline"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/tools"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/utils"
 	"github.com/nagarajRPoojari/niyama/irgen/parser"
 )
 
 type generator struct {
-	// ast of all packages involved in the project.s
+	// ast of all modified packages involved in the project.s
 	packages map[string]ast.BlockStatement
+
+	allPkgs map[string]struct{}
 
 	// llvm instance of all packages.
 	llvms map[string]*LLVM
 
 	// outputDir is directory where IR & info files will be dumped.
 	outputDir string
+
+	// cached pkgs
+	cachedPkgs map[string]struct{}
 
 	// builtPkgs tracks packages that are completely built and compiled
 	// key should be fully qualified name of package. e.g, os.io
@@ -36,9 +44,13 @@ type generator struct {
 	visitingPkgs map[string]struct{}
 }
 
-func NewGenerator(path string, outputDir string) *generator {
+func NewGenerator(projectDir string) *generator {
+	outputDir := filepath.Join(projectDir, "build")
+
+	modifiedPkgs, allPkgs := LoadPackages(projectDir)
 	return &generator{
-		packages:     LoadPackages(path),
+		packages:     modifiedPkgs,
+		allPkgs:      allPkgs,
 		llvms:        make(map[string]*LLVM),
 		outputDir:    outputDir,
 		builtPkgs:    make(map[string]struct{}),
@@ -51,6 +63,35 @@ func (t *generator) BuildAll() {
 	// @todo: main.pic would be a good choise, why did I even replace
 	// all 'main' with 'start'?
 	t.buildPackage(state.PackageEntry{Name: "start", Alias: "start"})
+
+	// for all modified packages, generate .exports
+	for pkgName := range t.packages {
+		t.generateExports(pkgName)
+	}
+}
+
+func (t *generator) generateExports(pkgName string) {
+	outputPath := filepath.Join(t.outputDir, fmt.Sprintf("%s.exports", pkgName))
+
+	// clear definitions in AST
+	for _, stmt := range t.packages[pkgName].Body {
+		if cls, ok := stmt.(ast.ClassDeclarationStatement); ok {
+			for i, stmt := range cls.Body {
+				if funcStmt, ok := stmt.(ast.FunctionDefinitionStatement); ok {
+					cls.Body[i] = ast.FunctionDefinitionStatement{
+						Parameters: funcStmt.Parameters,
+						Name:       funcStmt.Name,
+						Body:       []ast.Statement{},
+						Hash:       funcStmt.Hash,
+						ReturnType: funcStmt.ReturnType,
+						IsStatic:   funcStmt.IsStatic,
+					}
+				}
+			}
+		}
+	}
+
+	utils.SaveToFile(outputPath, t.packages[pkgName])
 }
 
 // buildPackage implements Post-Order Traversal (Bottom-Up) to ensure global state integrity.
@@ -68,9 +109,19 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 	}
 	t.visitingPkgs[pkgName] = struct{}{}
 
-	tree, ok := t.packages[pkgName]
+	_, ok := t.allPkgs[pkgName]
 	if !ok {
 		errorutils.Abort(errorutils.UnknownModule, pkgName)
+		return
+	}
+
+	tree, ok := t.packages[pkgName]
+	if !ok {
+		// package exists but not modified, so no rebuild needed
+		fmt.Println("<= [skip] ", pkgName)
+
+		delete(t.visitingPkgs, pkgName)
+		t.builtPkgs[pkgName] = struct{}{}
 		return
 	}
 
@@ -87,6 +138,7 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 	t.resolveImports(tree, directUserImports, llvm)
 
 	// Compile
+	fmt.Println("=> [compile] ", pkgName)
 	t.compile(tree, llvm)
 
 	// Dump
@@ -144,14 +196,24 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 	}
 	declared[pkgAliasName] = struct{}{}
 
-	pkgAST := t.packages[pkgFullName]
+	packageAST := ast.BlockStatement{}
 
-	subImports := t.extractUserImports(pkgAST)
+	if _, ok := t.packages[pkgFullName]; !ok {
+		// load from exports
+		err := utils.LoadFromFile(filepath.Join(t.outputDir, fmt.Sprintf("%s.exports", pkgFullName)), &packageAST)
+		if err != nil {
+			panic(fmt.Errorf("error while loading exports: %v", err))
+		}
+	} else {
+		packageAST = t.packages[pkgFullName]
+	}
+
+	subImports := t.extractUserImports(packageAST)
 	for _, sub := range subImports {
 		t.recursiveTransitiveDeclaration(sub, llvm, declared)
 	}
 
-	for _, st := range pkgAST.Body {
+	for _, st := range packageAST.Body {
 		if stc, ok := st.(ast.ImportStatement); ok && stc.IsBasePkg() {
 			t.importBasePackages(llvm.st.LibMethods, stc.EndName())
 		}
@@ -160,7 +222,7 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 	// since i am tracking packages with alias names, this func might be called multiple times
 	// for a package. .Declare() is assumed to avoid multiple llvm type/func declarations, otherwise
 	// which is fatal.
-	pipeline.NewPipeline(llvm.st, pkgAST).Declare(pkg)
+	pipeline.NewPipeline(llvm.st, packageAST).Declare(pkg)
 }
 
 // importBasePackages resolve base module imports.
@@ -183,8 +245,10 @@ func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
 // LoadPackages loads package with their AST by going through project.ini file
 // Packages will be named will modified by replacing '/' with '.' resulting
 // in something like os.io instead of os/io.
-func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
-	cfg, err := ini.Load(projectIniPath)
+func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]struct{}) {
+	projectInitPath := filepath.Join(projectDir, "project.ini")
+	cfg, err := ini.Load(projectInitPath)
+	fmt.Println(projectInitPath)
 	if err != nil {
 		panic("failed to read project.ini")
 	}
@@ -194,7 +258,8 @@ func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
 		panic("root.path is empty in project.ini")
 	}
 
-	pkgs := make(map[string]ast.BlockStatement)
+	modifiedPkgAST := make(map[string]ast.BlockStatement)
+	allPkgImports := make(map[string]ast.BlockStatement)
 
 	err = filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -215,7 +280,7 @@ func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
 		}
 
 		source := string(sourceBytes)
-		tree := parser.Parse(source)
+		tree := parser.ParseImports(source)
 
 		// relative path from root
 		rel, err := filepath.Rel(rootDir, path)
@@ -229,7 +294,7 @@ func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
 		// normalize to forward slashes for package name
 		pkgName := strings.ReplaceAll(filepath.ToSlash(rel), "/", ".")
 
-		pkgs[pkgName] = tree
+		allPkgImports[pkgName] = tree
 		return nil
 	})
 
@@ -237,5 +302,58 @@ func LoadPackages(projectIniPath string) map[string]ast.BlockStatement {
 		panic(err)
 	}
 
-	return pkgs
+	cachedBuilder := tools.NewBuildCache(allPkgImports, projectDir)
+	modifiedPkgs, err := cachedBuilder.CheckBuildCache()
+
+	allPkgs := make(map[string]struct{})
+
+	err = filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		if filepath.Ext(path) != ".pic" {
+			return nil
+		}
+		// relative path from root
+		rel, err := filepath.Rel(rootDir, path)
+		if err != nil {
+			return err
+		}
+
+		// remove extension
+		rel = strings.TrimSuffix(rel, ".pic")
+
+		// normalize to forward slashes for package name
+		pkgName := strings.ReplaceAll(filepath.ToSlash(rel), string(os.PathSeparator), ".")
+
+		allPkgs[pkgName] = struct{}{}
+
+		// ignore unmodified packages
+		if _, ok := modifiedPkgs[pkgName]; !ok {
+			return nil
+		}
+
+		sourceBytes, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("unable to read %s: %w", path, err)
+		}
+
+		source := string(sourceBytes)
+		tree := parser.ParseAll(source)
+
+		modifiedPkgAST[pkgName] = tree
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	utils.SaveToFile(filepath.Join(projectDir, "build", "build.meta"), tools.LastBuildTime{Time: time.Now()})
+	return modifiedPkgAST, allPkgs
 }
