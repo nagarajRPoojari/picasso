@@ -33,13 +33,15 @@ func (mc *MetaClass) StructType() *types.StructType {
 	return st
 }
 
-func NewMetaClass() *MetaClass {
+func NewMetaClass(udt *types.PointerType, implements string) *MetaClass {
 	return &MetaClass{
 		FieldIndexMap:     make(map[string]int),
 		ArrayVarsEleTypes: make(map[int]types.Type),
 		VarAST:            make(map[string]*ast.VariableDeclarationStatement),
+		UDT:               udt,
 		Methods:           make(map[string]*ir.Func),
 		Returns:           map[string]ast.Type{},
+		Implements:        implements,
 	}
 }
 func (m *MetaClass) FieldType(idx int) types.Type {

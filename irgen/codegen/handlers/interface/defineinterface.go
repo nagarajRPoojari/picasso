@@ -10,6 +10,21 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 )
 
+// DefineInterfaceUDT finalizes the interface's structural definition by resolving
+// its opaque type into a concrete LLVM struct layout. This layout serves as
+// a virtual method table (vtable) template for all classes that implement
+// the interface.
+//
+// Key Logic:
+//   - Structural Constraint Enforcement: Explicitly prevents the definition of
+//     stateful fields (variables), as interfaces are restricted to method
+//     signatures.
+//   - Function Pointer Mapping: Converts method definitions into LLVM pointer-to-function
+//     types, populating the struct's field list to facilitate dynamic dispatch.
+//   - Field Indexing: Records the precise offset of each method within the struct
+//     to enable GEP (GetElementPtr) lookup during interface calls.
+//   - Opaque Resolution: Finalizes the previously declared opaque struct by
+//     assigning the calculated fieldTypes, effectively closing the type definition.
 func (t *InterfaceHandler) DefineInterfaceUDT(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
 	aliasInterfaceName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
 

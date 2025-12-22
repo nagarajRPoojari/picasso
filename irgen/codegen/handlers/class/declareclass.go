@@ -1,7 +1,6 @@
 package class
 
 import (
-	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
@@ -27,29 +26,26 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement, source
 	aliasName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(cls.Name)
 
 	if _, ok := t.st.Classes[aliasName]; ok {
-		errorutils.Abort(errorutils.ClassRedeclaration, clsName)
+		errorutils.Abort(errorutils.TypeRedeclaration, clsName)
 	}
 
-	udt := types.NewStruct() // opaque
+	// define as opaque type
+	udt := types.NewStruct()
 	if _, ok := t.st.GlobalTypeList[clsName]; !ok {
 		t.st.GlobalTypeList[clsName] = t.st.Module.NewTypeDef(clsName, udt)
 	}
-	mc := &tf.MetaClass{
-		FieldIndexMap:     make(map[string]int),
-		ArrayVarsEleTypes: make(map[int]types.Type),
-		VarAST:            make(map[string]*ast.VariableDeclarationStatement),
-		UDT:               types.NewPointer(udt),
-		Methods:           make(map[string]*ir.Func),
-		Returns:           map[string]ast.Type{},
-		Implements:        cls.Implements,
-	}
+	mc := tf.NewMetaClass(types.NewPointer(udt), cls.Implements)
 	t.st.Classes[aliasName] = mc
 
 	// assumed that all interfaces are defined first
 	if cls.Implements != "" {
+		errorutils.Assert(t.st.Interfaces != nil, "interfaces USTs are expected to be initialized before class UDT")
 		t.st.Interfaces[cls.Implements].ImplementedBy = append(t.st.Interfaces[cls.Implements].ImplementedBy, aliasName)
 	}
 
+	// register current class type with TypeHandler. this allows current class
+	// to be identified as a valid type in future while building vars & type
+	// conversions.
 	t.st.TypeHandler.RegisterClass(aliasName, mc)
 }
 
@@ -60,8 +56,6 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement, source
 //
 // Key Logic:
 //   - Iterates through the local AST body to register member functions.
-//   - Traverses the Type Hierarchy to pull in parent class method signatures,
-//     facilitating inheritance and polymorphism in the generated IR.
 //   - Delegates signature creation to the FuncHandler to ensure consistent
 //     ABI naming and parameter lowering.
 func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {

@@ -8,16 +8,12 @@ import (
 var genCmd = &cobra.Command{
 	Use:   "gen [source_file] [output_path]",
 	Short: "Compiles Niyama source code into Intermediate Representation",
-	Long: `The gen command initiates the full compilation pipeline:
-1. It initializes a NewGenerator with the provided source file.
-2. It executes BuildAll, which runs the Lexer, Parser, and Semantic Analyzer.
-3. It emits the final IR or target code to the specified output path.
-
+	Long: `gen generates IR files for given project directory
 Example:
-    niyama gen ./main.niy ./build/main.ll`,
+    niyama gen projectDir`,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// args[0] is the input source file path.
+		// args[0] is project directory
 		c := generator.NewGenerator(args[0])
 		c.BuildAll()
 	},

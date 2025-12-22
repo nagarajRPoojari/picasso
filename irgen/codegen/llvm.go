@@ -5,22 +5,17 @@ import (
 	"os"
 
 	"github.com/llir/llvm/ir"
-	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/block"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/class"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/expression"
 	funcs "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
 	interfaceh "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/interface"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/scope"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/statement"
-	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
 	rterr "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/private/runtime"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/pipeline"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 )
 
 const (
@@ -36,28 +31,12 @@ type LLVM struct {
 
 func NewLLVM(pkgName string, outputDir string) *LLVM {
 	m := ir.NewModule()
-	tree := scope.NewVarTree()
 	m.SourceFilename = pkgName
 
 	rterr.NewErrorHandler(m)
 	c.NewInterface(m)
 
-	st := &state.State{
-		OutputDir:         outputDir,
-		GlobalTypeList:    make(map[string]types.Type),
-		GlobalFuncList:    make(map[string]*ir.Func),
-		ModuleName:        pkgName,
-		Module:            m,
-		TypeHandler:       tf.NewTypeHandler(),
-		TypeHeirarchy:     *state.NewTypeHeirarchy(),
-		Vars:              tree,
-		Classes:           make(map[string]*tf.MetaClass),
-		Interfaces:        make(map[string]*tf.MetaInterface),
-		IdentifierBuilder: identifier.NewIdentifierBuilder(pkgName),
-		LibMethods:        make(map[string]function.Func),
-		CI:                c.Instance,
-		Imports:           make(map[string]state.PackageEntry),
-	}
+	st := state.NewCompileState(outputDir, pkgName, m)
 
 	expression.ExpressionHandlerInst = expression.NewExpressionHandler(st)
 	statement.StatementHandlerInst = statement.NewStatementHandler(st)

@@ -1,37 +1,31 @@
+// Package interfaceh provides the logic for orchestrating Interface lifecycle
+// and contract-based polymorphism within the LLVM IR generation phase.
+//
+// It manages a three-pass compilation strategy for interfaces:
+//  1. Declaration: Creating named opaque structs to support forward references.
+//  2. Method Registration: Generating function prototypes and calculating
+//     signature hashes for implementation validation.
 package interfaceh
-
-/*
-Package interface provides the logic for orchestrating User-Defined Type (UDT)
-lifecycle and object-oriented semantics within the LLVM IR generation phase.
-
-It handles the multi-pass process of class compilation:
- 1. Declaration: Registering opaque struct types and metadata containers.
- 2. Structural Definition: Calculating memory offsets, handling field inheritance,
-    and finalizing the LLVM struct layout.
- 3. Method Dispatch: Managing method signatures and resolving function pointers
-    for polymorphism and member access.
-*/
 
 import "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 
-// InterfaceHandler manages the transformation of Niyama class declarations into
-// LLVM-compatible structures and methods. It acts as the primary coordinator
-// for the compiler's object model, ensuring that field indices and method
-// tables are consistent across inheritance chains.
+// InterfaceHandler manages the transformation of Niyama interface declarations
+// into LLVM-compatible virtual tables. It ensures that method signatures
+// are consistently hashed and indexed, allowing implementing classes to
+// satisfy the interface's structural requirements.
 type InterfaceHandler struct {
 	// st provides access to the global compiler state, including the
-	// LLVM module, type registry, and identifier builder.
+	// LLVM module, type registry, and cross-package symbol tables.
 	st *state.State
 }
 
-// NewInterfaceHandler creates a new handler instance with a shared reference
-// to the compilation state. This link is essential for registering
-// new types into the module-wide type system.
+// NewInterfaceHandler initializes a handler with the shared compilation state.
+// This allows the handler to register symbolic function definitions and
+// concrete types into the module's global scope.
 func NewInterfaceHandler(state *state.State) *InterfaceHandler {
 	return &InterfaceHandler{st: state}
 }
 
 // InterfaceHandlerInst is the global singleton instance used by the
-// code generator to process class-related AST nodes during the
-// various phases of the backend pipeline.
+// code generator to process interface-related AST nodes.
 var InterfaceHandlerInst *InterfaceHandler

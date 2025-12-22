@@ -1,9 +1,7 @@
-/*
-Package block provides the logic for handling scoped code execution.
-It manages the entry and exit of lexical blocks, ensuring that local
-variables and control-flow instructions are correctly bound to the
-current execution context.
-*/
+// Package block provides the logic for handling scoped code execution.
+// It manages the entry and exit of lexical blocks, ensuring that local
+// variables and control-flow instructions are correctly bound to the
+// current execution context.
 package block
 
 import (

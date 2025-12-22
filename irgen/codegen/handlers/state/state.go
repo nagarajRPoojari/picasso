@@ -13,6 +13,32 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
+type PackageEntry struct {
+	// represents fully qualified name of imported package. e.g, "os.io"
+	Name string
+	// alias of imported package
+	Alias string
+}
+
+// LoopEntry is to keep track of loop end blocks, vital for the implementation
+// of break & continue.
+type LoopEntry struct {
+	End *bc.BlockHolder
+}
+
+// TypeHeirarchy stores inheritance relationships between classes.
+type TypeHeirarchy struct {
+	ClassRoots     []ast.ClassDeclarationStatement
+	InterfaceRoots []ast.InterfaceDeclarationStatement
+}
+
+func NewTypeHeirarchy() *TypeHeirarchy {
+	return &TypeHeirarchy{
+		ClassRoots:     make([]ast.ClassDeclarationStatement, 0),
+		InterfaceRoots: make([]ast.InterfaceDeclarationStatement, 0),
+	}
+}
+
 // State holds the global generator/interpreter state during IR generation.
 type State struct {
 	// OutputDir is where Info & IR files will be saved
@@ -70,28 +96,21 @@ type State struct {
 	Imports map[string]PackageEntry
 }
 
-type PackageEntry struct {
-	// represents fully qualified name of imported package. e.g, "os.io"
-	Name string
-	// alias of imported package
-	Alias string
-}
-
-// LoopEntry is to keep track of loop end blocks, vital for the implementation
-// of break & continue.
-type LoopEntry struct {
-	End *bc.BlockHolder
-}
-
-// TypeHeirarchy stores inheritance relationships between classes.
-type TypeHeirarchy struct {
-	ClassRoots     []ast.ClassDeclarationStatement
-	InterfaceRoots []ast.InterfaceDeclarationStatement
-}
-
-func NewTypeHeirarchy() *TypeHeirarchy {
-	return &TypeHeirarchy{
-		ClassRoots:     make([]ast.ClassDeclarationStatement, 0),
-		InterfaceRoots: make([]ast.InterfaceDeclarationStatement, 0),
+func NewCompileState(outputDir string, pkgName string, module *ir.Module) *State {
+	return &State{
+		OutputDir:         outputDir,
+		GlobalTypeList:    make(map[string]types.Type),
+		GlobalFuncList:    make(map[string]*ir.Func),
+		ModuleName:        pkgName,
+		Module:            module,
+		TypeHandler:       tf.NewTypeHandler(),
+		TypeHeirarchy:     *NewTypeHeirarchy(),
+		Vars:              scope.NewVarTree(),
+		Classes:           make(map[string]*tf.MetaClass),
+		Interfaces:        make(map[string]*tf.MetaInterface),
+		IdentifierBuilder: identifier.NewIdentifierBuilder(pkgName),
+		LibMethods:        make(map[string]function.Func),
+		CI:                c.Instance,
+		Imports:           make(map[string]PackageEntry),
 	}
 }

@@ -1,10 +1,8 @@
-/*
-Package expression provides the logic for evaluating AST expressions and
-lowering them into LLVM IR values. It serves as the primary recursive
-engine for the backend, translating high-level constructs like function
-calls, member access, and arithmetic operations into addressable
-memory slots or register values.
-*/
+// Package expression provides the logic for evaluating AST expressions and
+// lowering them into LLVM IR values. It serves as the primary recursive
+// engine for the backend, translating high-level constructs like function
+// calls, member access, and arithmetic operations into addressable
+// memory slots or register values.
 package expression
 
 import (

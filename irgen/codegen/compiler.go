@@ -45,7 +45,7 @@ type generator struct {
 }
 
 func NewGenerator(projectDir string) *generator {
-	outputDir := filepath.Join(projectDir, "build")
+	outputDir := filepath.Join(projectDir, BUILD)
 
 	modifiedPkgs, allPkgs := LoadPackages(projectDir)
 	return &generator{
@@ -62,7 +62,7 @@ func (t *generator) BuildAll() {
 	// main file is expected to be named as start.pic.
 	// @todo: main.pic would be a good choise, why did I even replace
 	// all 'main' with 'start'?
-	t.buildPackage(state.PackageEntry{Name: "start", Alias: "start"})
+	t.buildPackage(state.PackageEntry{Name: MAIN, Alias: MAIN})
 
 	// for all modified packages, generate .exports
 	for pkgName := range t.packages {
@@ -232,7 +232,7 @@ func (t *generator) importBasePackages(methodMap map[string]function.Func, modul
 		errorutils.Abort(errorutils.UnknownModule, module)
 	}
 	for name, f := range mod.ListAllFuncs() {
-		n := fmt.Sprintf("builtin.%s.%s", module, name)
+		n := fmt.Sprintf("%s.%s.%s", BUILTIN, module, name)
 		methodMap[n] = f
 	}
 }
@@ -354,6 +354,6 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 		panic(err)
 	}
 
-	utils.SaveToFile(filepath.Join(projectDir, "build", "build.meta"), tools.LastBuildTime{Time: time.Now()})
+	utils.SaveToFile(filepath.Join(projectDir, BUILD, "build.meta"), tools.LastBuildTime{Time: time.Now()})
 	return modifiedPkgAST, allPkgs
 }

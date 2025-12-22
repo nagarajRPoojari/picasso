@@ -1,3 +1,4 @@
+// funcs package provides methods to declare & define function blocks.
 package funcs
 
 import "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
