@@ -248,7 +248,6 @@ func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
 func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]struct{}) {
 	projectInitPath := filepath.Join(projectDir, "project.ini")
 	cfg, err := ini.Load(projectInitPath)
-	fmt.Println(projectInitPath)
 	if err != nil {
 		panic("failed to read project.ini")
 	}

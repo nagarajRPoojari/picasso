@@ -80,11 +80,6 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 	}
 
 	// We simply overwrite the address stored in the slot.
-	fmt.Printf("=========\n")
-	fmt.Printf("v.Type(): %v\n", v.Type())
-	fmt.Printf("s.UDT: %v\n", s.UDT)
-	fmt.Printf("s.UDT.ElemType: %v\n", s.UDT.ElemType)
-
 	if v.Type().Equal(s.UDT) {
 		block.NewStore(v, s.Ptr)
 		return
@@ -173,8 +168,6 @@ func ensureType(block *bc.BlockHolder, th *TypeHandler, v value.Value, target ty
 // heuristic type check for Class types.
 func ensureClassType(block *bc.BlockHolder, _ *TypeHandler, v value.Value, target types.Type) (value.Value, error) {
 	srcType := v.Type()
-
-	fmt.Printf("srcType: %v\n", srcType)
 
 	if srcType.Equal(target) {
 		return v, nil

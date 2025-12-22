@@ -12,7 +12,6 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/block"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
@@ -112,8 +111,8 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	if len(fn.Parameters) != 0 {
 		errorutils.Abort(errorutils.InvalidMainMethodSignature, "parameters are not allowed in main function")
 	}
-	if fn.ReturnType == nil || fn.ReturnType.Get() != typedef.INT32 {
-		errorutils.Abort(errorutils.InvalidMainMethodSignature, "expected int32 return type for main method")
+	if fn.ReturnType != nil {
+		errorutils.Abort(errorutils.InvalidMainMethodSignature, "expected no return type for main functions")
 	}
 
 	old := bh.N

@@ -36,22 +36,15 @@ using "utils";
 //     os/syscalls
 //     os/io 
 
-interface Nanu {
-    fn Next() {
-
-    }
-    fn evaru(): string {}
-}
 
 
-class Next: start.Nanu {
+class Next: math.Nanu {
     fn Next() {
 
     }
     fn evaru(): string {
         return "nene";
     }
-    
 }
 
 class Node {
@@ -131,7 +124,7 @@ fn start() {
     say w1: start.Worker = new start.Worker(1000);
 
 
-    say x: start.Nanu = new start.Next();
+    say x: math.Nanu = new start.Next();
 
     syncio.printf(": %s \n", x.evaru());
 
