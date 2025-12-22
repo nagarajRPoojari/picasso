@@ -41,9 +41,16 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement, source
 		UDT:               types.NewPointer(udt),
 		Methods:           make(map[string]*ir.Func),
 		Returns:           map[string]ast.Type{},
+		Implements:        cls.Implements,
 	}
 	t.st.Classes[aliasName] = mc
-	t.st.TypeHandler.Register(aliasName, mc)
+
+	// assumed that all interfaces are defined first
+	if cls.Implements != "" {
+		t.st.Interfaces[cls.Implements].ImplementedBy = append(t.st.Interfaces[cls.Implements].ImplementedBy, aliasName)
+	}
+
+	t.st.TypeHandler.RegisterClass(aliasName, mc)
 }
 
 // DeclareFunctions orchestrates the declaration of all member functions

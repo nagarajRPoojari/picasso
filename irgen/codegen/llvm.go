@@ -13,6 +13,7 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/expression"
 	funcs "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
+	interfaceh "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/interface"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/scope"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/statement"
@@ -48,8 +49,10 @@ func NewLLVM(pkgName string, outputDir string) *LLVM {
 		ModuleName:        pkgName,
 		Module:            m,
 		TypeHandler:       tf.NewTypeHandler(),
+		TypeHeirarchy:     *state.NewTypeHeirarchy(),
 		Vars:              tree,
 		Classes:           make(map[string]*tf.MetaClass),
+		Interfaces:        make(map[string]*tf.MetaInterface),
 		IdentifierBuilder: identifier.NewIdentifierBuilder(pkgName),
 		LibMethods:        make(map[string]function.Func),
 		CI:                c.Instance,
@@ -61,6 +64,7 @@ func NewLLVM(pkgName string, outputDir string) *LLVM {
 	funcs.FuncHandlerInst = funcs.NewFuncHandler(st)
 	block.BlockHandlerInst = block.NewBlockHandler(st)
 	class.ClassHandlerInst = class.NewClassHandler(st)
+	interfaceh.InterfaceHandlerInst = interfaceh.NewInterfaceHandler(st)
 
 	m.TargetTriple = TARGETARCH
 	m.DataLayout = TARGETLAYOUT
@@ -79,7 +83,6 @@ func (t *LLVM) Dump(outputDir string, file string) {
 	}
 	defer f.Close()
 	f.WriteString(t.st.Module.String())
-	t.st.DumpInfo(outputDir)
 }
 
 func (t *LLVM) ParseAST(tree ast.BlockStatement) {

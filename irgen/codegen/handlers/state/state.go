@@ -1,11 +1,6 @@
 package state
 
 import (
-	"encoding/gob"
-	"fmt"
-	"os"
-	"path"
-
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
@@ -52,6 +47,9 @@ type State struct {
 	// User-defined classes with metadata
 	Classes map[string]*tf.MetaClass
 
+	// List of interfaces
+	Interfaces map[string]*tf.MetaInterface
+
 	// Imported base library functions. comes from builtin module import.
 	LibMethods map[string]function.Func
 
@@ -72,52 +70,6 @@ type State struct {
 	Imports map[string]PackageEntry
 }
 
-func (t *State) LoadInfoMap(moduleName string) (map[string]ast.Type, error) {
-	path := path.Join(t.OutputDir, fmt.Sprintf("%s.bin", moduleName))
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	var infoMap map[string]ast.Type
-	decoder := gob.NewDecoder(file)
-	err = decoder.Decode(&infoMap)
-	return infoMap, err
-}
-
-func (t *State) DumpInfo(outputDir string) {
-	// currently I save return type of all functions
-	// which is need to reconstruct ast.Type during foreign class inheritance.
-	// @todo: in genenral I can maintain metadat struct that will be stored at the
-	// end in info file.
-	infoMap := make(map[string]ast.Type)
-	for _, cls := range t.TypeHeirarchy.ClassDefs {
-		for _, st := range cls.Body {
-			if fn, ok := st.(ast.FunctionDefinitionStatement); ok {
-				fqFnName := t.IdentifierBuilder.Attach(cls.Name, fn.Name)
-				infoMap[fqFnName] = fn.ReturnType
-			}
-		}
-	}
-
-	binPath := fmt.Sprintf("%s/%s.bin", outputDir, t.ModuleName)
-	if err := t.saveInfoMap(infoMap, binPath); err != nil {
-		fmt.Printf("Error saving bin file: %v\n", err)
-	}
-}
-
-func (t *State) saveInfoMap(infoMap map[string]ast.Type, path string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := gob.NewEncoder(file)
-	return encoder.Encode(infoMap)
-}
-
 type PackageEntry struct {
 	// represents fully qualified name of imported package. e.g, "os.io"
 	Name string
@@ -133,17 +85,13 @@ type LoopEntry struct {
 
 // TypeHeirarchy stores inheritance relationships between classes.
 type TypeHeirarchy struct {
-	// Parent class name for given class.
-	Parent map[string]string
-	// Child class ast for given class.
-	Childs map[string][]ast.ClassDeclarationStatement
+	ClassRoots     []ast.ClassDeclarationStatement
+	InterfaceRoots []ast.InterfaceDeclarationStatement
+}
 
-	// classes which doesn't inherit any other classes.
-	Roots []ast.ClassDeclarationStatement
-
-	// ast for classes in own module.
-	ClassDefs map[string]ast.ClassDeclarationStatement
-
-	// non root classes whose parent is foreign.
-	Orphans []ast.ClassDeclarationStatement
+func NewTypeHeirarchy() *TypeHeirarchy {
+	return &TypeHeirarchy{
+		ClassRoots:     make([]ast.ClassDeclarationStatement, 0),
+		InterfaceRoots: make([]ast.InterfaceDeclarationStatement, 0),
+	}
 }

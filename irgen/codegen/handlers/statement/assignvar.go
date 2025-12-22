@@ -80,7 +80,7 @@ func (t *StatementHandler) AssignVariable(bh *bc.BlockHolder, st *ast.Assignment
 			casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
 			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
 		}
-		cls.UpdateField(bh, index, rhs.Load(bh), fieldType)
+		cls.UpdateField(bh, t.st.TypeHandler, index, rhs.Load(bh), fieldType)
 
 	case ast.ComputedExpression:
 		base := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)

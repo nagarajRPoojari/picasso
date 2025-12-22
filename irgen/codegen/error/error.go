@@ -31,6 +31,10 @@ const (
 	ParamsError                     = "params mismatch in %s: expected %v"
 	GlobalVarsNotAllowedError       = "global vars not allowed"
 	InvalidBreakStatement           = "break statement not allowed here"
+	InterfaceInstantiationError     = "cannot instantiate interface %s"
+	UnknownInterfaceError           = "unknown interface %s"
+	VarsNotAllowedInInterfaceError  = "variables not allowed in interface %s"
+	UnImplementedInterfaceMethod    = "interface method unimplmented %s"
 )
 
 const (

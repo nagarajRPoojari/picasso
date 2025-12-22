@@ -17,6 +17,8 @@ type MetaClass struct {
 	ArrayVarsEleTypes map[int]types.Type
 	// UDT is pointer-to-struct
 	UDT types.Type
+
+	Implements string
 }
 
 func (mc *MetaClass) StructType() *types.StructType {

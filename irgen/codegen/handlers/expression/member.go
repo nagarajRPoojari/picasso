@@ -71,7 +71,12 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 				return cname
 			}
 		}
-		for cname, meta := range t.st.TypeHandler.Udts {
+		for cname, meta := range t.st.TypeHandler.ClassUDTS {
+			if meta.UDT == tt {
+				return cname
+			}
+		}
+		for cname, meta := range t.st.TypeHandler.InterfaceUDTS {
 			if meta.UDT == tt {
 				return cname
 			}

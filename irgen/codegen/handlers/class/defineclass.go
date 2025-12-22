@@ -10,6 +10,7 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
+	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 )
 
 // DefineClass triggers the emission of concrete LLVM IR function bodies for
@@ -53,9 +54,22 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourceP
 	fieldTypes := make([]types.Type, 0)
 	vars := make(map[string]struct{}, 0)
 
-	funcs := make(map[string]uint32, 0)
 	// map each fields with corresponding udt struct index
 	i := 0
+
+	shouldImplement := map[string]typedef.MethodSig{}
+	if cls.Implements != "" {
+		interfaceName := cls.Implements
+		if _, ok := t.st.Interfaces[interfaceName]; !ok {
+			errorutils.Abort(errorutils.UnknownInterfaceError, interfaceName)
+		}
+
+		ifMeta := t.st.Interfaces[interfaceName]
+		shouldImplement = ifMeta.Methods
+	}
+
+	fmt.Printf("cls.Implements: %v\n", cls.Implements)
+	fmt.Printf("shouldImplement: %v\n", shouldImplement)
 
 	// Opaque resolution: define concrete types of all fields
 	for _, stI := range cls.Body {
@@ -92,28 +106,24 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourceP
 				args = append(args, t.st.TypeHandler.GetLLVMType(p.Type.Get()))
 			}
 
-			if sh, ok := funcs[aliasFuncName]; ok {
-				funcType := types.NewFunc(retType, args...)
-
-				if sh != utils.HashFuncSig(funcType.Params, funcType.RetType) {
+			if sh, ok := shouldImplement[st.Name]; ok {
+				if sh.Hash != utils.HashFuncSig(st.Parameters, st.ReturnType) {
 					errorutils.Abort(errorutils.FunctionSignatureMisMatch, aliasFuncName)
 				}
-
-				// args = append(args, mc.UDT)
-				funcType = types.NewFunc(retType, args...)
-				funcPtrType := types.NewPointer(funcType)
-				fieldTypes[mc.FieldIndexMap[aliasFuncName]] = funcPtrType
-
-			} else {
-
-				// args = append(args, mc.UDT)
-				funcType := types.NewFunc(retType, args...)
-				fieldTypes = append(fieldTypes, types.NewPointer(funcType))
-
-				mc.FieldIndexMap[aliasFuncName] = i
-				i++
+				delete(shouldImplement, st.Name)
 			}
+
+			// args = append(args, mc.UDT)
+			funcType := types.NewFunc(retType, args...)
+			fieldTypes = append(fieldTypes, types.NewPointer(funcType))
+
+			mc.FieldIndexMap[aliasFuncName] = i
+			i++
 		}
+	}
+
+	if len(shouldImplement) > 0 {
+		errorutils.Abort(errorutils.UnImplementedInterfaceMethod, shouldImplement)
 	}
 
 	ptr, ok := mc.UDT.(*types.PointerType)

@@ -23,9 +23,16 @@ func (t *Pipeline) Register() {
 // it is needed to determine its fully qualified name.
 // e.g, using "os/io"; declaration should be os.io.ABC etc..
 func (t *Pipeline) Declare(sourcePkg state.PackageEntry) {
+
+	t.predeclareInterfraces(sourcePkg)
+
 	t.predeclareClasses(sourcePkg)
-	t.declareVars(sourcePkg)
-	t.declareFuncs(sourcePkg)
+
+	t.declareInterfaceFields(sourcePkg)
+	t.declareInterfaceFuncs(sourcePkg)
+
+	t.declareClassFields(sourcePkg)
+	t.declareClassFuncs(sourcePkg)
 }
 
 // Definitions are called for own module which emits definition

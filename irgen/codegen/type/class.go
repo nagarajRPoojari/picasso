@@ -8,6 +8,7 @@ import (
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
@@ -79,6 +80,11 @@ func (s *Class) Update(bh *bc.BlockHolder, v value.Value) {
 	}
 
 	// We simply overwrite the address stored in the slot.
+	fmt.Printf("=========\n")
+	fmt.Printf("v.Type(): %v\n", v.Type())
+	fmt.Printf("s.UDT: %v\n", s.UDT)
+	fmt.Printf("s.UDT.ElemType: %v\n", s.UDT.ElemType)
+
 	if v.Type().Equal(s.UDT) {
 		block.NewStore(v, s.Ptr)
 		return
@@ -114,13 +120,13 @@ func (s *Class) FieldPtr(block *bc.BlockHolder, idx int) value.Value {
 	return block.N.NewGetElementPtr(elem, s.Load(block), zero, i)
 }
 
-func (s *Class) UpdateField(bh *bc.BlockHolder, idx int, v value.Value, expected types.Type) {
+func (s *Class) UpdateField(bh *bc.BlockHolder, th *TypeHandler, idx int, v value.Value, expected types.Type) {
 	block := bh.N
 	if v == nil {
 		// errorsx.PanicCompilationError(fmt.Sprintf("cannot update field with nil value: %v", v))
 		return
 	}
-	val := ensureType(bh, v, expected)
+	val := ensureType(bh, th, v, expected)
 	fieldPtr := s.FieldPtr(bh, idx)
 	block.NewStore(val, fieldPtr)
 }
@@ -132,35 +138,7 @@ func (s *Class) LoadField(block *bc.BlockHolder, idx int, fieldType types.Type) 
 }
 
 func (s *Class) Cast(bh *bc.BlockHolder, v value.Value) (value.Value, error) {
-	block := bh.N
-	if v == nil {
-		errorutils.Abort(errorutils.InternalError, fmt.Sprintf("cannot cast nil value: %v", v))
-	}
-
-	sPtr := s.UDT
-
-	// If already pointer to struct (the desired pointer type)
-	if v.Type().Equal(sPtr) {
-		return v, nil
-	}
-
-	// If we have struct value, alloca+store and return pointer to it
-	if v.Type().Equal(sPtr.ElemType) {
-		tmp := block.NewAlloca(v.Type())
-		block.NewStore(v, tmp)
-		return tmp, nil
-	}
-
-	// If any pointer, bitcast to this pointer type
-	if _, ok := v.Type().(*types.PointerType); ok {
-		return block.NewBitCast(v, sPtr), nil
-	}
-
-	// Fallback: try to convert value to struct type then alloca
-	val := ensureType(bh, v, sPtr.ElemType)
-	tmp := block.NewAlloca(val.Type())
-	block.NewStore(val, tmp)
-	return tmp, nil
+	return nil, nil
 }
 
 func (s *Class) Constant() constant.Constant {
@@ -176,11 +154,30 @@ func (s *Class) Type() types.Type {
 }
 
 // heuristic type check for Class types.
-func ensureType(block *bc.BlockHolder, v value.Value, target types.Type) value.Value {
+func ensureType(block *bc.BlockHolder, th *TypeHandler, v value.Value, target types.Type) value.Value {
+	var ret value.Value
+	var err error
+
+	ret, err = ensureClassType(block, th, v, target)
+
+	if err != nil {
+		ret, err = ensureInterfaceType(block, th, v, target)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return ret
+}
+
+// heuristic type check for Class types.
+func ensureClassType(block *bc.BlockHolder, _ *TypeHandler, v value.Value, target types.Type) (value.Value, error) {
 	srcType := v.Type()
 
+	fmt.Printf("srcType: %v\n", srcType)
+
 	if srcType.Equal(target) {
-		return v
+		return v, nil
 	}
 
 	// Handle pointer types
@@ -194,35 +191,46 @@ func ensureType(block *bc.BlockHolder, v value.Value, target types.Type) value.V
 		if srcIsStruct && tgtIsStruct {
 			// Allow empty struct to be cast to any struct
 			if len(srcStruct.Fields) == 0 {
-				return block.N.NewBitCast(v, target)
+				return block.N.NewBitCast(v, target), nil
 			}
 
 			// Child -> Parent layout check
 			if len(srcStruct.Fields) < len(tgtStruct.Fields) {
-				panic("ensureType: source struct has fewer fields than target parent")
+				return nil, fmt.Errorf("ensureType: source struct has fewer fields than target parent")
 			}
 
 			for i := range tgtStruct.Fields {
 				if !srcStruct.Fields[i].Equal(tgtStruct.Fields[i]) {
-					panic(fmt.Sprintf("ensureType: field %d type mismatch: %v vs %v", i, srcStruct.Fields[i], tgtStruct.Fields[i]))
+					return nil, fmt.Errorf("ensureType: field %d type mismatch: %v vs %v", i, srcStruct.Fields[i], tgtStruct.Fields[i])
 				}
 			}
 
 			// Safe to bitcast child pointer to parent pointer
-			return block.N.NewBitCast(v, target)
+			return block.N.NewBitCast(v, target), nil
 		}
 
 		// Not structs, fallback: generic pointer bitcast
-		return block.N.NewBitCast(v, target)
+		return block.N.NewBitCast(v, target), nil
 	}
 
 	// Bitcast function pointers
 	if _, okSrcFunc := srcType.(*types.FuncType); okSrcFunc {
 		if _, okTgtFunc := target.(*types.FuncType); okTgtFunc {
-			return block.N.NewBitCast(v, target)
+			return block.N.NewBitCast(v, target), nil
 		}
 	}
-	panic(fmt.Sprintf("ensureType: cannot convert %v -> %v", srcType, target))
+	return nil, fmt.Errorf("ensureType: cannot convert %v -> %v", srcType, target)
+}
+
+func ensureInterfaceType(block *bc.BlockHolder, th *TypeHandler, v value.Value, target types.Type) (value.Value, error) {
+
+	for _, cls := range th.InterfaceUDTS[utils.GetTypeString(target)].ImplementedBy {
+		clsUDT := th.ClassUDTS[cls]
+		if ret, err := ensureClassType(block, th, v, clsUDT.UDT); err == nil {
+			return ret, nil
+		}
+	}
+	return nil, fmt.Errorf("ensureType: cannot convert %v -> %v", v.Type(), target)
 }
 
 func (f *Class) NativeTypeString() string { return f.Name }
