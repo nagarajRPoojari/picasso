@@ -120,6 +120,10 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 
 	aliasClsName, _ := buildAliasNameFromMemExp(ex.Instantiation.Method)
 
+	if _, ok := t.st.Interfaces[aliasClsName]; ok {
+		errorutils.Abort(errorutils.InterfaceInstantiationError, aliasClsName)
+	}
+
 	classMeta := t.st.Classes[aliasClsName]
 	if classMeta == nil {
 		errorutils.Abort(errorutils.UnknownClass, aliasClsName)
@@ -139,7 +143,7 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 		if !ok {
 			f := t.st.Classes[aliasClsName].Methods[name]
 			fieldType := t.st.Classes[aliasClsName].StructType().Fields[index]
-			instance.UpdateField(bh, index, f, fieldType)
+			instance.UpdateField(bh, t.st.TypeHandler, index, f, fieldType)
 			continue
 		}
 
@@ -175,7 +179,7 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 				t.st.TypeHandler.ImplicitTypeCast(bh, exp.ExplicitType.Get(), v.Load(bh))
 			}
 		}
-		instance.UpdateField(bh, index, v.Load(bh), fieldType)
+		instance.UpdateField(bh, t.st.TypeHandler, index, v.Load(bh), fieldType)
 		t.st.Vars.AddNewVar(exp.Identifier, v)
 	}
 

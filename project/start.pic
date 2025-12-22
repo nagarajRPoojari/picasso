@@ -36,10 +36,14 @@ using "utils";
 //     os/syscalls
 //     os/io 
 
-class Next {
-    say y: int = 90;
+
+
+class Next: math.Nanu {
     fn Next() {
 
+    }
+    fn evaru(): string {
+        return "nene";
     }
 }
 
@@ -84,9 +88,6 @@ class Worker {
         // this.raiseErr();
         say x: start.Node = new start.Node();
         say l:int = x.len("something");
-        // say l:int = 0;
-        // say y: int = this.x.y.y;
-        // syncio.printf("length = %d %d \n", l, y);
 
     }
 
@@ -122,8 +123,13 @@ class Worker {
 fn start() {
     say w1: start.Worker = new start.Worker(1000);
 
-    w1.do();
-    foreach i in 1..100 {
-       thread(w1.do);
-    }
+
+    say x: math.Nanu = new start.Next();
+
+    syncio.printf(": %s \n", x.evaru());
+
+    // w1.do();
+    // foreach i in 1..100 {
+    //    thread(w1.do);
+    // }
 }

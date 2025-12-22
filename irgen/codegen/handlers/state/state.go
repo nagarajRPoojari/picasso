@@ -1,11 +1,6 @@
 package state
 
 import (
-	"encoding/gob"
-	"fmt"
-	"os"
-	"path"
-
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
@@ -17,6 +12,32 @@ import (
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
+
+type PackageEntry struct {
+	// represents fully qualified name of imported package. e.g, "os.io"
+	Name string
+	// alias of imported package
+	Alias string
+}
+
+// LoopEntry is to keep track of loop end blocks, vital for the implementation
+// of break & continue.
+type LoopEntry struct {
+	End *bc.BlockHolder
+}
+
+// TypeHeirarchy stores inheritance relationships between classes.
+type TypeHeirarchy struct {
+	ClassRoots     []ast.ClassDeclarationStatement
+	InterfaceRoots []ast.InterfaceDeclarationStatement
+}
+
+func NewTypeHeirarchy() *TypeHeirarchy {
+	return &TypeHeirarchy{
+		ClassRoots:     make([]ast.ClassDeclarationStatement, 0),
+		InterfaceRoots: make([]ast.InterfaceDeclarationStatement, 0),
+	}
+}
 
 // State holds the global generator/interpreter state during IR generation.
 type State struct {
@@ -52,6 +73,9 @@ type State struct {
 	// User-defined classes with metadata
 	Classes map[string]*tf.MetaClass
 
+	// List of interfaces
+	Interfaces map[string]*tf.MetaInterface
+
 	// Imported base library functions. comes from builtin module import.
 	LibMethods map[string]function.Func
 
@@ -72,78 +96,21 @@ type State struct {
 	Imports map[string]PackageEntry
 }
 
-func (t *State) LoadInfoMap(moduleName string) (map[string]ast.Type, error) {
-	path := path.Join(t.OutputDir, fmt.Sprintf("%s.bin", moduleName))
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
+func NewCompileState(outputDir string, pkgName string, module *ir.Module) *State {
+	return &State{
+		OutputDir:         outputDir,
+		GlobalTypeList:    make(map[string]types.Type),
+		GlobalFuncList:    make(map[string]*ir.Func),
+		ModuleName:        pkgName,
+		Module:            module,
+		TypeHandler:       tf.NewTypeHandler(),
+		TypeHeirarchy:     *NewTypeHeirarchy(),
+		Vars:              scope.NewVarTree(),
+		Classes:           make(map[string]*tf.MetaClass),
+		Interfaces:        make(map[string]*tf.MetaInterface),
+		IdentifierBuilder: identifier.NewIdentifierBuilder(pkgName),
+		LibMethods:        make(map[string]function.Func),
+		CI:                c.Instance,
+		Imports:           make(map[string]PackageEntry),
 	}
-	defer file.Close()
-
-	var infoMap map[string]ast.Type
-	decoder := gob.NewDecoder(file)
-	err = decoder.Decode(&infoMap)
-	return infoMap, err
-}
-
-func (t *State) DumpInfo(outputDir string) {
-	// currently I save return type of all functions
-	// which is need to reconstruct ast.Type during foreign class inheritance.
-	// @todo: in genenral I can maintain metadat struct that will be stored at the
-	// end in info file.
-	infoMap := make(map[string]ast.Type)
-	for _, cls := range t.TypeHeirarchy.ClassDefs {
-		for _, st := range cls.Body {
-			if fn, ok := st.(ast.FunctionDefinitionStatement); ok {
-				fqFnName := t.IdentifierBuilder.Attach(cls.Name, fn.Name)
-				infoMap[fqFnName] = fn.ReturnType
-			}
-		}
-	}
-
-	binPath := fmt.Sprintf("%s/%s.bin", outputDir, t.ModuleName)
-	if err := t.saveInfoMap(infoMap, binPath); err != nil {
-		fmt.Printf("Error saving bin file: %v\n", err)
-	}
-}
-
-func (t *State) saveInfoMap(infoMap map[string]ast.Type, path string) error {
-	file, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	encoder := gob.NewEncoder(file)
-	return encoder.Encode(infoMap)
-}
-
-type PackageEntry struct {
-	// represents fully qualified name of imported package. e.g, "os.io"
-	Name string
-	// alias of imported package
-	Alias string
-}
-
-// LoopEntry is to keep track of loop end blocks, vital for the implementation
-// of break & continue.
-type LoopEntry struct {
-	End *bc.BlockHolder
-}
-
-// TypeHeirarchy stores inheritance relationships between classes.
-type TypeHeirarchy struct {
-	// Parent class name for given class.
-	Parent map[string]string
-	// Child class ast for given class.
-	Childs map[string][]ast.ClassDeclarationStatement
-
-	// classes which doesn't inherit any other classes.
-	Roots []ast.ClassDeclarationStatement
-
-	// ast for classes in own module.
-	ClassDefs map[string]ast.ClassDeclarationStatement
-
-	// non root classes whose parent is foreign.
-	Orphans []ast.ClassDeclarationStatement
 }

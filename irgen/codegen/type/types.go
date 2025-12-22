@@ -6,6 +6,7 @@ import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
 	rterr "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/private/runtime"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/boolean"
@@ -61,15 +62,23 @@ const (
 )
 
 type TypeHandler struct {
-	Udts map[string]*MetaClass
+	ClassUDTS     map[string]*MetaClass
+	InterfaceUDTS map[string]*MetaInterface
 }
 
 func NewTypeHandler() *TypeHandler {
-	return &TypeHandler{Udts: make(map[string]*MetaClass)}
+	return &TypeHandler{
+		ClassUDTS:     make(map[string]*MetaClass),
+		InterfaceUDTS: make(map[string]*MetaInterface),
+	}
 }
 
-func (t *TypeHandler) Register(name string, meta *MetaClass) {
-	t.Udts[name] = meta
+func (t *TypeHandler) RegisterClass(name string, meta *MetaClass) {
+	t.ClassUDTS[name] = meta
+}
+
+func (t *TypeHandler) RegisterInterface(name string, meta *MetaInterface) {
+	t.InterfaceUDTS[name] = meta
 }
 
 func (t *TypeHandler) Exists(tp string) bool {
@@ -79,7 +88,10 @@ func (t *TypeHandler) Exists(tp string) bool {
 	}
 
 	// Check if already registered
-	if _, ok := t.Udts[tp]; ok {
+	if _, ok := t.ClassUDTS[tp]; ok {
+		return true
+	}
+	if _, ok := t.InterfaceUDTS[tp]; ok {
 		return true
 	}
 
@@ -258,12 +270,21 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		}
 	}
 
-	if udt, ok := t.Udts[string(_type.T)]; ok {
+	targetType := string(_type.T)
+
+	if udt, ok := t.InterfaceUDTS[string(_type.T)]; ok {
+		if init == nil {
+			init = constant.NewNull(udt.UDT.(*types.PointerType))
+		}
+		targetType = utils.GetTypeString(init.Type())
+	}
+
+	if udt, ok := t.ClassUDTS[targetType]; ok {
 		if init == nil {
 			init = constant.NewNull(udt.UDT.(*types.PointerType))
 		}
 		c := &Class{
-			Name: string(_type.T),
+			Name: targetType,
 			UDT:  udt.UDT.(*types.PointerType),
 		}
 		c.Update(bh, init)
@@ -332,7 +353,11 @@ func (t *TypeHandler) GetLLVMType(_type string) types.Type {
 	}
 
 	// Check if already registered
-	if k, ok := t.Udts[_type]; ok {
+	if k, ok := t.ClassUDTS[_type]; ok {
+		return k.UDT
+	}
+
+	if k, ok := t.InterfaceUDTS[_type]; ok {
 		return k.UDT
 	}
 
@@ -397,8 +422,20 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		return v
 	}
 
-	if k, ok := t.Udts[target]; ok {
-		return ensureType(bh, v, k.UDT)
+	if k, ok := t.InterfaceUDTS[target]; ok {
+		ret, err := ensureInterfaceType(bh, t, v, k.UDT)
+		if err != nil {
+			panic(err)
+		}
+		return ret
+	}
+
+	if k, ok := t.ClassUDTS[target]; ok {
+		ret, err := ensureClassType(bh, t, v, k.UDT)
+		if err != nil {
+			panic(err)
+		}
+		return ret
 	}
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
 	return nil

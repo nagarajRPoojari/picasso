@@ -10,13 +10,13 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
+	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 )
 
 // DefineClass triggers the emission of concrete LLVM IR function bodies for
-// all methods belonging to a class. It handles the traversal of both local
-// definitions and inherited parent methods, using a tracking map to ensure
-// that overridden methods are defined only once using the most specific
-// implementation.
+// all methods belonging to a class. It handles the traversal of local
+// definitions using a tracking map to ensure that overridden methods are
+// defined only once using the most specific implementation.
 func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
 	avoid := make(map[string]struct{}, 0)
 	fqClsName := t.st.IdentifierBuilder.Attach(cls.Name)
@@ -29,21 +29,21 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement) {
 	}
 }
 
-// DefineClassUDT performs the "lowering" of high-level class definitions into
-// concrete LLVM struct layouts. It handles the structural aspects of inheritance
-// by flattening parent fields into the child struct, mapping field identifiers
-// to numerical indices (for GEP instructions), and calculating the memory
-// footprint for function pointers used in method dispatch.
+// DefineClassUDT resolves a previously declared opaque struct into a concrete
+// LLVM struct layout. It maps class members (fields and methods) to numerical
+// indices for GEP (GetElementPtr) instructions and populates the struct's
+// memory footprint.
 //
 // Key Logic:
-//   - Structural Inheritance: Deeply copies field types from the parent UDT to
-//     ensure binary compatibility for polymorphism.
-//   - Member Indexing: Assigns monotonically increasing indices to fields and
-//     methods to facilitate GetElementPtr (GEP) offset calculations.
-//   - Signature Validation: Uses method hashes to verify that overrides match
-//     the parent signature, aborting on interface mismatches.
-//   - Opaque Resolution: Updates the previously declared opaque struct with
-//     the finalized field set, completing the type definition in the LLVM module.
+//   - Interface Validation: If the class implements an interface, it verifies
+//     that all required methods exist and their signatures (hashed) match
+//     the interface definition.
+//   - Member Mapping: Iterates through the class body to assign indices to
+//     variables and function pointers, storing metadata in the ClassMeta (mc).
+//   - Type Resolution: Converts AST types into concrete LLVM types for each
+//     struct field.
+//   - Opaque Completion: Updates the underlying LLVM struct type (stored in
+//     mc.UDT) with the finalized field list, completing the type definition.
 func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
 	// fqClsName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(cls.Name)
 	aliasClsName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(cls.Name)
@@ -53,9 +53,19 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourceP
 	fieldTypes := make([]types.Type, 0)
 	vars := make(map[string]struct{}, 0)
 
-	funcs := make(map[string]uint32, 0)
 	// map each fields with corresponding udt struct index
 	i := 0
+
+	shouldImplement := map[string]typedef.MethodSig{}
+	if cls.Implements != "" {
+		interfaceName := cls.Implements
+		if _, ok := t.st.Interfaces[interfaceName]; !ok {
+			errorutils.Abort(errorutils.UnknownInterfaceError, interfaceName)
+		}
+
+		ifMeta := t.st.Interfaces[interfaceName]
+		shouldImplement = ifMeta.Methods
+	}
 
 	// Opaque resolution: define concrete types of all fields
 	for _, stI := range cls.Body {
@@ -74,8 +84,10 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourceP
 			vars[aliasVarName] = struct{}{}
 
 			if st.ExplicitType.GetUnderlyingType() != "" {
+				// mc.ArrayVarsEleTypes is a map of field index to its underlying element type
 				mc.ArrayVarsEleTypes[i] = t.st.TypeHandler.GetLLVMType(st.ExplicitType.GetUnderlyingType())
 			}
+
 			i++
 
 		case ast.FunctionDefinitionStatement:
@@ -84,6 +96,7 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourceP
 			if st.ReturnType != nil {
 				retType = t.st.TypeHandler.GetLLVMType(st.ReturnType.Get())
 			} else {
+				// empty string is expected to give a void type
 				retType = t.st.TypeHandler.GetLLVMType("")
 			}
 
@@ -92,28 +105,24 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourceP
 				args = append(args, t.st.TypeHandler.GetLLVMType(p.Type.Get()))
 			}
 
-			if sh, ok := funcs[aliasFuncName]; ok {
-				funcType := types.NewFunc(retType, args...)
-
-				if sh != utils.HashFuncSig(funcType.Params, funcType.RetType) {
+			if sh, ok := shouldImplement[st.Name]; ok {
+				if sh.Hash != utils.HashFuncSig(st.Parameters, st.ReturnType) {
 					errorutils.Abort(errorutils.FunctionSignatureMisMatch, aliasFuncName)
 				}
-
-				// args = append(args, mc.UDT)
-				funcType = types.NewFunc(retType, args...)
-				funcPtrType := types.NewPointer(funcType)
-				fieldTypes[mc.FieldIndexMap[aliasFuncName]] = funcPtrType
-
-			} else {
-
-				// args = append(args, mc.UDT)
-				funcType := types.NewFunc(retType, args...)
-				fieldTypes = append(fieldTypes, types.NewPointer(funcType))
-
-				mc.FieldIndexMap[aliasFuncName] = i
-				i++
+				delete(shouldImplement, st.Name)
 			}
+
+			// args = append(args, mc.UDT)
+			funcType := types.NewFunc(retType, args...)
+			fieldTypes = append(fieldTypes, types.NewPointer(funcType))
+
+			mc.FieldIndexMap[aliasFuncName] = i
+			i++
 		}
+	}
+
+	if len(shouldImplement) > 0 {
+		errorutils.Abort(errorutils.UnImplementedInterfaceMethod, shouldImplement)
 	}
 
 	ptr, ok := mc.UDT.(*types.PointerType)

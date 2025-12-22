@@ -41,17 +41,21 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	f = t.st.Classes[className].Methods[name]
 
 	if _, ok := avoid[fn.Name]; ok {
+		// @todo: not sure about its placement here, could have been handled
+		// while declaring
+		errorutils.Abort(errorutils.MethodRedeclaration, fn.Name)
 		return
 	}
 
 	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock("")}, f.NewBlock(""))
 
 	if className == fn.Name {
+		// constructor: init Types
+		// @todo: basic checks about constructor
+		if fn.ReturnType != nil {
+			errorutils.Abort(errorutils.InvalidConstructorSignature, fn.Name)
+		}
 		t.initTypes(bh, className)
-	}
-
-	if name == constants.MAIN && len(fn.Parameters) != 0 {
-		errorutils.Abort(errorutils.MainFuncError, "parameters are not allowed in main function")
 	}
 
 	for i, p := range f.Params {
@@ -105,7 +109,10 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	bh.N.NewCall(t.st.CI.Funcs[c.FUNC_RUNTIME_INIT])
 
 	if len(fn.Parameters) != 0 {
-		errorutils.Abort(errorutils.MainFuncError, "parameters are not allowed in main function")
+		errorutils.Abort(errorutils.InvalidMainMethodSignature, "parameters are not allowed in main function")
+	}
+	if fn.ReturnType != nil {
+		errorutils.Abort(errorutils.InvalidMainMethodSignature, "expected no return type for main functions")
 	}
 
 	old := bh.N

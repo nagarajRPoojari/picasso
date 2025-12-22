@@ -1,3 +1,5 @@
+// Package errorutils provides a centralized registry of compile-time error templates
+// and diagnostic utilities for reporting errors during the compilation process.
 package errorutils
 
 import (
@@ -18,19 +20,25 @@ const (
 	ImplicitTypeCastError           = "failed to implicitly type cast: %s to %s"
 	MemberExpressionError           = "member expression error: %s"
 	UnknownMethod                   = "unknown method %s"
-	ClassRedeclaration              = "class %s already defined"
+	TypeRedeclaration               = "type %s already defined"
 	VariableRedeclaration           = "variable %s already defined"
+	MethodRedeclaration             = "method %s already defined"
 	FunctionSignatureMisMatch       = "function signatue should match it's parent type: %s"
 	UnknownClassField               = "unknown class field %s in class %s"
 	UnknownClass                    = "unknown class %s"
 	UnknownVariable                 = "unknown variable %s"
 	UnknownModule                   = "unknown module %s"
 	InvalidModulerSource            = "invalid source of module %s: %s"
-	MainFuncError                   = "main function error: %s"
+	InvalidMainMethodSignature      = "main function signature error: %s"
 	TypeError                       = "type error: %s: %s"
 	ParamsError                     = "params mismatch in %s: expected %v"
 	GlobalVarsNotAllowedError       = "global vars not allowed"
 	InvalidBreakStatement           = "break statement not allowed here"
+	InterfaceInstantiationError     = "cannot instantiate interface %s"
+	UnknownInterfaceError           = "unknown interface %s"
+	VarsNotAllowedInInterfaceError  = "variables not allowed in interface %s"
+	UnImplementedInterfaceMethod    = "interface method unimplmented %s"
+	InvalidConstructorSignature     = "invalid constructor signature for %s"
 )
 
 const (
@@ -46,6 +54,12 @@ const (
 	InternalInstantiationError = "intantiation error"
 	InternalTypeError          = "type error"
 )
+
+func Assert(cond bool, msg string) {
+	if !cond {
+		panic("assertion failed: " + msg)
+	}
+}
 
 func Abort(msg string, args ...any) {
 	redBold := color.New(color.FgRed, color.Bold).SprintFunc()
