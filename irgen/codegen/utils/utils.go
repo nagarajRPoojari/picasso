@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"encoding/gob"
+	"os"
+
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
@@ -28,4 +31,26 @@ func AtomicLoad(block *ir.Block, typ types.Type, src value.Value, align int) val
 	inst.Ordering = enum.AtomicOrderingSequentiallyConsistent
 	inst.Align = ir.Align(align)
 	return inst
+}
+
+func SaveToFile(path string, v any) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	enc := gob.NewEncoder(file)
+	return enc.Encode(v)
+}
+
+func LoadFromFile(path string, v any) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	dec := gob.NewDecoder(file)
+	return dec.Decode(v)
 }

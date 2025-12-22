@@ -32,42 +32,43 @@ int main(int argc, char **argv) {
         snprintf(cmd, sizeof(cmd), "mkdir -p \"%s\"", buildDir);
         if (system(cmd) != 0) die("mkdir build");
 
-
+        /* generate LLVM IR (.ll) */
         snprintf(cmd, sizeof(cmd),
-                "bin/irgen gen \"%s\" ",
-                dir, buildDir);
+                "bin/irgen gen \"%s\"",
+                dir);
         if (system(cmd) != 0) die("irgen");
 
-        /* .ll -> .bc (same dir) */
+        /* .ll -> .bc */
         snprintf(cmd, sizeof(cmd),
             "set -e; "
-            "for f in \"%s\"/*.ll.bc; do "
-            "  base=$(basename \"$f\"); "
-            "  base=${base%.ll.bc}; "
+            "for f in \"%s\"/*.ll; do "
+            "  base=$(basename \"$f\" .ll); "
+            "  llvm-as-16 \"$f\" -o \"%s/$base.bc\"; "
+            "done",
+            buildDir, buildDir);
+        if (system(cmd) != 0) die("llvm-as");
+
+        /* .bc -> .o */
+        snprintf(cmd, sizeof(cmd),
+            "set -e; "
+            "for f in \"%s\"/*.bc; do "
+            "  base=$(basename \"$f\" .bc); "
             "  llc-16 -filetype=obj \"$f\" -o \"%s/$base.o\"; "
             "done",
             buildDir, buildDir);
         if (system(cmd) != 0) die("llc");
 
-
-        /* .bc -> .o (same dir) */
+        /* link */
         snprintf(cmd, sizeof(cmd),
-                "for f in \"%s\"/*.bc; do "
-                "llc-16 -filetype=obj \"$f\" -o \"%s/$(basename \"${f%.bc}\").o\" || exit 1; "
-                "done",
-                buildDir, buildDir);
-        if (system(cmd) != 0) die("llc");
-
-        /* link → build/a.out */
-        snprintf(cmd, sizeof(cmd),
-                "cc \"%s\"/*.o bin/libruntime.a "
-                "-o \"%s\"/a.out "
-                "-luring -lunwind-aarch64 -lpthread -lm",
-                buildDir, buildDir);
+            "cc \"%s\"/*.o bin/libruntime.a "
+            "-o \"%s\"/a.out "
+            "-luring -lunwind-aarch64 -lpthread -lm",
+            buildDir, buildDir);
         if (system(cmd) != 0) die("link");
 
         return 0;
     }
+
 
 
     if (!strcmp(argv[1], "exec")) {

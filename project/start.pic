@@ -50,12 +50,13 @@ class Node {
     }
 
     fn len(s: string): int {
-        say ad: math.Adder = new math.Adder();
-        say c: dummy.Dummy = new dummy.Dummy();
+        // say ad: math.Adder = new math.Adder();
+        // say c: dummy.Dummy = new dummy.Dummy();
 
-        ad.u.giveOne();
+        // ad.u.giveOne();
 
-        return ad.add(10 , 20) + c.giveTwo();
+        // return ad.add(10 , 20) + c.giveTwo();
+        return 0;
 
     }
 }
@@ -81,7 +82,11 @@ class Worker {
 
     fn raiseBeforeErr() {
         // this.raiseErr();
-        syncio.printf("length = %d %d \n", this.x.len("something"), this.x.y.y);
+        say x: start.Node = new start.Node();
+        say l:int = x.len("something");
+        // say l:int = 0;
+        // say y: int = this.x.y.y;
+        // syncio.printf("length = %d %d \n", l, y);
 
     }
 
@@ -118,7 +123,7 @@ fn start() {
     say w1: start.Worker = new start.Worker(1000);
 
     w1.do();
-    // foreach i in 1..100 {
-    //    thread(w1.do);
-    // }
+    foreach i in 1..100 {
+       thread(w1.do);
+    }
 }
