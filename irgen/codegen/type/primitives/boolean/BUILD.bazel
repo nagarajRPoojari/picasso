@@ -1,0 +1,17 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "boolean",
+    srcs = ["boolean.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/boolean",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen/type/block",
+        "//irgen/codegen/utils",
+        "//irgen/error",
+        "@com_github_llir_llvm//ir/constant",
+        "@com_github_llir_llvm//ir/enum",
+        "@com_github_llir_llvm//ir/types",
+        "@com_github_llir_llvm//ir/value",
+    ],
+)

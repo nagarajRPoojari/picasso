@@ -1,0 +1,12 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "lexer",
+    srcs = [
+        "lexer.go",
+        "types.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/lexer",
+    visibility = ["//visibility:public"],
+    deps = ["//irgen/error"],
+)

@@ -1,0 +1,22 @@
+cc_binary(
+    name = "niyama",
+    srcs = ["main.c"],
+    copts = [
+        "-g",
+        "-O0",
+        "-rdynamic",
+        "-fno-omit-frame-pointer",
+    ],
+    linkopts = [
+        "-L/usr/lib",
+        "-L/usr/local/lib",
+        "-lgc",
+        "-lpthread",
+        "-lm",
+    ],
+    deps = [
+        "//:runtime_lib", 
+    ],
+    local_defines = ["IRGEN_BIN=\\\"irgen/irgen_/irgen\\\"", "RUNTIME_LIB_PATH=\\\"libruntime_lib.a\\\""],
+    data = ["//irgen:irgen", "//:runtime_lib"],
+)

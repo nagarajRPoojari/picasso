@@ -1,0 +1,18 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "libs",
+    srcs = ["lib.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen/libs/array",
+        "//irgen/codegen/libs/atomic",
+        "//irgen/codegen/libs/crypto",
+        "//irgen/codegen/libs/func",
+        "//irgen/codegen/libs/io",
+        "//irgen/codegen/libs/os",
+        "//irgen/codegen/libs/strings",
+        "//irgen/codegen/libs/type",
+    ],
+)

@@ -1,0 +1,17 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "crypto",
+    srcs = ["crypto.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/crypto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen/c",
+        "//irgen/codegen/handlers/utils",
+        "//irgen/codegen/libs/func",
+        "//irgen/codegen/type",
+        "//irgen/codegen/type/block",
+        "@com_github_llir_llvm//ir",
+        "@com_github_llir_llvm//ir/value",
+    ],
+)

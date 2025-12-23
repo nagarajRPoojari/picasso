@@ -1,0 +1,15 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "cmd",
+    srcs = [
+        "gen.go",
+        "root.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/cmd",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen",
+        "@com_github_spf13_cobra//:cobra",
+    ],
+)

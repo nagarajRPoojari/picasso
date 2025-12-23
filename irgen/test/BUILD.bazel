@@ -1,0 +1,15 @@
+load("@rules_go//go:def.bzl", "go_test")
+
+go_test(
+    name = "test_test",
+    srcs = [
+        "expression_test.go",
+        "llvm_test.go",
+        "statement_test.go",
+        "typecast_test.go",
+    ],
+    deps = [
+        "//irgen/utils/testutils",
+        "@com_github_stretchr_testify//assert",
+    ],
+)

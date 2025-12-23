@@ -1,0 +1,13 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "scope",
+    srcs = ["scope.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/scope",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen/error",
+        "//irgen/codegen/type",
+        "//irgen/codegen/type/block",
+    ],
+)

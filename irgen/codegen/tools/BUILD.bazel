@@ -1,0 +1,12 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "tools",
+    srcs = ["cache.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/tools",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/ast",
+        "//irgen/codegen/utils",
+    ],
+)
