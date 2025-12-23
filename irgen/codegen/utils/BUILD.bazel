@@ -1,0 +1,14 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "utils",
+    srcs = ["utils.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/utils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_llir_llvm//ir",
+        "@com_github_llir_llvm//ir/enum",
+        "@com_github_llir_llvm//ir/types",
+        "@com_github_llir_llvm//ir/value",
+    ],
+)

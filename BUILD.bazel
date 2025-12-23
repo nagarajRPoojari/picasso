@@ -1,0 +1,32 @@
+load("@gazelle//:def.bzl", "gazelle")
+
+# gazelle:prefix github.com/nagarajRPoojari/niyama
+gazelle(name = "gazelle")
+
+cc_library(
+    name = "runtime_lib",
+    srcs = glob([
+        "runtime/src/*.c",
+        "gc/src/*.c",
+    ]),
+    hdrs = glob([
+        "runtime/headers/*.h",
+        "gc/headers/*.h",
+    ]),
+    copts = [
+        "-g",
+        "-O0",
+        "-rdynamic",
+        "-fno-omit-frame-pointer",
+    ],
+    includes = [
+        "gc/headers",
+        "runtime/headers",
+    ],
+    linkopts = [
+        "-luring",
+        "-lunwind",
+    ],
+    visibility = ["//visibility:public"],
+    linkstatic = True,
+)

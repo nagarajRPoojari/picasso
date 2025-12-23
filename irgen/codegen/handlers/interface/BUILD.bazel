@@ -1,0 +1,23 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "interface",
+    srcs = [
+        "base.go",
+        "declareinterface.go",
+        "defineinterface.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/interface",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/ast",
+        "//irgen/codegen/error",
+        "//irgen/codegen/handlers/constants",
+        "//irgen/codegen/handlers/identifier",
+        "//irgen/codegen/handlers/state",
+        "//irgen/codegen/handlers/utils",
+        "//irgen/codegen/type",
+        "@com_github_llir_llvm//ir",
+        "@com_github_llir_llvm//ir/types",
+    ],
+)

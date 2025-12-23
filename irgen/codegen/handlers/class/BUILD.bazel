@@ -1,0 +1,22 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "class",
+    srcs = [
+        "base.go",
+        "declareclass.go",
+        "defineclass.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/class",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/ast",
+        "//irgen/codegen/error",
+        "//irgen/codegen/handlers/func",
+        "//irgen/codegen/handlers/identifier",
+        "//irgen/codegen/handlers/state",
+        "//irgen/codegen/handlers/utils",
+        "//irgen/codegen/type",
+        "@com_github_llir_llvm//ir/types",
+    ],
+)

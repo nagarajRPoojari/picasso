@@ -1,0 +1,17 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "ast",
+    srcs = [
+        "ast.go",
+        "expr.go",
+        "stmt.go",
+        "types.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/ast",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/lexer",
+        "//irgen/utils",
+    ],
+)
