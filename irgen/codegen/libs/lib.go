@@ -6,6 +6,7 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/crypto"
 	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/io"
+	_os "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/os"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/strings"
 	types "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/type"
 )
@@ -24,4 +25,5 @@ func init() {
 	ModuleList["array"] = array.NewArrayHandler()
 	ModuleList["sync"] = sync.NewSync()
 	ModuleList["strings"] = strings.NewStringHandler()
+	ModuleList["os"] = _os.NewOSHandler()
 }
