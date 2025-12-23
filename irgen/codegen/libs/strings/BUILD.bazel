@@ -1,0 +1,16 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "strings",
+    srcs = ["strings.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/strings",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen/c",
+        "//irgen/codegen/libs/func",
+        "//irgen/codegen/libs/libutils",
+        "//irgen/codegen/type",
+        "//irgen/codegen/type/block",
+        "@com_github_llir_llvm//ir",
+    ],
+)

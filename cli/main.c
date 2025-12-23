@@ -9,6 +9,24 @@ static void die(const char *msg) {
     exit(1);
 }
 
+void run_irgen(const char* dir) {
+    char cmd[1024];
+    
+    const char* runfiles = getenv("RUNFILES_DIR");
+    
+    if (runfiles) {
+        snprintf(cmd, sizeof(cmd), "%s/niyama/irgen/irgen gen \"%s\"", runfiles, dir);
+    } else {
+        snprintf(cmd, sizeof(cmd), "./bazel-bin/irgen/irgen_/irgen gen \"%s\"", dir);
+    }
+
+    printf("Executing: %s\n", cmd);
+    if (system(cmd) != 0) {
+        perror("system");
+        exit(1);
+    }
+}
+
 int main(int argc, char **argv) {
     if (argc < 2) {
         fprintf(stderr, "usage: niyama <build|exec> [file]\n");
@@ -33,9 +51,8 @@ int main(int argc, char **argv) {
         if (system(cmd) != 0) die("mkdir build");
 
         /* generate LLVM IR (.ll) */
-        snprintf(cmd, sizeof(cmd),
-                "bin/irgen gen \"%s\"",
-                dir);
+        // Use the macro defined in the BUILD file
+        snprintf(cmd, sizeof(cmd), "%s gen \"%s\"", IRGEN_BIN, dir);
         if (system(cmd) != 0) die("irgen");
 
         /* .ll -> .bc */
@@ -60,10 +77,11 @@ int main(int argc, char **argv) {
 
         /* link */
         snprintf(cmd, sizeof(cmd),
-            "cc \"%s\"/*.o bin/libruntime.a "
+            "cc \"%s\"/*.o %s " 
             "-o \"%s\"/a.out "
-            "-luring -lunwind-aarch64 -lpthread -lm",
-            buildDir, buildDir);
+            "-L/usr/lib/aarch64-linux-gnu -L/usr/lib " // Add system search paths
+            "-luring -lunwind-aarch64 -lunwind -lpthread -lm", // Explicit architecture lib
+            buildDir, RUNTIME_LIB_PATH, buildDir);
         if (system(cmd) != 0) die("link");
 
         return 0;

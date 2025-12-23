@@ -1,0 +1,17 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "array",
+    srcs = ["array.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/array",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen/libs/func",
+        "//irgen/codegen/libs/type",
+        "//irgen/codegen/type",
+        "//irgen/codegen/type/block",
+        "@com_github_llir_llvm//ir",
+        "@com_github_llir_llvm//ir/types",
+        "@com_github_llir_llvm//ir/value",
+    ],
+)

@@ -1,0 +1,19 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "floats",
+    srcs = [
+        "f16.go",
+        "f32.go",
+        "f64.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen/type/block",
+        "//irgen/error",
+        "@com_github_llir_llvm//ir/constant",
+        "@com_github_llir_llvm//ir/types",
+        "@com_github_llir_llvm//ir/value",
+    ],
+)

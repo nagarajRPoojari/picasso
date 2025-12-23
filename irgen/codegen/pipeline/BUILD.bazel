@@ -1,0 +1,23 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "pipeline",
+    srcs = [
+        "base.go",
+        "steps.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/pipeline",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/ast",
+        "//irgen/codegen/c",
+        "//irgen/codegen/handlers/class",
+        "//irgen/codegen/handlers/constants",
+        "//irgen/codegen/handlers/func",
+        "//irgen/codegen/handlers/interface",
+        "//irgen/codegen/handlers/state",
+        "//irgen/codegen/type",
+        "@com_github_llir_llvm//ir",
+        "@com_github_llir_llvm//ir/types",
+    ],
+)

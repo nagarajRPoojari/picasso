@@ -1,0 +1,27 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "statement",
+    srcs = [
+        "assignvar.go",
+        "base.go",
+        "callfunc.go",
+        "declarevar.go",
+        "new.go",
+        "return.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/statement",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/ast",
+        "//irgen/codegen/error",
+        "//irgen/codegen/handlers/constants",
+        "//irgen/codegen/handlers/expression",
+        "//irgen/codegen/handlers/state",
+        "//irgen/codegen/handlers/utils",
+        "//irgen/codegen/type",
+        "//irgen/codegen/type/block",
+        "@com_github_llir_llvm//ir/types",
+        "@com_github_llir_llvm//ir/value",
+    ],
+)
