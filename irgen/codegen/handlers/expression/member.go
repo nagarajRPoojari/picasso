@@ -29,6 +29,20 @@ import (
 //   - Recursive Resolution: For complex fields like nested classes or arrays, it
 //     performs the necessary 'load' instructions to return an addressable instance.
 func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.MemberExpression) tf.Var {
+	// check imported base modules for method resolution
+	x, ok := ex.Member.(ast.SymbolExpression)
+	if ok {
+		if _, ok := t.st.Imports[x.Value]; ok {
+			// fName := fmt.Sprintf("%s.%s", t.st.Imports[x.Value].Name, ex.Property)
+			v, ok := t.st.CI.Constants[ex.Property]
+			if !ok {
+				errorutils.Abort(errorutils.UnknownVariable, ex.Property)
+			}
+			val := bh.N.NewLoad(types.I32, v)
+			return t.st.TypeHandler.BuildVar(bh, tf.NewType("int32"), val)
+		}
+	}
+
 	// Evaluate the base expression
 	baseVar := t.ProcessExpression(bh, ex.Member)
 
