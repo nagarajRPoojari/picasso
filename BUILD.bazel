@@ -18,6 +18,8 @@ cc_library(
         "-O0",
         "-rdynamic",
         "-fno-omit-frame-pointer",
+        "-I/usr/include/aarch64-linux-gnu",
+
     ],
     includes = [
         "gc/headers",
@@ -26,7 +28,7 @@ cc_library(
     linkopts = [
         "-luring",
         "-lunwind",
+        "-Wl,--no-as-needed",
     ],
     visibility = ["//visibility:public"],
-    linkstatic = True,
 )

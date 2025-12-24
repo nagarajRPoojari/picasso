@@ -77,12 +77,24 @@ int main(int argc, char **argv) {
 
         /* link */
         snprintf(cmd, sizeof(cmd),
-            "cc \"%s\"/*.o %s " 
+            "cc \"%s\"/*.o %s "
             "-o \"%s\"/a.out "
-            "-L/usr/lib/aarch64-linux-gnu -L/usr/lib " // Add system search paths
-            "-luring -lunwind-aarch64 -lunwind -lpthread -lm", // Explicit architecture lib
-            buildDir, RUNTIME_LIB_PATH, buildDir);
-        if (system(cmd) != 0) die("link");
+            "-rdynamic "
+            "-L/usr/lib/aarch64-linux-gnu -L/usr/lib "
+            "-lffi "
+            "-luring "
+            "-lunwind "
+            "-lunwind-aarch64 "
+            "-lpthread "
+            "-lm",
+            buildDir,
+            RUNTIME_LIB_PATH,
+            buildDir);
+
+        if (system(cmd) != 0)
+            die("link");
+
+
 
         return 0;
     }

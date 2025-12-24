@@ -69,7 +69,7 @@ extern kernel_thread_t **kernel_thread_map;
  * @param kt   Pointer to the owning kernel thread (scheduler worker).
  * @return Pointer to the created task structure.
  */
-task_t* task_create(void* (*fn)(void *), void* this, kernel_thread_t* kt);
+task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt);
 
 /**
  * @brief Clean up a task and release its resources.
@@ -84,7 +84,7 @@ void task_destroy(task_t *t);
  * @param t Pointer to the current task.
  * @return Always returns NULL after task exits.
  */
-void* task_trampoline(task_t *t, void *this);
+void task_trampoline(task_t *t, task_payload_t *payload);
 
 
 /**

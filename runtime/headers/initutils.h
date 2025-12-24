@@ -43,7 +43,7 @@ extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
  * @param fn   Function pointer for the task to execute.
  * @param this Argument to pass to the task function.
  */
-void thread(void*(*fn)(void*), void *this);
+void thread(void* (*fn)(), int nargs, ...);
 
 /**
  * @brief Create and schedule a main task on a random scheduler thread.

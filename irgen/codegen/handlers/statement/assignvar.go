@@ -1,6 +1,8 @@
 package statement
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
@@ -66,7 +68,7 @@ func (t *StatementHandler) AssignVariable(bh *bc.BlockHolder, st *ast.Assignment
 		classMeta := t.st.Classes[cls.Name]
 		structType := classMeta.StructType()
 		meta := t.st.Classes[cls.Name]
-		fqName := t.st.IdentifierBuilder.Attach(cls.Name, m.Property)
+		fqName := fmt.Sprintf("%s.%s", cls.Name, m.Property)
 		index := meta.FieldIndexMap[fqName]
 
 		fieldType := structType.Fields[index]

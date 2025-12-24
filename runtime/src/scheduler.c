@@ -13,7 +13,8 @@
 #include <semaphore.h>
 #include <stdatomic.h>
 #include <signal.h>
-
+#include <ffi.h>
+#include <stdarg.h>
 
 #include "scheduler.h"
 #include "io.h"
@@ -47,10 +48,21 @@ void task_resume(task_t *t, kernel_thread_t* kt);
  * @param this Arbitary arg to be passed to func.
  * @return Always returns NULL after task exits.
  */
-void* task_trampoline(task_t *t, void *this) {
-    t->fn(this);
+void task_trampoline(task_t *t, task_payload_t *payload) {
+    void *retval;
+
+    // Dynamically invoke the function with the prepared registers
+    ffi_call(&payload->cif, FFI_FN(payload->fn), &retval, payload->arg_values);
+
     t->state = TASK_FINISHED;
-    return NULL;
+
+    // Clean up payload memory
+    for (int i = 0; i < payload->nargs; i++) {
+        free(payload->arg_values[i]);
+    }
+    free(payload->arg_types);
+    free(payload->arg_values);
+    free(payload);
 }
 
 /**
@@ -203,7 +215,7 @@ void init_timer_signal_handler(void *arg) {
     }
 }
 
-task_t* task_create(void* (*fn)(void *), void* this, kernel_thread_t* kt) {
+task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
     task_t *t = calloc(1, sizeof(*t));
     if (!t) { 
         perror("calloc"); 
@@ -239,7 +251,7 @@ task_t* task_create(void* (*fn)(void *), void* this, kernel_thread_t* kt) {
     t->ctx.uc_link = &(kt->sched_ctx);
 
     // make trampoline
-    makecontext(&t->ctx, (void(*)(void))task_trampoline, 2, t, this);
+    makecontext(&t->ctx, (void(*)(void))task_trampoline, 2, t, payload);
     return t;
 }
 

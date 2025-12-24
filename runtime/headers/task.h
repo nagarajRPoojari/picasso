@@ -3,9 +3,21 @@
 
 #include <ucontext.h>
 #include <signal.h>
+#include <ffi.h>
+#include <stdarg.h>
+#include <stdlib.h>
 
 /* Size of per-task I/O buffer (bytes) */
 #define TASK_IO_BUFFER 256
+
+
+typedef struct {
+    void* (*fn)();
+    int nargs;
+    ffi_cif cif;
+    ffi_type **arg_types;
+    void **arg_values;
+} task_payload_t;
 
 typedef enum {
     TASK_RUNNING, 
