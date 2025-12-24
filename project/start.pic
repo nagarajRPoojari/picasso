@@ -68,6 +68,8 @@ class Node {
 class Worker {
     say x: start.Node;
 
+    say worker_count: double;
+
     say counter: atomic int;
     say _thread_id: atomic int;
 
@@ -78,6 +80,8 @@ class Worker {
         sync.atomic_store(this._thread_id, 0);
 
         this.x = new start.Node();
+
+        this.worker_count = 98.9;
     } 
 
     fn raiseErr() {
@@ -118,12 +122,21 @@ class Worker {
             // }else {}
         }
     }
+
+
+    fn hosad(x: int) {
+        syncio.printf("id:  %p %d\n",this, x);
+    }
 }
 
 fn start() {
     syncio.printf("some os calls: %d \n", os.OS_SIGINT);
 
-    os.mkdir("/workspaces/x-language/project/newdb", 777);
+
+    say w: start.Worker  = new start.Worker(100);
+    
+    thread(w.hosad, 89);
+    // os.mkdir("/workspaces/x-language/project/newdb", 777);
 
     // w1.do();
     // foreach i in 1..100 {

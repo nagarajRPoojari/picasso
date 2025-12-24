@@ -3,6 +3,7 @@ package expression
 import (
 	"fmt"
 
+	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
@@ -53,12 +54,76 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 		// in future i might add many such special funcs, so need to be kept somewhere else.
 		if m.Value == c.FUNC_THREAD {
 			if meth, ok := t.st.CI.Funcs[m.Value]; ok {
-				v := t.ProcessExpression(bh, ex.Arguments[0])
-				raw := v.Load(bh)
-				this := t.ProcessExpression(bh, ex.Arguments[0].(ast.MemberExpression).Member)
-				bh.N.NewCall(meth, raw, this.Load(bh))
+				// Total elements to pass to thread():
+				// [func_ptr, nargs, arg1, arg2, ..., this]
+				m := ex.Arguments[0].(ast.MemberExpression)
+				cls := t.ProcessExpression(bh, ex.Arguments[0].(ast.MemberExpression).Member).(*tf.Class)
+				if !ok {
+					errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "member access base is not a Class type")
+				}
+				if cls == nil || cls.Ptr == nil {
+					errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "class or class.Ptr is nil for class")
+				}
+
+				classMeta := t.st.Classes[cls.Name]
+				if classMeta == nil {
+					errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "unknown class metadata: "+cls.Name)
+				}
+
+				methodKey := fmt.Sprintf("%s.%s", cls.Name, m.Property)
+				idx, ok := classMeta.FieldIndexMap[methodKey]
+
+				if !ok {
+					errorutils.Abort(errorutils.UnknownMethod, m.Property)
+				}
+
+				st := classMeta.StructType()
+				fieldType := st.Fields[idx]
+
+				// Load the function pointer directly from the struct field (single load)
+				fnVal := cls.LoadField(bh, idx, fieldType)
+				if fnVal == nil {
+					errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, m.Member))
+				}
+
+				var funcType *types.FuncType
+				if ptrType, ok := fieldType.(*types.PointerType); ok {
+					funcType, ok = ptrType.ElemType.(*types.FuncType)
+					if !ok {
+						errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
+					}
+				} else {
+					errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
+				}
+
+				// Build args
+				args := make([]value.Value, 0, len(ex.Arguments)+1)
+				actualArgCount := int64(len(ex.Arguments))
+
+				// pass thread function
+				args = append(args, t.ProcessExpression(bh, ex.Arguments[0]).Load(bh))
+
+				// pass argument count
+				args = append(args, constant.NewInt(types.I32, actualArgCount))
+
+				// pass rest of the args
+				for i, argExp := range ex.Arguments[1:] {
+					v := t.ProcessExpression(bh, argExp)
+					raw := v.Load(bh)
+					expected := funcType.Params[i]
+					raw = t.st.TypeHandler.ImplicitTypeCast(bh, utils.GetTypeString(expected), raw)
+					args = append(args, raw)
+				}
+
+				// pass `this` pointer as last arg
+				thisPtr := cls.Load(bh)
+				args = append(args, thisPtr)
+
+				// Final call
+				bh.N.NewCall(meth, args...)
+				return nil
+
 			}
-			return nil
 		}
 
 		// support for direct c call.

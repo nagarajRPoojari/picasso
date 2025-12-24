@@ -12,7 +12,8 @@
 #include <signal.h>
 #include <liburing.h>
 #include <string.h> 
-
+#include <ffi.h>
+#include <stdarg.h>
 
 #include "start.h"
 #include "array.h"
@@ -41,11 +42,40 @@ atomic_int task_count;
  * @param fn   Function pointer for the task to execute.
  * @param this Argument to pass to the task function.
  */
-void thread(void*(*fn)(void*), void *this) {
-    int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
-    task_t *t1 = task_create(fn, this, kernel_thread_map[kernel_thread_id]);
-    t1->id = rand();
+void thread(void* (*fn)(), int nargs, ...) {
+    task_payload_t *payload = malloc(sizeof(task_payload_t));
+    payload->fn = fn;
+    payload->nargs = nargs;
 
+    printf("[RUNTIME] arg count %d \n", nargs);
+    
+    // Allocate arrays for FFI types and pointers to values
+    payload->arg_types = malloc(sizeof(ffi_type*) * nargs);
+    payload->arg_values = malloc(sizeof(void*) * nargs);
+
+    va_list ap;
+    va_start(ap, nargs);
+    for (int i = 0; i < nargs; i++) {
+        // We treat every argument as a pointer-sized chunk (uintptr_t)
+        payload->arg_types[i] = &ffi_type_pointer;
+        
+        void* val = malloc(sizeof(void*));
+        *(void**)val = va_arg(ap, void*);
+        payload->arg_values[i] = val;
+    }
+    va_end(ap);
+
+    // Initialize the Call Interface (CIF)
+    if (ffi_prep_cif(&payload->cif, FFI_DEFAULT_ABI, nargs, 
+                     &ffi_type_pointer, payload->arg_types) != FFI_OK) {
+        fprintf(stderr, "FFI Prep failed\n");
+        exit(1);
+    }
+
+    int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
+    task_t *t1 = task_create(fn, payload, kernel_thread_map[kernel_thread_id]);
+    
+    t1->id = rand();
     atomic_fetch_add(&task_count, 1);
     safe_q_push(&(kernel_thread_map[kernel_thread_id]->ready_q), t1);
 }
