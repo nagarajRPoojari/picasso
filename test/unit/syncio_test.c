@@ -9,8 +9,13 @@
 #include "alloc.h"
 #include "gc.h"
 
-__thread arena_t* __test__global__arena__;
+/* for local usage : use here */
+arena_t* __test__global__arena__;
+
+/* per thread __arena__ : don't use here */
 extern __thread arena_t* __arena__; 
+
+/* global arena for internal runtime usage : don't use here */
 extern arena_t* __global__arena__;
 
 void setUp(void) {

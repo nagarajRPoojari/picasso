@@ -1,13 +1,6 @@
 
 #define _GNU_SOURCE
 #include "initutils.h"
-#include "netio.h"
-
-extern kernel_thread_t **kernel_thread_map;
-extern struct io_uring **io_ring_map;
-
-extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
-extern arena_t* __global__arena__;
 
 /**
  * @brief Program entry point.

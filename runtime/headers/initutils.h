@@ -27,11 +27,29 @@
 #include "str.h"
 #include "alloc.h"
 #include "gc.h"
+#include "netio.h"
 
+
+/* kernel_thread_map holds map of scheduler id to its kernel_thread_st instance */
 extern kernel_thread_t **kernel_thread_map;
+
+/* diskio_ring_map holds map of diskio_worker id to its io_uring ring instance */
 extern struct io_uring **diskio_ring_map;
+
+/* single netpoller file descriptor */
+extern int netio_epoll_id;
+
+/* global arena for runtime memory allocation.
+   this must be used by c runtime itself, not for language.
+   global_arena will not be garbage collected for safety.
+   it's my responsibilty to release it after usage.
+*/
+extern arena_t* __global__arena__;
+
+/* current task_count which is still need to be completed */
 extern atomic_int task_count;
 
+/* shceudler thread instance */
 extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
 
 /**
