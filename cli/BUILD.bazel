@@ -7,6 +7,10 @@ cc_binary(
         "-rdynamic",
         "-fno-omit-frame-pointer",
     ],
+    data = [
+        "//:runtime_lib",
+        "//irgen",
+    ],
     linkopts = [
         "-L/usr/lib",
         "-L/usr/local/lib",
@@ -17,11 +21,13 @@ cc_binary(
         "-lffi",
         "-luring",
         "-lunwind",
-        "-Wl,--no-as-needed"
+        "-Wl,--no-as-needed",
+    ],
+    local_defines = [
+        "IRGEN_BIN=\\\"irgen/irgen_/irgen\\\"",
+        "RUNTIME_LIB_PATH=\\\"libruntime_lib.a\\\"",
     ],
     deps = [
-        "//:runtime_lib", 
+        "//:runtime_lib",
     ],
-    local_defines = ["IRGEN_BIN=\\\"irgen/irgen_/irgen\\\"", "RUNTIME_LIB_PATH=\\\"libruntime_lib.a\\\""],
-    data = ["//irgen:irgen", "//:runtime_lib"],
 )

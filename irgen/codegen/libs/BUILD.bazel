@@ -11,6 +11,7 @@ go_library(
         "//irgen/codegen/libs/crypto",
         "//irgen/codegen/libs/func",
         "//irgen/codegen/libs/io",
+        "//irgen/codegen/libs/net",
         "//irgen/codegen/libs/os",
         "//irgen/codegen/libs/strings",
         "//irgen/codegen/libs/type",
