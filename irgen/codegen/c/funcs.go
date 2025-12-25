@@ -452,6 +452,29 @@ func (t *Interface) initStdio(mod *ir.Module) {
 		ir.NewParam("n", types.I64),
 		ir.NewParam("offset", types.I64),
 	)
+
+	// netio
+	t.Funcs[FUNC_NET_ACCEPT] = mod.NewFunc(FUNC_NET_ACCEPT, types.I64,
+		ir.NewParam("epfd", types.I32),
+	)
+
+	t.Funcs[FUNC_NET_READ] = mod.NewFunc(FUNC_NET_READ, types.I64,
+		ir.NewParam("fd", types.I32),
+		ir.NewParam("buf", types.NewPointer(types.I8)),
+		ir.NewParam("len", types.I64),
+	)
+
+	t.Funcs[FUNC_NET_WRITE] = mod.NewFunc(FUNC_NET_WRITE, types.I64,
+		ir.NewParam("fd", types.I32),
+		ir.NewParam("buf", types.NewPointer(types.I8)),
+		ir.NewParam("len", types.I64),
+	)
+
+	t.Funcs[FUNC_NET_LISTEN] = mod.NewFunc(FUNC_NET_LISTEN, types.I64,
+		ir.NewParam("addr", types.NewPointer(types.I8)),
+		ir.NewParam("port", types.I64),
+		ir.NewParam("backlog", types.I32),
+	)
 }
 
 // initStrs defines high-level string utilities that operate on it's
