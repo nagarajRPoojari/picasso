@@ -63,4 +63,54 @@ task_t *safe_q_pop(safe_queue_t *q);
 task_t *safe_q_pop_wait(safe_queue_t *q);
 
 
+/* thread unsafe FIFO queue for tasks  */
+typedef struct {
+    int size_limit;        
+    wait_q_metadata_t *head; 
+} unsafe_queue_t;
+
+/**
+ * @brief Initialize a thread-unsafe queue.
+ * 
+ * @param q Pointer to the queue to initialize.
+ * @param size Maximum number of elements allowed in the queue.
+ */
+void unsafe_q_init(unsafe_queue_t *q, int size);
+
+/**
+ * @brief Insert a task into an unsafe intrusive wait queue.
+ *
+ * Allocates and attaches wait-queue metadata for the given task and inserts it
+ * into the queue. The queue is implemented as a circular doubly linked list,
+ * and the new element becomes the head of the queue.
+ *
+ * This operation is non-blocking and performs no synchronization; the caller
+ * must ensure external safety (e.g., single-threaded execution or proper
+ * locking). This function does not enforce any queue size limits and does not
+ * perform any wake-up or notification logic by itself.
+ *
+ * The allocated wait-queue metadata must be freed when the task is removed
+ * from the queue.
+ *
+ * @param q Pointer to the queue.
+ * @param t Pointer to the task to insert.
+ */
+void unsafe_q_push(unsafe_queue_t *q, task_t *t);
+
+/**
+ * @brief Remove a specific task from an unsafe wait queue.
+ *
+ * Removes the given task's wait-queue metadata from the queue if present.
+ * This operation is non-blocking and performs no synchronization; the caller
+ * must ensure external safety (e.g., single-threaded access or proper locking).
+ *
+ * If the task is not associated with a wait queue or the queue is empty,
+ * the function does nothing.
+ *
+ * @param q Pointer to the queue from which the task should be removed.
+ * @param t Pointer to the task to remove.
+ *
+ * @return 1 if the task was successfully removed, 0 otherwise.
+ */
+int unsafe_q_remove(unsafe_queue_t *q, task_t *t);
 #endif
