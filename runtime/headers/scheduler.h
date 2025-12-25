@@ -47,6 +47,7 @@ typedef struct kernel_thread {
     ucontext_t sched_ctx;    /** Scheduler context for switching between tasks. */
     task_t *current;         /** Pointer to the currently running task (if any). */
     safe_queue_t ready_q;    /** Queue of ready tasks waiting to be scheduled. */
+    unsafe_queue_t wait_q;  /** Queue of tasks which are waiting for IO */
 } kernel_thread_t;
 
 
