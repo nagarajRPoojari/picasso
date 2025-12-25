@@ -1,0 +1,78 @@
+package(default_visibility = ["//visibility:private"])
+
+COMMON_COPTS = [
+    "-g",
+    "-O0",
+    "-fno-omit-frame-pointer",
+]
+
+COMMON_DEPS = [
+    "//test/unity:unity",
+    "//:runtime_lib_test",
+    "//:system_libs",
+]
+
+COMMON_LINKOPTS = [
+    "-rdynamic",
+]
+
+cc_test(
+    name = "alloc_test",
+    srcs = ["alloc_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "asyncio_test_ascan",
+    srcs = ["asyncio_test/ascan.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    data = glob(["data/*"]),
+)
+
+cc_test(
+    name = "asyncio_test_afread",
+    srcs = ["asyncio_test/afread.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    data = glob(["data/*"]),
+)
+
+cc_test(
+    name = "asyncio_test_aprintf",
+    srcs = ["asyncio_test/aprintf.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    data = glob(["data/*"]),
+)
+
+cc_test(
+    name = "asyncio_test_afwrite",
+    srcs = ["asyncio_test/afwrite.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    data = glob(["data/*"]),
+)
+
+cc_test(
+    name = "scheduler_test",
+    srcs = ["scheduler_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "syncio_test",
+    srcs = ["syncio_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    data = glob(["data/*"]),
+)

@@ -13,17 +13,14 @@
 #include "gc.h"
 #include "initutils.h"
 
-__thread arena_t* __global__arena__;
+extern __thread arena_t* __arena__; 
+extern arena_t* __global__arena__;
 
 void setUp(void) {
-    __global__arena__ = arena_create();
-    init_io();
-    init_scheduler();
-    gc_init();
+
 }
 
 void tearDown(void) {
-    __global__arena__ = NULL;
     /* @todo: gracefull termination */
 }
 
@@ -38,7 +35,7 @@ void* test_func(void* arg) {
 
     if(atomic_load(&tasks_n) > 0) {
         atomic_fetch_sub(&tasks_n, 1);
-        thread(test_func, NULL);
+        thread(test_func, 1, NULL);
     }
 
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
@@ -49,7 +46,7 @@ void test_scheduler_executes_tasks(void) {
     atomic_store(&completed, 0);
     atomic_store(&tasks_n, N-1);
 
-    thread(test_func, NULL);
+    thread(test_func, 1, NULL);
 
     /* bounded wait — no deadlock */
     struct timespec ts;
@@ -70,6 +67,14 @@ void test_scheduler_executes_tasks(void) {
 
 int main(void) {
     UNITY_BEGIN();
+    __global__arena__ = gc_create_global_arena();
+
+    srand(time(NULL));
+
+    init_io();
+    init_scheduler();
+
+    gc_init();
 
     RUN_TEST(test_scheduler_executes_tasks);
 
