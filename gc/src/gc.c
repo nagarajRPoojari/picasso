@@ -218,7 +218,7 @@ static void gc_sweep() {
                 size_t payload_size = chunk->size & __CHUNK_SIZE_MASK;
 
                 if( chunk->prev_size & __GC_MARK_FLAG_MASK || !(chunk->size & __CURR_IN_USE_FLAG_MASK)) {
-                    chunk->prev_size & ~__GC_MARK_FLAG_MASK;
+                    chunk->prev_size &= ~__GC_MARK_FLAG_MASK;
                 } else {
                     release(ar, (char*)chunk + HEADER_SIZE);
                 }
@@ -250,6 +250,7 @@ void gc_init() {
     pthread_mutex_init(&gc_state.lock, 0);
     pthread_cond_init(&gc_state.cv_mutators_stopped, 0);
     pthread_cond_init(&gc_state.cv_world_resumed, 0);
+    pthread_cond_init(&gc_state.add_lock, 0);
 
 
     pthread_t t;
@@ -265,6 +266,7 @@ void gc_stop_the_world() {
     }
     
     pthread_mutex_unlock(&gc_state.lock);
+    pthread_mutex_lock(&gc_state.add_lock);
 }
 
 
@@ -278,4 +280,5 @@ void gc_resume_world() {
     pthread_cond_broadcast(&gc_state.cv_world_resumed);
 
     pthread_mutex_unlock(&gc_state.lock);
+    pthread_mutex_unlock(&gc_state.add_lock);
 }
