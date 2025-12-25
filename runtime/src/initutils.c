@@ -110,7 +110,7 @@ void thread(void* (*fn)(), int nargs, ...) {
  * @return 0 on success, 1 on failure.
  */
 int init_io() {
-    diskio_ring_map = calloc(DISKIO_THREAD_POOL_SIZE, sizeof(struct io_uring*));
+    diskio_ring_map = allocate(__global__arena__, DISKIO_THREAD_POOL_SIZE * sizeof(struct io_uring*));
     if (!diskio_ring_map) {
         perror("calloc diskio_ring_map");
         exit(1);
@@ -120,7 +120,7 @@ int init_io() {
     pthread_t netio_threads[NETIO_THREAD_POOL_SIZE];
     
     for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
-        diskio_ring_map[i] = calloc(1, sizeof(struct io_uring));
+        diskio_ring_map[i] = allocate(__global__arena__, 1 * sizeof(struct io_uring));
         if (!diskio_ring_map[i]) {
             perror("calloc ring");
             exit(1);
@@ -128,6 +128,19 @@ int init_io() {
     }
 
     for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
+        struct io_uring *ring = allocate(__global__arena__, sizeof(*ring));
+        if (!ring) abort();
+
+        int ret = io_uring_queue_init(DISKIO_QUEUE_DEPTH, ring, 0);
+        if (ret < 0) {
+            char buf[128];
+            int n = snprintf(buf, sizeof(buf), "io_uring_queue_init failed: %d\n", ret);
+            write(2, buf, n);
+            abort();
+        }
+
+        diskio_ring_map[i] = ring; // now safe
+        
         int rc = pthread_create(&diskio_threads[i], NULL, diskio_worker, (void*)(intptr_t)i);
         if (rc != 0) {
             fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
@@ -159,9 +172,9 @@ pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
 int init_scheduler() {
     atomic_init(&task_count, 0);
 
-    kernel_thread_map = calloc(SCHEDULER_THREAD_POOL_SIZE, sizeof(kernel_thread_t*));
+    kernel_thread_map = allocate(__global__arena__, SCHEDULER_THREAD_POOL_SIZE * sizeof(kernel_thread_t*));
     for (int i=0;i<SCHEDULER_THREAD_POOL_SIZE;i++) {
-        kernel_thread_map[i] = calloc(1, sizeof(kernel_thread_t));
+        kernel_thread_map[i] = allocate(__global__arena__, 1 * sizeof(kernel_thread_t));
         kernel_thread_map[i]->id = i;
         kernel_thread_map[i]->current = NULL;
         safe_q_init(&kernel_thread_map[i]->ready_q, SCHEDULER_LOCAL_QUEUE_SIZE);
