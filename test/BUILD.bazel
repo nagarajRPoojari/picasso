@@ -18,7 +18,7 @@ COMMON_LINKOPTS = [
 
 cc_test(
     name = "alloc_test",
-    srcs = ["alloc_test.c"],
+    srcs = ["unit/alloc_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
@@ -26,7 +26,7 @@ cc_test(
 
 cc_test(
     name = "asyncio_test_ascan",
-    srcs = ["asyncio_test/ascan.c"],
+    srcs = ["integration/asyncio_test/ascan.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
@@ -35,7 +35,7 @@ cc_test(
 
 cc_test(
     name = "asyncio_test_afread",
-    srcs = ["asyncio_test/afread.c"],
+    srcs = ["integration/asyncio_test/afread.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
@@ -44,7 +44,7 @@ cc_test(
 
 cc_test(
     name = "asyncio_test_aprintf",
-    srcs = ["asyncio_test/aprintf.c"],
+    srcs = ["integration/asyncio_test/aprintf.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
@@ -53,7 +53,7 @@ cc_test(
 
 cc_test(
     name = "asyncio_test_afwrite",
-    srcs = ["asyncio_test/afwrite.c"],
+    srcs = ["integration/asyncio_test/afwrite.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
@@ -62,7 +62,7 @@ cc_test(
 
 cc_test(
     name = "scheduler_test",
-    srcs = ["scheduler_test.c"],
+    srcs = ["integration/scheduler_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
@@ -70,7 +70,7 @@ cc_test(
 
 cc_test(
     name = "syncio_test",
-    srcs = ["syncio_test.c"],
+    srcs = ["unit/syncio_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,

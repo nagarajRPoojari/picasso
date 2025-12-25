@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "unity",
     srcs = ["unity.c"],
@@ -5,6 +7,7 @@ cc_library(
         "unity.h",
         "unity_internals.h",
     ],
-    includes = ["."],
+    include_prefix = "unity",  # this makes #include "unity/unity.h" work
+    strip_include_prefix = ".", # strip test/unity from path
     visibility = ["//visibility:public"],
 )
