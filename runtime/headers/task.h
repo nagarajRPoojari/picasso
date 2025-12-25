@@ -6,10 +6,55 @@
 #include <ffi.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <sys/socket.h>    
+#include <netinet/in.h>   
+#include <arpa/inet.h>      
+#include <sys/epoll.h>     
+#include <pthread.h>      
+#include <stdint.h>        
+#include <sys/types.h> 
 
 /* Size of per-task I/O buffer (bytes) */
 #define TASK_IO_BUFFER 256
 
+typedef enum {
+    IO_LISTEN,
+    IO_ACCEPT,
+    IO_READ,
+    IO_WRITE,
+} netio_op_t;
+
+typedef struct {
+    /* File descriptor if the task performs I/O (otherwise -1) */
+    int fd;
+
+    /* Buffer for I/O operations */
+    char *buf;
+
+    /* Number of bytes requested to read/write */
+    ssize_t req_n;
+
+    /* Number of bytes actually read or written */
+    ssize_t done_n;
+
+    /* seek offset */
+    ssize_t offset;
+
+    /* error number if io fails */
+    int io_err;
+
+    volatile int io_done;
+
+    /* netio operation enum */
+    netio_op_t op;
+    
+    /* socket address */
+    struct sockaddr *addr;
+
+    /* socket address length */
+    socklen_t *addrlen;
+    
+} io_metadata_t;
 
 typedef struct {
     void* (*fn)();
@@ -61,29 +106,12 @@ typedef struct task {
     /* Pointer to the task's private stack (after guard page) */
     char *stack;
 
-    /* File descriptor if the task performs I/O (otherwise -1) */
-    int fd;
-
-    /* Buffer for I/O operations */
-    char *buf;
-
-    /* Number of bytes requested to read/write */
-    ssize_t req_n;
-
-    /* Number of bytes actually read or written */
-    ssize_t done_n;
-
-    /* seek offset */
-    ssize_t offset;
-
-    /* task state: RUNNING, YIELDED, TERMINATED */
     task_state_t state;
 
     io_metadata_t io;
 
     wait_q_metadata_t* wq;
 
-    volatile int io_done;
 } task_t;
 
 #endif
