@@ -76,3 +76,11 @@ cc_test(
     deps = COMMON_DEPS,
     data = glob(["data/*"]),
 )
+
+cc_test(
+    name = "array_test",
+    srcs = ["unit/array_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)

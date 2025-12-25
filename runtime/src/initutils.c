@@ -28,12 +28,29 @@
 #include "alloc.h"
 #include "gc.h"
 
+
+/* kernel_thread_map holds map of scheduler id to its kernel_thread_st instance */
 kernel_thread_t **kernel_thread_map;
+
+/* diskio_ring_map holds map of diskio_worker id to its io_uring ring instance */
 struct io_uring **diskio_ring_map = NULL;
+
+/* single netpoller file descriptor */
 int netio_epoll_id = -1;
+
+/* global arena for runtime memory allocation.
+   this must be used by c runtime itself, not for language.
+   global_arena will not be garbage collected for safety.
+   it's my responsibilty to release it after usage.
+*/
 arena_t* __global__arena__;
 
+/* current task_count which is still need to be completed */
 atomic_int task_count;
+
+/* shceudler thread instance */
+pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
+
 /**
  * @brief Create and schedule a new task on a random scheduler thread.
  * 
@@ -157,8 +174,6 @@ int init_io() {
     }
     return 0;
 }
-
-pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
 
 /**
  * @brief Initialize scheduler threads.
