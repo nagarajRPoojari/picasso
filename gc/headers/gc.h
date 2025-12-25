@@ -27,7 +27,9 @@ typedef struct gc_state {
     atomic_int        total_threads;      // mutators only
 } gc_state_t;
 
+arena_t* gc_create_global_arena();
 arena_t* gc_create_arena(kernel_thread_t* th);
+
 void gc_init(); 
 void gc_stop_the_world();
 void gc_resume_world();

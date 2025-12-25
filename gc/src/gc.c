@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stddef.h>
+#include "queue.h"
 #include "alloc.h"
 #include "gc.h"
 
@@ -11,6 +12,9 @@ gc_state_t gc_state;
 
 /* arenas to keep track of. Should be initialized by arena_create */
 arena_t* arenas[MAX_ARENAS];
+
+arena_t* global_arena;
+
 int arenas_count;
 
 /* keep track of kernel/scheduler threads */
@@ -19,6 +23,12 @@ int kts_count;
 
 /* forward declarations */
 static void gc_mark_mem_region(char *start, char *end);
+
+arena_t* gc_create_global_arena() {
+    arena_t* ar = arena_create();
+    global_arena = ar;
+    return ar;
+}
 
 arena_t* gc_create_arena(kernel_thread_t* kt) {
     /* register thread*/
@@ -38,8 +48,6 @@ arena_t* gc_create_arena(kernel_thread_t* kt) {
 
 static void mark_chunk_recursive(inuse_chunk_t* ch) {
     if(ch->prev_size & __GC_MARK_FLAG_MASK) return;
-
-    printf("marking chunk of size = %zu \n", ch->size & __CHUNK_SIZE_MASK);
 
     char* payload_start = (char*)ch + HEADER_SIZE;
     char* payload_end = payload_start + (ch->size & __CHUNK_SIZE_MASK);
@@ -149,25 +157,42 @@ static void gc_mark_task(ucontext_t *ctx) {
 
 static void gc_mark() {
 
+
     for(int kti = 0; kti < kts_count; kti++ ){
 
         kernel_thread_t* kt = kts[kti];
+        /* It took 9hr to debug the issue. previously scanning only RUNNING task stack, 
+        need to scan all task stack. */
+        task_node_t* task_q_head = kt->ready_q.head;
+        while(task_q_head) {
+            task_t* t = task_q_head->t;
+            if(t->state != TASK_FINISHED)
+                gc_mark_task(&t->ctx);
+
+
+            task_q_head = task_q_head->next;
+        }
+
+        wait_q_metadata_t* wait_q_head = kt->wait_q.head;
+        wait_q_metadata_t* curr = wait_q_head;
+        while(curr) {
+            task_t* t = curr->t;
+            if(t->state != TASK_FINISHED)
+                gc_mark_task(&t->ctx);
+                
+            curr = curr->fd;
+
+            if(curr == wait_q_head) break;
+        }
+
         if (!kt->current) {
             continue; 
         }
 
-        gc_mark_task(&kt->current->ctx);
+        if(kt->current->state != TASK_FINISHED)
+            gc_mark_task(&kt->current->ctx);
 
-        /* It took 9hr to debug the issue. previously scanning only RUNNING task stack, 
-        need to scan all task stack. */
-        task_node_t* head = kt->ready_q.head;
-        while(head) {
-            task_t* t = head->t;
-            gc_mark_task(&t->ctx);
-            head = head->next;
-        }
     }
-    
 }
 
 
@@ -195,7 +220,6 @@ static void gc_sweep() {
                 if( chunk->prev_size & __GC_MARK_FLAG_MASK || !(chunk->size & __CURR_IN_USE_FLAG_MASK)) {
                     chunk->prev_size & ~__GC_MARK_FLAG_MASK;
                 } else {
-                    // printf("[gc] releasing %p [size=%zu] \n", (char*)chunk + HEADER_SIZE, chunk->size & __CHUNK_SIZE_MASK);
                     release(ar, (char*)chunk + HEADER_SIZE);
                 }
 
@@ -210,8 +234,6 @@ void gc_run() {
     while (1) {
         gc_stop_the_world();
 
-        printf(" STOP THE WORLD \n");
-
         gc_mark();
         gc_sweep();
 
@@ -222,7 +244,6 @@ void gc_run() {
 
 
 void gc_init() {
-    // printf("preparing gc ... \n");
     atomic_store(&gc_state.world_stopped, 0);
     atomic_store(&gc_state.stopped_count, 0);
     atomic_store(&gc_state.total_threads, 0);
@@ -236,35 +257,25 @@ void gc_init() {
 }
 
 void gc_stop_the_world() {
-    // printf("[GC-stw] acquire lock \n");
     pthread_mutex_lock(&gc_state.lock);
-    // printf("[GC-stw] set world stopped \n");
     atomic_store(&gc_state.world_stopped, 1);
     
-    // printf("[GC-stw] wait for stopped_count to become = total_threads \n");
     while (atomic_load(&gc_state.stopped_count) < atomic_load(&gc_state.total_threads)){
-        // printf("[GC-stw] still waiting for stopped_count to become = total_threads \n");
         pthread_cond_wait(&gc_state.cv_mutators_stopped, &gc_state.lock);
     }
     
-    // printf("[GC-stw] release lock\n");
     pthread_mutex_unlock(&gc_state.lock);
 }
 
 
 void gc_resume_world() {
-    // printf("[GC-resume] acquire lock \n");
     pthread_mutex_lock(&gc_state.lock);
 
-    // printf("[GC-resume] reset world stopped \n");
     atomic_store(&gc_state.world_stopped, 0);
 
-    // printf("[GC-resume] reset stopped_count \n");
     atomic_store(&gc_state.stopped_count, 0);
 
-    // printf("[GC-resume] broadcast to mutator \n");
     pthread_cond_broadcast(&gc_state.cv_world_resumed);
 
-    // printf("[GC-resume] release lock\n");
     pthread_mutex_unlock(&gc_state.lock);
 }
