@@ -1,4 +1,4 @@
-# niyama: ~~programming language for modern workloadd~~ programming language for myself
+### niyama: ~~programming language for modern workload~~ programming language for myself
 
 - compiled
 - statically typed
