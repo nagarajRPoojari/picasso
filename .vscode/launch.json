@@ -1,6 +1,8 @@
 {
     "version": "0.2.0",
     "configurations": [
+
+
         {
             "name": "(GDB) Launch Scheduler (AArch64 Linux)",
             "type": "cppdbg",
@@ -28,6 +30,32 @@
             ],
             // Ensures the executable is built before debugging starts
             "preLaunchTask": "build" 
+        },
+        {
+            "name": "Debug Bazel Test",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bazel-bin/test/asyncio_test_aprintf",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                // This command tells GDB to handle SIG34 (Real-Time event 34) 
+                // by ignoring it (nopass), so the debugger doesn't stop.
+                {
+                    "description": "Ignore Real-time signal 34 (SIG34)",
+                    "text": "handle SIG34 nostop noprint pass", 
+                    "ignoreFailures": true
+                }
+            ],
         }
     ]
 }
