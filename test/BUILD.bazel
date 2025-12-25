@@ -84,3 +84,11 @@ cc_test(
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
 )
+
+cc_test(
+    name = "atomic_test",
+    srcs = ["unit/atomic_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
