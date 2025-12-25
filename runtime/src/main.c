@@ -1,12 +1,13 @@
 
 #define _GNU_SOURCE
 #include "initutils.h"
+#include "netio.h"
 
 extern kernel_thread_t **kernel_thread_map;
 extern struct io_uring **io_ring_map;
 
 extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
-
+extern arena_t* __global__arena__;
 
 /**
  * @brief Program entry point.
@@ -19,6 +20,8 @@ extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
  * @todo identify all task finish & return
  */
 int main(void) {
+    __global__arena__ = gc_create_global_arena();
+
     srand(time(NULL));
 
     init_io();
