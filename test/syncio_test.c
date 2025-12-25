@@ -7,15 +7,18 @@
 #include <assert.h>
 #include "diskio.h"
 #include "alloc.h"
+#include "gc.h"
 
-extern __thread arena_t* __arena__;
+__thread arena_t* __test__global__arena__;
+extern __thread arena_t* __arena__; 
+extern arena_t* __global__arena__;
 
 void setUp(void) {
-    __arena__ = arena_create();
+    __test__global__arena__ = arena_create();
 }
 
 void tearDown(void) {
-    __arena__ = NULL;
+    __test__global__arena__ = NULL;
 }
 
 
@@ -123,9 +126,9 @@ void test__public__sprintf(void) {
 }
 
 void test__public__sfread(void) {
-    FILE* file = fopen("/workspaces/x-language/test/data/test__public__sfread.txt", "r+");
+    FILE* file = fopen("test/data/test__public__sfread.txt", "r+");
 
-    char* buf = allocate(__arena__, 1024);
+    char* buf = allocate(__test__global__arena__, 1024);
     ssize_t r = __public__sfread((char*)file, buf, 1024, 0);
     
     TEST_ASSERT_EQUAL(57, r);
@@ -133,7 +136,7 @@ void test__public__sfread(void) {
 }
 
 void test__public__sfwrite(void) {
-    FILE* file = fopen("/workspaces/x-language/test/data/test__public__swrite.txt", "w");
+    FILE* file = fopen("test/data/test__public__swrite.txt", "w");
     
     char buf[10];
     for(int i=0; i<10; i++) buf[i] = 'a' + i%26;
@@ -144,6 +147,8 @@ void test__public__sfwrite(void) {
 
 int main(void) {
     UNITY_BEGIN();
+    __global__arena__ = gc_create_global_arena();
+    __arena__ = gc_create_global_arena();
 
     RUN_TEST(test__public__sscan);
     RUN_TEST(test__public__sprintf);
