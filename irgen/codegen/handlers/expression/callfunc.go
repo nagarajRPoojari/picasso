@@ -101,7 +101,7 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 				actualArgCount := int64(len(ex.Arguments))
 
 				// pass thread function
-				args = append(args, t.ProcessExpression(bh, ex.Arguments[0]).Load(bh))
+				args = append(args, fnVal)
 
 				// pass argument count
 				args = append(args, constant.NewInt(types.I32, actualArgCount))
