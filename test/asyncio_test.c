@@ -8,7 +8,7 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <time.h>
-#include "io.h"
+#include "diskio.h"
 #include "alloc.h"
 #include "gc.h"
 #include "ggc.h"

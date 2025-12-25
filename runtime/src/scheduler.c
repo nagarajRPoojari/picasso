@@ -17,7 +17,7 @@
 #include <stdarg.h>
 
 #include "scheduler.h"
-#include "io.h"
+#include "diskio.h"
 #include "queue.h"
 #include "task.h"
 #include "alloc.h"
@@ -37,6 +37,7 @@ __thread safe_queue_t old_stack_cleanup_q;
 __thread arena_t* __arena__;
 
 extern gc_state_t gc_state;
+extern arena_t* __global__arena__;
 
 void task_yield(kernel_thread_t* kt);
 void task_resume(task_t *t, kernel_thread_t* kt);
@@ -58,11 +59,11 @@ void task_trampoline(task_t *t, task_payload_t *payload) {
 
     // Clean up payload memory
     for (int i = 0; i < payload->nargs; i++) {
-        free(payload->arg_values[i]);
+        release(__global__arena__, payload->arg_values[i]);
     }
-    free(payload->arg_types);
-    free(payload->arg_values);
-    free(payload);
+    release(__global__arena__, payload->arg_types);
+    release(__global__arena__, payload->arg_values);
+    release(__global__arena__, payload);
 }
 
 /**
@@ -155,7 +156,7 @@ void task_destroy(task_t *t) {
     if (munmap(original_base, total_size) != 0) {
         perror("munmap failed in task_destroy");
     }
-    free(t);
+    release(__global__arena__, t);
 }
 
 volatile sig_atomic_t preempt[SCHEDULER_THREAD_POOL_SIZE];
@@ -216,7 +217,7 @@ void init_timer_signal_handler(void *arg) {
 }
 
 task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
-    task_t *t = calloc(1, sizeof(*t));
+    task_t *t = allocate(__global__arena__, sizeof(*t));
     if (!t) { 
         perror("calloc"); 
         exit(1); 
@@ -331,6 +332,9 @@ void* scheduler_run(void* arg) {
         task_t *t;
         while (1) {
             t = safe_q_pop_wait(&kt->ready_q);
+            
+            unsafe_q_remove(&kt->wait_q, t);
+
             if(!t) {
                 return;
             }

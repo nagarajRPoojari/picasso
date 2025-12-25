@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
-#include "io.h"
+#include "diskio.h"
 #include "alloc.h"
 
 extern __thread arena_t* __arena__;
