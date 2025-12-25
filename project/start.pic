@@ -5,141 +5,75 @@ using "builtin/asyncio";
 using "builtin/array";
 using "builtin/sync";
 using "builtin/os";
+using "builtin/net";
+using "builtin/types";
 
-using "math";
-using "dummy/dummy";
-using "utils";
-// using "math/random" as rand;
-// using "builtin/syncio";
+class Server {
+    say addr: string;
+    say port: int;
+    say listen_fd: int;
 
-
-// TODO:
-// // refactor all go code. c is good
-// // fix that packages & import things
-
-// // write base c modules
-// // write tire-0 modules
-
-
-// base c modules: import like "builtin/os", "builtin/io"..
-// os // expose all syscalls & os level extra info
-// io // fileio, netio, stdinio
-// atomic // for atomic types & ops 
-// sync // synchronization primitives e.g, mutex, locks
-// crypto // basic hash functions etc.. optional
-// array // basic array ops, len(), bound check etc..
-// string // basic string ops, len(), modifications , mutable vs immutable, need to see
-
-
-// tier-0: import like "os", "io"..
-// os // wrap "builtin/os" & provide interface for io 
-//     os/syscalls
-//     os/io 
-
-
-
-class Next: math.Nanu {
-    fn Next() {
-
+    fn Server(addr: string, port: int) {
+        this.addr = addr;
+        this.port = port;
     }
-    fn evaru(): string {
-        return "nene";
+
+    fn Listen() {
+        this.listen_fd = net.listen(this.addr, this.port, 4096);
+        syncio.printf("listening at %s:%d ... \n", this.addr, this.port);
+
+        syncio.printf("[app-listen] fd = %d , size = %zu \n", this.listen_fd, types.size(this.listen_fd));
+    }
+
+    fn Accept(): int {
+        // syncio.printf("[app] accepting... \n");
+        say fd: int = net.accept(this.listen_fd);
+        syncio.printf("[app] accept fd: %d \n", fd);
+        // syncio.printf("[app] accepting done ... \n");
+        return fd;
     }
 }
 
-class Node {
-    say y: start.Next = new start.Next();
-    fn Node() {
-        
-    }
-
-    fn len(s: string): int {
-        // say ad: math.Adder = new math.Adder();
-        // say c: dummy.Dummy = new dummy.Dummy();
-
-        // ad.u.giveOne();
-
-        // return ad.add(10 , 20) + c.giveTwo();
-        return 0;
-
-    }
-}
-
-class Worker {
-    say x: start.Node;
-
-    say worker_count: double;
-
-    say counter: atomic int;
-    say _thread_id: atomic int;
-
-    fn Worker(count: int) {
-        syncio.printf(" value of this.counter: %p [class = %p]\n", this.counter, this);
-        syncio.printf(" value of _thread_id: %p [class = %p]\n", this._thread_id, this);
-        sync.atomic_store(this.counter, count);
-        sync.atomic_store(this._thread_id, 0);
-
-        this.x = new start.Node();
-
-        this.worker_count = 98.9;
-    } 
-
-    fn raiseErr() {
-        say y: int = 10 / 0;
-    }
-
-    fn raiseBeforeErr() {
-        // this.raiseErr();
-        say x: start.Node = new start.Node();
-        say l:int = x.len("something");
+class Handler {
+    fn Handler() {
 
     }
 
-    fn do() {
+    fn handle(fd: int) {
+        syncio.printf("[new connection] \n");
+        say buf_size: int = 1024;
+        say buf: []int8 = array.create(int8, buf_size);
 
-        this.raiseBeforeErr();
-        sync.atomic_add(this._thread_id, 1);
-        say id: int = sync.atomic_load(this._thread_id);
-
-        say buff_size: int = 256;
-        say buf: []int8 = array.create(int8, buff_size);
-
-        syncio.printf(" value of array = %p \n", buf);
-        say fp: string = syncio.fopen("/workspaces/x-language/project/temp.txt", "r+");
-        say seek: int = 0;
-
-        foreach i in 1..10000 {
-            say n: int = syncio.fread(fp, buf, buff_size, seek);
-            if(i==9999){
-                asyncio.printf("=========[%d]=> done - %d buf = %p\n", id, i, buf);
+        while (1==1) {
+            say n:int = net.read(fd, buf, buf_size-1);
+            syncio.printf("=> response: %d \n", n);
+            if(n<=0){
                 return;
             }
-            // seek = seek + buff_size;
-            // asyncio.printf("%.*s\n", n, buf);
+            syncio.printf(">> %s %d\n", buf, n);
 
-            // if(n<buff_size) {
-            //     return;
-            // }else {}
+            net.write(fd, "hello",  6);
         }
     }
 
-
-    fn hosad(x: int) {
-        syncio.printf("id:  %p %d\n",this, x);
+    fn printer(id: int) {
+        syncio.printf("> %d \n", id);
     }
 }
 
+
 fn start() {
-    syncio.printf("some os calls: %d \n", os.OS_SIGINT);
+    say server: start.Server = new start.Server("0.0.0.0", 8080);
+    server.Listen();
+
+    say h: start.Handler = new start.Handler();
+
+    syncio.printf("[app] class=%p, handler=%p \n", h, h.handle);
 
 
-    say w: start.Worker  = new start.Worker(100);
-    
-    thread(w.hosad, 89);
-    // os.mkdir("/workspaces/x-language/project/newdb", 777);
-
-    // w1.do();
-    // foreach i in 1..100 {
-    //    thread(w1.do);
-    // }
+    while (1==1) {
+        say fd: int = server.Accept();
+        syncio.printf("[app => class=%p, handler=%p \n", h, h.handle);
+        thread(h.handle, fd);        
+    }
 }
