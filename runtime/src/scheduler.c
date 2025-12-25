@@ -331,18 +331,22 @@ void* scheduler_run(void* arg) {
     while (1) {
         task_t *t;
         while (1) {
-            t = safe_q_pop_wait(&kt->ready_q);
             
-            unsafe_q_remove(&kt->wait_q, t);
-
+            t = safe_q_pop_wait(&kt->ready_q);
             if(!t) {
                 return;
             }
+            kt->current = t;
 
+            pthread_mutex_lock(&gc_state.add_lock);
             atomic_fetch_add(&gc_state.total_threads, 1);
+            pthread_mutex_unlock(&gc_state.add_lock);
+
+            unsafe_q_remove(&kt->wait_q, t);
 
             t->state = TASK_RUNNING;
             task_resume(t, kt);
+
             if (t->state == TASK_FINISHED) {
                 /* @verify: this doesn't seems to be efficient way */
                 task_destroy(t);
