@@ -4,7 +4,10 @@
 
 #include "queue.h"
 #include "task.h"
+#include "alloc.h"
+#include "gc.h"
 
+extern arena_t* __global__arena__;
 /**
  * @brief Initialize a thread-safe queue.
  * 
@@ -32,7 +35,7 @@ void safe_q_init(safe_queue_t *q, int size) {
  * @param t Task to push.
  */
 void safe_q_push(safe_queue_t *q, task_t *t) {
-    task_node_t *n = malloc(sizeof(*n)); /* need to be freed */
+    task_node_t *n = allocate(__global__arena__, sizeof(*n)); /* need to be freed */
     n->t = t; n->next = NULL;
 
     pthread_mutex_lock(&q->lock);
@@ -77,7 +80,7 @@ task_t *safe_q_pop(safe_queue_t *q) {
 
     task_t *t = n->t;
 
-    // free(n);
+    release(__global__arena__,n);
     return t;
 }
 
@@ -108,7 +111,7 @@ task_t *safe_q_pop_wait(safe_queue_t *q) {
     pthread_mutex_unlock(&q->lock);
     task_t *t = n->t;
 
-    free(n);
+    release(__global__arena__, n);
     return t;
 }
 
@@ -142,7 +145,7 @@ void unsafe_q_init(unsafe_queue_t *q, int size) {
  * @param t Pointer to the task to insert.
  */
 void unsafe_q_push(unsafe_queue_t *q, task_t *t) {
-    wait_q_metadata_t *n = malloc(sizeof(*n)); /* must be freed later */
+    wait_q_metadata_t *n = allocate(__global__arena__, sizeof(*n)); /* must be freed later */
     if (!n) abort();   /* optional but sane */
     n->t = t;
 
@@ -201,7 +204,7 @@ int unsafe_q_remove(unsafe_queue_t *q, task_t *t) {
     wq->bk = NULL;
     t->wq = NULL;
 
-    free(wq);
+    release(__global__arena__, wq);
     return 1;
 }
 
