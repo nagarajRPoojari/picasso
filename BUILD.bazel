@@ -32,3 +32,52 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "runtime_lib_test",
+    srcs = glob(
+        [
+            "runtime/src/*.c",
+            "gc/src/*.c",
+        ],
+        exclude = [
+            "runtime/src/main.c",
+        ],
+    ),
+    hdrs = glob([
+        "runtime/headers/*.h",
+        "gc/headers/*.h",
+    ]),
+    copts = [
+        "-g",
+        "-O0",
+        "-fno-omit-frame-pointer",
+        "-I/usr/include/aarch64-linux-gnu",
+    ],
+    includes = [
+        "runtime/headers",
+        "gc/headers",
+    ],
+    linkopts = [
+        "-luring",
+        "-lunwind",
+        "-Wl,--no-as-needed",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+
+cc_library(
+    name = "system_libs",
+    linkopts = [
+        "-lffi",
+        "-lunwind",
+        "-lunwind-aarch64",
+        "-luring",
+        "-lpthread",
+        "-lm",
+        "-rdynamic",
+        "-Wl,--no-as-needed",
+    ],
+    visibility = ["//visibility:public"],
+)
