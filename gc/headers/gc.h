@@ -24,6 +24,8 @@ typedef struct gc_state {
     pthread_cond_t   cv_mutators_stopped;
     pthread_cond_t   cv_world_resumed;
 
+    // add_lock protects adding total_threads
+    pthread_mutex_t add_lock;
     atomic_int        total_threads;      // mutators only
 } gc_state_t;
 
