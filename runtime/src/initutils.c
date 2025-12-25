@@ -29,7 +29,9 @@
 #include "gc.h"
 
 kernel_thread_t **kernel_thread_map;
-struct io_uring **io_ring_map = NULL;
+struct io_uring **diskio_ring_map = NULL;
+int netio_epoll_id = -1;
+arena_t* __global__arena__;
 
 atomic_int task_count;
 /**
@@ -44,15 +46,14 @@ atomic_int task_count;
  * @param this Argument to pass to the task function.
  */
 void thread(void* (*fn)(), int nargs, ...) {
-    task_payload_t *payload = malloc(sizeof(task_payload_t));
+    task_payload_t *payload = allocate(__global__arena__, sizeof(task_payload_t));
+
     payload->fn = fn;
     payload->nargs = nargs;
 
-    printf("[RUNTIME] arg count %d \n", nargs);
-    
     // Allocate arrays for FFI types and pointers to values
-    payload->arg_types = malloc(sizeof(ffi_type*) * nargs);
-    payload->arg_values = malloc(sizeof(void*) * nargs);
+    payload->arg_types = allocate(__global__arena__, sizeof(ffi_type*) * nargs);
+    payload->arg_values = allocate(__global__arena__, sizeof(void*) * nargs);
 
     va_list ap;
     va_start(ap, nargs);
@@ -60,7 +61,7 @@ void thread(void* (*fn)(), int nargs, ...) {
         // We treat every argument as a pointer-sized chunk (uintptr_t)
         payload->arg_types[i] = &ffi_type_pointer;
         
-        void* val = malloc(sizeof(void*));
+        void* val = allocate(__global__arena__, sizeof(void*));
         *(void**)val = va_arg(ap, void*);
         payload->arg_values[i] = val;
     }
@@ -92,10 +93,11 @@ void thread(void* (*fn)(), int nargs, ...) {
  * @param this Argument to pass to the task function.
  */
  void orphan(void*(*fn)(void*), void *this) {
-    int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
-    task_t *t1 = task_create(fn, this, kernel_thread_map[kernel_thread_id]);
-    t1->id = rand();
-    safe_q_push(&(kernel_thread_map[kernel_thread_id]->ready_q), t1);
+    // @depricated
+    // int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
+    // task_t *t1 = task_create(fn, this, kernel_thread_map[kernel_thread_id]);
+    // t1->id = rand();
+    // safe_q_push(&(kernel_thread_map[kernel_thread_id]->ready_q), t1);
 }
 
 /**
@@ -108,23 +110,33 @@ void thread(void* (*fn)(), int nargs, ...) {
  * @return 0 on success, 1 on failure.
  */
 int init_io() {
-    io_ring_map = calloc(IO_THREAD_POOL_SIZE, sizeof(struct io_uring*));
-    if (!io_ring_map) {
-        perror("calloc io_ring_map");
+    diskio_ring_map = calloc(DISKIO_THREAD_POOL_SIZE, sizeof(struct io_uring*));
+    if (!diskio_ring_map) {
+        perror("calloc diskio_ring_map");
         exit(1);
     }
 
-    pthread_t io_threads[IO_THREAD_POOL_SIZE];
-    for (int i = 0; i < IO_THREAD_POOL_SIZE; i++) {
-        io_ring_map[i] = calloc(1, sizeof(struct io_uring));
-        if (!io_ring_map[i]) {
+    pthread_t diskio_threads[DISKIO_THREAD_POOL_SIZE];
+    pthread_t netio_threads[NETIO_THREAD_POOL_SIZE];
+    
+    for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
+        diskio_ring_map[i] = calloc(1, sizeof(struct io_uring));
+        if (!diskio_ring_map[i]) {
             perror("calloc ring");
             exit(1);
         }
     }
 
-    for (int i = 0; i < IO_THREAD_POOL_SIZE; i++) {
-        int rc = pthread_create(&io_threads[i], NULL, io_worker, (void*)(intptr_t)i);
+    for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
+        int rc = pthread_create(&diskio_threads[i], NULL, diskio_worker, (void*)(intptr_t)i);
+        if (rc != 0) {
+            fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
+            exit(1);
+        }
+    }
+
+    for (int i = 0; i < NETIO_THREAD_POOL_SIZE; i++) {
+        int rc = pthread_create(&netio_threads[i], NULL, netio_worker, (void*)(intptr_t)i);
         if (rc != 0) {
             fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
             exit(1);
@@ -153,6 +165,7 @@ int init_scheduler() {
         kernel_thread_map[i]->id = i;
         kernel_thread_map[i]->current = NULL;
         safe_q_init(&kernel_thread_map[i]->ready_q, SCHEDULER_LOCAL_QUEUE_SIZE);
+        unsafe_q_init(&kernel_thread_map[i]->wait_q, SCHEDULER_LOCAL_QUEUE_SIZE);
 
         pthread_create(&sched_threads[i], NULL, scheduler_run, kernel_thread_map[i]);
     }
