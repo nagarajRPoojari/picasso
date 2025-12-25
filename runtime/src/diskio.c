@@ -8,6 +8,7 @@
 #include <liburing.h>
 #include <stdarg.h>
 #include <string.h>
+#include <assert.h>
 
 #include "diskio.h"
 #include "queue.h"
@@ -16,7 +17,7 @@
 #include "alloc.h"
 
 extern __thread arena_t* __arena__;
-
+extern arena_t* __global__arena__;
 /**
  * @brief Worker thread that waits for completed I/O events from io_uring.
  *
@@ -31,10 +32,6 @@ extern __thread arena_t* __arena__;
 void *diskio_worker(void *arg) {
     int id = (int)(intptr_t)arg;
 
-    if (io_uring_queue_init(DISKIO_QUEUE_DEPTH, diskio_ring_map[id], 0) < 0) {
-        perror("io_uring_queue_init");
-        abort();
-    }
     struct io_uring_cqe *cqe;
 
     for (;;) {
