@@ -617,6 +617,16 @@ const (
 
 	CONSTANT_OS_EFAULT = "OS_EFAULT"
 	CONSTANT_OS_EACCES = "OS_EACCES"
+
+	FUNC_NET_LISTEN = "__public__net_listen"
+	FUNC_NET_ACCEPT = "__public__net_accept"
+	FUNC_NET_READ   = "__public__net_read"
+	FUNC_NET_WRITE  = "__public__net_write"
+
+	ALIAS_NET_LISTEN = "listen"
+	ALIAS_NET_ACCEPT = "accept"
+	ALIAS_NET_READ   = "read"
+	ALIAS_NET_WRITE  = "write"
 )
 
 // Interface maintains a registry of available external functions and
