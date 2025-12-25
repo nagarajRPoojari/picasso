@@ -25,6 +25,15 @@ typedef enum {
     TASK_FINISHED
 } task_state_t;
 
+// forward declaration;
+struct task;
+
+typedef struct wait_q_metadata {
+    struct wait_q_metadata* fd;
+    struct wait_q_metadata* bk;
+    struct task* t;
+} wait_q_metadata_t;
+
 /**
  * @struct task_t
  * @brief Represents a single task/coroutine managed by the scheduler.
@@ -70,7 +79,9 @@ typedef struct task {
     /* task state: RUNNING, YIELDED, TERMINATED */
     task_state_t state;
 
-    int io_err;
+    io_metadata_t io;
+
+    wait_q_metadata_t* wq;
 
     volatile int io_done;
 } task_t;
