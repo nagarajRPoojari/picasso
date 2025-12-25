@@ -19,7 +19,7 @@
 #include "start.h"
 #include "array.h"
 #include "ggc.h"
-#include "io.h"
+#include "diskio.h"
 #include "queue.h"
 #include "scheduler.h"
 #include "task.h"
@@ -29,7 +29,7 @@
 #include "gc.h"
 
 extern kernel_thread_t **kernel_thread_map;
-extern struct io_uring **io_ring_map;
+extern struct io_uring **diskio_ring_map;
 extern atomic_int task_count;
 
 extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
