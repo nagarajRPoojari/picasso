@@ -1,24 +1,26 @@
-#ifndef IO_H
+#ifndef DISKIO_H
+#define DISKIO_H
+
 #include "queue.h"
 #include "task.h"
 
 
 /** Number of I/O worker threads in the pool, must be kept equal to number of scheduler threads */
-#define IO_THREAD_POOL_SIZE 4
+#define DISKIO_THREAD_POOL_SIZE 4
 
 /**  @depricated: Maximum number of events returned by epoll_wait at once */
 #define MAX_EVENTS 16
 
 /**  @depricated: Maximum number of tasks in the I/O queue */
-#define IO_QUEUE_SIZE 256
+#define DISKIO_QUEUE_SIZE 256
 
 /** Queue depth */
-#define QUEUE_DEPTH  256
+#define DISKIO_QUEUE_DEPTH  256
 
 /** @deprecated: io_uring submission done when req hits this threshold */
 #define SUBMIT_THRESHOLD (256/2)
 
-extern struct io_uring **io_ring_map;
+extern struct io_uring **diskio_ring_map;
 
 /**
  * @brief Worker thread that waits for completed I/O events from io_uring.
@@ -31,7 +33,7 @@ extern struct io_uring **io_ring_map;
  * @param arg Unused.
  * @return void* Always returns NULL.
  */
-void *io_worker(void *arg);
+void *diskio_worker(void *arg);
 
 /**
  * @brief Submit an asynchronous STDIN read for the current task.

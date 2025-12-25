@@ -9,7 +9,7 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "io.h"
+#include "diskio.h"
 #include "queue.h"
 #include "task.h"
 #include "scheduler.h"
@@ -28,33 +28,33 @@ extern __thread arena_t* __arena__;
  * @param arg Unused.
  * @return void* Always returns NULL.
  */
-void *io_worker(void *arg) {
+void *diskio_worker(void *arg) {
     int id = (int)(intptr_t)arg;
 
-    if (io_uring_queue_init(QUEUE_DEPTH, io_ring_map[id], 0) < 0) {
+    if (io_uring_queue_init(DISKIO_QUEUE_DEPTH, diskio_ring_map[id], 0) < 0) {
         perror("io_uring_queue_init");
         abort();
     }
     struct io_uring_cqe *cqe;
 
     for (;;) {
-        int ret = io_uring_wait_cqe(io_ring_map[id], &cqe);
+        int ret = io_uring_wait_cqe(diskio_ring_map[id], &cqe);
         if (ret < 0)
             continue;
 
         task_t *t = io_uring_cqe_get_data(cqe);
 
         if (cqe->res < 0) {
-            t->io_err = -cqe->res;
-            t->done_n = -1;
+            t->io.io_err = -cqe->res;
+            t->io.done_n = -1;
         } else {
-            t->done_n = cqe->res;
-            t->io_err = 0;
+            t->io.done_n = cqe->res;
+            t->io.io_err = 0;
         }
 
-        t->io_done = 1;
+        t->io.io_done = 1;
 
-        io_uring_cqe_seen(io_ring_map[id], cqe);
+        io_uring_cqe_seen(diskio_ring_map[id], cqe);
 
         safe_q_push(&kernel_thread_map[t->sched_id]->ready_q, t);
     }
@@ -81,7 +81,7 @@ void *io_worker(void *arg) {
  * @return void
  */
 void async_stdin_read(task_t *t) {
-    struct io_uring *ring = io_ring_map[t->sched_id];
+    struct io_uring *ring = diskio_ring_map[t->sched_id];
     struct io_uring_sqe *sqe;
 
     while ((sqe = io_uring_get_sqe(ring)) == NULL) {
@@ -91,20 +91,24 @@ void async_stdin_read(task_t *t) {
     io_uring_prep_read(
         sqe,
         STDIN_FILENO,
-        t->buf,
-        t->req_n,
+        t->io.buf,
+        t->io.req_n,
         0   /* ignored for stdin */
     );
 
     io_uring_sqe_set_data(sqe, t);
 
+    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+
     int ret = io_uring_submit(ring);
     if (ret < 0) {
-        t->io_err = -ret;
-        t->done_n = -1;
-        t->io_done = 1;
+        t->io.io_err = -ret;
+        t->io.done_n = -1;
+        t->io.io_done = 1;
         return;
     }
+
+
 
     task_yield(kernel_thread_map[t->sched_id]);
 }
@@ -134,7 +138,7 @@ void async_stdin_read(task_t *t) {
 void async_stdout_write() {
     task_t *t = current_task;
     struct io_uring_sqe *sqe;
-    struct io_uring *ring = io_ring_map[t->sched_id];
+    struct io_uring *ring = diskio_ring_map[t->sched_id];
 
     /* acquire SQE */
     while ((sqe = io_uring_get_sqe(ring)) == NULL) {
@@ -142,14 +146,16 @@ void async_stdout_write() {
     }
 
     /* prepare write (stdout is not seekable) */
-    io_uring_prep_write(sqe, STDOUT_FILENO, t->buf, t->req_n, 0);
+    io_uring_prep_write(sqe, STDOUT_FILENO, t->io.buf, t->io.req_n, 0);
     io_uring_sqe_set_data(sqe, t);
+
+    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
 
     int ret = io_uring_submit(ring);
     if (ret < 0) {
-        t->io_err = -ret;
-        t->done_n = -1;
-        t->io_done = 1;
+        t->io.io_err = -ret;
+        t->io.done_n = -1;
+        t->io.io_done = 1;
         return;
     }
 
@@ -176,7 +182,7 @@ void async_stdout_write() {
  */
 void async_file_read() {
     task_t *t = current_task;
-    struct io_uring *ring = io_ring_map[t->sched_id];
+    struct io_uring *ring = diskio_ring_map[t->sched_id];
     struct io_uring_sqe *sqe;
 
     /* wait for a submission queue entry */
@@ -186,18 +192,20 @@ void async_file_read() {
 
     /* prepare read at specified offset */
     io_uring_prep_read(sqe,
-                       t->fd,
-                       t->buf,
-                       t->req_n,
-                       t->offset);
+                       t->io.fd,
+                       t->io.buf,
+                       t->io.req_n,
+                       t->io.offset);
 
     io_uring_sqe_set_data(sqe, t);
 
+    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+
     int ret = io_uring_submit(ring);
     if (ret < 0) {
-        t->io_err  = -ret;
-        t->done_n  = -1;
-        t->io_done = 1;
+        t->io.io_err  = -ret;
+        t->io.done_n  = -1;
+        t->io.io_done = 1;
     }
 
     task_yield(kernel_thread_map[t->sched_id]);
@@ -223,7 +231,7 @@ void async_file_read() {
  */
 void async_file_write() {
     task_t *t = current_task;
-    struct io_uring *ring = io_ring_map[t->sched_id];
+    struct io_uring *ring = diskio_ring_map[t->sched_id];
     struct io_uring_sqe *sqe;
 
     /* wait for a submission queue entry */
@@ -234,19 +242,21 @@ void async_file_write() {
     /* prepare write at specified offset */
     io_uring_prep_write(
         sqe,
-        t->fd,
-        t->buf,
-        t->req_n,
-        t->offset
+        t->io.fd,
+        t->io.buf,
+        t->io.req_n,
+        t->io.offset
     );
 
     io_uring_sqe_set_data(sqe, t);
 
+    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+
     int ret = io_uring_submit(ring);
     if (ret < 0) {
-        t->io_err  = -ret;
-        t->done_n  = -1;
-        t->io_done = 1;
+        t->io.io_err  = -ret;
+        t->io.done_n  = -1;
+        t->io.io_done = 1;
         return;
     }
 
@@ -283,23 +293,25 @@ void* __public__ascan(int n) {
         return NULL;
 
     /* setup task I/O state */
-    t->fd      = STDIN_FILENO;
-    t->buf     = buf;
-    t->req_n   = n;
-    t->done_n  = 0;
-    t->io_err  = 0;
-    t->io_done = 0;
+    t->io = (io_metadata_t){
+        .fd = STDIN_FILENO,
+        .buf = buf,
+        .req_n = n,
+        .done_n  = 0,
+        .io_err  = 0,
+        .io_done = 0,
+    };
 
     /* submit async read */
     async_stdin_read(t);
 
     /* resumed after io_worker enqueues us */
-    if (t->done_n < 0)
+    if (t->io.done_n < 0)
         return NULL;
 
     /* NUL terminate */
-    if ((size_t)t->done_n < (size_t)n)
-        buf[t->done_n] = '\0';
+    if ((size_t)t->io.done_n < (size_t)n)
+        buf[t->io.done_n] = '\0';
     else
         buf[n] = '\0';
 
@@ -350,20 +362,22 @@ ssize_t __public__aprintf(const char* fmt, ...) {
     task_t *t = current_task;
 
     /* setup task for stdout write */
-    t->fd = STDOUT_FILENO;
-    t->buf = buf;
-    t->req_n = len;
-    t->done_n = 0;
-    t->io_err = 0;
-    t->io_done = 0;
+    t->io = (io_metadata_t){
+        .fd = STDOUT_FILENO,
+        .buf = buf,
+        .req_n = len,
+        .done_n = 0,
+        .io_err = 0,
+        .io_done = 0,
+    };
 
     async_stdout_write();
 
     /* task resumes here after write completion */
-    if (t->done_n < 0)
+    if (t->io.done_n < 0)
         return NULL;
 
-    return t->done_n;
+    return t->io.done_n;
 }
 
 
@@ -398,22 +412,24 @@ ssize_t __public__afread(char* f, char* buf, int n, int offset) {
     task_t *t = current_task;
 
     /* setup task I/O state */
-    t->fd      = fd;
-    t->buf     = buf;
-    t->req_n   = n;
-    t->offset  = offset;
-    t->done_n  = 0;
-    t->io_err  = 0;
-    t->io_done = 0;
+    t->io = (io_metadata_t){
+        .fd      = fd,
+        .buf     = buf,
+        .req_n   = n,
+        .offset  = offset,
+        .done_n  = 0,
+        .io_err  = 0,
+        .io_done = 0,
+    };
 
     /* submit async read */
     async_file_read();
 
     /* task resumes here after I/O completion */
-    if (t->done_n < 0)
+    if (t->io.done_n < 0)
         return -1;
 
-    return t->done_n;
+    return t->io.done_n;
 }
 
 
@@ -448,22 +464,24 @@ ssize_t __public__afwrite(char* f, const char* buf, int n, int offset) {
     task_t *t = current_task;
 
     /* setup task I/O state */
-    t->fd      = fd;
-    t->buf     = (char*)buf;
-    t->req_n   = n;
-    t->offset  = offset;
-    t->done_n  = 0;
-    t->io_err  = 0;
-    t->io_done = 0;
+    t->io = (io_metadata_t){
+        .fd      = fd,
+        .buf     = (char*)buf,
+        .req_n   = n,
+        .offset  = offset,
+        .done_n  = 0,
+        .io_err  = 0,
+        .io_done = 0,
+    };
 
     /* submit async write */
     async_file_write();
 
     /* task resumes here after I/O completion */
-    if (t->done_n < 0)
+    if (t->io.done_n < 0)
         return -1;
 
-    return t->done_n;
+    return t->io.done_n;
 }
 
 
