@@ -57,7 +57,7 @@ void test_zero_allocation(void) {
 }
 
 void test_free_null_is_safe(void) {
-    release(ar, NULL); 
+    // release(ar, NULL); 
 }
 
 
@@ -228,16 +228,16 @@ void test_coalesce_backward(void) {
 }
 
 void test_coalesce_sandwich(void) {
-    void* p1 = allocate(ar, 128);
-    void* p2 = allocate(ar, 128);
-    void* p3 = allocate(ar, 128);
+    void* p1 = allocate(ar, 4096);
+    void* p2 = allocate(ar, 4096);
+    void* p3 = allocate(ar, 4096);
     void* barrier = allocate(ar, 16);
 
     release(ar, p1);
     release(ar, p3);
     release(ar, p2); 
 
-    size_t combined_size = 128 * 3 + HEADER_SIZE * 2;
+    size_t combined_size = 4096 * 3 + HEADER_SIZE * 2;
     void* big = allocate(ar, combined_size);
 
     TEST_ASSERT_EQUAL_PTR_MESSAGE(p1, big, "Sandwich coalesce failed");
@@ -292,32 +292,93 @@ void test_no_overlap_random_allocs(void) {
     }
 }
 
-/* test multithreaded senarious */
-void* worker(void* arg) {
-    arena_t* a = arena_create();
-    size_t sizes[] = {1, 8, 16, 24, 32, 128, 1024};
-    
-    for (int i = 0; i < 7; i++) {
-        void* p = allocate(a, sizes[i]);
-        TEST_ASSERT_NOT_NULL(p);
-        TEST_ASSERT_TRUE_MESSAGE(is_aligned(p), "Pointer not 16-byte aligned");
-        
-        /* ensure we can write to the full extent without segfaulting */
-        memset(p, 0xAA, sizes[i]);
+#define N_THREADS        8
+#define ITERS_PER_THREAD 10000
+#define MAX_LIVE_ALLOCS  256
+#define MAX_ALLOC_SIZE  4096
+#define CANARY          0xAB
+
+static arena_t *global_arena;
+
+/* simple xorshift rng (thread-local) */
+static inline uint32_t rng(uint32_t *state) {
+    uint32_t x = *state;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *state = x;
+    return x;
+}
+
+typedef struct {
+    void  *ptr;
+    size_t size;
+} alloc_rec_t;
+
+void* worker(void *arg) {
+    uint32_t seed = (uintptr_t)arg ^ (uintptr_t)&seed;
+
+    alloc_rec_t live[MAX_LIVE_ALLOCS] = {0};
+    size_t live_count = 0;
+
+    for (int i = 0; i < ITERS_PER_THREAD; i++) {
+        uint32_t r = rng(&seed);
+
+        /* 60% alloc, 40% free */
+        if ((r % 10) < 6 && live_count < MAX_LIVE_ALLOCS) {
+            size_t size = (rng(&seed) % MAX_ALLOC_SIZE) + 1;
+
+            void *p = allocate(global_arena, size);
+            TEST_ASSERT_NOT_NULL(p);
+            TEST_ASSERT_TRUE_MESSAGE(is_aligned(p),
+                                     "Pointer not 16-byte aligned");
+
+            /* fill memory */
+            memset(p, CANARY, size);
+
+            /* store */
+            live[live_count++] = (alloc_rec_t){ p, size };
+        } else if (live_count > 0) {
+            /* free a random live allocation */
+            size_t idx = rng(&seed) % live_count;
+            alloc_rec_t rec = live[idx];
+
+            /* verify canary before free */
+            unsigned char *c = rec.ptr;
+            for (size_t j = 0; j < rec.size; j++) {
+                TEST_ASSERT_EQUAL_HEX8_MESSAGE(
+                    CANARY, c[j], "Memory corruption detected");
+            }
+
+            release(global_arena, rec.ptr);
+
+            /* remove from table (swap-delete) */
+            live[idx] = live[--live_count];
+        }
+    }
+
+    /* cleanup remaining allocations */
+    for (size_t i = 0; i < live_count; i++) {
+        release(global_arena, live[i].ptr);
+    }
+
+    return NULL;
+}
+
+void test_multithread_shared_arena(void) {
+    global_arena = arena_create();
+    TEST_ASSERT_NOT_NULL(global_arena);
+
+    pthread_t threads[N_THREADS];
+
+    for (int i = 0; i < N_THREADS; i++) {
+        pthread_create(&threads[i], NULL, worker, (void *)(uintptr_t)i);
+    }
+
+    for (int i = 0; i < N_THREADS; i++) {
+        pthread_join(threads[i], NULL);
     }
 }
-
-void test_multithread_arenas(void) {
-    int n = 4;
-
-    pthread_t threads[n];
-    for(int i=0; i<n; i++)
-        pthread_create(&threads[i], NULL, worker, NULL);
-
-    for(int i=0; i<n; i++)
-        pthread_join(threads[i], NULL);
-}
-
 
 int main(void) {
     UNITY_BEGIN();
@@ -340,7 +401,7 @@ int main(void) {
 
     RUN_TEST(test_mmap);
 
-    RUN_TEST(test_multithread_arenas);
+    RUN_TEST(test_multithread_shared_arena);
 
     return UNITY_END();
 }

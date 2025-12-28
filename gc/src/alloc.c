@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <sys/mman.h>
 #include <stdbool.h>
+#include <limits.h>
 #include "alloc.h"
 
 /* utils */
@@ -159,6 +160,10 @@ static inline int get_smallbin_index(size_t size) {
     return (size >> 4) - 1; 
 }
 
+static inline int floor_log2(size_t x) {
+    return (int)(sizeof(size_t) * CHAR_BIT - 1 - __builtin_clzl(x));
+}
+
 static int get_largebin_index(size_t size) {
     /* large bins start at 512 bytes */
     if (size < 512)
@@ -166,34 +171,27 @@ static int get_largebin_index(size_t size) {
 
     /* 0–31: 64-byte steps (512 B – 64 KB) */
     if (size <= 64 * 1024) {
-        return (int)((size - 512) >> 6);  // (size-512)/64
+        int idx = (int)((size - 512) >> 6);   // /64
+        if (idx > 31) idx = 31;
+        return idx;
     }
 
-    /* 32–39: 256-byte steps (64 KB – 256 KB) */
-    if (size <= 256 * 1024) {
-        return 32 + (int)((size - 64 * 1024 - 1) >> 8);
-    }
+    /*
+     * 32–63: logarithmic bins
+     * Each bin represents one power-of-two size class
+     */
+    int lg = floor_log2(size);
 
-    /* 40–47: 1 KB steps (256 KB – 1 MB) */
-    if (size <= 1024 * 1024) {
-        return 40 + (int)((size - 256 * 1024 - 1) >> 10);
-    }
+    /*
+     * 64 KB = 2^16 → bin 32
+     * Max size_t (~2^63) → bin 63
+     */
+    int idx = 32 + (lg - 16);
 
-    /* 48–55: 4 KB steps (1 MB – 4 MB) */
-    if (size <= 4 * 1024 * 1024) {
-        return 48 + (int)((size - 1024 * 1024 - 1) >> 12);
-    }
+    if (idx < 32) idx = 32;
+    if (idx > 63) idx = 63;
 
-    /* 56–63: exponential buckets */
-    if (size <= 8 * 1024 * 1024)   return 56;
-    if (size <= 16 * 1024 * 1024)  return 57;
-    if (size <= 32 * 1024 * 1024)  return 58;
-    if (size <= 64 * 1024 * 1024)  return 59;
-    if (size <= 128 * 1024 * 1024) return 60;
-    if (size <= 256 * 1024 * 1024) return 61;
-    if (size <= 512 * 1024 * 1024) return 62;
-
-    return 63;
+    return idx;
 }
 
 
@@ -507,7 +505,7 @@ static free_chunk_t* carve_from_top_chunk(arena_t* ar, size_t requested_size) {
 
 void* _allocate(arena_t* ar, size_t requested_size) {
 
-    assert(requested_size > 0);
+    if(!requested_size) return NULL;
 
     size_t payload_size = align16(requested_size);
     if (payload_size < MIN_PAYLOAD_SIZE) payload_size = MIN_PAYLOAD_SIZE;
