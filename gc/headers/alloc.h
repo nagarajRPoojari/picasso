@@ -5,16 +5,16 @@
 #include <unistd.h>
 #include <pthread.h>
 
+#define DEBUG_MODE 0
 
 #define Debug(fmt, ...) \
     if(DEBUG_MODE) \
-        fprintf(stderr, "[%s:%d] " fmt, __func__, __LINE__, ##__VA_ARGS__)
+        fprintf(stderr, "\n[%s:%d] " fmt, __func__, __LINE__, ##__VA_ARGS__)
 
 
-#define DEBUG_MODE 0
 #define TEST_MODE 0
 
-#define HEAP_BASE_SIZE (128 * 1024) // 128KB
+#define HEAP_BASE_SIZE (1024 * 1024) // 128KB
 #define HEAP_MAX_SIZE (10737418240) // 10GB
 #define HEAP_EXPONENTIAL_GROWTH_LIMIT (64 * 1024 * 1024) // 64MB
 #define HEAP_CONSTANT_GROWTH  (64 * 1024 * 1024) // 64MB
@@ -28,7 +28,7 @@
 #define MMAP_THRESHOLD 131072
 #define ALIGNMENT 16 
 #define HEADER_SIZE (sizeof(size_t) * 2) // prev_size + size
-#define MIN_PAYLOAD_SIZE 16
+#define MIN_PAYLOAD_SIZE 32
 #define MIN_PAYLOAD_SIZE_FOR_LARGEBIN 16 + (sizeof(size_t) * 2)
 #define FASTBINS_COUNT 7
 #define SMALLBINS_COUNT 32
@@ -81,7 +81,7 @@ typedef struct arena {    /* stores non-sentinal nodes in singly linked list */
     unsigned int largebinmap;
 
     /* rwmutex to prevent two threads allocating on same arena */
-    pthread_rwlock_t mu;
+    pthread_mutex_t mu;
 
     int heap_expo_growth_iters;
     int heap_constant_growth_iters;
@@ -95,8 +95,6 @@ typedef struct arena {    /* stores non-sentinal nodes in singly linked list */
 arena_t* arena_create(void);
 void release(arena_t* ar, void* ptr);
 void* allocate(arena_t* ar, size_t requested_size);
-
-void __dump__arena(arena_t *a);
 
 // utils
 typedef struct arena_stats {
