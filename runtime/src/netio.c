@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -349,6 +350,8 @@ void *netio_worker(void *arg) {
                     t->io.done_n = -1;
                     ep_del(epfd, t->io.fd);
                 }
+
+                assert(t->io.req_n >= t->io.done_n);
 
                 t->io.io_done = 1;
                 safe_q_push(&kernel_thread_map[t->sched_id]->ready_q, t);
