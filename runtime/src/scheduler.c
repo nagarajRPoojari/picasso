@@ -217,7 +217,8 @@ void init_timer_signal_handler(void *arg) {
 }
 
 task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
-    task_t *t = allocate(__global__arena__, sizeof(*t));
+    task_t *t = allocate(__global__arena__, sizeof(task_t));
+
     if (!t) { 
         perror("calloc"); 
         exit(1); 
