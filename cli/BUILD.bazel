@@ -30,4 +30,5 @@ cc_binary(
     deps = [
         "//:runtime_lib",
     ],
+    visibility = ["//visibility:public"],
 )
