@@ -63,24 +63,24 @@ static void submit_task(void*(*fn)(void*), int count, int timeout_sec) {
 }
 
 static void* __public__aprintf_thread_func(void* arg) {
-    // (void)arg;
+    (void)arg;
 
-    // int saved_stdout, write_end;
-    // // int readfd = redirect_stdout_pipe(&saved_stdout, &write_end);
+    int saved_stdout, write_end;
+    int readfd = redirect_stdout_pipe(&saved_stdout, &write_end);
 
-    // self_yield();
-    // printf("[test] => before \n");
+    self_yield();
     ssize_t ret = __public__aprintf("hello %d %s", 42, "world");
 
-    // // restore_stdout(saved_stdout, write_end);
+    restore_stdout(saved_stdout, write_end);
 
-    // char buf[64] = {0};
-    // ssize_t r = read(STDOUT_FILENO, buf, sizeof(buf)-1);
-    // close(readfd);
+    char buf[64] = {0};
+    ssize_t r = read(readfd, buf, sizeof(buf)-1);
+    close(readfd);
 
-    // TEST_ASSERT_EQUAL(14, ret);
-    // TEST_ASSERT_EQUAL(14, r);
-    // TEST_ASSERT_EQUAL_STRING("hello 42 world", buf);
+
+    TEST_ASSERT_EQUAL(14, ret);
+    TEST_ASSERT_EQUAL(14, r);
+    TEST_ASSERT_EQUAL_STRING("hello 42 world", buf);
 
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
     return NULL;
@@ -95,7 +95,6 @@ int main(void) {
 
     __global__arena__ = gc_create_global_arena();
 
-    printf("=========== staring IO ========== \n");
     init_io();
     init_scheduler();
     gc_init();
