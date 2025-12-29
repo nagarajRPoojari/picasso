@@ -5,3 +5,4 @@ core
 log
 build
 bazel-*
+coverage-html

@@ -36,15 +36,8 @@ static void* __public__afread_thread_func(void* arg, int fd) {
     int buf_size = 10;
 
     self_yield();
-    char* buf = allocate(__global__arena__, buf_size);
-
-    self_yield();
-    int n = __public__net_read(fd, buf, buf_size - 1);
-
-    if (n > 0) {
-        buf[n] = '\0';
-        TEST_ASSERT_EQUAL_STRING_LEN_MESSAGE(MESSAGE, buf, MESSAGE_LEN, "received invalid message");
-    }
+    int n = __public__net_write(fd, MESSAGE, MESSAGE_LEN);
+    TEST_ASSERT(n == MESSAGE_LEN);
 
     close(fd);
 
@@ -52,7 +45,7 @@ static void* __public__afread_thread_func(void* arg, int fd) {
     return NULL;
 }
 
-void* __test_netio_read_basic(void* arg, int count, int lld) {
+void* __test_netio_write_basic(void* arg, int count, int lld) {
     (void)arg;
 
     for (int i = 0; i < count; i++) {
@@ -99,14 +92,19 @@ void* simulate_client(void* arg, int count, char* addr, int port) {
 
 
         self_yield();
-        write(fd, MESSAGE, MESSAGE_LEN);
+
+        char* buf = allocate(__global__arena__, MESSAGE_LEN);
+        int n = read(fd, buf, 20);
+        TEST_ASSERT(n == MESSAGE_LEN);
+        TEST_ASSERT_EQUAL_STRING_LEN_MESSAGE(MESSAGE, buf, MESSAGE_LEN, "received invalid message");
+
         close(fd);
     }
 
     return NULL;
 }
 
-void test_netio_read_basic(void) {
+void test_netio_write_basic(void) {
     atomic_store(&completed, 0);
 
     int count = 100;
@@ -118,7 +116,7 @@ void test_netio_read_basic(void) {
     int lld = __public__net_listen(addr, port, 4096);
     TEST_ASSERT(lld >= 0);
 
-    thread(__test_netio_read_basic, 3, NULL, count, lld);
+    thread(__test_netio_write_basic, 3, NULL, count, lld);
     thread(simulate_client, 4, NULL, count, addr, port);
     
     struct timespec ts = {0, 1000000}; /* 1ms */
@@ -146,6 +144,6 @@ int main(void) {
     gc_init();
 
     UNITY_BEGIN();
-    RUN_TEST(test_netio_read_basic);
+    RUN_TEST(test_netio_write_basic);
     return UNITY_END();
 }
