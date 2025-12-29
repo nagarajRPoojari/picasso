@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-ini/ini"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
@@ -246,21 +245,12 @@ func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
 // Packages will be named will modified by replacing '/' with '.' resulting
 // in something like os.io instead of os/io.
 func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]struct{}) {
-	projectInitPath := filepath.Join(projectDir, "project.ini")
-	cfg, err := ini.Load(projectInitPath)
-	if err != nil {
-		panic("failed to read project.ini")
-	}
-
-	rootDir := cfg.Section("root").Key("path").String()
-	if rootDir == "" {
-		panic("root.path is empty in project.ini")
-	}
+	rootDir := projectDir
 
 	modifiedPkgAST := make(map[string]ast.BlockStatement)
 	allPkgImports := make(map[string]ast.BlockStatement)
 
-	err = filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}

@@ -611,7 +611,7 @@ static free_chunk_t* coalesce(arena_t* ar, free_chunk_t* fc) {
 }
 
 void _release(arena_t* ar, void* ptr) {
-    assert(ptr != NULL);
+    if(!ptr) return;
     
     free_chunk_t* fc = (free_chunk_t*)((char*)ptr - HEADER_SIZE);
     size_t size = get_size(fc);
