@@ -26,10 +26,8 @@ class Server {
     }
 
     fn Accept(): int {
-        // syncio.printf("[app] accepting... \n");
         say fd: int = net.accept(this.listen_fd);
         syncio.printf("[app] accept fd: %d \n", fd);
-        // syncio.printf("[app] accepting done ... \n");
         return fd;
     }
 }
@@ -46,11 +44,10 @@ class Handler {
 
         while (1==1) {
             say n:int = net.read(fd, buf, buf_size-1);
-            syncio.printf("=> response: %d \n", n);
             if(n<=0){
                 return;
             }
-            syncio.printf(">> %s %d\n", buf, n);
+            syncio.printf("[received] %s %d\n", buf, n);
 
             net.write(fd, "hello",  6);
         }
@@ -63,17 +60,16 @@ class Handler {
 
 
 fn start() {
-    say server: start.Server = new start.Server("0.0.0.0", 8080);
+    say server: start.Server = new start.Server("127.0.0.1", 8000);
     server.Listen();
 
     say h: start.Handler = new start.Handler();
 
     syncio.printf("[app] class=%p, handler=%p \n", h, h.handle);
 
-
     while (1==1) {
         say fd: int = server.Accept();
-        syncio.printf("[app => class=%p, handler=%p \n", h, h.handle);
+        syncio.printf("[new conncection] \n");
         thread(h.handle, fd);        
     }
 }
