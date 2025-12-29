@@ -248,6 +248,8 @@ static void insert_into_fastbin(arena_t* ar, free_chunk_t* fc) {
         /* weird way of preventing fastbin coalesce. */
         /* neither i set current chunk free, nor do i tell next chunk that it is free */
         /* unset_curr_inuse(fc); */
+        /* @experimental: gc_sweep depends on curr_inuse flag, so it is mandatory to unset to avoid sweep */
+        unset_curr_inuse(fc);
         /* unset_prev_inuse(next_chunk(fc)); */
         return;
     }
@@ -496,9 +498,7 @@ static free_chunk_t* carve_from_top_chunk(arena_t* ar, size_t requested_size) {
         return curr;
         
     }else {
-
         perror("not enough memory in heap");   
-
     }
     return NULL;
 }
@@ -520,35 +520,29 @@ void* _allocate(arena_t* ar, size_t requested_size) {
     /* search in fastbin */
     if(!victim && payload_size <= 16 * FASTBINS_COUNT) {
         victim = fastbin_search(ar, payload_size);
-        if(victim) assert(get_size(victim) != 0);
     }
 
     /* search in smallbins */
     if(!victim && payload_size < 16 * SMALLBINS_COUNT) {
         victim = smallbin_search(ar, payload_size);
-        if(victim) assert(get_size(victim) != 0);
     }
 
     if(!victim) {
         victim = unsortedbin_search(ar, payload_size);
-        if(victim) assert(get_size(victim) != 0);
     }
 
     if(!victim) {
         victim = largebin_search(ar, payload_size);
-        if(victim) assert(get_size(victim) != 0);
     }
 
     if(!victim) {
         victim = carve_from_top_chunk(ar, payload_size);
-        if(victim) assert(get_size(victim) != 0);
     }
 
     if(!victim) {
         insert_into_unsortedbin(ar, ar->top_chunk);
         ar->top_chunk = NULL;    
         victim = carve_from_top_chunk(ar, payload_size);
-        if(victim) assert(get_size(victim) != 0);
     }
 
     return (void*)((char*)victim + HEADER_SIZE);
@@ -568,7 +562,7 @@ static free_chunk_t* forward_coalesce(arena_t* ar, free_chunk_t* fc) {
     free_chunk_t* next_fc = next_chunk(fc);
     
     /* this also ensure no fastbin coalescing */
-    if(is_curr_inuse(next_fc) || get_size(next_fc) <= 16) return fc;
+    if(is_curr_inuse(next_fc) || get_size(next_fc) <= 16 * FASTBINS_COUNT) return fc;
 
 
 
