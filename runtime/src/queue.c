@@ -145,9 +145,10 @@ void unsafe_q_init(unsafe_queue_t *q, int size) {
  * @param t Pointer to the task to insert.
  */
 void unsafe_q_push(unsafe_queue_t *q, task_t *t) {
-    wait_q_metadata_t *n = allocate(__global__arena__, sizeof(*n)); /* must be freed later */
+    wait_q_metadata_t *n = allocate(__global__arena__, sizeof(wait_q_metadata_t)); /* must be freed later */
     if (!n) abort();   /* optional but sane */
     n->t = t;
+    t->wq = n; 
 
     /* empty queue */
     if (!q->head) {
