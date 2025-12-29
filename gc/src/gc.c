@@ -217,9 +217,9 @@ static void gc_sweep() {
                 inuse_chunk_t *chunk = (inuse_chunk_t*)scan;
                 size_t payload_size = chunk->size & __CHUNK_SIZE_MASK;
 
-                if( chunk->prev_size & __GC_MARK_FLAG_MASK || !(chunk->size & __CURR_IN_USE_FLAG_MASK)) {
+                if( chunk->prev_size & __GC_MARK_FLAG_MASK) {
                     chunk->prev_size &= ~__GC_MARK_FLAG_MASK;
-                } else {
+                } else if(chunk->size & __CURR_IN_USE_FLAG_MASK) {
                     release(ar, (char*)chunk + HEADER_SIZE);
                 }
 
