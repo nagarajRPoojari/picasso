@@ -2,7 +2,10 @@ load("@rules_go//go:def.bzl", "go_library")
 
 go_library(
     name = "error",
-    srcs = ["errors.go"],
+    srcs = [
+        "diagnostic.go",
+        "errors.go",
+    ],
     importpath = "github.com/nagarajRPoojari/niyama/irgen/error",
     visibility = ["//visibility:public"],
     deps = ["@com_github_fatih_color//:color"],

@@ -22,8 +22,8 @@ func createParser(tokens []lexer.Token) *Parser {
 	return p
 }
 
-func ParseAll(source string) ast.BlockStatement {
-	tokens := lexer.Tokenize(source)
+func ParseAll(path string) ast.BlockStatement {
+	tokens := lexer.Tokenize(path)
 	p := createParser(tokens)
 	body := make([]ast.Statement, 0)
 
@@ -36,8 +36,8 @@ func ParseAll(source string) ast.BlockStatement {
 	}
 }
 
-func ParseImports(source string) ast.BlockStatement {
-	tokens := lexer.Tokenize(source)
+func ParseImports(filePath string) ast.BlockStatement {
+	tokens := lexer.Tokenize(filePath)
 	p := createParser(tokens)
 	body := make([]ast.Statement, 0)
 

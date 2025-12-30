@@ -263,13 +263,7 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 			return nil
 		}
 
-		sourceBytes, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("unable to read %s: %w", path, err)
-		}
-
-		source := string(sourceBytes)
-		tree := parser.ParseImports(source)
+		tree := parser.ParseImports(path)
 
 		// relative path from root
 		rel, err := filepath.Rel(rootDir, path)
@@ -326,14 +320,7 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 		if _, ok := modifiedPkgs[pkgName]; !ok {
 			return nil
 		}
-
-		sourceBytes, err := os.ReadFile(path)
-		if err != nil {
-			return fmt.Errorf("unable to read %s: %w", path, err)
-		}
-
-		source := string(sourceBytes)
-		tree := parser.ParseAll(source)
+		tree := parser.ParseAll(path)
 
 		modifiedPkgAST[pkgName] = tree
 		return nil

@@ -23,6 +23,7 @@ func parseExpressionStmt(p *Parser) ast.ExpressionStatement {
 	p.expect(lexer.SEMI_COLON)
 
 	return ast.ExpressionStatement{
+		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
 		Expression: expression,
 	}
 }
@@ -37,7 +38,8 @@ func parseBlockStmt(p *Parser) ast.Statement {
 
 	p.expect(lexer.CLOSE_CURLY)
 	return ast.BlockStatement{
-		Body: body,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Body:      body,
 	}
 }
 
@@ -89,6 +91,7 @@ func parseVarDeclStmt(p *Parser) ast.Statement {
 	}
 
 	return ast.VariableDeclarationStatement{
+		SourceLoc:     ast.SourceLoc(p.currentToken().Src),
 		Constant:      isConstant,
 		Identifier:    symbolName.Value,
 		AssignedValue: assignmentValue,
@@ -147,6 +150,7 @@ func parseFuncDeclaration(p *Parser) ast.Statement {
 	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
 
 	return ast.FunctionDefinitionStatement{
+		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
 		Parameters: functionParams,
 		ReturnType: returnType,
 		Body:       functionBody,
@@ -187,6 +191,7 @@ func parseIfStmt(p *Parser) ast.Statement {
 	}
 
 	return ast.IfStatement{
+		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
 		Condition:  condition,
 		Consequent: consequent,
 		Alternate:  alternate,
@@ -209,8 +214,9 @@ func parseImportStmt(p *Parser) ast.Statement {
 
 	p.expect(lexer.SEMI_COLON)
 	return ast.ImportStatement{
-		Name:  importName,
-		Alias: importAlias,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Name:      importName,
+		Alias:     importAlias,
 	}
 }
 
@@ -230,10 +236,11 @@ func parseForeachStmt(p *Parser) ast.Statement {
 	body := ast.ExpectStmt[ast.BlockStatement](parseBlockStmt(p)).Body
 
 	return ast.ForeachStatement{
-		Value:    valueName,
-		Index:    index,
-		Iterable: iterable,
-		Body:     body,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Value:     valueName,
+		Index:     index,
+		Iterable:  iterable,
+		Body:      body,
 	}
 }
 
@@ -243,6 +250,7 @@ func parseWhileStmt(p *Parser) ast.Statement {
 	body := ast.ExpectStmt[ast.BlockStatement](parseBlockStmt(p)).Body
 
 	return ast.WhileStatement{
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
 		Condition: condition,
 		Body:      body,
 	}
@@ -264,6 +272,7 @@ func parseClassDeclStmt(p *Parser) ast.Statement {
 	classBody := parseBlockStmt(p)
 
 	return ast.ClassDeclarationStatement{
+		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
 		Name:       className,
 		Body:       ast.ExpectStmt[ast.BlockStatement](classBody).Body,
 		Implements: implements,
@@ -276,8 +285,9 @@ func parseInterfaceDeclStmt(p *Parser) ast.Statement {
 	interfaceBody := parseBlockStmt(p)
 
 	return ast.InterfaceDeclarationStatement{
-		Name: interfaceName,
-		Body: ast.ExpectStmt[ast.BlockStatement](interfaceBody).Body,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Name:      interfaceName,
+		Body:      ast.ExpectStmt[ast.BlockStatement](interfaceBody).Body,
 	}
 }
 
@@ -287,18 +297,22 @@ func parseFuncReturnStmt(p *Parser) ast.Statement {
 	if p.currentTokenKind() == lexer.NULL {
 		p.move()
 		p.expect(lexer.SEMI_COLON)
-		return ast.ReturnStatement{}
+		return ast.ReturnStatement{
+			SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		}
 	}
 	if p.currentTokenKind() == lexer.SEMI_COLON {
 		p.move()
 		return ast.ReturnStatement{
-			IsVoid: true,
+			SourceLoc: ast.SourceLoc(p.currentToken().Src),
+			IsVoid:    true,
 		}
 	}
 	exp := parseExpressionStmt(p)
 
 	return ast.ReturnStatement{
-		Value: exp,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Value:     exp,
 	}
 }
 
@@ -306,5 +320,7 @@ func parseBreakStmt(p *Parser) ast.Statement {
 	p.expect(lexer.BREAK)
 	p.expect(lexer.SEMI_COLON)
 
-	return ast.BreakStatement{}
+	return ast.BreakStatement{
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+	}
 }
