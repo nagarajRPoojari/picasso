@@ -1,0 +1,18 @@
+load(":e2e_tests.bzl", "e2e_tests")
+
+cc_binary(
+    name = "test_runner",
+    srcs = ["test_runner.c"],
+    copts = [
+        "-g",
+        "-O0",
+        "-fno-omit-frame-pointer",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+e2e_tests(
+    name = "all_tests",
+    niyama = "//cli:niyama",
+    runner = ":test_runner",
+)
