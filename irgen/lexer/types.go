@@ -1,6 +1,14 @@
 package lexer
 
-import "fmt"
+import (
+	"fmt"
+)
+
+type SourceLoc struct {
+	FilePath string
+	Line     int
+	Col      int
+}
 
 type TokenKind int
 
@@ -114,6 +122,7 @@ var reserved_keywords map[string]TokenKind = map[string]TokenKind{
 type Token struct {
 	Kind  TokenKind
 	Value string
+	Src   SourceLoc
 }
 
 func (t Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
@@ -262,8 +271,10 @@ func TokenKindString(kind TokenKind) string {
 	}
 }
 
-func newUniqueToken(kind TokenKind, value string) Token {
+func newUniqueToken(kind TokenKind, value string, src SourceLoc) Token {
 	return Token{
-		kind, value,
+		Kind:  kind,
+		Value: value,
+		Src:   src,
 	}
 }
