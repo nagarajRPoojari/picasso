@@ -27,8 +27,8 @@ cc_binary(
         "IRGEN_BIN=\\\"irgen/irgen_/irgen\\\"",
         "RUNTIME_LIB_PATH=\\\"libruntime_lib.a\\\"",
     ],
+    visibility = ["//visibility:public"],
     deps = [
         "//:runtime_lib",
     ],
-    visibility = ["//visibility:public"],
 )
