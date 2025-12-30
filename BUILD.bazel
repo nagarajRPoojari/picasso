@@ -19,7 +19,6 @@ cc_library(
         "-rdynamic",
         "-fno-omit-frame-pointer",
         "-I/usr/include/aarch64-linux-gnu",
-
     ],
     includes = [
         "gc/headers",
@@ -55,8 +54,8 @@ cc_library(
         "-I/usr/include/aarch64-linux-gnu",
     ],
     includes = [
-        "runtime/headers",
         "gc/headers",
+        "runtime/headers",
     ],
     linkopts = [
         "-luring",
@@ -65,7 +64,6 @@ cc_library(
     ],
     visibility = ["//visibility:public"],
 )
-
 
 cc_library(
     name = "system_libs",

@@ -8,6 +8,6 @@ cc_library(
         "unity_internals.h",
     ],
     include_prefix = "unity",  # this makes #include "unity/unity.h" work
-    strip_include_prefix = ".", # strip test/unity from path
+    strip_include_prefix = ".",  # strip test/unity from path
     visibility = ["//visibility:public"],
 )
