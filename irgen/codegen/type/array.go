@@ -95,7 +95,7 @@ func (a *Array) NativeTypeString() string { return "array" }
 func (a *Array) Len(block *bc.BlockHolder) value.Value {
 	lengthPtr := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 2),
 	)
 	return block.N.NewLoad(types.I64, lengthPtr)
 }
@@ -125,7 +125,7 @@ func (a *Array) LoadRank(block *bc.BlockHolder) value.Value {
 func (a *Array) LoadShapePtr(block *bc.BlockHolder) value.Value {
 	shapePtrField := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 2),
+		constant.NewInt(types.I32, 1),
 	)
 	raw := block.N.NewLoad(types.NewPointer(types.I64), shapePtrField)
 	return raw
@@ -157,7 +157,7 @@ func (a *Array) StoreByIndex(block *bc.BlockHolder, indices []value.Value, val v
 	offset := a.IndexOffset(block, indices)
 	dataPtrField := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 1),
+		constant.NewInt(types.I32, 0),
 	)
 	raw := block.N.NewLoad(types.NewPointer(types.I8), dataPtrField)
 	elemsPtr := block.N.NewBitCast(raw, types.NewPointer(a.ElemType))
@@ -172,7 +172,7 @@ func (a *Array) LoadByIndex(block *bc.BlockHolder, indices []value.Value) value.
 
 	dataPtrField := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 1),
+		constant.NewInt(types.I32, 0),
 	)
 	raw := block.N.NewLoad(types.NewPointer(types.I8), dataPtrField)
 	elemsPtr := block.N.NewBitCast(raw, types.NewPointer(a.ElemType))
