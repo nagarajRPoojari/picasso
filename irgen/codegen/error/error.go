@@ -39,6 +39,8 @@ const (
 	VarsNotAllowedInInterfaceError  = "variables not allowed in interface %s"
 	UnImplementedInterfaceMethod    = "interface method unimplmented %s"
 	InvalidConstructorSignature     = "invalid constructor signature for %s"
+	FieldNotAccessible              = "class %s field %s is not accessible"
+	ClassNotAccessible              = "class %s is not accessible for instantiation"
 )
 
 const (
