@@ -4,11 +4,14 @@ import (
 	"fmt"
 
 	"github.com/llir/llvm/ir/constant"
+	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
+	rterr "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/private/runtime"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
 	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
 )
 
@@ -92,12 +95,15 @@ func (a *Array) Cast(block *bc.BlockHolder, v value.Value) (value.Value, error) 
 
 func (a *Array) NativeTypeString() string { return "array" }
 
-func (a *Array) Len(block *bc.BlockHolder) value.Value {
+func (a *Array) Len(block *bc.BlockHolder) *ints.Int64 {
 	lengthPtr := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 2),
 	)
-	return block.N.NewLoad(types.I64, lengthPtr)
+	return &ints.Int64{
+		NativeType: types.I64,
+		Value:      lengthPtr,
+	}
 }
 
 func (a *Array) Load(block *bc.BlockHolder) value.Value {
@@ -113,12 +119,15 @@ func (a *Array) UpdateV2(block *bc.BlockHolder, v *Array) {
 }
 
 // LoadRank returns i64 rank field from runtime struct
-func (a *Array) LoadRank(block *bc.BlockHolder) value.Value {
+func (a *Array) LoadRank(block *bc.BlockHolder) *ints.Int64 {
 	rankPtr := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 3),
 	)
-	return block.N.NewLoad(types.I64, rankPtr)
+	return &ints.Int64{
+		NativeType: types.I64,
+		Value:      rankPtr,
+	}
 }
 
 // LoadShapePtr returns i64* pointer to shape buffer
@@ -131,22 +140,77 @@ func (a *Array) LoadShapePtr(block *bc.BlockHolder) value.Value {
 	return raw
 }
 
+func (a *Array) LoadShapeArray(block *bc.BlockHolder) *Array {
+	b := block.N
+
+	rank := a.LoadRank(block).Load(block)
+	elemSize := constant.NewInt(types.I64, 8)
+
+	rankVal := constant.NewInt(types.I32, 1)
+
+	structAlloc := b.NewCall(c.Instance.Funcs[c.FUNC_ARRAY_ALLOC], rank, elemSize, rankVal)
+	arrayPtr := b.NewBitCast(structAlloc, types.NewPointer(ARRAYSTRUCT))
+
+	origShapePtr := a.LoadShapePtr(block)
+
+	dataField := b.NewGetElementPtr(
+		ARRAYSTRUCT,
+		arrayPtr,
+		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 0),
+	)
+
+	dataAsI8 := b.NewBitCast(origShapePtr, types.NewPointer(types.I8))
+	b.NewStore(dataAsI8, dataField)
+
+	shapeField := b.NewGetElementPtr(
+		ARRAYSTRUCT,
+		arrayPtr,
+		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 1),
+	)
+
+	shapeBuf := b.NewLoad(types.NewPointer(types.I64), shapeField)
+
+	firstDim := b.NewGetElementPtr(
+		types.I64,
+		shapeBuf,
+		constant.NewInt(types.I32, 0),
+	)
+	b.NewStore(rank, firstDim)
+
+	return &Array{
+		Ptr:       arrayPtr,
+		ElemType:  types.I64,
+		ArrayType: ARRAYSTRUCT,
+	}
+}
+
+// IndexOffset computes linear offset with bounds checks
 func (a *Array) IndexOffset(block *bc.BlockHolder, indices []value.Value) value.Value {
 	shapePtr := a.LoadShapePtr(block)
 	var offset value.Value = constant.NewInt(types.I64, 0)
 
 	for i := range indices {
+		idx := indices[i]
+
+		// index >= 0
+		checkIntCond(block, idx, constant.NewInt(types.I64, 0), enum.IPredSGE, "array index < 0")
+
+		// index < shape[i]
+		shapeElemPtr := block.N.NewGetElementPtr(types.I64, shapePtr, constant.NewInt(types.I64, int64(i)))
+		dimVal := block.N.NewLoad(types.I64, shapeElemPtr)
+
+		checkIntCond(block, idx, dimVal, enum.IPredSLT, "array index out of bounds\n")
+
 		var prod value.Value = constant.NewInt(types.I64, 1)
-
 		for j := i + 1; j < len(indices); j++ {
-			elemPtr := block.N.NewGetElementPtr(types.I64, shapePtr, constant.NewInt(types.I64, int64(j)))
-			dimVal := block.N.NewLoad(types.I64, elemPtr)
-
-			prod = block.N.NewMul(prod, dimVal)
+			nextDimPtr := block.N.NewGetElementPtr(types.I64, shapePtr, constant.NewInt(types.I64, int64(j)))
+			nextDim := block.N.NewLoad(types.I64, nextDimPtr)
+			prod = block.N.NewMul(prod, nextDim)
 		}
 
-		offsetPart := block.N.NewMul(indices[i], prod)
-		offset = block.N.NewAdd(offset, offsetPart)
+		offset = block.N.NewAdd(offset, block.N.NewMul(idx, prod))
 	}
 
 	return offset
@@ -179,4 +243,14 @@ func (a *Array) LoadByIndex(block *bc.BlockHolder, indices []value.Value) value.
 
 	elemPtr := block.N.NewGetElementPtr(a.ElemType, elemsPtr, offset)
 	return block.N.NewLoad(a.ElemType, elemPtr)
+}
+
+func checkIntCond(block *bc.BlockHolder, v1, v2 value.Value, pred enum.IPred, errMsg string) {
+	b := block.N
+	passBlk := b.Parent.NewBlock("")
+	failBlk := b.Parent.NewBlock("")
+	cond := b.NewICmp(pred, v1, v2)
+	b.NewCondBr(cond, passBlk, failBlk)
+	rterr.Instance.RaiseRTError(failBlk, errMsg)
+	block.Update(block.V, passBlk)
 }
