@@ -1,0 +1,26 @@
+using "builtin/strings";
+
+class String {
+    say s: string;
+    say len: int;
+
+    fn String(s: string) {
+        this.s = s;
+        this.len = strings.len(s);
+    }
+
+    fn Get(): string {
+        return this.s;
+    }
+}
+
+class Wrapper {
+    say x: types.String;
+    fn Wrapper() {
+        this.x = new types.String("hello");
+    }
+
+    fn Get(): types.String {
+        return this.x;
+    }
+}
