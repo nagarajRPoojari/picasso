@@ -27,6 +27,7 @@ type VariableDeclarationStatement struct {
 	ExplicitType  Type
 	IsStatic      bool
 	IsAtomic      bool
+	IsInternal    bool
 }
 
 func (VariableDeclarationStatement) stmt() {}
@@ -64,6 +65,7 @@ type FunctionDefinitionStatement struct {
 	Hash       uint32
 	ReturnType Type
 	IsStatic   bool
+	IsInternal bool
 }
 
 func (FunctionDefinitionStatement) stmt() {}
@@ -170,6 +172,7 @@ type ClassDeclarationStatement struct {
 	Name       string
 	Body       []Statement
 	Implements string
+	IsInternal bool
 }
 
 func (n ClassDeclarationStatement) stmt() {}
