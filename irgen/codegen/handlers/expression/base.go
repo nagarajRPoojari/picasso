@@ -6,6 +6,8 @@
 package expression
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
@@ -79,6 +81,12 @@ func (t *ExpressionHandler) ProcessExpression(bh *bc.BlockHolder, expI ast.Expre
 		return t.ProcessNewExpression(bh, ex)
 
 	case ast.MemberExpression:
+		if m, ok := ex.Member.(ast.SymbolExpression); ok {
+			val := fmt.Sprintf("%s.%s", m.Value, ex.Property)
+			if t.st.TypeHandler.Exists(val) {
+				return t.st.TypeHandler.BuildVar(bh, tf.NewType(val), nil)
+			}
+		}
 		return t.ProcessMemberExpression(bh, ex)
 
 	case ast.ComputedExpression:
