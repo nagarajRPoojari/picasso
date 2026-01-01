@@ -230,7 +230,6 @@ static void gc_sweep() {
 }
 
 void gc_run() {
-    printf(" started gc \n");
     while (1) {
         gc_stop_the_world();
 
