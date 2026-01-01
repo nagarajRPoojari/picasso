@@ -135,6 +135,7 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 
 	// Resolve Imports: Declare symbols from direct and transitive dependencies (B and C)
 	t.resolveImports(tree, directUserImports, llvm)
+	llvm.AddImportEntry(state.PackageEntry{Name: pkgName, Alias: pkgName})
 
 	// Compile
 	fmt.Println("=> [compile] ", pkgName)

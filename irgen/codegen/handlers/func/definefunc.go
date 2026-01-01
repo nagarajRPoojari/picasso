@@ -131,6 +131,10 @@ func (t *FuncHandler) Init(block *bc.BlockHolder) {
 	for _, tp := range tps {
 		t.initTypes(block, tp)
 	}
+
+	for name := range t.st.GlobalTypeList {
+		t.initTypes(block, name)
+	}
 }
 
 func (t *FuncHandler) initTypes(block *bc.BlockHolder, s string) {
