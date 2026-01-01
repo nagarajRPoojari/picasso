@@ -51,6 +51,9 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	// @runtime_init
 	t.Funcs[FUNC_RUNTIME_INIT] = mod.NewFunc(FUNC_RUNTIME_INIT, types.Void)
 
+	// @runtime error
+	// t.Funcs[FUNC_RUNTIME_ERROR] =
+
 	// @array_alloc
 	t.Funcs[FUNC_ARRAY_ALLOC] = mod.NewFunc(FUNC_ARRAY_ALLOC, types.NewPointer(t.Types[TYPE_ARRAY]), ir.NewParam("", types.I32), ir.NewParam("", types.I32), ir.NewParam("", types.I32))
 

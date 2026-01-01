@@ -77,6 +77,8 @@ const (
 	FUNC_RUNTIME_INIT  = "runtime_init"
 	ALIAS_RUNTIME_INIT = "runtime_init"
 
+	FUNC_RUNTIME_ERROR = "__public__runtime_error"
+
 	FUNC_ALLOC  = "__public__alloc" // Garbage Collector tracked allocation
 	ALIAS_ALLOC = "alloc"
 
