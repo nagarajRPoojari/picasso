@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
+	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/lexer"
 )
 
@@ -45,29 +46,39 @@ func parseBlockStmt(p *Parser) ast.Statement {
 
 func parseVarDeclStmt(p *Parser) ast.Statement {
 	var explicitType ast.Type
+	p.expect(lexer.SAY)
 
-	startToken := p.move().Kind
+	var isInternal bool
+	if p.currentTokenKind() == lexer.INTERNAL {
+		isInternal = true
+		p.move()
+	}
 
-	isConstant := startToken == lexer.CONST
-
-	nextToken := p.move()
 	var isStatic bool
-	if nextToken.Kind == lexer.STATIC {
+	if p.currentTokenKind() == lexer.STATIC {
 		isStatic = true
-		nextToken = p.move()
-	}
-	if nextToken.Kind != lexer.IDENTIFIER {
-		panic("unexpected keyword in variable declaration")
+		p.move()
 	}
 
-	symbolName := nextToken
+	symbolName := p.currentToken()
+	if p.currentTokenKind() != lexer.IDENTIFIER {
+		errorsx.PanicParserError(
+			"unexpected keyword in variable declaration",
+			p.currentToken().Src.FilePath,
+			p.currentToken().Src.Line,
+			p.currentToken().Src.Col,
+		)
+	} else {
+		p.move()
+	}
+
 	if p.currentTokenKind() == lexer.COLON {
-		p.expect(lexer.COLON)
+		p.move()
 
 		atomic := false
 		if p.currentTokenKind() == lexer.ATOMIC {
 			atomic = true
-			nextToken = p.move()
+			p.move()
 		}
 
 		explicitType = parse_type(p, default_bp)
@@ -86,17 +97,13 @@ func parseVarDeclStmt(p *Parser) ast.Statement {
 
 	p.expect(lexer.SEMI_COLON)
 
-	if isConstant && assignmentValue == nil {
-		panic("Cannot define constant variable without providing default value.")
-	}
-
 	return ast.VariableDeclarationStatement{
 		SourceLoc:     ast.SourceLoc(p.currentToken().Src),
-		Constant:      isConstant,
 		Identifier:    symbolName.Value,
 		AssignedValue: assignmentValue,
 		ExplicitType:  explicitType,
 		IsStatic:      isStatic,
+		IsInternal:    isInternal,
 	}
 }
 
@@ -137,6 +144,13 @@ func parseFuncDeclaration(p *Parser) ast.Statement {
 	startToken := p.move()
 	var isStatic bool
 	var functionName string
+	var isInternal bool
+
+	if startToken.Kind == lexer.INTERNAL {
+		isInternal = true
+		startToken = p.move()
+	}
+
 	if startToken.Kind == lexer.STATIC {
 		isStatic = true
 		functionName = p.expect(lexer.IDENTIFIER).Value
@@ -144,7 +158,12 @@ func parseFuncDeclaration(p *Parser) ast.Statement {
 		if startToken.Kind == lexer.IDENTIFIER {
 			functionName = startToken.Value
 		} else {
-			panic("unexpected keyword after fn")
+			errorsx.PanicParserError(
+				"unexpected keyword after fn",
+				p.currentToken().Src.FilePath,
+				p.currentToken().Src.Line,
+				p.currentToken().Src.Col,
+			)
 		}
 	}
 	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
@@ -157,6 +176,7 @@ func parseFuncDeclaration(p *Parser) ast.Statement {
 		Name:       functionName,
 		IsStatic:   isStatic,
 		Hash:       funcHash(functionParams, returnType),
+		IsInternal: isInternal,
 	}
 }
 
@@ -258,6 +278,11 @@ func parseWhileStmt(p *Parser) ast.Statement {
 
 func parseClassDeclStmt(p *Parser) ast.Statement {
 	p.move()
+	var isInternal bool
+	if p.currentTokenKind() == lexer.INTERNAL {
+		isInternal = true
+		p.move()
+	}
 	className := p.expect(lexer.IDENTIFIER).Value
 	var implements string
 	if p.currentTokenKind() == lexer.COLON {
@@ -276,6 +301,7 @@ func parseClassDeclStmt(p *Parser) ast.Statement {
 		Name:       className,
 		Body:       ast.ExpectStmt[ast.BlockStatement](classBody).Body,
 		Implements: implements,
+		IsInternal: isInternal,
 	}
 }
 

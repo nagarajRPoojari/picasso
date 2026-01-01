@@ -86,6 +86,7 @@ const (
 
 	RETURN
 	STATIC
+	INTERNAL
 
 	NUM_TOKENS
 )
@@ -117,6 +118,7 @@ var reserved_keywords map[string]TokenKind = map[string]TokenKind{
 	"in":        IN,
 	"return":    RETURN,
 	"static":    STATIC,
+	"internal":  INTERNAL,
 }
 
 type Token struct {
@@ -266,6 +268,8 @@ func TokenKindString(kind TokenKind) string {
 		return "return"
 	case STATIC:
 		return "static"
+	case INTERNAL:
+		return "internal"
 	default:
 		return fmt.Sprintf("unknown(%d)", kind)
 	}
