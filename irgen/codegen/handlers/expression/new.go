@@ -2,6 +2,7 @@ package expression
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
@@ -127,6 +128,13 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 	classMeta := t.st.Classes[aliasClsName]
 	if classMeta == nil {
 		errorutils.Abort(errorutils.UnknownClass, aliasClsName)
+	}
+
+	clsNameSplit := strings.Split(aliasClsName, ".")
+	moduleName := clsNameSplit[0]
+
+	if classMeta.Internal && moduleName != t.st.ModuleName {
+		errorutils.Abort(errorutils.ClassNotAccessible, aliasClsName)
 	}
 
 	// tf.NewClass allocates memory for class instance in heap internally.

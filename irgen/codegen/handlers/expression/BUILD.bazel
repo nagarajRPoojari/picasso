@@ -33,5 +33,6 @@ go_library(
         "@com_github_llir_llvm//ir/enum",
         "@com_github_llir_llvm//ir/types",
         "@com_github_llir_llvm//ir/value",
+        "@com_github_sanity_io_litter//:litter",
     ],
 )
