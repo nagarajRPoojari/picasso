@@ -50,7 +50,7 @@ func (t *NetIO) read(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc
 	}
 	size := typeHandler.ImplicitTypeCast(bh, utils.GetTypeString(scanFn.Sig.Params[2]), args[2].Load(bh))
 
-	CheckIntCond(bh, dest.(*typedef.Array).Len(bh), size, enum.IPredSGE, "buffer overflow")
+	CheckIntCond(bh, dest.(*typedef.Array).Len(bh).Load(bh), size, enum.IPredSGE, "buffer overflow")
 
 	return libutils.CallCFunc(typeHandler, scanFn, bh, args)
 }
@@ -70,12 +70,7 @@ func (t *NetIO) write(typeHandler *typedef.TypeHandler, module *ir.Module, bh *b
 	return libutils.CallCFunc(typeHandler, scanFn, bh, args)
 }
 
-func CheckIntCond(
-	block *bc.BlockHolder,
-	v1, v2 value.Value,
-	pred enum.IPred,
-	errMsg string,
-) {
+func CheckIntCond(block *bc.BlockHolder, v1, v2 value.Value, pred enum.IPred, errMsg string) {
 	b := block.N
 
 	passBlk := b.Parent.NewBlock("")
