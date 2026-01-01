@@ -1,0 +1,17 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class Test {
+    
+    fn Test() {}
+
+    fn testArrayIndexOutOfBound() {
+        say x: []int = array.create(int, 10);
+        x[11] = 190; // expected to fail
+    }
+}
+
+fn start() {
+    say test: start.Test = new start.Test();
+    test.testArrayIndexOutOfBound();
+}

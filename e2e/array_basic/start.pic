@@ -1,0 +1,84 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class Student {
+    say name: string;
+    say age: int;
+    fn Student(name: string, age: int) {
+        this.name = name;
+        this.age = age;
+    }
+
+    fn Print() {
+        syncio.printf("Student: {name: %s, age: %d}\n", this.name, this.age);
+    }
+}
+
+class Test {
+    fn Test() {}
+
+    fn test1DArrayAccess() {
+        say n:int = 5;
+
+        // int array
+        say intArr:[]int = array.create(int, n);
+        foreach i in 0..array.shape(intArr)[0] {
+            syncio.printf("intArr[%d]=%d\n", i, intArr[i]); // expected to be 0
+            intArr[i] = i;
+            syncio.printf("intArr[%d]=%d\n", i, intArr[i]); // expected to be i
+        }
+
+        // string array
+        say strArr:[]string = array.create(string, n);
+        foreach i in 0..array.shape(intArr)[0] {
+            strArr[i] = "hello";
+            syncio.printf("strArr[%d]=%s\n", i, strArr[i]); // expected to be "hello"
+        }
+
+        // class array
+        say stdArr:[]start.Student = array.create(start.Student, n);
+        foreach i in 0..array.shape(intArr)[0] {
+            stdArr[i] = new start.Student("john", i);
+            stdArr[i].Print();
+        }
+
+    }
+
+    fn test2DArrayAccess() {    
+        say m: int = 3;
+        say n: int = 5;
+
+        say intArr: [][]int = array.create(int, m, n);
+        say shape: []int = array.shape(intArr);
+        foreach i in 0..shape[0] {
+            foreach j in 0..shape[1] {
+                intArr[i,j] = i * j;
+                syncio.printf("intArr[%d,%d]=%d\n", i, j, intArr[i,j]);
+            }
+        }
+    }
+
+    fn test2DArrayAsReturn(): [][]string {
+        say x:[][]string = array.create(string, 2, 3);
+        x[0, 0] = "john";
+        return x;
+    }
+
+    fn test2DArrayAsParam(x: [][]string) {
+        x[0,0] = "success";
+    }
+}
+
+fn start() {
+   say test: start.Test = new start.Test();
+
+    test.test1DArrayAccess();
+    test.test2DArrayAccess();
+
+    say x:[][]string = test.test2DArrayAsReturn();
+    syncio.printf("x[0,0]=%s\n", x[0,0]);
+
+    test.test2DArrayAsParam(x);
+    syncio.printf("x[0,0]=%s\n", x[0,0]);
+
+}
