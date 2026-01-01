@@ -1,75 +1,33 @@
-
-
 using "builtin/syncio";
-using "builtin/asyncio";
 using "builtin/array";
-using "builtin/sync";
-using "builtin/os";
-using "builtin/net";
-using "builtin/types";
+using "types";
 
-class Server {
-    say addr: string;
-    say port: int;
-    say listen_fd: int;
+class Student {
+    say name: types.String;
+    say age: int;
 
-    fn Server(addr: string, port: int) {
-        this.addr = addr;
-        this.port = port;
+    fn Student(name: types.String, age: int) {
+        this.name = name;
+        this.age = age;
     }
 
-    fn Listen() {
-        this.listen_fd = net.listen(this.addr, this.port, 4096);
-        syncio.printf("listening at %s:%d ... \n", this.addr, this.port);
-
-        syncio.printf("[app-listen] fd = %d , size = %zu \n", this.listen_fd, types.size(this.listen_fd));
-    }
-
-    fn Accept(): int {
-        say fd: int = net.accept(this.listen_fd);
-        syncio.printf("[app] accept fd: %d \n", fd);
-        return fd;
-    }
-}
-
-class Handler {
-    fn Handler() {
-
-    }
-
-    fn handle(fd: int) {
-        syncio.printf("[new connection] \n");
-        say buf_size: int = 1024;
-        say buf: []int8 = array.create(int8, buf_size);
-
-        while (1==1) {
-            say n:int = net.read(fd, buf, buf_size-1);
-            if(n<=0){
-                return;
-            }
-            syncio.printf("[received] %s %d\n", buf, n);
-
-            net.write(fd, "hello",  6);
-        }
-    }
-
-    fn printer(id: int) {
-        syncio.printf("> %d \n", id);
+    fn Print() {
+        syncio.printf("Student: {name: %s, age: %d}\n", this.name.Get(), this.age);
     }
 }
 
 
 fn start() {
-    say server: start.Server = new start.Server("127.0.0.1", 8000);
-    server.Listen();
+    say students:[]start.Student = array.create(start.Student, 10);
+    foreach i in 0..10 {
+        say s: types.Wrapper = new types.Wrapper();
+        students[i] = new start.Student(s.Get(), 23);
+        students[i].Print();
 
-    say h: start.Handler = new start.Handler();
-
-    syncio.printf("[app] class=%p, handler=%p \n", h, h.handle);
-
-    while (1==1) {
-        say fd: int = server.Accept();
-        syncio.printf("[new conncection] \n");
-        thread(h.handle, fd);        
+        syncio.printf("> \t%p \n", students[i]);
+    }
+    foreach i in 0..10 {
+        syncio.printf("> %p \n", students[i]);
+        syncio.printf("> %s, %d \n", students[i].name.Get(), students[i].age);
     }
 }
