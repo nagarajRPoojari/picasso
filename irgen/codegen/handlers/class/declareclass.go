@@ -47,6 +47,8 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement, source
 	// to be identified as a valid type in future while building vars & type
 	// conversions.
 	t.st.TypeHandler.RegisterClass(aliasName, mc)
+
+	t.st.Classes[aliasName].Internal = cls.IsInternal
 }
 
 // DeclareFunctions orchestrates the declaration of all member functions

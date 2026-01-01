@@ -9,6 +9,7 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
@@ -165,6 +166,12 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 		methodKey := fmt.Sprintf("%s.%s", cls.Name, m.Property)
 		idx, ok := classMeta.FieldIndexMap[methodKey]
 
+		if resolveRootMember(m) != constants.THIS {
+			if _, ok := classMeta.InternalFields[methodKey]; ok {
+				errorutils.Abort(errorutils.FieldNotAccessible, cls.Name, m.Property)
+			}
+		}
+
 		if !ok {
 			errorutils.Abort(errorutils.UnknownMethod, m.Property)
 		}
@@ -217,4 +224,17 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 
 	}
 	return nil
+}
+
+func resolveRootMember(ex ast.Expression) string {
+	switch st := ex.(type) {
+	case ast.SymbolExpression:
+		return st.Value
+	case ast.MemberExpression:
+		return resolveRootMember(st.Member)
+	case ast.ComputedExpression:
+		return resolveRootMember(st.Member)
+	}
+
+	panic("something gone wrong")
 }

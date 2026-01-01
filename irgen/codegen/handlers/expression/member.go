@@ -69,6 +69,12 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 	fieldID := fmt.Sprintf("%s.%s", cls.Name, ex.Property)
 	idx, ok := classMeta.FieldIndexMap[fieldID]
 
+	if resolveRootMember(ex) != constants.THIS {
+		if _, ok := classMeta.InternalFields[fieldID]; ok {
+			errorutils.Abort(errorutils.FieldNotAccessible, cls.Name, ex.Property)
+		}
+	}
+
 	if !ok {
 		errorutils.Abort(errorutils.UnknownClassField, ex.Property, cls.Name)
 	}

@@ -35,6 +35,7 @@ func (t *Pipeline) registerTypes() {
 		mc := &typedef.MetaClass{
 			FieldIndexMap:     make(map[string]int),
 			ArrayVarsEleTypes: make(map[int]types.Type),
+			InternalFields:    make(map[string]struct{}),
 			VarAST:            make(map[string]*ast.VariableDeclarationStatement),
 			UDT:               types.NewPointer(udt),
 			Methods:           make(map[string]*ir.Func),

@@ -11,6 +11,8 @@ type MetaClass struct {
 	FieldIndexMap map[string]int
 	VarAST        map[string]*ast.VariableDeclarationStatement
 
+	InternalFields map[string]struct{}
+
 	Methods map[string]*ir.Func
 	Returns map[string]ast.Type
 
@@ -19,6 +21,8 @@ type MetaClass struct {
 	UDT types.Type
 
 	Implements string
+
+	Internal bool
 }
 
 func (mc *MetaClass) StructType() *types.StructType {
@@ -37,6 +41,7 @@ func NewMetaClass(udt *types.PointerType, implements string) *MetaClass {
 	return &MetaClass{
 		FieldIndexMap:     make(map[string]int),
 		ArrayVarsEleTypes: make(map[int]types.Type),
+		InternalFields:    make(map[string]struct{}),
 		VarAST:            make(map[string]*ast.VariableDeclarationStatement),
 		UDT:               udt,
 		Methods:           make(map[string]*ir.Func),
