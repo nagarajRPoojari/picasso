@@ -11,6 +11,8 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/libutils"
 	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
 )
 
 type SyncIO struct {
@@ -44,16 +46,19 @@ func (t *SyncIO) sprintf(typeHandler *typedef.TypeHandler, module *ir.Module, bh
 
 	castedArgs := []value.Value{args[0].Load(bh)}
 	for _, arg := range args[1:] {
-		if _, ok := arg.Type().(*types.IntType); ok {
+		switch arg.(type) {
+		case *ints.Int8, *ints.Int16, *ints.Int32, *ints.Int64:
 			res := typeHandler.ImplicitIntCast(bh, arg.Load(bh), types.I32)
 			castedArgs = append(castedArgs, res)
-		} else if _, ok := arg.Type().(*types.FloatType); ok {
+		case *ints.UInt8, *ints.UInt16, *ints.UInt32, *ints.UInt64:
+			res := typeHandler.ImplicitUnsignedIntCast(bh, arg.Load(bh), types.I32)
+			castedArgs = append(castedArgs, res)
+		case *floats.Float16, *floats.Float32, *floats.Float64:
 			res := typeHandler.ImplicitFloatCast(bh, arg.Load(bh), types.Double)
 			castedArgs = append(castedArgs, res)
-		} else {
+		default:
 			castedArgs = append(castedArgs, arg.Load(bh))
 		}
-
 	}
 	result := bh.N.NewCall(f, castedArgs...)
 	return typeHandler.BuildVar(bh, typedef.NewType(utils.GetTypeString(result.Type())), result)
