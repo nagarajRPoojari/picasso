@@ -554,10 +554,10 @@ func neg(th *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (tf.Var, error) {
 	switch tp {
 	case KindSignedInt:
 		val := th.ImplicitFloatCast(bh, v.Load(bh), types.Double)
-		return buildSignedInt64FromValue(bh, bh.N.NewFNeg(val)), nil
+		return buildFloat64FromValue(bh, bh.N.NewFNeg(val)), nil
 	case KindFloat:
 		val := v.Load(bh)
-		return buildSignedInt64FromValue(bh, bh.N.NewFNeg(val)), nil
+		return buildFloat64FromValue(bh, bh.N.NewFNeg(val)), nil
 	case KindUnsignedInt:
 		return nil, fmt.Errorf("negation not allowed on unsigned dtypes")
 	case KindPointer:

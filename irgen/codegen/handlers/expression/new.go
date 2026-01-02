@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
@@ -59,17 +57,6 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, aliasClsName))
 	}
 
-	// Ensure field type is pointer-to-function
-	var funcType *types.FuncType
-	if ptrType, ok := fieldType.(*types.PointerType); ok {
-		funcType, ok = ptrType.ElemType.(*types.FuncType)
-		if !ok {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
-		}
-	} else {
-		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
-	}
-
 	args := make([]value.Value, 0, len(ex.Arguments)+1)
 	for i, argExp := range ex.Arguments {
 		v := t.ProcessExpression(bh, argExp)
@@ -82,11 +69,10 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 		}
 
 		// Implicit type cast if needed
-		expected := funcType.Params[i]
-		target := utils.GetTypeString(expected)
-		raw = t.st.TypeHandler.ImplicitTypeCast(bh, target, raw)
+		expected := meta.MethodArgs[aliasConstructorName][i]
+		raw = t.st.TypeHandler.ImplicitTypeCast(bh, expected.Get(), raw)
 		if raw == nil {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("ImplicitTypeCast returned nil for arg %d -> %s", i, target))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("ImplicitTypeCast returned nil for arg %d -> %s", i, expected.Get()))
 		}
 		args = append(args, raw)
 	}
