@@ -3,7 +3,6 @@ package expression
 import (
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
@@ -33,6 +32,7 @@ func (t *ExpressionHandler) ProcessIndexingExpression(bh *bc.BlockHolder, ex ast
 
 		indices = append(indices, c.Load(bh))
 	}
-	v := base.(*tf.Array).LoadByIndex(bh, indices)
-	return t.st.TypeHandler.BuildVar(bh, tf.NewType(utils.GetTypeString(v.Type())), v)
+	arr := base.(*tf.Array)
+	v := arr.LoadByIndex(bh, indices)
+	return t.st.TypeHandler.BuildVar(bh, tf.NewType(arr.ElementTypeString), v)
 }

@@ -4,12 +4,11 @@ go_library(
     name = "expression",
     srcs = [
         "base.go",
-        "binary.go",
         "callfunc.go",
         "indexing.go",
         "member.go",
         "new.go",
-        "prefix.go",
+        "ops.go",
         "string.go",
         "symbol.go",
     ],
