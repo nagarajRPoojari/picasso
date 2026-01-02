@@ -3,7 +3,7 @@ package expression
 import (
 	"fmt"
 
-	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
@@ -13,14 +13,142 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/boolean"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
 	"github.com/nagarajRPoojari/niyama/irgen/lexer"
 )
 
-type BinaryOperation func(block *ir.Block, l, r value.Value) (value.Value, error)
+type BinaryOperation func(th *tf.TypeHandler, bh *bc.BlockHolder, l, r tf.Var) (tf.Var, error)
 
 var arithmatic map[lexer.TokenKind]BinaryOperation
 var comparision map[lexer.TokenKind]BinaryOperation
 var logical map[lexer.TokenKind]BinaryOperation
+
+type ArithKind int
+
+const (
+	KindInvalid ArithKind = iota
+	KindSignedInt
+	KindUnsignedInt
+	KindFloat
+	KindPointer
+)
+
+func classifyVar(v tf.Var) ArithKind {
+	switch v.(type) {
+
+	// unsigned
+	case *ints.UInt8, *ints.UInt16, *ints.UInt32, *ints.UInt64:
+		return KindUnsignedInt
+
+	// signed
+	case *ints.Int8, *ints.Int16, *ints.Int32, *ints.Int64:
+		return KindSignedInt
+
+	// float
+	case *floats.Float16, *floats.Float32, *floats.Float64:
+		return KindFloat
+
+	// pointer
+	case *tf.Array, *tf.Class, *tf.String:
+		return KindPointer
+	}
+
+	return KindInvalid
+}
+
+func commonKind(a, b ArithKind) ArithKind {
+	// Pointer rules: pointers only with pointers
+	if a == KindPointer || b == KindPointer {
+		if a == KindPointer && b == KindPointer {
+			return KindPointer
+		}
+		return KindInvalid
+	}
+
+	// Unsigned integers: only compatible with other unsigned integers
+	if a == KindUnsignedInt || b == KindUnsignedInt {
+		if a == KindUnsignedInt && b == KindUnsignedInt {
+			return KindUnsignedInt
+		}
+		return KindInvalid
+	}
+
+	// Float dominates only signed integers
+	if a == KindFloat || b == KindFloat {
+		if a == KindSignedInt || b == KindSignedInt || a == KindFloat || b == KindFloat {
+			return KindFloat
+		}
+		return KindInvalid
+	}
+
+	// Signed integers only with signed integers
+	if a == KindSignedInt && b == KindSignedInt {
+		return KindSignedInt
+	}
+
+	return KindInvalid
+}
+
+func normalizeOperands(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (value.Value, value.Value, ArithKind, error) {
+
+	lk := classifyVar(lv)
+	rk := classifyVar(rv)
+
+	k := commonKind(lk, rk)
+	if k == KindInvalid {
+		return nil, nil, KindInvalid,
+			fmt.Errorf("incompatible operands for operation")
+	}
+
+	l := lv.Load(bh)
+	r := rv.Load(bh)
+
+	switch k {
+	case KindFloat:
+		return th.ImplicitFloatCast(bh, l, types.Double),
+			th.ImplicitFloatCast(bh, r, types.Double),
+			k, nil
+
+	case KindUnsignedInt:
+		return th.ImplicitUnsignedIntCast(bh, l, types.I64),
+			th.ImplicitUnsignedIntCast(bh, r, types.I64),
+			k, nil
+
+	case KindSignedInt:
+		return th.ImplicitIntCast(bh, l, types.I64),
+			th.ImplicitIntCast(bh, r, types.I64),
+			k, nil
+
+	case KindPointer:
+		return l, r, k, nil
+	}
+
+	return nil, nil, KindInvalid, fmt.Errorf("unreachable")
+}
+
+func buildFloat64FromValue(bh *bc.BlockHolder, v value.Value) tf.Var {
+	ptr := bh.V.NewAlloca(types.Double)
+	bh.N.NewStore(v, ptr)
+	return &floats.Float64{NativeType: types.Double, Value: ptr}
+}
+
+func buildUnsignedInt64FromValue(bh *bc.BlockHolder, v value.Value) tf.Var {
+	ptr := bh.V.NewAlloca(types.I64)
+	bh.N.NewStore(v, ptr)
+	return &ints.UInt64{NativeType: types.I64, Value: ptr}
+}
+
+func buildSignedInt64FromValue(bh *bc.BlockHolder, v value.Value) tf.Var {
+	ptr := bh.V.NewAlloca(types.I64)
+	bh.N.NewStore(v, ptr)
+	return &ints.Int64{NativeType: types.I64, Value: ptr}
+}
+
+func buildBooleanFromValue(bh *bc.BlockHolder, v value.Value) tf.Var {
+	ptr := bh.V.NewAlloca(types.I1)
+	bh.N.NewStore(v, ptr)
+	return &boolean.Boolean{NativeType: types.I1, Value: ptr}
+}
 
 // ProcessBinaryExpression generates LLVM IR for operations involving two operands.
 // It handles arithmetic, comparison, and logical operators by performing the
@@ -43,79 +171,26 @@ func (t *ExpressionHandler) ProcessBinaryExpression(bh *bc.BlockHolder, ex ast.B
 		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
 	}
 
-	lv := left.Load(bh)
-	rv := right.Load(bh)
-
 	if op, ok := arithmatic[ex.Operator.Kind]; ok {
-		f := &floats.Float64{}
-		lvf, err := f.Cast(bh, lv)
-		if err != nil {
-			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.FLOAT64)
-		}
-		rvf, err := f.Cast(bh, rv)
-		if err != nil {
-			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.FLOAT64)
-		}
-
-		res, err := op(bh.N, lvf, rvf)
-
+		res, err := op(t.st.TypeHandler, bh, left, right)
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
-		// arithmetic operations are allways done in float64, so results are allways in float64
-		// @fix: this implementation is inefficient for lower types.
-		ptr := bh.V.NewAlloca(types.Double)
-		bh.N.NewStore(res, ptr)
-		return &floats.Float64{NativeType: types.Double, Value: ptr}
+		return res
 
 	} else if op, ok := comparision[ex.Operator.Kind]; ok {
-		var res value.Value
-		var err error
-		// comparisions are allowed for only pointer types & float types.
-		// pointer types includes string, object comparisions.
-		// for other types operands will be typecasted to float64
-		if isPointer(rv.Type()) && isPointer(lv.Type()) {
-			res, err = op(bh.N, lv, rv)
-			if err != nil {
-				errorutils.Abort(errorutils.BinaryOperationError, err.Error())
-			}
-		} else {
-			f := &floats.Float64{}
-			lvf, err := f.Cast(bh, lv)
-			if err != nil {
-				errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.FLOAT64)
-			}
-			rvf, err := f.Cast(bh, rv)
-			if err != nil {
-				errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.FLOAT64)
-			}
-			res, err = op(bh.N, lvf, rvf)
-			if err != nil {
-				errorutils.Abort(errorutils.BinaryOperationError, err.Error())
-			}
-		}
-		ptr := bh.V.NewAlloca(types.I1)
-		bh.N.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
-
-	} else if op, ok := logical[ex.Operator.Kind]; ok {
-		f := &boolean.Boolean{}
-		lvf, err := f.Cast(bh, lv)
-		if err != nil {
-			errorutils.Abort(errorutils.ImplicitTypeCastError, lv.Type(), tf.BOOLEAN)
-		}
-		rvf, err := f.Cast(bh, rv)
-		if err != nil {
-			errorutils.Abort(errorutils.ImplicitTypeCastError, rv.Type(), tf.BOOLEAN)
-		}
-
-		res, err := op(bh.N, lvf, rvf)
+		res, err := op(t.st.TypeHandler, bh, left, right)
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
-		ptr := bh.V.NewAlloca(types.I1)
-		bh.N.NewStore(res, ptr)
-		return &boolean.Boolean{NativeType: types.I1, Value: ptr}
+		return res
+
+	} else if op, ok := logical[ex.Operator.Kind]; ok {
+		res, err := op(t.st.TypeHandler, bh, left, right)
+		if err != nil {
+			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
+		}
+		return res
 	}
 
 	errorutils.Abort(errorutils.InvalidBinaryExpressionOperator, ex.Operator.Value)
@@ -142,119 +217,300 @@ func initOpLookUpTables() {
 	comparision[lexer.EQUALS] = eq
 	comparision[lexer.NOT_EQUALS] = ne
 
-	logical[lexer.AND] = and
-	logical[lexer.OR] = or
+	logical[lexer.AND] = logicalAnd
+	logical[lexer.OR] = logicalOr
 }
 
-func add(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
-	return block.NewFAdd(lvf, rvf), nil
-}
-func sub(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
-	return block.NewFSub(lvf, rvf), nil
-}
-func mul(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
-	return block.NewFMul(lvf, rvf), nil
-}
-func div(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
-	return block.NewFDiv(lvf, rvf), nil
-}
-
-func mod(block *ir.Block, lv, rv value.Value) (value.Value, error) {
-	switch t := lv.Type().(type) {
-	case *types.IntType:
-		rem := block.NewSRem(lv, rv)     // a % b
-		add := block.NewAdd(rem, rv)     // a % b + b
-		nonNeg := block.NewSRem(add, rv) // (a % b + b) % b
-		return nonNeg, nil
-
-	case *types.FloatType:
-		rem := block.NewFRem(lv, rv)     // a % b
-		add := block.NewFAdd(rem, rv)    // a % b + b
-		nonNeg := block.NewFRem(add, rv) // (a % b + b) % b
-		return nonNeg, nil
-
-	default:
-		return nil, fmt.Errorf("unsupported type for mod: %s", t)
+func add(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
 	}
+
+	switch k {
+	case KindFloat:
+		lf := th.ImplicitFloatCast(bh, l, types.Double)
+		rf := th.ImplicitFloatCast(bh, r, types.Double)
+		return buildFloat64FromValue(bh, bh.N.NewFAdd(lf, rf)), nil
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewAdd(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewAdd(lf, rf)), nil
+
+	case KindPointer:
+		return nil, fmt.Errorf("addtion not allowed on pointer types")
+	}
+
+	return nil, fmt.Errorf("unsupported add operands")
 }
 
-func eq(block *ir.Block, lv, rv value.Value) (value.Value, error) {
-	switch t := lv.Type().(type) {
-	case *types.FloatType:
-		return block.NewFCmp(enum.FPredOEQ, lv, rv), nil
+func sub(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		lf := th.ImplicitFloatCast(bh, l, types.Double)
+		rf := th.ImplicitFloatCast(bh, r, types.Double)
+		return buildFloat64FromValue(bh, bh.N.NewFSub(lf, rf)), nil
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewSub(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewSub(lf, rf)), nil
+
+	case KindPointer:
+		return nil, fmt.Errorf("subtraction not allowed on pointer types")
+	}
+
+	return nil, fmt.Errorf("unsupported sub operands")
+}
+
+func mul(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		lf := th.ImplicitFloatCast(bh, l, types.Double)
+		rf := th.ImplicitFloatCast(bh, r, types.Double)
+		return buildFloat64FromValue(bh, bh.N.NewFMul(lf, rf)), nil
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewMul(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewMul(lf, rf)), nil
+
+	case KindPointer:
+		return nil, fmt.Errorf("multiplication not allowed on pointer types")
+	}
+
+	return nil, fmt.Errorf("unsupported mul operands")
+}
+
+func div(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		lf := th.ImplicitFloatCast(bh, l, types.Double)
+		rf := th.ImplicitFloatCast(bh, r, types.Double)
+		return buildFloat64FromValue(bh, bh.N.NewFDiv(lf, rf)), nil
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewSDiv(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewUDiv(lf, rf)), nil
+
+	case KindPointer:
+		return nil, fmt.Errorf("multiplication not allowed on pointer types")
+	}
+
+	return nil, fmt.Errorf("unsupported mul operands")
+}
+
+func mod(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat, KindSignedInt, KindUnsignedInt:
+		lf := th.ImplicitFloatCast(bh, l, types.Double)
+		rf := th.ImplicitFloatCast(bh, r, types.Double)
+
+		return buildFloat64FromValue(bh, bh.N.NewFRem(lf, rf)), nil
+
+	case KindPointer:
+		return nil, fmt.Errorf("modulo not allowed on pointer types")
+	}
+
+	return nil, fmt.Errorf("unsupported mod operands")
+}
+
+func eq(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return buildBooleanFromValue(bh, bh.N.NewFCmp(enum.FPredOEQ, l, r)), nil
+	case KindSignedInt, KindUnsignedInt, KindPointer:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredEQ, l, r)), nil
+	}
+
+	return nil, fmt.Errorf("unsupported eq")
+}
+
+func ne(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return buildBooleanFromValue(bh, bh.N.NewFCmp(enum.FPredONE, l, r)), nil
+	case KindSignedInt, KindUnsignedInt, KindPointer:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredNE, l, r)), nil
+	}
+
+	return nil, fmt.Errorf("unsupported ne")
+}
+
+func lt(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return buildBooleanFromValue(bh, bh.N.NewFCmp(enum.FPredOLT, l, r)), nil
+	case KindSignedInt:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredSLT, l, r)), nil
+	case KindUnsignedInt:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredULT, l, r)), nil
+	case KindPointer:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredULT, l, r)), nil
+	}
+	return nil, fmt.Errorf("unsupported lt")
+}
+
+func lte(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return buildBooleanFromValue(bh, bh.N.NewFCmp(enum.FPredOLE, l, r)), nil
+	case KindSignedInt:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredSLE, l, r)), nil
+	case KindUnsignedInt, KindPointer:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredULE, l, r)), nil
+	}
+	return nil, fmt.Errorf("unsupported lte")
+}
+
+func gt(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return buildBooleanFromValue(bh, bh.N.NewFCmp(enum.FPredOGT, l, r)), nil
+	case KindSignedInt:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredSGT, l, r)), nil
+	case KindUnsignedInt, KindPointer:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredUGT, l, r)), nil
+	}
+	return nil, fmt.Errorf("unsupported gt")
+}
+
+func gte(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return buildBooleanFromValue(bh, bh.N.NewFCmp(enum.FPredOGE, l, r)), nil
+	case KindSignedInt:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredSGE, l, r)), nil
+	case KindUnsignedInt, KindPointer:
+		return buildBooleanFromValue(bh, bh.N.NewICmp(enum.IPredUGE, l, r)), nil
+	}
+	return nil, fmt.Errorf("unsupported gte")
+}
+
+func toBool(_ *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (value.Value, error) {
+
+	val := v.Load(bh)
+
+	switch t := val.Type().(type) {
 
 	case *types.IntType:
-		return block.NewICmp(enum.IPredEQ, lv, rv), nil
+		return bh.N.NewICmp(
+			enum.IPredNE,
+			val,
+			constant.NewInt(t, 0),
+		), nil
+
+	case *types.FloatType:
+		zero := constant.NewFloat(t, 0.0)
+		notZero := bh.N.NewFCmp(enum.FPredONE, val, zero)
+		notNaN := bh.N.NewFCmp(enum.FPredORD, val, val)
+		return bh.N.NewAnd(notZero, notNaN), nil
 
 	case *types.PointerType:
-		return block.NewICmp(enum.IPredEQ, lv, rv), nil
+		return bh.N.NewICmp(
+			enum.IPredNE,
+			val,
+			constant.NewNull(t),
+		), nil
 
 	default:
-		return nil, fmt.Errorf("unsupported type for eq: %s", t)
+		return nil, fmt.Errorf("cannot convert %T to bool", t)
 	}
 }
 
-func lt(block *ir.Block, lv, rv value.Value) (value.Value, error) {
-	switch t := lv.Type().(type) {
-	case *types.FloatType:
-		return block.NewFCmp(enum.FPredOLT, lv, rv), nil
-	case *types.IntType, *types.PointerType:
-		return block.NewICmp(enum.IPredSLT, lv, rv), nil
-	default:
-		return nil, fmt.Errorf("unsupported type for lt: %s", t)
+func logicalAnd(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+
+	lb, err := toBool(th, bh, lv)
+	if err != nil {
+		return nil, err
 	}
+	rb, err := toBool(th, bh, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	return buildBooleanFromValue(bh, bh.N.NewAnd(lb, rb)), nil
 }
 
-func lte(block *ir.Block, lv, rv value.Value) (value.Value, error) {
-	switch t := lv.Type().(type) {
-	case *types.FloatType:
-		return block.NewFCmp(enum.FPredOLE, lv, rv), nil
-	case *types.IntType, *types.PointerType:
-		return block.NewICmp(enum.IPredSLE, lv, rv), nil
-	default:
-		return nil, fmt.Errorf("unsupported type for lte: %s", t)
-	}
-}
+func logicalOr(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
 
-func gt(block *ir.Block, lv, rv value.Value) (value.Value, error) {
-	switch t := lv.Type().(type) {
-	case *types.FloatType:
-		return block.NewFCmp(enum.FPredOGT, lv, rv), nil
-	case *types.IntType, *types.PointerType:
-		return block.NewICmp(enum.IPredSGT, lv, rv), nil
-	default:
-		return nil, fmt.Errorf("unsupported type for gt: %s", t)
+	lb, err := toBool(th, bh, lv)
+	if err != nil {
+		return nil, err
 	}
-}
-
-func gte(block *ir.Block, lv, rv value.Value) (value.Value, error) {
-	switch t := lv.Type().(type) {
-	case *types.FloatType:
-		return block.NewFCmp(enum.FPredOGE, lv, rv), nil
-	case *types.IntType, *types.PointerType:
-		return block.NewICmp(enum.IPredSGE, lv, rv), nil
-	default:
-		return nil, fmt.Errorf("unsupported type for gte: %s", t)
+	rb, err := toBool(th, bh, rv)
+	if err != nil {
+		return nil, err
 	}
+	return buildBooleanFromValue(bh, bh.N.NewOr(lb, rb)), nil
 }
-
-func ne(block *ir.Block, lv, rv value.Value) (value.Value, error) {
-	switch t := lv.Type().(type) {
-	case *types.FloatType:
-		return block.NewFCmp(enum.FPredONE, lv, rv), nil
-	case *types.IntType:
-		return block.NewICmp(enum.IPredNE, lv, rv), nil
-	case *types.PointerType:
-		return block.NewICmp(enum.IPredNE, lv, rv), nil
-	default:
-		return nil, fmt.Errorf("unsupported type for ne: %s", t)
-	}
-}
-
-func and(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
-	return block.NewAnd(lvf, rvf), nil
-}
-func or(block *ir.Block, lvf, rvf value.Value) (value.Value, error) {
-	return block.NewOr(lvf, rvf), nil
-}
-func isPointer(t types.Type) bool { _, ok := t.(*types.PointerType); return ok }
