@@ -47,7 +47,7 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, bh *bc.BlockHolder, sts []ast.S
 			}
 
 		case ast.IfStatement:
-			t.processIfElseBlock(fn, bh, &st)
+			t.processIfElseBlock(fn, bh, &st, nil)
 		case ast.ForeachStatement:
 			t.processForBlock(fn, bh, &st)
 		case ast.WhileStatement:
