@@ -17,6 +17,7 @@ const (
 	InvalidBinaryExpressionOperand  = "invalid operand for binary operation"
 	InvalidBinaryExpressionOperator = "invalid binary operator %s"
 	BinaryOperationError            = "binary operation failed: %s"
+	PrefixOperationError            = "prefix operation failed: %s"
 	ImplicitTypeCastError           = "failed to implicitly type cast: %s to %s"
 	MemberExpressionError           = "member expression error: %s"
 	UnknownMethod                   = "unknown method %s"
