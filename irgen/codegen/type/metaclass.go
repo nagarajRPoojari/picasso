@@ -13,8 +13,9 @@ type MetaClass struct {
 
 	InternalFields map[string]struct{}
 
-	Methods map[string]*ir.Func
-	Returns map[string]ast.Type
+	Methods    map[string]*ir.Func
+	MethodArgs map[string][]ast.Type
+	Returns    map[string]ast.Type
 
 	ArrayVarsEleTypes map[int]types.Type
 	// UDT is pointer-to-struct
@@ -45,6 +46,7 @@ func NewMetaClass(udt *types.PointerType, implements string) *MetaClass {
 		VarAST:            make(map[string]*ast.VariableDeclarationStatement),
 		UDT:               udt,
 		Methods:           make(map[string]*ir.Func),
+		MethodArgs:        make(map[string][]ast.Type),
 		Returns:           map[string]ast.Type{},
 		Implements:        implements,
 	}
