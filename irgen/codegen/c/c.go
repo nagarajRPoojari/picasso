@@ -88,15 +88,15 @@ const (
 	TYPE_ARRAY = "array"
 
 	// String and Container Operations
-	FUNC_STRLEN   = "strlen"
+	FUNC_STRLEN   = "__public__strlen"
 	ALIAS_STRLEN  = "strlen"
-	FUNC_FORMAT   = "format"
+	FUNC_FORMAT   = "__public__format"
 	ALIAS_FORMAT  = "format"
-	FUNC_LEN      = "len"
+	FUNC_LEN      = "__public__len"
 	ALIAS_LEN     = "len"
-	FUNC_COMPARE  = "compare"
+	FUNC_COMPARE  = "__public__compare"
 	ALIAS_COMPARE = "compare"
-	FUNC_STRCMP   = "strcmp"
+	FUNC_STRCMP   = "strcmp" // @depricate
 	ALIAS_STRCMP  = "strcmp"
 
 	// Process Control
