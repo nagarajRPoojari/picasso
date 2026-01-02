@@ -94,7 +94,7 @@ func (t *TypeHandler) RegisterInterface(name string, meta *MetaInterface) {
 
 func (t *TypeHandler) Exists(tp string) bool {
 	switch tp {
-	case NULL, VOID, BOOLEAN, "i1", INT8, "i8", INT16, "i16", INT32, "132", INT64, INT, "i64", FLOAT16, "half", FLOAT32, "float", FLOAT64, DOUBLE, STRING:
+	case NULL, VOID, BOOLEAN, "i1", INT8, UINT8, "i8", INT16, UINT16, "i16", INT32, UINT32, "132", INT64, UINT64, INT, UINT, "i64", FLOAT16, "half", FLOAT32, "float", FLOAT64, DOUBLE, STRING:
 		return true
 	}
 
@@ -337,9 +337,10 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 			init = constant.NewNull(pt)
 		}
 		return &Array{
-			Ptr:       init,
-			ArrayType: ARRAYSTRUCT,
-			ElemType:  ele,
+			Ptr:               init,
+			ArrayType:         ARRAYSTRUCT,
+			ElemType:          ele,
+			ElementTypeString: _type.U,
 		}
 	}
 
@@ -397,13 +398,13 @@ func (t *TypeHandler) GetLLVMType(_type string) types.Type {
 		return types.Void
 	case BOOLEAN, "i1":
 		return types.I1
-	case INT8, UINT8:
+	case INT8, UINT8, "i8":
 		return types.I8
-	case INT16, UINT16:
+	case INT16, UINT16, "i16":
 		return types.I16
-	case INT32, UINT32:
+	case INT32, UINT32, "i32":
 		return types.I32
-	case INT64, INT, UINT, UINT64:
+	case INT64, INT, UINT, UINT64, "i64":
 		return types.I64
 	case FLOAT16, "half":
 		return types.Half
@@ -464,19 +465,19 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 	switch target {
 	case "boolean", "bool", "i1":
 		return t.ImplicitIntCast(bh, v, types.I1)
-	case "int8":
+	case "int8", "i8":
 		return t.ImplicitIntCast(bh, v, types.I8)
 	case "uint8":
 		return t.ImplicitUnsignedIntCast(bh, v, types.I8)
-	case "int16":
+	case "int16", "i16":
 		return t.ImplicitIntCast(bh, v, types.I16)
 	case "uint16":
 		return t.ImplicitUnsignedIntCast(bh, v, types.I16)
-	case "int32":
+	case "int32", "i32":
 		return t.ImplicitIntCast(bh, v, types.I32)
 	case "uint32":
 		return t.ImplicitUnsignedIntCast(bh, v, types.I32)
-	case "int", "int64":
+	case "int", "int64", "i64":
 		return t.ImplicitIntCast(bh, v, types.I64)
 	case "uint", "uint64":
 		return t.ImplicitUnsignedIntCast(bh, v, types.I64)
@@ -518,7 +519,6 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		}
 		return ret
 	}
-	panic(target)
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
 	return nil
 }

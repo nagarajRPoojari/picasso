@@ -34,7 +34,7 @@ func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, bh *bc.Bloc
 
 		dims = append(dims, toInt)
 	}
-	return typedef.NewArray(bh, args[0].Type(), size.Load(bh), dims)
+	return typedef.NewArray(bh, args[0].Type(), size.Load(bh), dims, args[0].NativeTypeString())
 }
 
 func (t *ArrayHandler) len(th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
