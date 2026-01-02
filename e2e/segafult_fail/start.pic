@@ -1,0 +1,12 @@
+class String {
+    say x: string;
+    fn String(s: string) {
+        this.x = s;
+    }
+}
+
+fn start() {
+    say x: start.String;
+
+    say y: string = x.x; // invalid mem access
+}
