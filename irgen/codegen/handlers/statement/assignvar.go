@@ -8,7 +8,6 @@ import (
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/expression"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
@@ -75,7 +74,7 @@ func (t *StatementHandler) AssignVariable(bh *bc.BlockHolder, st *ast.Assignment
 
 		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
 
-		typeName := utils.GetTypeString(fieldType)
+		typeName := classMeta.VarAST[fqName].ExplicitType.Get()
 
 		// similar to above logic, avoid casting & new var creation logic for array types
 		if typeName != constants.ARRAY {

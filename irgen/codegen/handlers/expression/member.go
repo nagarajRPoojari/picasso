@@ -140,9 +140,10 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 			if ele.Name() == constants.ARRAY {
 				f := bh.N.NewLoad(types.NewPointer(tf.ARRAYSTRUCT), fieldPtr)
 				return &tf.Array{
-					Ptr:       f,
-					ArrayType: tf.ARRAYSTRUCT,
-					ElemType:  classMeta.ArrayVarsEleTypes[idx],
+					Ptr:               f,
+					ArrayType:         tf.ARRAYSTRUCT,
+					ElemType:          classMeta.ArrayVarsEleTypes[idx],
+					ElementTypeString: classMeta.VarAST[fieldID].ExplicitType.GetUnderlyingType(),
 				}
 			}
 

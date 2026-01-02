@@ -183,9 +183,10 @@ func (a *Array) LoadShapeArray(block *bc.BlockHolder) *Array {
 	b.NewStore(rank, firstDim)
 
 	return &Array{
-		Ptr:       arrayPtr,
-		ElemType:  types.I64,
-		ArrayType: ARRAYSTRUCT,
+		Ptr:               arrayPtr,
+		ElemType:          types.I64,
+		ArrayType:         ARRAYSTRUCT,
+		ElementTypeString: "int64",
 	}
 }
 
