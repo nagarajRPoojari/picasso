@@ -31,7 +31,9 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 	aliasClsName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(cls)
 
 	params := make([]*ir.Param, 0)
+	argsTypes := make([]ast.Type, 0)
 	for _, p := range st.Parameters {
+		argsTypes = append(argsTypes, p.Type)
 		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(p.Type.Get())))
 	}
 
@@ -59,5 +61,9 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 		}
 		t.st.Classes[aliasClsName].Methods[aliasFuncName] = f
 		t.st.Classes[aliasClsName].Returns[aliasFuncName] = st.ReturnType
+	}
+
+	if _, ok := t.st.Classes[aliasClsName].MethodArgs[aliasFuncName]; !ok {
+		t.st.Classes[aliasClsName].MethodArgs[aliasFuncName] = argsTypes
 	}
 }

@@ -39,6 +39,7 @@ func (t *Pipeline) registerTypes() {
 			VarAST:            make(map[string]*ast.VariableDeclarationStatement),
 			UDT:               types.NewPointer(udt),
 			Methods:           make(map[string]*ir.Func),
+			MethodArgs:        make(map[string][]ast.Type),
 			Returns:           map[string]ast.Type{},
 		}
 		t.st.Classes[tpc] = mc
