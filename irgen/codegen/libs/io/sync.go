@@ -2,6 +2,7 @@ package io
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
@@ -39,8 +40,23 @@ func (t *SyncIO) ListAllFuncs() map[string]function.Func {
 }
 
 func (t *SyncIO) sprintf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	printfFn := c.Instance.Funcs[c.FUNC_SPRINTF]
-	return libutils.CallCFunc(typeHandler, printfFn, bh, args)
+	f := c.Instance.Funcs[c.FUNC_SPRINTF]
+
+	castedArgs := []value.Value{args[0].Load(bh)}
+	for _, arg := range args[1:] {
+		if _, ok := arg.Type().(*types.IntType); ok {
+			res := typeHandler.ImplicitIntCast(bh, arg.Load(bh), types.I32)
+			castedArgs = append(castedArgs, res)
+		} else if _, ok := arg.Type().(*types.FloatType); ok {
+			res := typeHandler.ImplicitFloatCast(bh, arg.Load(bh), types.Double)
+			castedArgs = append(castedArgs, res)
+		} else {
+			castedArgs = append(castedArgs, arg.Load(bh))
+		}
+
+	}
+	result := bh.N.NewCall(f, castedArgs...)
+	return typeHandler.BuildVar(bh, typedef.NewType(utils.GetTypeString(result.Type())), result)
 }
 
 func (t *SyncIO) sscanf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {

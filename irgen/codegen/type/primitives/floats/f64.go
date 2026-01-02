@@ -31,19 +31,34 @@ func (f *Float64) Constant() constant.Constant { return constant.NewFloat(types.
 func (f *Float64) Slot() value.Value           { return f.Value }
 func (c *Float64) Type() types.Type            { return c.NativeType }
 func (f *Float64) Cast(block *bc.BlockHolder, v value.Value) (value.Value, error) {
-	switch v.Type().(type) {
+	switch t := v.Type().(type) {
+
 	case *types.IntType:
+		// Special-case i1: treat as 0 / 1
+		if t.BitSize == 1 {
+			i := block.N.NewZExt(v, types.I8)
+			return block.N.NewSIToFP(i, types.Double), nil
+		}
 		return block.N.NewSIToFP(v, types.Double), nil
+
 	case *types.FloatType:
-		switch v.Type() {
-		case types.Float:
+		switch t.Kind {
+		case types.FloatKindHalf:
 			return block.N.NewFPExt(v, types.Double), nil
-		case types.Half:
+		case types.FloatKindFloat:
 			return block.N.NewFPExt(v, types.Double), nil
-		case types.Double:
+		case types.FloatKindDouble:
 			return v, nil
+		default:
+			return nil, errorsx.NewCompilationError(
+				fmt.Sprintf("unsupported float kind %v for float64 cast", t.Kind),
+			)
 		}
 	}
-	return nil, errorsx.NewCompilationError(fmt.Sprintf("failed to typecast %v to float64", v))
+
+	return nil, errorsx.NewCompilationError(
+		fmt.Sprintf("failed to typecast %v to float64", v.Type()),
+	)
 }
+
 func (f *Float64) NativeTypeString() string { return "float64" }
