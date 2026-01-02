@@ -20,6 +20,8 @@ type Array struct {
 	Ptr       value.Value
 	ElemType  types.Type
 	ArrayType *types.StructType
+
+	ElementTypeString string
 }
 
 var ARRAYSTRUCT = types.NewStruct(
@@ -34,7 +36,7 @@ func init() {
 }
 
 // Assuming bh, c, value, types, and constant are correctly defined/imported.
-func NewArray(bh *bc.BlockHolder, elemType types.Type, eleSize value.Value, dims []value.Value) *Array {
+func NewArray(bh *bc.BlockHolder, elemType types.Type, eleSize value.Value, dims []value.Value, ElementTypeString string) *Array {
 	allocFn := c.Instance.Funcs[c.FUNC_ARRAY_ALLOC]
 
 	totalLen := dims[0]
@@ -62,9 +64,10 @@ func NewArray(bh *bc.BlockHolder, elemType types.Type, eleSize value.Value, dims
 	}
 
 	return &Array{
-		Ptr:       structAlloc,
-		ElemType:  elemType,
-		ArrayType: ARRAYSTRUCT,
+		Ptr:               structAlloc,
+		ElemType:          elemType,
+		ArrayType:         ARRAYSTRUCT,
+		ElementTypeString: ElementTypeString,
 	}
 }
 
