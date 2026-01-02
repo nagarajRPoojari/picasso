@@ -1,6 +1,8 @@
 package block
 
 import (
+	"strings"
+
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
@@ -63,8 +65,12 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, bh *bc.BlockHolder, sts []ast.S
 			// return from this block immediately, simply ignoring all upcomming statements
 			return
 		case ast.ReturnStatement:
-			retType := fn.Sig.RetType
-			statement.StatementHandlerInst.Return(bh, &st, retType)
+			splits := strings.Split(fn.Name(), ".")
+			clsName := strings.Join(splits[:len(splits)-1], ".")
+			clsMeta := t.st.Classes[clsName]
+
+			funcName := fn.Name()
+			statement.StatementHandlerInst.Return(bh, &st, clsMeta.Returns[funcName])
 
 			// return from this block immediately, simply ignoring all upcomming statements
 			return
