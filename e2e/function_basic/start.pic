@@ -1,0 +1,87 @@
+using "builtin/syncio";
+using "builtin/array";
+using "builtin/strings";
+
+class Box {
+    say value:int;
+
+    fn Box(v:int) {
+        this.value = v;
+    }
+
+    fn inc(): int {
+        this.value = this.value + 1;
+        return this.value;
+    }
+}
+
+class Test {
+    fn Test() {}
+
+    // Primitive + string
+    fn f1(a:int, b:string): string {
+        syncio.printf("[f1] a=%d b=%s\n", a, b);
+        if (a < 0) {
+            return "NEG";
+        }
+        return b;
+    }
+
+    // Object parameter + mutation + return primitive
+    fn f2(box: start.Box): int {
+        syncio.printf("[f2] box.value(before)=%d\n", box.value);
+        return box.inc();
+    }
+
+    // Array parameter + loop + return primitive
+    fn f3(arr: []int): int {
+        say sum:int = 0;
+        foreach i in 0..array.len(arr) {
+            sum = sum + arr[i];
+        }
+        syncio.printf("[f3] sum=%d\n", sum);
+        return sum;
+    }
+
+    // Nullable object + branch + return string
+    fn f4(b: start.Box): string {
+        if (b == null) {
+            return "NULL_BOX";
+        }
+        return strings.format("BOX_%d", b.value);
+    }
+
+    // Mixed parameters + multiple return paths
+    fn f5(x:int, s:string, b:start.Box, arr:[]int): string {
+        if (b != null && x > 0) {
+            return strings.format("BOX_%d", b.value);
+        } else if (arr == null) {
+            return "EMPTY";
+        }
+        return s;
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+
+    syncio.printf("r1=%s\n", t.f1(-1, "hello"));
+    syncio.printf("r2=%s\n", t.f1(5, "world"));
+
+    say b1: start.Box = new start.Box(10);
+    syncio.printf("r3=%d\n", t.f2(b1));
+    syncio.printf("r4=%d\n", t.f2(b1));  // mutation persists
+
+    say arr:[]int = array.create(int, 5);
+    foreach i in 0..array.len(arr) {
+        arr[i] = i;
+    }
+    syncio.printf("r5=%d\n", t.f3(arr));
+
+    syncio.printf("r6=%s\n", t.f4(null));
+    syncio.printf("r7=%s\n", t.f4(b1));
+
+    syncio.printf("r8=%s\n", t.f5(1, "ok", b1, arr));
+    syncio.printf("r9=%s\n", t.f5(-1, "fallback", null, arr));
+    syncio.printf("r10=%s\n", t.f5(5, "empty", null, null));
+}
