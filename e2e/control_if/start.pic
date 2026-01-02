@@ -1,0 +1,109 @@
+using "builtin/syncio";
+using "builtin/strings";
+
+class NumTest {
+    say x:int;
+
+    fn NumTest(v:int) {
+        this.x = v;
+    }
+
+    fn testLadder() {
+        if (this.x < 0) {
+            syncio.printf("NUM_NEGATIVE\n");
+        } else if (this.x == 0) {
+            syncio.printf("NUM_ZERO\n");
+        } else if (this.x < 10) {
+            syncio.printf("NUM_LT_10\n");
+        } else if (this.x == 10) {
+            syncio.printf("NUM_EQ_10\n");
+        } else {
+            syncio.printf("NUM_GT_10\n");
+        }
+    }
+}
+
+
+class BoolTest {
+    fn BoolTest() {}
+
+    fn equals(a:int, b:int): boolean {
+        return a == b;
+    }
+
+    fn testBool(a:int, b:int) {
+        if (this.equals(a, b)) {
+            syncio.printf("BOOL_EQUALS\n");
+        } else if (a > b) {
+            syncio.printf("BOOL_A_GT_B\n");
+        } else {
+            syncio.printf("BOOL_A_LT_B\n");
+        }
+    }
+}
+
+
+class Obj {
+    say value:int = 1;
+    fn Obj() {}
+}
+
+class NullTest {
+    fn NullTest() {}
+
+    fn testNull(o: start.Obj) {
+        if (o == null) {
+            syncio.printf("OBJ_NULL\n");
+        } else if (o.value == 1) {
+            syncio.printf("OBJ_VALUE_1\n");
+        } else {
+            syncio.printf("OBJ_VALUE_OTHER\n");
+        }
+    }
+}
+
+class StringTest {
+    fn StringTest() {}
+
+    fn testString(a:string, b:string) {
+        if (strings.compare(a, b) == 0) {
+            syncio.printf("STR_EQ\n");
+        } else if (strings.compare(a, b) < 0) {
+            syncio.printf("STR_LT\n");
+        } else {
+            syncio.printf("STR_GT\n");
+        }
+    }
+}
+
+
+fn start() {
+    // Numeric ladder
+    say t1:start.NumTest = new start.NumTest(-3);
+    t1.testLadder();  // NUM_NEGATIVE
+    say t2:start.NumTest = new start.NumTest(0);
+    t2.testLadder();   // NUM_ZERO
+    say t3:start.NumTest = new start.NumTest(5);
+    t3.testLadder();   // NUM_LT_10
+    say t4:start.NumTest = new start.NumTest(10);
+    t4.testLadder();  // NUM_EQ_10
+    say t5:start.NumTest = new start.NumTest(42);
+    t5.testLadder();  // NUM_GT_10
+
+    // Boolean + calls
+    say bt: start.BoolTest = new start.BoolTest();
+    bt.testBool(5, 5);   // BOOL_EQUALS
+    bt.testBool(7, 3);   // BOOL_A_GT_B
+    bt.testBool(2, 9);   // BOOL_A_LT_B
+
+    // Null checks
+    say nt: start.NullTest = new start.NullTest();
+    nt.testNull(null);               // OBJ_NULL
+    nt.testNull(new start.Obj());    // OBJ_VALUE_1
+
+    // String comparison
+    say st: start.StringTest = new start.StringTest();
+    st.testString("abc", "abc");     // STR_EQ
+    st.testString("abc", "bcd");     // STR_LT
+    st.testString("xyz", "abc");     // STR_GT
+}
