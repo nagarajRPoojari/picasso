@@ -21,9 +21,36 @@
 #include "initutils.h"
 
 extern arena_t* __global__arena__;
+arena_t* __test__global__arena__;
 
-void setUp(void) {}
-void tearDown(void) {}
+void setUp(void) {
+    __test__global__arena__ = arena_create();
+}
+void tearDown(void) {
+    /* @todo: graceful termination */
+}
+
+Array* mock_alloc_array(int count, int elem_size, int rank) {
+    size_t data_size = (size_t)count * elem_size;
+    size_t shape_size = (size_t)rank * sizeof(int64_t);
+    size_t total_size = sizeof(Array) + data_size + shape_size;
+
+    Array* arr = (Array*)allocate(__test__global__arena__, total_size);
+
+    
+    arr->data = (int8_t*)(arr + 1); 
+    
+    if (rank > 0) {
+        arr->shape = (int64_t*)(arr->data + data_size);
+    } else {
+        arr->shape = NULL;
+    }
+    
+    arr->length = count;
+    arr->rank = rank;
+    
+    return arr;
+}
 
 static atomic_int completed;
 
@@ -34,9 +61,11 @@ static void* __public__afread_thread_func(void* arg, int fd) {
     (void)arg;
 
     int buf_size = 10;
+    Array* buf = mock_alloc_array(MESSAGE_LEN, sizeof(size_t), 1);
+    buf->data = MESSAGE; 
 
     self_yield();
-    int n = __public__net_write(fd, MESSAGE, MESSAGE_LEN);
+    int n = __public__net_write(fd, , MESSAGE_LEN);
     TEST_ASSERT(n == MESSAGE_LEN);
 
     close(fd);
