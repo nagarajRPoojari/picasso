@@ -1,6 +1,8 @@
 package typedef
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
@@ -29,11 +31,20 @@ func NewType(T string, U ...string) Type {
 const (
 	BOOLEAN = "boolean"
 
-	INT   = "int"
+	INT  = "int"
+	UINT = "uint"
+
 	INT8  = "int8"
-	INT16 = "int16"
-	INT32 = "int32"
-	INT64 = "int64"
+	UINT8 = "uint8"
+
+	INT16  = "int16"
+	UINT16 = "uint16"
+
+	INT32  = "int32"
+	UINT32 = "uint32"
+
+	INT64  = "int64"
+	UINT64 = "uint64"
 
 	FLOAT16 = "float16"
 	FLOAT32 = "float32"
@@ -147,6 +158,20 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 			}
 		}
 		return &ints.Int8{NativeType: types.I8, Value: ptr, GoVal: 0}
+	case UINT8:
+		if init == nil {
+			init = constant.NewInt(types.I8, 0)
+		}
+		ptr := bh.V.NewAlloca(types.I8)
+		bh.N.NewStore(init, ptr)
+
+		if _, ok := init.(*constant.Int); ok {
+			return &ints.UInt8{
+				NativeType: types.I8,
+				Value:      ptr,
+			}
+		}
+		return &ints.UInt8{NativeType: types.I8, Value: ptr}
 
 	case INT16, "i16":
 		if init == nil {
@@ -164,6 +189,22 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		}
 		return &ints.Int16{NativeType: types.I16, Value: ptr, GoVal: 0}
 
+	case UINT16:
+		if init == nil {
+			init = constant.NewInt(types.I16, 0)
+		}
+		ptr := bh.V.NewAlloca(types.I16)
+		bh.N.NewStore(init, ptr)
+
+		if ci, ok := init.(*constant.Int); ok {
+			return &ints.UInt16{
+				NativeType: types.I16,
+				Value:      ptr,
+				GoVal:      int16(ci.X.Int64()),
+			}
+		}
+		return &ints.UInt16{NativeType: types.I16, Value: ptr, GoVal: 0}
+
 	case INT32, "i32":
 		if init == nil {
 			init = constant.NewInt(types.I32, 0)
@@ -180,6 +221,22 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		}
 		return &ints.Int32{NativeType: types.I32, Value: ptr, GoVal: 0}
 
+	case UINT32:
+		if init == nil {
+			init = constant.NewInt(types.I32, 0)
+		}
+		ptr := bh.V.NewAlloca(types.I32)
+		bh.N.NewStore(init, ptr)
+
+		if ci, ok := init.(*constant.Int); ok {
+			return &ints.UInt32{
+				NativeType: types.I32,
+				Value:      ptr,
+				GoVal:      int32(ci.X.Int64()),
+			}
+		}
+		return &ints.UInt32{NativeType: types.I32, Value: ptr, GoVal: 0}
+
 	case INT64, INT, "i64":
 		if init == nil {
 			init = constant.NewInt(types.I64, 0)
@@ -195,6 +252,22 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 			}
 		}
 		return &ints.Int64{NativeType: types.I64, Value: ptr, GoVal: 0}
+
+	case UINT64, UINT:
+		if init == nil {
+			init = constant.NewInt(types.I64, 0)
+		}
+		ptr := bh.V.NewAlloca(types.I64)
+		bh.N.NewStore(init, ptr)
+
+		if ci, ok := init.(*constant.Int); ok {
+			return &ints.UInt64{
+				NativeType: types.I64,
+				Value:      ptr,
+				GoVal:      ci.X.Int64(),
+			}
+		}
+		return &ints.UInt64{NativeType: types.I64, Value: ptr, GoVal: 0}
 
 	case FLOAT16, "half":
 		if init == nil {
@@ -324,13 +397,13 @@ func (t *TypeHandler) GetLLVMType(_type string) types.Type {
 		return types.Void
 	case BOOLEAN, "i1":
 		return types.I1
-	case INT8, "i8":
+	case INT8, UINT8:
 		return types.I8
-	case INT16, "i16":
+	case INT16, UINT16:
 		return types.I16
-	case INT32, "132":
+	case INT32, UINT32:
 		return types.I32
-	case INT64, INT, "i64":
+	case INT64, INT, UINT, UINT64:
 		return types.I64
 	case FLOAT16, "half":
 		return types.Half
@@ -391,14 +464,22 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 	switch target {
 	case "boolean", "bool", "i1":
 		return t.ImplicitIntCast(bh, v, types.I1)
-	case "int8", "i8":
+	case "int8":
 		return t.ImplicitIntCast(bh, v, types.I8)
-	case "int16", "i16":
+	case "uint8":
+		return t.ImplicitUnsignedIntCast(bh, v, types.I8)
+	case "int16":
 		return t.ImplicitIntCast(bh, v, types.I16)
-	case "int32", "i32":
+	case "uint16":
+		return t.ImplicitUnsignedIntCast(bh, v, types.I16)
+	case "int32":
 		return t.ImplicitIntCast(bh, v, types.I32)
-	case "int", "int64", "i64":
+	case "uint32":
+		return t.ImplicitUnsignedIntCast(bh, v, types.I32)
+	case "int", "int64":
 		return t.ImplicitIntCast(bh, v, types.I64)
+	case "uint", "uint64":
+		return t.ImplicitUnsignedIntCast(bh, v, types.I64)
 
 	case "float16", "half":
 		return t.ImplicitFloatCast(bh, v, types.Half)
@@ -437,6 +518,7 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		}
 		return ret
 	}
+	panic(target)
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
 	return nil
 }
@@ -485,6 +567,44 @@ func (t *TypeHandler) catchIntToIntDownCast(block *bc.BlockHolder, v value.Value
 
 	b.NewCondBr(overflow, abort, safe)
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in int downcast\n")
+
+	vTrunc := safe.NewTrunc(v, dst)
+	block.Update(block.V, safe)
+	return vTrunc
+}
+
+func (t *TypeHandler) catchIntToUnsignedDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+
+	b := block.N
+
+	// boolean target (i1)
+	if dst.BitSize == 1 {
+		return b.NewICmp(
+			enum.IPredNE,
+			v,
+			constant.NewInt(v.Type().(*types.IntType), 0),
+		)
+	}
+
+	abort := b.Parent.NewBlock("")
+	safe := b.Parent.NewBlock("")
+
+	src := v.Type().(*types.IntType)
+
+	// IMPORTANT: unsigned bounds must be created as bit-pattern constants
+	maxVal, err := constant.NewIntFromString(src, fmt.Sprintf("%d", uintMax[dst]))
+	if err != nil {
+		panic(err)
+	}
+	minVal := constant.NewInt(src, 0) // unsigned min always 0
+
+	// signed compare on source value (still signed at runtime)
+	overflowMax := b.NewICmp(enum.IPredSGT, v, maxVal)
+	overflowMin := b.NewICmp(enum.IPredSLT, v, minVal)
+	overflow := b.NewOr(overflowMax, overflowMin)
+
+	b.NewCondBr(overflow, abort, safe)
+	rterr.Instance.RaiseRTError(abort, "runtime overflow in unsigned int downcast\n")
 
 	vTrunc := safe.NewTrunc(v, dst)
 	block.Update(block.V, safe)
@@ -540,6 +660,42 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *bc.BlockHolder, v value.Val
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in float → int downcast\n")
 
 	res := safe.NewFPToSI(vAsDouble, dst)
+	block.Update(block.V, safe)
+	return res
+}
+
+func (t *TypeHandler) catchFloatToUnsignedIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+
+	b := block.N
+
+	abort := b.Parent.NewBlock("")
+	safe := b.Parent.NewBlock("")
+
+	// Promote float to double for comparisons
+	var vAsDouble value.Value
+	if ft, ok := v.Type().(*types.FloatType); ok && ft.Kind != types.FloatKindDouble {
+		vAsDouble = b.NewFPExt(v, types.Double)
+	} else {
+		vAsDouble = v
+	}
+
+	// Unsigned bounds: 0 .. uintMax
+	minValD := constant.NewFloat(types.Double, 0.0)
+	maxValD := constant.NewFloat(types.Double, float64(uintMax[dst]))
+
+	overflowMax := b.NewFCmp(enum.FPredUGT, vAsDouble, maxValD)
+	overflowMin := b.NewFCmp(enum.FPredULT, vAsDouble, minValD)
+
+	// NaN check
+	isNaN := b.NewFCmp(enum.FPredUNO, vAsDouble, vAsDouble)
+
+	overflow := b.NewOr(b.NewOr(overflowMax, overflowMin), isNaN)
+
+	b.NewCondBr(overflow, abort, safe)
+	rterr.Instance.RaiseRTError(abort, "runtime overflow in float → unsigned int downcast\n")
+
+	// IMPORTANT: FPToUI (unsigned!)
+	res := safe.NewFPToUI(vAsDouble, dst)
 	block.Update(block.V, safe)
 	return res
 }
@@ -602,6 +758,47 @@ func (t *TypeHandler) ImplicitIntCast(block *bc.BlockHolder, v value.Value, dst 
 		}
 
 		return t.catchFloatToIntDownCast(block, v, dst)
+	}
+
+	errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "int")
+	return nil
+}
+
+func (t *TypeHandler) ImplicitUnsignedIntCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+	b := block.N
+
+	// Source is integer
+	if src, ok := v.Type().(*types.IntType); ok {
+
+		// i1 handling
+		if src.BitSize == 1 {
+			if dst.BitSize == 1 {
+				return v
+			}
+			return b.NewZExt(v, dst)
+		}
+
+		if src.BitSize > dst.BitSize {
+			return t.catchIntToUnsignedDownCast(block, v, dst)
+		}
+
+		if src.BitSize < dst.BitSize {
+			return b.NewZExt(v, dst)
+		}
+
+		return v
+	}
+
+	// Source is float
+	if _, ok := v.Type().(*types.FloatType); ok {
+
+		// float → bool
+		if dst == types.I1 {
+			zero := constant.NewFloat(v.Type().(*types.FloatType), 0.0)
+			return b.NewFCmp(enum.FPredONE, v, zero)
+		}
+
+		return t.catchFloatToUnsignedIntDownCast(block, v, dst)
 	}
 
 	errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "int")
