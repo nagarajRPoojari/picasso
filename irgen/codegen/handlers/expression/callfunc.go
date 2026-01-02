@@ -200,8 +200,8 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 		for i, argExp := range ex.Arguments {
 			v := t.ProcessExpression(bh, argExp)
 			raw := v.Load(bh)
-			expected := funcType.Params[i]
-			raw = t.st.TypeHandler.ImplicitTypeCast(bh, utils.GetTypeString(expected), raw)
+			expected := classMeta.MethodArgs[methodKey][i]
+			raw = t.st.TypeHandler.ImplicitTypeCast(bh, expected.Get(), raw)
 			args = append(args, raw)
 		}
 
