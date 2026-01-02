@@ -464,21 +464,26 @@ func (t *TypeHandler) catchIntToIntDownCast(block *bc.BlockHolder, v value.Value
 
 	// boolean target (i1): non-zero -> true
 	if dst.BitSize == 1 {
-		cmp := b.NewICmp(enum.IPredNE, v, constant.NewInt(v.Type().(*types.IntType), 0))
-		return cmp
+		return b.NewICmp(
+			enum.IPredNE,
+			v,
+			constant.NewInt(v.Type().(*types.IntType), 0),
+		)
 	}
 
 	abort := b.Parent.NewBlock("")
 	safe := b.Parent.NewBlock("")
 
-	maxVal := constant.NewInt(dst, intMax[dst])
-	minVal := constant.NewInt(dst, intMin[dst])
+	src := v.Type().(*types.IntType)
+
+	maxVal := constant.NewInt(src, intMax[dst])
+	minVal := constant.NewInt(src, intMin[dst])
+
 	overflowMax := b.NewICmp(enum.IPredSGT, v, maxVal)
 	overflowMin := b.NewICmp(enum.IPredSLT, v, minVal)
 	overflow := b.NewOr(overflowMax, overflowMin)
 
 	b.NewCondBr(overflow, abort, safe)
-
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in int downcast\n")
 
 	vTrunc := safe.NewTrunc(v, dst)
@@ -513,29 +518,27 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *bc.BlockHolder, v value.Val
 	abort := b.Parent.NewBlock("")
 	safe := b.Parent.NewBlock("")
 
-	// Promote the float to double for robust comparison (avoids half literal issues)
+	// Promote float to double
 	var vAsDouble value.Value
-	if _, ok := v.Type().(*types.FloatType); ok && v.Type().(*types.FloatType).Kind != types.FloatKindDouble {
+	if ft, ok := v.Type().(*types.FloatType); ok && ft.Kind != types.FloatKindDouble {
 		vAsDouble = b.NewFPExt(v, types.Double)
 	} else {
 		vAsDouble = v
 	}
 
-	// Compare against integer bounds expressed as double constants
 	minValD := constant.NewFloat(types.Double, float64(intMin[dst]))
 	maxValD := constant.NewFloat(types.Double, float64(intMax[dst]))
 
 	overflowMax := b.NewFCmp(enum.FPredOGT, vAsDouble, maxValD)
 	overflowMin := b.NewFCmp(enum.FPredOLT, vAsDouble, minValD)
-	overflow := b.NewOr(overflowMax, overflowMin)
+
+	isNaN := b.NewFCmp(enum.FPredUNO, vAsDouble, vAsDouble)
+
+	overflow := b.NewOr(b.NewOr(overflowMax, overflowMin), isNaN)
 
 	b.NewCondBr(overflow, abort, safe)
-
 	rterr.Instance.RaiseRTError(abort, "runtime overflow in float → int downcast\n")
 
-	// In safe block: do the FP->SI conversion. Use vAsDouble (double->int) which is fine.
-	// If you prefer converting from original width, you can do safe.NewFPToSI(v, dst) too;
-	// FPToSI from double is fine and avoids repeated casting complexities.
 	res := safe.NewFPToSI(vAsDouble, dst)
 	block.Update(block.V, safe)
 	return res
@@ -566,41 +569,43 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *bc.BlockHolder, v value.Val
 //     with an implicit type cast error.
 func (t *TypeHandler) ImplicitIntCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
 	b := block.N
-	src, ok := v.Type().(*types.IntType)
-	if !ok {
-		// v is not an int; allow float -> int/boolean conversions
-		if _, ok := v.Type().(*types.FloatType); ok {
-			// float -> boolean
-			if dst == types.I1 {
-				zero := constant.NewFloat(v.Type().(*types.FloatType), 0.0)
-				cond := b.NewFCmp(enum.FPredONE, v, zero) // v != 0.0
-				return cond
+
+	// Source is integer
+	if src, ok := v.Type().(*types.IntType); ok {
+
+		// i1 handling
+		if src.BitSize == 1 {
+			if dst.BitSize == 1 {
+				return v
 			}
-
-			// float -> integer (with overflow checks)
-			return t.catchFloatToIntDownCast(block, v, dst)
+			return b.NewSExt(v, dst)
 		}
-		errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "int")
-	}
 
-	if src.BitSize == 1 {
-		if dst.BitSize == 1 {
-			return v
+		if src.BitSize > dst.BitSize {
+			return t.catchIntToIntDownCast(block, v, dst)
 		}
-		// Boolean widen with ZExt
-		return b.NewZExt(v, dst)
+
+		if src.BitSize < dst.BitSize {
+			return b.NewSExt(v, dst)
+		}
+
+		return v
 	}
 
-	// v is integer
-	if src.BitSize > dst.BitSize {
-		// downcast integer to integer (with overflow checks)
-		return t.catchIntToIntDownCast(block, v, dst)
+	// Source is float
+	if _, ok := v.Type().(*types.FloatType); ok {
+
+		// float → bool
+		if dst == types.I1 {
+			zero := constant.NewFloat(v.Type().(*types.FloatType), 0.0)
+			return b.NewFCmp(enum.FPredONE, v, zero)
+		}
+
+		return t.catchFloatToIntDownCast(block, v, dst)
 	}
-	if src.BitSize < dst.BitSize {
-		// extend smaller integer to larger
-		return b.NewSExt(v, dst)
-	}
-	return v
+
+	errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "int")
+	return nil
 }
 
 // catchFloatToFloatDowncast inserts runtime checks for floating-point
