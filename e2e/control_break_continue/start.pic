@@ -1,0 +1,19 @@
+using "builtin/syncio";
+
+class Test {
+    fn Test() {}
+    
+    fn testBreak() {
+        foreach i in 0..10{
+            if(i==5){
+                break;
+            }
+            syncio.printf(">%d;", i);
+        }
+    }
+}
+
+fn start() {
+    say test: start.Test = new start.Test();
+    test.testBreak();
+}
