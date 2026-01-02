@@ -49,7 +49,7 @@ func classifyVar(v tf.Var) ArithKind {
 		return KindFloat
 
 	// pointer
-	case *tf.Array, *tf.Class, *tf.String:
+	case *tf.Array, *tf.Class, *tf.String, *tf.NullVar:
 		return KindPointer
 	}
 
