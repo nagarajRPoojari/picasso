@@ -514,3 +514,64 @@ func logicalOr(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, e
 	}
 	return buildBooleanFromValue(bh, bh.N.NewOr(lb, rb)), nil
 }
+
+// ProcessPrefixExpression generates LLVM IR for unary operations such as
+// numerical negation (-) and logical NOT (!). It evaluates the operand,
+// performs the necessary type promotion, and applies the operator using
+// specific LLVM instructions like FNeg or Xor.
+//
+// Technical Logic:
+//   - Numerical Negation: Coerces the operand to a double-precision float
+//     and emits an 'fneg' instruction to maintain consistency with the
+//     compiler's floating-point-first arithmetic strategy.
+//   - Logical NOT: Coerces the operand to a 1-bit integer (i1) and performs
+//     an 'xor' operation with a constant 1 (true) to flip the boolean state.
+//   - Result Storage: Allocates a new stack slot (alloca) for the result
+//     to ensure the returned value is addressable as a tf.Var.
+func (t *ExpressionHandler) ProcessPrefixExpression(bh *bc.BlockHolder, ex ast.PrefixExpression) tf.Var {
+	operand := t.ProcessExpression(bh, ex.Operand)
+
+	switch ex.Operator.Value {
+	case "-":
+		res, err := neg(t.st.TypeHandler, bh, operand)
+		if err != nil {
+			errorutils.Abort(errorutils.PrefixOperationError, err.Error())
+		}
+		return res
+	case "!":
+		res, err := not(t.st.TypeHandler, bh, operand)
+		if err != nil {
+			errorutils.Abort(errorutils.PrefixOperationError, err.Error())
+		}
+		return res
+	}
+
+	panic(fmt.Sprintf("invalid prefix operation: %s", ex.Operator.Value))
+}
+
+func neg(th *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (tf.Var, error) {
+	tp := classifyVar(v)
+	switch tp {
+	case KindSignedInt:
+		val := th.ImplicitFloatCast(bh, v.Load(bh), types.Double)
+		return buildSignedInt64FromValue(bh, bh.N.NewFNeg(val)), nil
+	case KindFloat:
+		val := v.Load(bh)
+		return buildSignedInt64FromValue(bh, bh.N.NewFNeg(val)), nil
+	case KindUnsignedInt:
+		return nil, fmt.Errorf("negation not allowed on unsigned dtypes")
+	case KindPointer:
+		return nil, fmt.Errorf("negation not allowed on unsigned dtypes")
+	}
+
+	return nil, fmt.Errorf("unsupported neg")
+}
+
+func not(th *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (tf.Var, error) {
+	vb, err := toBool(th, bh, v)
+	if err != nil {
+		return nil, err
+	}
+	one := constant.NewInt(types.I1, 1)
+	return buildBooleanFromValue(bh, bh.N.NewXor(vb, one)), nil
+}
