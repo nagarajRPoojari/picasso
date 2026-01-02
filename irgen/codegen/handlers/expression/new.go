@@ -131,7 +131,7 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 	}
 
 	clsNameSplit := strings.Split(aliasClsName, ".")
-	moduleName := clsNameSplit[0]
+	moduleName := strings.Join(clsNameSplit[:len(clsNameSplit)-1], ".")
 
 	if classMeta.Internal && moduleName != t.st.ModuleName {
 		errorutils.Abort(errorutils.ClassNotAccessible, aliasClsName)
