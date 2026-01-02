@@ -36,6 +36,9 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 			// fName := fmt.Sprintf("%s.%s", t.st.Imports[x.Value].Name, ex.Property)
 			v, ok := t.st.CI.Constants[ex.Property]
 			if !ok {
+				if v, ok := t.st.Vars.Search(fmt.Sprintf("%s.%s", x.Value, ex.Property)); ok {
+					return v
+				}
 				errorutils.Abort(errorutils.UnknownVariable, ex.Property)
 			}
 			val := bh.N.NewLoad(types.I32, v)
@@ -65,6 +68,12 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 	// Compute field name in identifier map
 	fieldID := fmt.Sprintf("%s.%s", cls.Name, ex.Property)
 	idx, ok := classMeta.FieldIndexMap[fieldID]
+
+	if resolveRootMember(ex) != constants.THIS {
+		if _, ok := classMeta.InternalFields[fieldID]; ok {
+			errorutils.Abort(errorutils.FieldNotAccessible, cls.Name, ex.Property)
+		}
+	}
 
 	if !ok {
 		errorutils.Abort(errorutils.UnknownClassField, ex.Property, cls.Name)

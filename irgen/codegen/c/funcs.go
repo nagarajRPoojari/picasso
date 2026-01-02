@@ -51,6 +51,9 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	// @runtime_init
 	t.Funcs[FUNC_RUNTIME_INIT] = mod.NewFunc(FUNC_RUNTIME_INIT, types.Void)
 
+	// @runtime error
+	// t.Funcs[FUNC_RUNTIME_ERROR] =
+
 	// @array_alloc
 	t.Funcs[FUNC_ARRAY_ALLOC] = mod.NewFunc(FUNC_ARRAY_ALLOC, types.NewPointer(t.Types[TYPE_ARRAY]), ir.NewParam("", types.I32), ir.NewParam("", types.I32), ir.NewParam("", types.I32))
 
@@ -417,23 +420,23 @@ func (t *Interface) initStdio(mod *ir.Module) {
 	t.Funcs[FUNC_SPRINTF].Sig.Variadic = true
 
 	// @ascanf
-	t.Funcs[FUNC_ASCAN] = mod.NewFunc(FUNC_ASCAN, types.I32, ir.NewParam("format", types.I8Ptr))
+	t.Funcs[FUNC_ASCAN] = mod.NewFunc(FUNC_ASCAN, t.Types[TYPE_ARRAY], ir.NewParam("format", types.I8Ptr))
 	t.Funcs[FUNC_ASCAN].Sig.Variadic = true
 	// @sscanf
-	t.Funcs[FUNC_SSCAN] = mod.NewFunc(FUNC_SSCAN, types.I32, ir.NewParam("format", types.I8Ptr))
+	t.Funcs[FUNC_SSCAN] = mod.NewFunc(FUNC_SSCAN, t.Types[TYPE_ARRAY], ir.NewParam("format", types.I8Ptr))
 	t.Funcs[FUNC_SSCAN].Sig.Variadic = true
 
 	// @afread
 	t.Funcs[FUNC_AFREAD] = mod.NewFunc(FUNC_AFREAD, types.I32,
 		ir.NewParam("fd", types.I8Ptr),
-		ir.NewParam("dest", types.I8Ptr),
+		ir.NewParam("dest", t.Types[TYPE_ARRAY]),
 		ir.NewParam("n", types.I64),
 		ir.NewParam("offset", types.I64),
 	)
 	// @sfreed
 	t.Funcs[FUNC_SFREAD] = mod.NewFunc(FUNC_SFREAD, types.I32,
 		ir.NewParam("fd", types.I8Ptr),
-		ir.NewParam("dest", types.I8Ptr),
+		ir.NewParam("dest", t.Types[TYPE_ARRAY]),
 		ir.NewParam("n", types.I64),
 		ir.NewParam("offset", types.I64),
 	)
@@ -441,14 +444,14 @@ func (t *Interface) initStdio(mod *ir.Module) {
 	// @afwrite
 	t.Funcs[FUNC_AFWRITE] = mod.NewFunc(FUNC_AFWRITE, types.I32,
 		ir.NewParam("fd", types.I8Ptr),
-		ir.NewParam("dest", types.I8Ptr),
+		ir.NewParam("src", t.Types[TYPE_ARRAY]),
 		ir.NewParam("n", types.I64),
 		ir.NewParam("offset", types.I64),
 	)
 	// @sfwrite
 	t.Funcs[FUNC_SFWRITE] = mod.NewFunc(FUNC_SFWRITE, types.I32,
 		ir.NewParam("fd", types.I8Ptr),
-		ir.NewParam("dest", types.I8Ptr),
+		ir.NewParam("src", t.Types[TYPE_ARRAY]),
 		ir.NewParam("n", types.I64),
 		ir.NewParam("offset", types.I64),
 	)

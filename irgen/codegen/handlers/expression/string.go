@@ -5,7 +5,6 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
@@ -39,15 +38,21 @@ func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.Stri
 		constant.NewInt(types.I32, 0),
 	)
 
-	malloc := t.st.CI.Funcs[c.FUNC_ALLOC]
-	size := constant.NewInt(types.I64, int64(len(formatStr)+1))
-	heapPtr := bh.N.NewCall(malloc, size)
+	// returning pointer to global constant, making it immutable.
+	// @todo: may be i can support both mutable & immutable string here
+	// allocating it to a heap makes it mutable.
 
-	memcpy := t.st.CI.Funcs[c.FUNC_MEMCPY]
-	i8ptr := types.NewPointer(types.I8)
-	src := bh.N.NewBitCast(gep, i8ptr)
-	dest := bh.N.NewBitCast(heapPtr, i8ptr)
-	bh.N.NewCall(memcpy, dest, src, size, constant.NewBool(false))
+	// malloc := t.st.CI.Funcs[c.FUNC_ALLOC]
+	// size := constant.NewInt(types.I64, int64(len(formatStr)+1))
+	// heapPtr := bh.N.NewCall(malloc, size)
 
-	return tf.NewString(bh, heapPtr)
+	// memcpy := t.st.CI.Funcs[c.FUNC_MEMCPY]
+	// i8ptr := types.NewPointer(types.I8)
+	// src := bh.N.NewBitCast(gep, i8ptr)
+	// dest := bh.N.NewBitCast(heapPtr, i8ptr)
+	// bh.N.NewCall(memcpy, dest, src, size, constant.NewBool(false))
+
+	// return tf.NewString(bh, heapPtr)
+
+	return tf.NewString(bh, gep)
 }

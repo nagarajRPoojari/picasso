@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
+	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/lexer"
 )
 
@@ -23,6 +24,7 @@ func parseExpressionStmt(p *Parser) ast.ExpressionStatement {
 	p.expect(lexer.SEMI_COLON)
 
 	return ast.ExpressionStatement{
+		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
 		Expression: expression,
 	}
 }
@@ -37,35 +39,46 @@ func parseBlockStmt(p *Parser) ast.Statement {
 
 	p.expect(lexer.CLOSE_CURLY)
 	return ast.BlockStatement{
-		Body: body,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Body:      body,
 	}
 }
 
 func parseVarDeclStmt(p *Parser) ast.Statement {
 	var explicitType ast.Type
+	p.expect(lexer.SAY)
 
-	startToken := p.move().Kind
+	var isInternal bool
+	if p.currentTokenKind() == lexer.INTERNAL {
+		isInternal = true
+		p.move()
+	}
 
-	isConstant := startToken == lexer.CONST
-
-	nextToken := p.move()
 	var isStatic bool
-	if nextToken.Kind == lexer.STATIC {
+	if p.currentTokenKind() == lexer.STATIC {
 		isStatic = true
-		nextToken = p.move()
-	}
-	if nextToken.Kind != lexer.IDENTIFIER {
-		panic("unexpected keyword in variable declaration")
+		p.move()
 	}
 
-	symbolName := nextToken
+	symbolName := p.currentToken()
+	if p.currentTokenKind() != lexer.IDENTIFIER {
+		errorsx.PanicParserError(
+			"unexpected keyword in variable declaration",
+			p.currentToken().Src.FilePath,
+			p.currentToken().Src.Line,
+			p.currentToken().Src.Col,
+		)
+	} else {
+		p.move()
+	}
+
 	if p.currentTokenKind() == lexer.COLON {
-		p.expect(lexer.COLON)
+		p.move()
 
 		atomic := false
 		if p.currentTokenKind() == lexer.ATOMIC {
 			atomic = true
-			nextToken = p.move()
+			p.move()
 		}
 
 		explicitType = parse_type(p, default_bp)
@@ -84,16 +97,13 @@ func parseVarDeclStmt(p *Parser) ast.Statement {
 
 	p.expect(lexer.SEMI_COLON)
 
-	if isConstant && assignmentValue == nil {
-		panic("Cannot define constant variable without providing default value.")
-	}
-
 	return ast.VariableDeclarationStatement{
-		Constant:      isConstant,
+		SourceLoc:     ast.SourceLoc(p.currentToken().Src),
 		Identifier:    symbolName.Value,
 		AssignedValue: assignmentValue,
 		ExplicitType:  explicitType,
 		IsStatic:      isStatic,
+		IsInternal:    isInternal,
 	}
 }
 
@@ -134,6 +144,13 @@ func parseFuncDeclaration(p *Parser) ast.Statement {
 	startToken := p.move()
 	var isStatic bool
 	var functionName string
+	var isInternal bool
+
+	if startToken.Kind == lexer.INTERNAL {
+		isInternal = true
+		startToken = p.move()
+	}
+
 	if startToken.Kind == lexer.STATIC {
 		isStatic = true
 		functionName = p.expect(lexer.IDENTIFIER).Value
@@ -141,18 +158,25 @@ func parseFuncDeclaration(p *Parser) ast.Statement {
 		if startToken.Kind == lexer.IDENTIFIER {
 			functionName = startToken.Value
 		} else {
-			panic("unexpected keyword after fn")
+			errorsx.PanicParserError(
+				"unexpected keyword after fn",
+				p.currentToken().Src.FilePath,
+				p.currentToken().Src.Line,
+				p.currentToken().Src.Col,
+			)
 		}
 	}
 	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
 
 	return ast.FunctionDefinitionStatement{
+		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
 		Parameters: functionParams,
 		ReturnType: returnType,
 		Body:       functionBody,
 		Name:       functionName,
 		IsStatic:   isStatic,
 		Hash:       funcHash(functionParams, returnType),
+		IsInternal: isInternal,
 	}
 }
 
@@ -187,6 +211,7 @@ func parseIfStmt(p *Parser) ast.Statement {
 	}
 
 	return ast.IfStatement{
+		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
 		Condition:  condition,
 		Consequent: consequent,
 		Alternate:  alternate,
@@ -209,8 +234,9 @@ func parseImportStmt(p *Parser) ast.Statement {
 
 	p.expect(lexer.SEMI_COLON)
 	return ast.ImportStatement{
-		Name:  importName,
-		Alias: importAlias,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Name:      importName,
+		Alias:     importAlias,
 	}
 }
 
@@ -230,10 +256,11 @@ func parseForeachStmt(p *Parser) ast.Statement {
 	body := ast.ExpectStmt[ast.BlockStatement](parseBlockStmt(p)).Body
 
 	return ast.ForeachStatement{
-		Value:    valueName,
-		Index:    index,
-		Iterable: iterable,
-		Body:     body,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Value:     valueName,
+		Index:     index,
+		Iterable:  iterable,
+		Body:      body,
 	}
 }
 
@@ -243,6 +270,7 @@ func parseWhileStmt(p *Parser) ast.Statement {
 	body := ast.ExpectStmt[ast.BlockStatement](parseBlockStmt(p)).Body
 
 	return ast.WhileStatement{
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
 		Condition: condition,
 		Body:      body,
 	}
@@ -250,6 +278,11 @@ func parseWhileStmt(p *Parser) ast.Statement {
 
 func parseClassDeclStmt(p *Parser) ast.Statement {
 	p.move()
+	var isInternal bool
+	if p.currentTokenKind() == lexer.INTERNAL {
+		isInternal = true
+		p.move()
+	}
 	className := p.expect(lexer.IDENTIFIER).Value
 	var implements string
 	if p.currentTokenKind() == lexer.COLON {
@@ -264,9 +297,11 @@ func parseClassDeclStmt(p *Parser) ast.Statement {
 	classBody := parseBlockStmt(p)
 
 	return ast.ClassDeclarationStatement{
+		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
 		Name:       className,
 		Body:       ast.ExpectStmt[ast.BlockStatement](classBody).Body,
 		Implements: implements,
+		IsInternal: isInternal,
 	}
 }
 
@@ -276,8 +311,9 @@ func parseInterfaceDeclStmt(p *Parser) ast.Statement {
 	interfaceBody := parseBlockStmt(p)
 
 	return ast.InterfaceDeclarationStatement{
-		Name: interfaceName,
-		Body: ast.ExpectStmt[ast.BlockStatement](interfaceBody).Body,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Name:      interfaceName,
+		Body:      ast.ExpectStmt[ast.BlockStatement](interfaceBody).Body,
 	}
 }
 
@@ -287,18 +323,22 @@ func parseFuncReturnStmt(p *Parser) ast.Statement {
 	if p.currentTokenKind() == lexer.NULL {
 		p.move()
 		p.expect(lexer.SEMI_COLON)
-		return ast.ReturnStatement{}
+		return ast.ReturnStatement{
+			SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		}
 	}
 	if p.currentTokenKind() == lexer.SEMI_COLON {
 		p.move()
 		return ast.ReturnStatement{
-			IsVoid: true,
+			SourceLoc: ast.SourceLoc(p.currentToken().Src),
+			IsVoid:    true,
 		}
 	}
 	exp := parseExpressionStmt(p)
 
 	return ast.ReturnStatement{
-		Value: exp,
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Value:     exp,
 	}
 }
 
@@ -306,5 +346,7 @@ func parseBreakStmt(p *Parser) ast.Statement {
 	p.expect(lexer.BREAK)
 	p.expect(lexer.SEMI_COLON)
 
-	return ast.BreakStatement{}
+	return ast.BreakStatement{
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+	}
 }

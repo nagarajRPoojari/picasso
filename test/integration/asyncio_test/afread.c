@@ -8,16 +8,42 @@
 #include <stdatomic.h>
 #include <time.h>
 #include "diskio.h"
+#include "array.h"
 #include "alloc.h"
 #include "gc.h"
 #include "ggc.h"
 #include "initutils.h"
 
 extern arena_t* __global__arena__;
+arena_t* __test__global__arena__;
 
-void setUp(void) {}
+void setUp(void) {
+    __test__global__arena__ = arena_create();
+}
 void tearDown(void) {
     /* @todo: graceful termination */
+}
+
+Array* mock_alloc_array(int count, int elem_size, int rank) {
+    size_t data_size = (size_t)count * elem_size;
+    size_t shape_size = (size_t)rank * sizeof(int64_t);
+    size_t total_size = sizeof(Array) + data_size + shape_size;
+
+    Array* arr = (Array*)allocate(__test__global__arena__, total_size);
+
+    
+    arr->data = (int8_t*)(arr + 1); 
+    
+    if (rank > 0) {
+        arr->shape = (int64_t*)(arr->data + data_size);
+    } else {
+        arr->shape = NULL;
+    }
+    
+    arr->length = count;
+    arr->rank = rank;
+    
+    return arr;
 }
 
 static atomic_int completed;
@@ -50,12 +76,12 @@ static void* __public__afread_thread_func(void* arg) {
     FILE* file = fopen("test/data/test__public__sfread.txt", "r+");
     TEST_ASSERT_NOT_NULL(file);
 
-    char* buf = __public__alloc(1024);
+    Array* buf = mock_alloc_array(1024, sizeof(size_t), 1);
     ssize_t r = __public__afread(file, buf, 1024, 0);
     fclose(file);
 
     TEST_ASSERT_EQUAL(57, r);
-    TEST_ASSERT_EQUAL_STRING("Synchronously read n bytes from a file at a given offset.", buf);
+    TEST_ASSERT_EQUAL_STRING("Synchronously read n bytes from a file at a given offset.", buf->data);
 
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
     return NULL;

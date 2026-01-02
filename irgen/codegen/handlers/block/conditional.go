@@ -22,17 +22,21 @@ import (
 //
 // todo:
 //   - support elseif chain
-func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.IfStatement) {
+func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.IfStatement, endBlock *bc.BlockHolder) {
 	ifBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
-	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+
+	// Create end block only once (top-level)
+	if endBlock == nil {
+		endBlock = bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	}
 
 	// condition
 	res := expression.ExpressionHandlerInst.ProcessExpression(bh, st.Condition)
 	cond := res.Load(bh)
 	cond = t.st.TypeHandler.ImplicitIntCast(bh, cond, types.I1)
 
-	// handle else branch
 	var elseBlock *bc.BlockHolder
+
 	if st.Alternate != nil {
 		elseBlock = bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 		bh.N.NewCondBr(cond, ifBlock.N, elseBlock.N)
@@ -40,26 +44,25 @@ func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *a
 		bh.N.NewCondBr(cond, ifBlock.N, endBlock.N)
 	}
 
-	// process if block
-	if st.Consequent != nil {
-		if conseq, ok := st.Consequent.(ast.BlockStatement); ok {
-			t.ProcessBlock(fn, ifBlock, conseq.Body)
-		}
-	}
+	// if block
+	t.ProcessBlock(fn, ifBlock, st.Consequent.(ast.BlockStatement).Body)
 	if ifBlock.N.Term == nil {
 		ifBlock.N.NewBr(endBlock.N)
 	}
 
-	// process else block if exists
-	if elseBlock != nil && st.Alternate != nil {
-		if alt, ok := st.Alternate.(ast.BlockStatement); ok {
+	// else / else-if
+	if st.Alternate != nil {
+		switch alt := st.Alternate.(type) {
+		case ast.BlockStatement:
 			t.ProcessBlock(fn, elseBlock, alt.Body)
-		}
-		if elseBlock.N.Term == nil {
-			elseBlock.N.NewBr(endBlock.N)
+			if elseBlock.N.Term == nil {
+				elseBlock.N.NewBr(endBlock.N)
+			}
+
+		case ast.IfStatement:
+			t.processIfElseBlock(fn, elseBlock, &alt, endBlock)
 		}
 	}
 
-	// update current blockHolder to point to end block
 	bh.Update(endBlock.V, endBlock.N)
 }

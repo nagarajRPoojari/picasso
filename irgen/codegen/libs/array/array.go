@@ -21,6 +21,8 @@ func NewArrayHandler() *ArrayHandler {
 func (t *ArrayHandler) ListAllFuncs() map[string]function.Func {
 	funcs := make(map[string]function.Func)
 	funcs["create"] = t.create
+	funcs["len"] = t.len
+	funcs["shape"] = t.shape
 	return funcs
 }
 
@@ -32,5 +34,17 @@ func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, bh *bc.Bloc
 
 		dims = append(dims, toInt)
 	}
-	return typedef.NewArray(bh, args[0].Type(), size.Load(bh), dims)
+	return typedef.NewArray(bh, args[0].Type(), size.Load(bh), dims, args[0].NativeTypeString())
+}
+
+func (t *ArrayHandler) len(th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	arr := args[0].(*tf.Array)
+	length := arr.Len(bh)
+	return length
+}
+
+func (t *ArrayHandler) shape(th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	arr := args[0].(*tf.Array)
+	shape := arr.LoadShapeArray(bh)
+	return shape
 }

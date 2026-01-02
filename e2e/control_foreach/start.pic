@@ -1,0 +1,62 @@
+using "builtin/syncio";
+
+class Test {
+    fn Test() {}
+
+    // Basic range + iteration 
+    fn testSimpleRange() {
+        foreach i in 0..5 {
+            syncio.printf("S:%d;", i);
+        }
+        syncio.printf("\n");
+    }
+
+    // Range with condition inside loop 
+    fn testWithIf() {
+        foreach i in 0..10 {
+            if (i % 2 == 0) {
+                syncio.printf("E:%d;", i);
+            } else {
+                syncio.printf("O:%d;", i);
+            }
+        }
+        syncio.printf("\n");
+    }
+
+    // Nested foreach 
+    fn testNested() {
+        foreach i in 0..3 {
+            foreach j in 0..3 {
+                syncio.printf("(%d,%d);", i, j);
+            }
+        }
+        syncio.printf("\n");
+    }
+
+    // Zero-iteration case 
+    fn testEmptyRange() {
+        foreach i in 5..5 {
+            syncio.printf("SHOULD_NOT_PRINT");
+        }
+        syncio.printf("EMPTY_OK\n");
+    }
+
+    // Loop variable used in expression 
+    fn testExpressionUse() {
+        say sum:int = 0;
+        foreach i in 1..6 {
+            sum = sum + i;
+        }
+        syncio.printf("SUM=%d\n", sum); // 1+2+3+4+5 = 15
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+
+    t.testSimpleRange();      // S:0;S:1;S:2;S:3;S:4;
+    t.testWithIf();           // E/O pattern
+    t.testNested();           // (i,j) pairs
+    t.testEmptyRange();       // EMPTY_OK
+    t.testExpressionUse();    // SUM=15
+}

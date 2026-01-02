@@ -28,7 +28,6 @@ go_library(
         "//irgen/codegen/tools",
         "//irgen/codegen/utils",
         "//irgen/parser",
-        "@com_github_go_ini_ini//:ini",
         "@com_github_llir_llvm//ir",
         "@com_github_llir_llvm//ir/types",
     ],

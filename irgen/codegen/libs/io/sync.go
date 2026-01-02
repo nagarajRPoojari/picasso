@@ -2,6 +2,7 @@ package io
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
@@ -10,6 +11,8 @@ import (
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/libutils"
 	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
 )
 
 type SyncIO struct {
@@ -39,8 +42,26 @@ func (t *SyncIO) ListAllFuncs() map[string]function.Func {
 }
 
 func (t *SyncIO) sprintf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	printfFn := c.Instance.Funcs[c.FUNC_SPRINTF]
-	return libutils.CallCFunc(typeHandler, printfFn, bh, args)
+	f := c.Instance.Funcs[c.FUNC_SPRINTF]
+
+	castedArgs := []value.Value{args[0].Load(bh)}
+	for _, arg := range args[1:] {
+		switch arg.(type) {
+		case *ints.Int8, *ints.Int16, *ints.Int32, *ints.Int64:
+			res := typeHandler.ImplicitIntCast(bh, arg.Load(bh), types.I32)
+			castedArgs = append(castedArgs, res)
+		case *ints.UInt8, *ints.UInt16, *ints.UInt32, *ints.UInt64:
+			res := typeHandler.ImplicitUnsignedIntCast(bh, arg.Load(bh), types.I32)
+			castedArgs = append(castedArgs, res)
+		case *floats.Float16, *floats.Float32, *floats.Float64:
+			res := typeHandler.ImplicitFloatCast(bh, arg.Load(bh), types.Double)
+			castedArgs = append(castedArgs, res)
+		default:
+			castedArgs = append(castedArgs, arg.Load(bh))
+		}
+	}
+	result := bh.N.NewCall(f, castedArgs...)
+	return typeHandler.BuildVar(bh, typedef.NewType(utils.GetTypeString(result.Type())), result)
 }
 
 func (t *SyncIO) sscanf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {

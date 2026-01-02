@@ -28,36 +28,36 @@ cc_test(
     name = "asyncio_test_ascan",
     srcs = ["integration/asyncio_test/ascan.c"],
     copts = COMMON_COPTS,
+    data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
-    data = glob(["data/*"]),
 )
 
 cc_test(
     name = "asyncio_test_afread",
     srcs = ["integration/asyncio_test/afread.c"],
     copts = COMMON_COPTS,
+    data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
-    data = glob(["data/*"]),
 )
 
 cc_test(
     name = "asyncio_test_aprintf",
     srcs = ["integration/asyncio_test/aprintf.c"],
     copts = COMMON_COPTS,
+    data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
-    data = glob(["data/*"]),
 )
 
 cc_test(
     name = "asyncio_test_afwrite",
     srcs = ["integration/asyncio_test/afwrite.c"],
     copts = COMMON_COPTS,
+    data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
-    data = glob(["data/*"]),
 )
 
 cc_test(
@@ -72,9 +72,9 @@ cc_test(
     name = "syncio_test",
     srcs = ["unit/syncio_test.c"],
     copts = COMMON_COPTS,
+    data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
-    data = glob(["data/*"]),
 )
 
 cc_test(

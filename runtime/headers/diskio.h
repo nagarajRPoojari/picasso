@@ -3,6 +3,7 @@
 
 #include "queue.h"
 #include "task.h"
+#include "array.h"
 
 
 /** Number of I/O worker threads in the pool, must be kept equal to number of scheduler threads */
@@ -131,7 +132,7 @@ void async_file_write();
  *
  * @return Pointer to the allocated buffer on success, or NULL on error.
  */
-void* __public__ascan(int n);
+Array* __public__ascan(int n);
 
 /**
  * @brief Format and write output to STDOUT, suspending the current task until done.
@@ -175,7 +176,7 @@ ssize_t __public__aprintf(const char* fmt, ...);
  *
  * @return Number of bytes read on success (ssize_t), or -1 on error.
  */
-ssize_t __public__afread(char* f, char* buf, int n, int offset);
+ssize_t __public__afread(char* f, Array* buf, int n, int offset);
 
 /**
  * @brief Write up to n bytes to a file at a given offset, suspending the current task.
@@ -197,7 +198,7 @@ ssize_t __public__afread(char* f, char* buf, int n, int offset);
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__afwrite(char* f,const char* buf, int n, int offset);
+ssize_t __public__afwrite(char* f, Array* buf, int n, int offset);
 
 /**
  * @brief Synchronously read up to n bytes from STDIN.
@@ -216,7 +217,7 @@ ssize_t __public__afwrite(char* f,const char* buf, int n, int offset);
  * @return Pointer to the allocated buffer containing the read data on success,
  *         or NULL on allocation failure or read error.
  */
-void* __public__sscan(int n);
+Array* __public__sscan(int n);
 
 /**
  * @brief Synchronously write formatted output to STDOUT.
@@ -259,7 +260,7 @@ ssize_t __public__sprintf(const char *fmt, ...) ;
  * @return Number of bytes actually read on success (0 indicates EOF),
  *         or -1 on error.
  */
-ssize_t __public__sfread(char* f, char* buf, int n, int offset);
+ssize_t __public__sfread(char* f, Array* buf, int n, int offset);
 
 /**
  * @brief Synchronously write up to n bytes to a file at a given offset.
@@ -282,5 +283,5 @@ ssize_t __public__sfread(char* f, char* buf, int n, int offset);
  * @return Number of bytes actually written on success,
  *         or -1 on error.
  */
-ssize_t __public__sfwrite(char* f, char* buf, int n, int offset);
+ssize_t __public__sfwrite(char* f, Array* buf, int n, int offset);
 #endif

@@ -89,14 +89,21 @@ func (t *BlockHandler) processWhileBlock(fn *ir.Func, bh *bc.BlockHolder, st *as
 	t.st.Vars.AddBlock()
 	defer t.st.Vars.RemoveBlock()
 
-	condBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	condEntry := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 	bodyBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 
-	bh.N.NewBr(condBlock.N)
+	bh.N.NewBr(condEntry.N)
 
-	res := expression.ExpressionHandlerInst.ProcessExpression(condBlock, st.Condition)
+	// I'll modify the condition entry later, to loop back to condition entry i need to
+	// store its state.
+	copyOfCondEntry := bc.NewBlockHolder(condEntry.V, condEntry.N)
+
+	res := expression.ExpressionHandlerInst.ProcessExpression(condEntry, st.Condition)
+
+	condBlock := condEntry
 	cond := res.Load(condBlock)
+	cond = t.st.TypeHandler.ImplicitIntCast(condBlock, cond, types.I1)
 
 	condBlock.N.NewCondBr(cond, bodyBlock.N, endBlock.N)
 
@@ -107,7 +114,7 @@ func (t *BlockHandler) processWhileBlock(fn *ir.Func, bh *bc.BlockHolder, st *as
 	t.st.Loopend = t.st.Loopend[:len(t.st.Loopend)-1]
 
 	if bodyBlock.N.Term == nil {
-		bodyBlock.N.NewBr(condBlock.N)
+		bodyBlock.N.NewBr(copyOfCondEntry.N)
 	}
 
 	bh.Update(endBlock.V, endBlock.N)

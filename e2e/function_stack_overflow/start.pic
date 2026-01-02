@@ -1,0 +1,17 @@
+using "builtin/syncio";
+using "builtin/strings";
+
+class Test {
+    fn Test() {}
+
+    fn factorial(n: int): int {
+        return n * this.factorial(n-1);
+    }
+
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+
+    syncio.printf("factorial(10)=%d\n", t.factorial(10)); 
+}

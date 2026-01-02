@@ -1,6 +1,14 @@
 package lexer
 
-import "fmt"
+import (
+	"fmt"
+)
+
+type SourceLoc struct {
+	FilePath string
+	Line     int
+	Col      int
+}
 
 type TokenKind int
 
@@ -78,6 +86,7 @@ const (
 
 	RETURN
 	STATIC
+	INTERNAL
 
 	NUM_TOKENS
 )
@@ -109,11 +118,13 @@ var reserved_keywords map[string]TokenKind = map[string]TokenKind{
 	"in":        IN,
 	"return":    RETURN,
 	"static":    STATIC,
+	"internal":  INTERNAL,
 }
 
 type Token struct {
 	Kind  TokenKind
 	Value string
+	Src   SourceLoc
 }
 
 func (t Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
@@ -257,13 +268,17 @@ func TokenKindString(kind TokenKind) string {
 		return "return"
 	case STATIC:
 		return "static"
+	case INTERNAL:
+		return "internal"
 	default:
 		return fmt.Sprintf("unknown(%d)", kind)
 	}
 }
 
-func newUniqueToken(kind TokenKind, value string) Token {
+func newUniqueToken(kind TokenKind, value string, src SourceLoc) Token {
 	return Token{
-		kind, value,
+		Kind:  kind,
+		Value: value,
+		Src:   src,
 	}
 }

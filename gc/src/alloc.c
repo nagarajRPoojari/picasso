@@ -211,7 +211,7 @@ static void grow_heap(arena_t* ar) {
         perror("heap overflow \n");
     }
 
-    printf("[%p][=========== heap growing %zu========]\n", ar, next_heap_size);
+    Debug("[%p][=========== heap growing %zu========]\n", ar, next_heap_size);
 
     free_chunk_t* new_block = alloc_chunk(next_heap_size + HEAP_BOUNDARY_SIZE);
     if(!new_block) {

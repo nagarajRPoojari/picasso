@@ -8,6 +8,9 @@ import (
 )
 
 func (t *Parser) currentToken() lexer.Token {
+	if t.pos >= len(t.tokens) {
+		return t.tokens[t.pos-1]
+	}
 	return t.tokens[t.pos]
 }
 
@@ -32,7 +35,11 @@ func (t *Parser) expectError(expectedKind lexer.TokenKind, err any) lexer.Token 
 	if kind != expectedKind {
 		if err == nil {
 			errString := fmt.Sprintf("Expected %s but recieved %s instead\n", lexer.TokenKindString(expectedKind), lexer.TokenKindString(kind))
-			errorsx.PanicParserError(errString)
+			errorsx.PanicParserError(
+				errString,
+				t.currentToken().Src.FilePath,
+				t.currentToken().Src.Line,
+				t.currentToken().Src.Col)
 		}
 	}
 

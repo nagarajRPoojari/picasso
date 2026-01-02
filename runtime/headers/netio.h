@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <sys/types.h> 
 
+#include "array.h"
+
 /** Number of I/O worker threads in the pool, must be kept equal to number of scheduler threads */
 #define NETIO_THREAD_POOL_SIZE 1
 
@@ -65,7 +67,7 @@ ssize_t __public__net_accept(int64_t epfd);
  * @return Number of bytes read on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_read(int64_t fd, char *buf, size_t len);
+ssize_t __public__net_read(int64_t fd, Array *buf, size_t len);
 
 /**
  * @brief Asynchronously write data to a file descriptor.
@@ -85,7 +87,7 @@ ssize_t __public__net_read(int64_t fd, char *buf, size_t len);
  * @return Number of bytes written on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_write(int64_t fd, char *buf, size_t len) ;
+ssize_t __public__net_write(int64_t fd, Array *buf, size_t len) ;
 
 /**
  * @brief Create, bind, and listen on a TCP socket.

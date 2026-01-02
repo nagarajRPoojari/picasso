@@ -96,11 +96,11 @@ func (t *StatementHandler) AssignVariable(bh *bc.BlockHolder, st *ast.Assignment
 
 		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
 
-		needed := base.(*tf.Array).ElemType
+		needed := base.(*tf.Array).ElementTypeString
 
-		casted := t.st.TypeHandler.ImplicitTypeCast(bh, utils.GetTypeString(needed), rhs.Load(bh))
+		casted := t.st.TypeHandler.ImplicitTypeCast(bh, needed, rhs.Load(bh))
 
-		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(utils.GetTypeString(needed)), casted)
+		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(needed), casted)
 		base.(*tf.Array).StoreByIndex(bh, indices, c.Load(bh))
 	}
 }

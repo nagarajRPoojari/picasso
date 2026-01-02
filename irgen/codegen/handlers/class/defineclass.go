@@ -88,6 +88,10 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourceP
 				mc.ArrayVarsEleTypes[i] = t.st.TypeHandler.GetLLVMType(st.ExplicitType.GetUnderlyingType())
 			}
 
+			if st.IsInternal {
+				mc.InternalFields[aliasVarName] = struct{}{}
+			}
+
 			i++
 
 		case ast.FunctionDefinitionStatement:
@@ -117,6 +121,11 @@ func (t *ClassHandler) DefineClassUDT(cls ast.ClassDeclarationStatement, sourceP
 			fieldTypes = append(fieldTypes, types.NewPointer(funcType))
 
 			mc.FieldIndexMap[aliasFuncName] = i
+
+			if st.IsInternal {
+				mc.InternalFields[aliasFuncName] = struct{}{}
+			}
+
 			i++
 		}
 	}

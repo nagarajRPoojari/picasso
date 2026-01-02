@@ -17,6 +17,7 @@ const (
 	InvalidBinaryExpressionOperand  = "invalid operand for binary operation"
 	InvalidBinaryExpressionOperator = "invalid binary operator %s"
 	BinaryOperationError            = "binary operation failed: %s"
+	PrefixOperationError            = "prefix operation failed: %s"
 	ImplicitTypeCastError           = "failed to implicitly type cast: %s to %s"
 	MemberExpressionError           = "member expression error: %s"
 	UnknownMethod                   = "unknown method %s"
@@ -39,6 +40,8 @@ const (
 	VarsNotAllowedInInterfaceError  = "variables not allowed in interface %s"
 	UnImplementedInterfaceMethod    = "interface method unimplmented %s"
 	InvalidConstructorSignature     = "invalid constructor signature for %s"
+	FieldNotAccessible              = "class %s field %s is not accessible"
+	ClassNotAccessible              = "class %s is not accessible for instantiation"
 )
 
 const (

@@ -8,31 +8,40 @@
 
 extern __thread arena_t* __arena__;
 
-char* format(const char* fmt, ...) {
+char* __public__format(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
-    // Find required buffer size
-    int len = vsnprintf(NULL, 0, fmt, args);
-    va_end(args);
-    if (len < 0) return NULL;
+    va_list args_copy;
+    va_copy(args_copy, args);
 
-    // Allocate memory
+    // First pass: compute length
+    int len = vsnprintf(NULL, 0, fmt, args_copy);
+    va_end(args_copy);
+
+    if (len < 0) {
+        va_end(args);
+        return NULL;
+    }
+
     char* buf = allocate(__arena__, len + 1);
-    if (!buf) return NULL;
+    if (!buf) {
+        va_end(args);
+        return NULL;
+    }
 
-    // Format the string
-    va_start(args, fmt);
+    // Second pass: actual formatting
     vsnprintf(buf, len + 1, fmt, args);
     va_end(args);
 
     return buf;
 }
 
-int len(const char* str) {
+
+int __public__len(const char* str) {
     return strlen(str);
 }
 
-int compare(const char* str1, const char* str2) {
+int __public__compare(const char* str1, const char* str2) {
     return strcmp(str1, str2);
 }

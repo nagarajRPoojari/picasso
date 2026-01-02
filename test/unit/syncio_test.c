@@ -8,6 +8,7 @@
 #include "diskio.h"
 #include "alloc.h"
 #include "gc.h"
+#include "array.h"
 
 /* for local usage : use here */
 arena_t* __test__global__arena__;
@@ -26,6 +27,28 @@ void tearDown(void) {
     __test__global__arena__ = NULL;
 }
 
+
+Array* mock_alloc_array(int count, int elem_size, int rank) {
+    size_t data_size = (size_t)count * elem_size;
+    size_t shape_size = (size_t)rank * sizeof(int64_t);
+    size_t total_size = sizeof(Array) + data_size + shape_size;
+
+    Array* arr = (Array*)allocate(__test__global__arena__, total_size);
+
+    
+    arr->data = (int8_t*)(arr + 1); 
+    
+    if (rank > 0) {
+        arr->shape = (int64_t*)(arr->data + data_size);
+    } else {
+        arr->shape = NULL;
+    }
+    
+    arr->length = count;
+    arr->rank = rank;
+    
+    return arr;
+}
 
 /* blocking io test */
 
@@ -75,7 +98,7 @@ static void restore_stout(int saved_stdout) {
 
 void test__public__sscan(void) {
     int saved_stdin;
-    char *buf;
+    Array *buf;
 
     /* small reads */
     redirect_stdin_pipe("dummy input from user\n", &saved_stdin);
@@ -83,7 +106,7 @@ void test__public__sscan(void) {
     restore_stdin(saved_stdin);
 
     TEST_ASSERT_NOT_NULL(buf);
-    TEST_ASSERT_EQUAL_STRING("dummy input", buf);
+    TEST_ASSERT_EQUAL_STRING("dummy input", buf->data);
 
     /* large reads */
     int n = 1000;
@@ -98,7 +121,7 @@ void test__public__sscan(void) {
     restore_stdin(saved_stdin);
 
     TEST_ASSERT_NOT_NULL(buf);
-    TEST_ASSERT_EQUAL_STRING(input, buf);
+    TEST_ASSERT_EQUAL_STRING(input, buf->data);
 
     /* input < requested length (read-some semantics) */
     redirect_stdin_pipe("input is only", &saved_stdin);
@@ -106,7 +129,7 @@ void test__public__sscan(void) {
     restore_stdin(saved_stdin);
 
     TEST_ASSERT_NOT_NULL(buf);
-    TEST_ASSERT_EQUAL_STRING("input is only", buf);
+    TEST_ASSERT_EQUAL_STRING("input is only", buf->data);
 }
 
 
@@ -133,18 +156,18 @@ void test__public__sprintf(void) {
 void test__public__sfread(void) {
     FILE* file = fopen("test/data/test__public__sfread.txt", "r+");
 
-    char* buf = allocate(__test__global__arena__, 1024);
+    Array* buf = mock_alloc_array(1024, sizeof(size_t), 1);
     ssize_t r = __public__sfread((char*)file, buf, 1024, 0);
     
     TEST_ASSERT_EQUAL(57, r);
-    TEST_ASSERT_EQUAL_STRING("Synchronously read n bytes from a file at a given offset.", buf);
+    TEST_ASSERT_EQUAL_STRING("Synchronously read n bytes from a file at a given offset.", buf->data);
 }
 
 void test__public__sfwrite(void) {
     FILE* file = fopen("test/data/test__public__swrite.txt", "w");
     
-    char buf[10];
-    for(int i=0; i<10; i++) buf[i] = 'a' + i%26;
+    Array* buf = mock_alloc_array(10, sizeof(size_t), 1);
+    for(int i=0; i<10; i++) buf->data[i] = 'a' + i%26;
     ssize_t r = __public__sfwrite((char*)file, buf, 10, 0);
     
     TEST_ASSERT_EQUAL(10, r);

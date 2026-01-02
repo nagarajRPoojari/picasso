@@ -1,0 +1,11 @@
+using "builtin/syncio";
+using "utils/math" as m1;
+using "math" as m2;
+
+fn start() {
+    say a1: m1.Adder = new m1.Adder();
+    a1.add(1,2);
+
+    say a2: m2.Adder = new m2.Adder();
+    a2.add(1, 2);
+}

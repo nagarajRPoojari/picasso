@@ -1,0 +1,10 @@
+using "builtin/syncio";
+
+class Adder {
+    fn Adder() {}
+
+    fn add(a: int, b: int): int {
+        syncio.printf("this is inside math.pic\n");
+        return a + b;
+    }
+}

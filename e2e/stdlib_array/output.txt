@@ -1,0 +1,22 @@
+intArr[0]=0
+intArr[0]=0
+intArr[1]=0
+intArr[1]=1
+intArr[2]=0
+intArr[2]=2
+intArr[3]=0
+intArr[3]=3
+intArr[4]=0
+intArr[4]=4
+intArr[5]=0
+intArr[5]=5
+intArr[6]=0
+intArr[6]=6
+intArr[7]=0
+intArr[7]=7
+intArr[8]=0
+intArr[8]=8
+intArr[9]=0
+intArr[9]=9
+length: 40
+shape: 10

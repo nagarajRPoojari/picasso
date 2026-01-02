@@ -1,6 +1,8 @@
 package rterr
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -26,10 +28,12 @@ func NewErrorHandler(mod *ir.Module) *ErrorHandler {
 
 func (t *ErrorHandler) RaiseRTError(block *ir.Block, msg string) {
 	m := block.Parent.Parent
-	msgGlobal := m.NewGlobalDef("", constant.NewCharArrayFromString(msg))
+	strConst := constant.NewCharArrayFromString(fmt.Sprintf("===== %s", msg) + "\x00")
+	msgGlobal := m.NewGlobalDef("", strConst)
 	msgGlobal.Immutable = true
 	msgGlobal.Linkage = enum.LinkagePrivate
-	msgPtr := block.NewGetElementPtr(msgGlobal.Type(), msgGlobal,
+	msgPtr := block.NewGetElementPtr(msgGlobal.ContentType, msgGlobal,
+		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 0),
 	)
 	block.NewCall(t.err, msgPtr)

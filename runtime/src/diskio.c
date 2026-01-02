@@ -10,6 +10,7 @@
 #include <string.h>
 #include <assert.h>
 
+#include "array.h"
 #include "diskio.h"
 #include "queue.h"
 #include "task.h"
@@ -278,21 +279,21 @@ void async_file_write() {
  *
  * @return Pointer to the allocated buffer on success, or NULL on error.
  */
-void* __public__ascan(int n) {
+Array* __public__ascan(int n) {
     if (n <= 0)
         return NULL;
 
     task_t *t = current_task;
 
     /* +1 for NUL */
-    char *buf = (char*)allocate(__arena__, n + 1);
+    Array* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
     if (!buf)
         return NULL;
 
     /* setup task I/O state */
     t->io = (io_metadata_t){
         .fd = STDIN_FILENO,
-        .buf = buf,
+        .buf = buf->data,
         .req_n = n,
         .done_n  = 0,
         .io_err  = 0,
@@ -308,9 +309,9 @@ void* __public__ascan(int n) {
 
     /* NUL terminate */
     if ((size_t)t->io.done_n < (size_t)n)
-        buf[t->io.done_n] = '\0';
+        buf->data[t->io.done_n] = '\0';
     else
-        buf[n] = '\0';
+        buf->data[n] = '\0';
 
     return buf;
 }
@@ -398,7 +399,7 @@ ssize_t __public__aprintf(const char* fmt, ...) {
  *
  * @return Number of bytes read on success (ssize_t), or -1 on error.
  */
-ssize_t __public__afread(char* f, char* buf, int n, int offset) {
+ssize_t __public__afread(char* f, Array* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0)
         return -1;
 
@@ -411,7 +412,7 @@ ssize_t __public__afread(char* f, char* buf, int n, int offset) {
     /* setup task I/O state */
     t->io = (io_metadata_t){
         .fd      = fd,
-        .buf     = buf,
+        .buf     = buf->data,
         .req_n   = n,
         .offset  = offset,
         .done_n  = 0,
@@ -450,7 +451,7 @@ ssize_t __public__afread(char* f, char* buf, int n, int offset) {
  *
  * @return Number of bytes written on success (ssize_t), or -1 on error.
  */
-ssize_t __public__afwrite(char* f, const char* buf, int n, int offset) {
+ssize_t __public__afwrite(char* f, Array* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0)
         return -1;
 
@@ -463,7 +464,7 @@ ssize_t __public__afwrite(char* f, const char* buf, int n, int offset) {
     /* setup task I/O state */
     t->io = (io_metadata_t){
         .fd      = fd,
-        .buf     = (char*)buf,
+        .buf     = (char*)buf->data,
         .req_n   = n,
         .offset  = offset,
         .done_n  = 0,
@@ -499,16 +500,16 @@ ssize_t __public__afwrite(char* f, const char* buf, int n, int offset) {
  * @return Pointer to the allocated buffer containing the read data on success,
  *         or NULL on allocation failure or read error.
  */
-void* __public__sscan(int n) {
+Array* __public__sscan(int n) {
     if (n <= 0) return NULL;
 
-    char *buf = allocate(__arena__, (size_t)n + 1);
+    Array* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
     if (!buf) return NULL;
 
     ssize_t r;
 
     for (;;) {
-        r = read(STDIN_FILENO, buf, (size_t)n);
+        r = read(STDIN_FILENO, buf->data, (size_t)n);
         if (r < 0) {
             if (errno == EINTR)
                 continue;
@@ -517,7 +518,7 @@ void* __public__sscan(int n) {
         break;
     }
 
-    buf[r] = '\0';
+    buf->data[r] = '\0';
     return buf;
 }
 
@@ -598,14 +599,14 @@ ssize_t __public__sprintf(const char *fmt, ...) {
  * @return Number of bytes actually read on success (0 indicates EOF),
  *         or -1 on error.
  */
-ssize_t __public__sfread(char* f, char* buf, int n, int offset) {
+ssize_t __public__sfread(char* f, Array* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
     if (fd < 0) return -1;
     
     size_t total = 0;
-    char *p = buf;
+    char *p = buf->data;
 
     while (total < n) {
         ssize_t r = pread(fd, p + total, n - total, offset);
@@ -641,14 +642,14 @@ ssize_t __public__sfread(char* f, char* buf, int n, int offset) {
  * @return Number of bytes actually written on success,
  *         or -1 on error.
  */
-ssize_t __public__sfwrite(char* f, char* buf, int n, int offset) {
+ssize_t __public__sfwrite(char* f, Array* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
     if (fd < 0) return -1;
     
     size_t total = 0;
-    const char *p = buf;
+    const char *p = buf->data;
 
     while (total < n) {
         ssize_t w = pwrite(fd, p + total, n - total, offset + total);

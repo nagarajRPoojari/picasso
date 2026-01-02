@@ -140,12 +140,12 @@ ssize_t __public__net_accept(int64_t listen_fd) {
  * @return Number of bytes read on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_read(int64_t fd, char *buf, size_t len) {
+ssize_t __public__net_read(int64_t fd, Array *buf, size_t len) {
     task_t *t = current_task;
 
     t->io = (io_metadata_t){
         .fd = fd,
-        .buf = buf,
+        .buf = buf->data,
         .req_n = len,
         .offset = 0,
         .op = IO_READ,
@@ -185,12 +185,12 @@ ssize_t __public__net_read(int64_t fd, char *buf, size_t len) {
  * @return Number of bytes written on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_write(int64_t fd, char *buf, size_t len) {
+ssize_t __public__net_write(int64_t fd, Array *buf, size_t len) {
     task_t *t = current_task;
 
     t->io = (io_metadata_t){
         .fd = fd,
-        .buf = buf,
+        .buf = buf->data,
         .req_n = len,
         .offset = 0,
         .op = IO_WRITE,

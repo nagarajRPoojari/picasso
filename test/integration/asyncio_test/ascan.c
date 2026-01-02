@@ -14,10 +14,35 @@
 #include "initutils.h"
 
 extern arena_t* __global__arena__;
+arena_t* __test__global__arena__;
 
-void setUp(void) {}
+void setUp(void) {
+    __test__global__arena__ = arena_create();
+}
 void tearDown(void) {
     /* @todo: graceful termination */
+}
+
+Array* mock_alloc_array(int count, int elem_size, int rank) {
+    size_t data_size = (size_t)count * elem_size;
+    size_t shape_size = (size_t)rank * sizeof(int64_t);
+    size_t total_size = sizeof(Array) + data_size + shape_size;
+
+    Array* arr = (Array*)allocate(__test__global__arena__, total_size);
+
+    
+    arr->data = (int8_t*)(arr + 1); 
+    
+    if (rank > 0) {
+        arr->shape = (int64_t*)(arr->data + data_size);
+    } else {
+        arr->shape = NULL;
+    }
+    
+    arr->length = count;
+    arr->rank = rank;
+    
+    return arr;
 }
 
 static void redirect_stdin_pipe(const char *input, int *saved_stdin) {
@@ -68,7 +93,7 @@ static void* __public__ascan_thread_func(void* arg) {
     (void)arg;
 
     int saved_stdin;
-    char *buf;
+    Array *buf;
 
     redirect_stdin_pipe("dummy input from user\n", &saved_stdin);
     
@@ -77,7 +102,7 @@ static void* __public__ascan_thread_func(void* arg) {
     restore_stdin(saved_stdin);
 
     TEST_ASSERT_NOT_NULL(buf);
-    TEST_ASSERT_EQUAL_STRING("dummy input", buf);
+    TEST_ASSERT_EQUAL_STRING("dummy input", buf->data);
 
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
     return NULL;

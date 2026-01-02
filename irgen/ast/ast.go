@@ -5,12 +5,19 @@ package ast
 
 import "github.com/nagarajRPoojari/niyama/irgen/utils"
 
+type SourceLoc struct {
+	FilePath string
+	Line     int
+	Col      int
+}
+
 // Statement represents a node in the AST that performs an action but
 // does not evaluate to a value (e.g., assignments, loops, declarations).
 type Statement interface {
 	// stmt is a dummy method used to ensure type safety, preventing
 	// Expression types from being used where Statements are expected.
 	stmt()
+	GetSrc() SourceLoc
 }
 
 // Expression represents a node that evaluates to a specific value at runtime.
@@ -19,6 +26,7 @@ type Expression interface {
 	// expr is a dummy method used to differentiate Expression nodes
 	// from Statement nodes at compile-time.
 	expr()
+	GetSrc() SourceLoc
 }
 
 // Type defines the interface for the language's type system.
