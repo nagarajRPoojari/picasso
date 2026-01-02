@@ -6,7 +6,6 @@ go_library(
     importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/private/runtime",
     visibility = ["//visibility:public"],
     deps = [
-        "//irgen/codegen/c",
         "@com_github_llir_llvm//ir",
         "@com_github_llir_llvm//ir/constant",
         "@com_github_llir_llvm//ir/enum",

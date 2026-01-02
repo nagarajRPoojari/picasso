@@ -55,7 +55,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 		if fn.ReturnType != nil {
 			errorutils.Abort(errorutils.InvalidConstructorSignature, fn.Name)
 		}
-		t.initTypes(bh, className)
+		// t.initTypes(bh, className)
 	}
 
 	for i, p := range f.Params {
@@ -105,7 +105,7 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 
 	var f *ir.Func = t.st.MainFunc
 	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock(constants.ENTRY)}, f.NewBlock(""))
-	t.Init(bh)
+	// t.Init(bh)
 	bh.N.NewCall(t.st.CI.Funcs[c.FUNC_RUNTIME_INIT])
 
 	if len(fn.Parameters) != 0 {
@@ -125,18 +125,18 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	bh.N.NewRet(nullPtr)
 }
 
-func (t *FuncHandler) Init(block *bc.BlockHolder) {
-	// initTypes are to create special variables of named primitive types.
-	tps := []string{"int64", "int32", "int16", "int8", "string"}
-	for _, tp := range tps {
-		t.initTypes(block, tp)
-	}
+// func (t *FuncHandler) Init(block *bc.BlockHolder) {
+// 	// initTypes are to create special variables of named primitive types.
+// 	tps := []string{"int64", "int32", "int16", "int8", "string"}
+// 	for _, tp := range tps {
+// 		t.initTypes(block, tp)
+// 	}
 
-	for name := range t.st.GlobalTypeList {
-		t.initTypes(block, name)
-	}
-}
+// 	for name := range t.st.GlobalTypeList {
+// 		t.initTypes(block, name)
+// 	}
+// }
 
-func (t *FuncHandler) initTypes(block *bc.BlockHolder, s string) {
-	t.st.Vars.RegisterTypeHolders(block, s, t.st.TypeHandler.BuildVar(block, tf.NewType(s), nil))
-}
+// func (t *FuncHandler) initTypes(block *bc.BlockHolder, s string) {
+// 	t.st.Vars.RegisterTypeHolders(block, s, t.st.TypeHandler.BuildVar(block, tf.NewType(s), nil))
+// }
