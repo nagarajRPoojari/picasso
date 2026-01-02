@@ -1,0 +1,35 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class Student {
+    say name: string;
+    say age: int;
+    fn Student(name: string, age: int) {
+        this.name = name;
+        this.age = age;
+    }
+
+    fn Print() {
+        syncio.printf("Student: {name: %s, age: %d}\n", this.name, this.age);
+    }
+}
+
+class Test {
+    fn Test() {}
+
+    fn testVarAccess(std: start.Student) {
+        syncio.printf("student:name:%s, age:%d\n", std.name, std.age);
+    }
+
+    fn testMethodAccess(std: start.Student) {
+        std.Print();
+    }
+}
+
+
+fn start() {
+   say test: start.Test = new start.Test();
+
+   test.testVarAccess(new start.Student("john", 28));
+   test.testMethodAccess(new start.Student("jim", 32));
+}
