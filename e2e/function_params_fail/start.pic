@@ -1,0 +1,21 @@
+using "builtin/syncio";
+using "builtin/strings";
+
+class Test {
+    fn Test() {}
+
+    fn f1(a:int, b:string): string {
+        syncio.printf("[f1] a=%d b=%s\n", a, b);
+        if (a < 0) {
+            return "NEG";
+        }
+        return b;
+    }
+
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+
+    syncio.printf("r1=%s\n", t.f1(-1, 56)); // params mismatch: should fail
+}

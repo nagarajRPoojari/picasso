@@ -1,0 +1,15 @@
+[f1] a=-1 b=hello
+r1=NEG
+[f1] a=5 b=world
+r2=world
+[f2] box.value(before)=10
+r3=11
+[f2] box.value(before)=11
+r4=12
+[f3] sum=10
+r5=10
+r6=NULL_BOX
+r7=BOX_12
+r8=BOX_12
+r9=fallback
+r10=EMPTY
