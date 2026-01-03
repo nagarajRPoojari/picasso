@@ -42,4 +42,4 @@ func (i *UInt32) Cast(block *bc.BlockHolder, v value.Value) (value.Value, error)
 	}
 }
 func (c *UInt32) Type() types.Type         { return c.NativeType }
-func (f *UInt32) NativeTypeString() string { return "int32" }
+func (f *UInt32) NativeTypeString() string { return "uint32" }

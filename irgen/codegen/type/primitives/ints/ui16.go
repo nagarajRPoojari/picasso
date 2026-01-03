@@ -44,4 +44,4 @@ func (i *UInt16) Cast(block *bc.BlockHolder, v value.Value) (value.Value, error)
 
 	}
 }
-func (f *UInt16) NativeTypeString() string { return "int16" }
+func (f *UInt16) NativeTypeString() string { return "uint16" }
