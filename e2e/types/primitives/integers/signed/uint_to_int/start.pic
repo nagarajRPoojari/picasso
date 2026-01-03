@@ -1,0 +1,20 @@
+using "builtin/syncio";
+using "builtin/types";
+
+class Test {
+    fn Test() {}
+
+    fn testUIntToInt() {
+        // uint8(255) can be interpreted as int8(-1) or int64(-1)
+        // but uint64(255) can't be downcasted to int64 because 
+        // 2's complement of uint64 may not be in bound. 
+        say x: uint8 = 255; 
+        say y: int64 = x;
+        syncio.printf("value of y: %d, type:%s\n", y, types.type(y));
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testUIntToInt();
+}

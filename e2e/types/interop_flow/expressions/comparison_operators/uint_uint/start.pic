@@ -1,0 +1,19 @@
+using "builtin/syncio";
+using "builtin/types";
+
+class Test {
+    fn Test() {}
+
+    fn testIntUIntComparision() {
+        say x: uint8 = 190;
+        say y: uint8 = 8;
+        if(y < x) {
+            syncio.printf("x < y\n");
+        }
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testIntUIntComparision();
+}

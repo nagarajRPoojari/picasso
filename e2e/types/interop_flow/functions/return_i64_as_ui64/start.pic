@@ -1,0 +1,19 @@
+using "builtin/array";
+using "builtin/syncio";
+using "builtin/types";
+
+class Test {
+    fn Test() {}
+
+    fn testReturnI64AsUI64():uint64 {
+        say x: int64 = -78;
+        syncio.printf("x:%d, type:%s\n", x, types.type(x));
+        return x;
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    say x:uint64 = t.testReturnI64AsUI64();
+    syncio.printf("x:%u, type:%s\n", x, types.type(x));
+}

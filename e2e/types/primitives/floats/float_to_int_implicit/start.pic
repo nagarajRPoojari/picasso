@@ -1,0 +1,17 @@
+using "builtin/syncio";
+using "builtin/types";
+
+class Test {
+    fn Test() {}
+
+    fn testIntToFloat() {
+        say x: int = 890;
+        say y: float = x;
+        syncio.printf("value of y: %f, type:%s\n", y, types.type(y));
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testIntToFloat();
+}

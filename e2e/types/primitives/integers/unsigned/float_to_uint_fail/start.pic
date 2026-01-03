@@ -1,0 +1,16 @@
+using "builtin/array";
+using "builtin/syncio";
+
+class Test {
+    fn Test() {}
+
+    fn testFloatToUint() {
+        say x: uint8 = -1; // -1 as a float can't be downcasted to uint8
+        syncio.printf("value of x: %u\n", x);
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testFloatToUint();
+}

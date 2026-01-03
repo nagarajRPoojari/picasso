@@ -8,8 +8,10 @@ cc_binary(
         "-O0",
         "-fno-omit-frame-pointer",
     ],
+    linkopts = ["--coverage"],
     visibility = ["//visibility:public"],
 )
+
 
 e2e_tests(
     name = "all_tests",

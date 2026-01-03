@@ -1,0 +1,17 @@
+using "builtin/types";
+using "builtin/syncio";
+
+class Test {
+    fn Test() {}
+
+    fn testF32ToF64() {
+        say x: float = 890;
+        say y: double = x;
+        syncio.printf("value of y: %f, type:%s\n", y, types.type(y));
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testF32ToF64();
+}
