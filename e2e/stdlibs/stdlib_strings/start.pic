@@ -1,0 +1,38 @@
+using "builtin/syncio";
+using "builtin/strings";
+
+class Utils {
+    fn Utils() {}
+
+    fn sum(a: int, b: int): int {
+        return a + b;
+    }
+}
+
+class Test {
+    fn Test() {}
+
+    fn testStringLen(s: string) {
+        syncio.printf("s:%s, len:%d\n", s, strings.len(s));
+    }
+
+    fn testStringCompare(s: string, t:string) {
+        if(strings.compare(s, t) == 0) {
+            syncio.printf("s:%s, p:%s\n", s, t);
+        }
+    }
+
+    fn testStringForamt(s: string, x: int) {
+        say t: string = strings.format(s, x);
+        syncio.printf("formatted:%s\n", t);
+    }
+}
+
+
+fn start() {
+   say test: start.Test = new start.Test();
+
+   test.testStringLen("hello world");
+   test.testStringCompare("hello world", "hello world");
+   test.testStringForamt("hello world: %d", 89);
+}

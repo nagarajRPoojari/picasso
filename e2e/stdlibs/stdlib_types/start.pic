@@ -1,0 +1,57 @@
+using "builtin/syncio";
+using "builtin/types";
+using "builtin/strings";
+
+class Utils {
+    fn Utils() {}
+
+    fn sum(a: int, b: int): int {
+        return a + b;
+    }
+}
+
+class Test {
+    fn Test() {}
+
+    // Test type detection for various basic types
+    fn testType() {
+        say x_int8: int8 = 19;
+        say x_int16: int16 = 32000;
+        say x_int32: int32 = 100000;
+        say x_int64: int64 = 10000000000;
+        say x_float32: float32 = 3.14;
+        say x_float64: float64 = 2.71828;
+        say x_bool: boolean = 1;
+        say x_string: string = "hello";
+
+        syncio.printf("int8 type: %s\n", types.type(x_int8));
+        syncio.printf("int16 type: %s\n", types.type(x_int16));
+        syncio.printf("int32 type: %s\n", types.type(x_int32));
+        syncio.printf("int64 type: %s\n", types.type(x_int64));
+        syncio.printf("float32 type: %s\n", types.type(x_float32));
+        syncio.printf("float64 type: %s\n", types.type(x_float64));
+        syncio.printf("bool type: %s\n", types.type(x_bool));
+        syncio.printf("string type: %s\n", types.type(x_string));
+    }
+
+    // Test size of various types
+    fn testSize() {
+        syncio.printf("size of int8: %d\n", types.size(int8));
+        syncio.printf("size of int16: %d\n", types.size(int16));
+        syncio.printf("size of int32: %d\n", types.size(int32));
+        syncio.printf("size of int64: %d\n", types.size(int64));
+        syncio.printf("size of float32: %d\n", types.size(float32));
+        syncio.printf("size of float64: %d\n", types.size(float64));
+        syncio.printf("size of bool: %d\n", types.size(boolean));
+        syncio.printf("size of string: %d\n", types.size(string));
+    }
+
+}
+
+
+fn start() {
+    say test: start.Test = new start.Test();
+
+    test.testType();
+    test.testSize();
+}
