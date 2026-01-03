@@ -1,0 +1,17 @@
+using "builtin/syncio";
+using "builtin/types";
+
+class Test {
+    fn Test() {}
+
+    fn testIntToBool() {
+        say x: int = 890;
+        say y: boolean = x;
+        syncio.printf("value of y: %d, type:%s\n", y, types.type(y));
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testIntToBool();
+}

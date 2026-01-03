@@ -1,0 +1,1 @@
+value of x: 255 , type:uint8

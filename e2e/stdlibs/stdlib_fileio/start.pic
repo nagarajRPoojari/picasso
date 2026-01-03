@@ -1,0 +1,35 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class Test {
+    fn Test() {}
+
+    fn testFileOpen() {
+        say f: string = syncio.fopen("./data.txt", "w+");
+        say n: int = 100;
+        
+        say write_buf: []uint8 = array.create(uint8, n);
+        foreach i in 0..array.len(write_buf) {
+            write_buf[i] = i;
+        }
+        say wrote:int = syncio.fwrite(f, write_buf, 6, 0);
+
+        say read_buf: []uint8 = array.create(uint8, n);
+
+        // reading only `wrote` number of bytes
+        syncio.fread(f, read_buf, wrote, 0);
+
+        foreach i in 0..array.len(write_buf) {
+            syncio.printf("wrote[%d]=%d, read[%d]=%d\n", i, write_buf[i], i, read_buf[i]);
+        }
+
+        syncio.fclose(f);
+    }
+
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+
+    t.testFileOpen();
+}

@@ -1,0 +1,20 @@
+using "builtin/array";
+using "builtin/syncio";
+
+class Test {
+    fn Test() {}
+
+    fn testIntToUInt() {
+        // int8(-1) can to stored as uint8(255) but int64(-1) can't be stored 
+        // because it's 2 complement can't be interpreted within uint8's boundary 
+        // so below shouldn't work.
+        say y: int64 = -1;
+        say x: uint8 = y; 
+        syncio.printf("value of x: %u\n", x);
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testIntToUInt();
+}

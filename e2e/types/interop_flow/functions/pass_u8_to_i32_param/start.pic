@@ -1,0 +1,17 @@
+using "builtin/array";
+using "builtin/syncio";
+using "builtin/types";
+
+class Test {
+    fn Test() {}
+
+    fn testU8ToI32AsParam(x: int32) {
+        syncio.printf("x:%d, type:%s\n", x, types.type(x));
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    say x: uint8 = 190;
+    t.testU8ToI32AsParam(x);
+}

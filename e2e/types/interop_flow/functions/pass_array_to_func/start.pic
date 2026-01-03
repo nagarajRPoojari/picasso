@@ -1,0 +1,24 @@
+using "builtin/array";
+using "builtin/syncio";
+using "builtin/types";
+
+class Test {
+    fn Test() {}
+
+    fn testArrayAsParam(arr :[]int) {
+        foreach i in 0..array.len(arr) {
+            arr[i] = i;
+        }
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    
+    say arr: []int = array.create(int, 12);
+    t.testArrayAsParam(arr);
+
+    foreach i in 0..array.len(arr){
+        syncio.printf(">arr[%d]=%d\n", i, arr[i]);
+    }
+}
