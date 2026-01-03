@@ -1,0 +1,30 @@
+using "builtin/syncio";
+
+class Utils {
+    fn Utils() {}
+
+    fn sum(a: int, b: int): int {
+        return a + b;
+    }
+}
+
+class Test {
+    fn Test() {}
+
+    fn testStringAsFuncParam(s: string) {
+        syncio.printf("s:%s\n", s);
+    }
+
+    fn testStringAsRetType(): string {
+        say s: string = "hello";
+        return s;
+    }
+}
+
+
+fn start() {
+   say test: start.Test = new start.Test();
+
+   test.testStringAsFuncParam("hello world");
+   syncio.printf("s:%s\n", test.testStringAsRetType());
+}
