@@ -9,7 +9,10 @@
 //     for polymorphism and member access.
 package class
 
-import "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+import (
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+)
 
 // ClassHandler manages the transformation of class declarations into
 // LLVM-compatible structures and methods. It acts as the primary coordinator
@@ -19,16 +22,13 @@ type ClassHandler struct {
 	// st provides access to the global compiler state, including the
 	// LLVM module, type registry, and identifier builder.
 	st *state.State
+	// represent mediator to access other handlers
+	m contract.Mediator
 }
 
 // NewClassHandler creates a new handler instance with a shared reference
 // to the compilation state. This link is essential for registering
 // new types into the module-wide type system.
-func NewClassHandler(state *state.State) *ClassHandler {
-	return &ClassHandler{st: state}
+func NewClassHandler(state *state.State, m contract.Mediator) *ClassHandler {
+	return &ClassHandler{st: state, m: m}
 }
-
-// ClassHandlerInst is the global singleton instance used by the
-// code generator to process class-related AST nodes during the
-// various phases of the backend pipeline.
-var ClassHandlerInst *ClassHandler

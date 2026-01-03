@@ -11,6 +11,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
@@ -22,19 +23,17 @@ import (
 // compiler state to resolve types, symbols, and class metadata.
 type ExpressionHandler struct {
 	st *state.State
+	m  contract.Mediator
 }
-
-// ExpressionHandlerInst is the global singleton utilized throughout
-// the code generation phase to process nested expressions.
-var ExpressionHandlerInst *ExpressionHandler
 
 // NewExpressionHandler initializes the handler and populates the
 // operator lookup tables (arithmetic, logical, and comparison)
 // used during binary expression processing.
-func NewExpressionHandler(st *state.State) *ExpressionHandler {
+func NewExpressionHandler(st *state.State, m contract.Mediator) *ExpressionHandler {
 	initOpLookUpTables()
 	return &ExpressionHandler{
 		st: st,
+		m:  m,
 	}
 }
 
@@ -61,14 +60,13 @@ func (t *ExpressionHandler) ProcessExpression(bh *bc.BlockHolder, expI ast.Expre
 		return tf.NewNullVar(types.NewPointer(types.NewStruct()))
 
 	case ast.SymbolExpression:
-		if t.st.TypeHandler.Exists(ex.Value) {
-			return t.st.TypeHandler.BuildVar(bh, tf.NewType(ex.Value), nil)
+		if ret, ok := t.loopUpTypeTable(bh, ex.Value); ok {
+			return ret
 		}
 		return t.processSymbolExpression(ex)
 
 	case ast.ListExpression:
-		// should handle, [[1,2,3], [4,5,6]]
-		// @todo
+		// @todo should handle, [[1,2,3], [4,5,6]]
 
 	case ast.NumberExpression:
 		// by default number will be wrapped up with float64
@@ -82,9 +80,8 @@ func (t *ExpressionHandler) ProcessExpression(bh *bc.BlockHolder, expI ast.Expre
 
 	case ast.MemberExpression:
 		if m, ok := ex.Member.(ast.SymbolExpression); ok {
-			val := fmt.Sprintf("%s.%s", m.Value, ex.Property)
-			if t.st.TypeHandler.Exists(val) {
-				return t.st.TypeHandler.BuildVar(bh, tf.NewType(val), nil)
+			if ret, ok := t.loopUpTypeTable(bh, fmt.Sprintf("%s.%s", m.Value, ex.Property)); ok {
+				return ret
 			}
 		}
 		return t.ProcessMemberExpression(bh, ex)
@@ -104,4 +101,11 @@ func (t *ExpressionHandler) ProcessExpression(bh *bc.BlockHolder, expI ast.Expre
 
 	errorutils.Abort(errorutils.InvalidExpression)
 	return nil
+}
+
+func (t *ExpressionHandler) loopUpTypeTable(bh *bc.BlockHolder, val string) (tf.Var, bool) {
+	if t.st.TypeHandler.Exists(val) {
+		return t.st.TypeHandler.BuildVar(bh, tf.NewType(val), nil), true
+	}
+	return nil, false
 }

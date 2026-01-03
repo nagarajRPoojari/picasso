@@ -13,15 +13,16 @@ import (
 // for 'if' and 'else' execution paths, and ensures that all paths eventually
 // synchronize at a common successor (phi-convergence) block.
 //
-// Technical logic:
+// Key logic:
 //   - Coerces the condition expression to a 1-bit integer (i1) via implicit casting.
 //   - Automatically generates terminal jump instructions (Br) for blocks lacking a
 //     explicit return or break, preventing malformed LLVM IR.
 //   - Updates the provided BlockHolder to point to the 'end' block, allowing
 //     subsequent statements to continue linearly.
 //
-// todo:
-//   - support elseif chain
+// Note: endBlock accepted as paramas: it tells where to do correct phi convergence.
+// This is needed in else-if ladder because endblocks are created by upper level blocks,
+// so nested blocks need to know right endblock to converge
 func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.IfStatement, endBlock *bc.BlockHolder) {
 	ifBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
 
@@ -31,7 +32,7 @@ func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *a
 	}
 
 	// condition
-	res := expression.ExpressionHandlerInst.ProcessExpression(bh, st.Condition)
+	res := t.m.GetExpressionHandler().(*expression.ExpressionHandler).ProcessExpression(bh, st.Condition)
 	cond := res.Load(bh)
 	cond = t.st.TypeHandler.ImplicitIntCast(bh, cond, types.I1)
 
@@ -59,6 +60,7 @@ func (t *BlockHandler) processIfElseBlock(fn *ir.Func, bh *bc.BlockHolder, st *a
 				elseBlock.N.NewBr(endBlock.N)
 			}
 
+		// represents an else if ladder
 		case ast.IfStatement:
 			t.processIfElseBlock(fn, elseBlock, &alt, endBlock)
 		}

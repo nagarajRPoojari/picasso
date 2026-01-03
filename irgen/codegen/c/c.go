@@ -649,7 +649,7 @@ var Instance *Interface
 // NewInterface initializes a new runtime registry for the given LLVM module.
 // It populates the internal maps by registering all required external
 // functions and built-in types.
-func NewInterface(mod *ir.Module) *Interface {
+func InitInterface(mod *ir.Module) *Interface {
 	t := &Interface{}
 	t.Funcs = make(map[string]*ir.Func)
 	t.Types = make(map[string]types.Type)

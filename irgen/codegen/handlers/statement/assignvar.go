@@ -29,77 +29,91 @@ import (
 //   - State Persistence: Synchronizes the IR state by calling .Update() or
 //     .StoreByIndex() on the variable containers to reflect the new values.
 func (t *StatementHandler) AssignVariable(bh *bc.BlockHolder, st *ast.AssignmentExpression) {
+	expHandler := t.m.GetExpressionHandler().(*expression.ExpressionHandler)
 
 	switch m := st.Assignee.(type) {
 	case ast.SymbolExpression:
-		assignee := m.Value
-		v, ok := t.st.Vars.Search(assignee)
-		if !ok {
-			errorutils.Abort(errorutils.UnknownVariable, st)
-		}
-		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
-
-		if v.NativeTypeString() != constants.ARRAY {
-			// do implicit type casting to lhs type.
-			typeName := v.NativeTypeString()
-			casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
-			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
-			v.Update(bh, rhs.Load(bh))
-		} else {
-			// special case to avoid any new var allocation.
-			// simply updates pointer to point to new address.
-			v.(*tf.Array).UpdateV2(bh, rhs.(*tf.Array))
-		}
+		t.processLocalVarAssignment(bh, expHandler, m, st)
 
 	case ast.MemberExpression:
-		baseVar := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)
-
-		if baseVar == nil {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
-		}
-
-		// Base must be a class instance
-		cls, ok := baseVar.(*tf.Class)
-		if !ok {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "member access base is not a class instance")
-		}
-
-		classMeta := t.st.Classes[cls.Name]
-		structType := classMeta.StructType()
-		meta := t.st.Classes[cls.Name]
-		fqName := fmt.Sprintf("%s.%s", cls.Name, m.Property)
-		index := meta.FieldIndexMap[fqName]
-
-		fieldType := structType.Fields[index]
-
-		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
-
-		typeName := classMeta.VarAST[fqName].ExplicitType.Get()
-
-		// similar to above logic, avoid casting & new var creation logic for array types
-		if typeName != constants.ARRAY {
-			casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
-			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
-		}
-		cls.UpdateField(bh, t.st.TypeHandler, index, rhs.Load(bh), fieldType)
+		t.processClassFieldAssignment(bh, expHandler, m, st)
 
 	case ast.ComputedExpression:
-		base := expression.ExpressionHandlerInst.ProcessExpression(bh, m.Member)
-		indices := make([]value.Value, 0)
-		for _, i := range m.Indices {
-			v := expression.ExpressionHandlerInst.ProcessExpression(bh, i)
-			casted := t.st.TypeHandler.ImplicitTypeCast(bh, string(tf.INT64), v.Load(bh))
-			c := t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT64), casted)
-			indices = append(indices, c.Load(bh))
-		}
-
-		rhs := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
-
-		needed := base.(*tf.Array).ElementTypeString
-
-		casted := t.st.TypeHandler.ImplicitTypeCast(bh, needed, rhs.Load(bh))
-
-		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(needed), casted)
-		base.(*tf.Array).StoreByIndex(bh, indices, c.Load(bh))
+		t.processArrayFieldAssignment(bh, expHandler, m, st)
 	}
+}
+
+func (t *StatementHandler) processLocalVarAssignment(bh *bc.BlockHolder, expHandler *expression.ExpressionHandler, m ast.SymbolExpression, st *ast.AssignmentExpression) {
+	assignee := m.Value
+	v, ok := t.st.Vars.Search(assignee)
+	if !ok {
+		errorutils.Abort(errorutils.UnknownVariable, st)
+	}
+	rhs := expHandler.ProcessExpression(bh, st.AssignedValue)
+
+	if v.NativeTypeString() != constants.ARRAY {
+		// do implicit type casting to lhs type.
+		typeName := v.NativeTypeString()
+		casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
+		rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
+		v.Update(bh, rhs.Load(bh))
+	} else {
+		// special case to avoid any new var allocation.
+		// simply updates pointer to point to new address.
+		v.(*tf.Array).UpdateV2(bh, rhs.(*tf.Array))
+	}
+
+}
+
+func (t *StatementHandler) processClassFieldAssignment(bh *bc.BlockHolder, expHandler *expression.ExpressionHandler, m ast.MemberExpression, st *ast.AssignmentExpression) {
+	baseVar := expHandler.ProcessExpression(bh, m.Member)
+
+	if baseVar == nil {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
+	}
+
+	// Base must be a class instance
+	cls, ok := baseVar.(*tf.Class)
+	if !ok {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "member access base is not a class instance")
+	}
+
+	classMeta := t.st.Classes[cls.Name]
+	structType := classMeta.StructType()
+	meta := t.st.Classes[cls.Name]
+	fqName := fmt.Sprintf("%s.%s", cls.Name, m.Property)
+	index := meta.FieldIndexMap[fqName]
+
+	fieldType := structType.Fields[index]
+
+	rhs := expHandler.ProcessExpression(bh, st.AssignedValue)
+
+	typeName := classMeta.VarAST[fqName].ExplicitType.Get()
+
+	// similar to above logic, avoid casting & new var creation logic for array types
+	if typeName != constants.ARRAY {
+		casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
+		rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
+	}
+	cls.UpdateField(bh, t.st.TypeHandler, index, rhs.Load(bh), fieldType)
+}
+
+func (t *StatementHandler) processArrayFieldAssignment(bh *bc.BlockHolder, expHandler *expression.ExpressionHandler, m ast.ComputedExpression, st *ast.AssignmentExpression) {
+	base := expHandler.ProcessExpression(bh, m.Member)
+	indices := make([]value.Value, 0)
+	for _, i := range m.Indices {
+		v := expHandler.ProcessExpression(bh, i)
+		casted := t.st.TypeHandler.ImplicitTypeCast(bh, string(tf.INT64), v.Load(bh))
+		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT64), casted)
+		indices = append(indices, c.Load(bh))
+	}
+
+	rhs := expHandler.ProcessExpression(bh, st.AssignedValue)
+
+	needed := base.(*tf.Array).ElementTypeString
+
+	casted := t.st.TypeHandler.ImplicitTypeCast(bh, needed, rhs.Load(bh))
+
+	c := t.st.TypeHandler.BuildVar(bh, tf.NewType(needed), casted)
+	base.(*tf.Array).StoreByIndex(bh, indices, c.Load(bh))
 }

@@ -17,13 +17,13 @@ import (
 
 func (t *Pipeline) predeclareClasses(sourcePkg state.PackageEntry) {
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
-		class.ClassHandlerInst.DeclareClassUDT(st, sourcePkg)
+		t.m.GetClassHandler().(*class.ClassHandler).DeclareOpaqueClass(st, sourcePkg)
 	})
 }
 
 func (t *Pipeline) predeclareInterfraces(sourcePkg state.PackageEntry) {
 	Loop(t.tree, func(st ast.InterfaceDeclarationStatement) {
-		interfaceh.InterfaceHandlerInst.DeclareInterface(st, sourcePkg)
+		t.m.GetInterfaceHandler().(*interfaceh.InterfaceHandler).DeclareInterface(st, sourcePkg)
 	})
 }
 
@@ -58,7 +58,7 @@ func (t *Pipeline) declareClassFields(sourcePkg state.PackageEntry) {
 
 	t.st.TypeHeirarchy.ClassRoots = roots
 	for _, i := range roots {
-		class.ClassHandlerInst.DefineClassUDT(i, sourcePkg)
+		t.m.GetClassHandler().(*class.ClassHandler).DefineClass(i, sourcePkg)
 	}
 }
 
@@ -73,7 +73,7 @@ func (t *Pipeline) declareInterfaceFields(sourcePkg state.PackageEntry) {
 
 	t.st.TypeHeirarchy.InterfaceRoots = roots
 	for _, i := range roots {
-		interfaceh.InterfaceHandlerInst.DefineInterfaceUDT(i, sourcePkg)
+		t.m.GetInterfaceHandler().(*interfaceh.InterfaceHandler).DefineInterfaceUDT(i, sourcePkg)
 	}
 }
 
@@ -91,19 +91,19 @@ func cyclicCheck(child string, parent map[string]string, isV map[string]struct{}
 
 func (t *Pipeline) declareClassFuncs(sourcePkg state.PackageEntry) {
 	for _, i := range t.st.TypeHeirarchy.ClassRoots {
-		class.ClassHandlerInst.DeclareFunctions(i, sourcePkg)
+		t.m.GetClassHandler().(*class.ClassHandler).DeclareClassFuncs(i, sourcePkg)
 	}
 }
 
 func (t *Pipeline) declareInterfaceFuncs(sourcePkg state.PackageEntry) {
 	for _, i := range t.st.TypeHeirarchy.InterfaceRoots {
-		interfaceh.InterfaceHandlerInst.DeclareFunctions(i, sourcePkg)
+		t.m.GetInterfaceHandler().(*interfaceh.InterfaceHandler).DeclareClassFuncs(i, sourcePkg)
 	}
 }
 
 func (t *Pipeline) defineClasses() {
 	for _, i := range t.st.TypeHeirarchy.ClassRoots {
-		class.ClassHandlerInst.DefineClass(i)
+		t.m.GetClassHandler().(*class.ClassHandler).DefineClassFuncs(i)
 	}
 }
 
@@ -112,7 +112,7 @@ func (t *Pipeline) defineMain() {
 		if st.Name == constants.MAIN {
 			f := t.st.Module.NewFunc(constants.MAIN, types.NewPointer(types.I8), ir.NewParam("", types.NewPointer(types.I8)))
 			t.st.MainFunc = f
-			funcs.FuncHandlerInst.DefineMainFunc(&st, make(map[string]struct{}))
+			t.m.GetFuncHandler().(*funcs.FuncHandler).DefineMainFunc(&st, make(map[string]struct{}))
 		}
 	})
 }

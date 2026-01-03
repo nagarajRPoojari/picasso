@@ -11,6 +11,7 @@ go_library(
     deps = [
         "//irgen/ast",
         "//irgen/codegen/c",
+        "//irgen/codegen/contract",
         "//irgen/codegen/handlers/class",
         "//irgen/codegen/handlers/constants",
         "//irgen/codegen/handlers/func",

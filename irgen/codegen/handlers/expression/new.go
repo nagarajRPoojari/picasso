@@ -45,7 +45,6 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 	aliasConstructorName := fmt.Sprintf("%s.%s", aliasClsName, methodName)
 
 	meta := t.st.Classes[aliasClsName]
-
 	idx := meta.FieldIndexMap[aliasConstructorName]
 
 	st := meta.StructType()
@@ -57,15 +56,23 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, aliasClsName))
 	}
 
+	args := t.buildConstructorArgs(bh, aliasConstructorName, meta, cls, ex)
+
+	// Call the function pointer
+	bh.N.NewCall(fnVal, args...)
+}
+
+// utility function to build constructor args
+func (t *ExpressionHandler) buildConstructorArgs(bh *bc.BlockHolder, aliasConstructorName string, meta *tf.MetaClass, cls *tf.Class, ex ast.CallExpression) []value.Value {
 	args := make([]value.Value, 0, len(ex.Arguments)+1)
 	for i, argExp := range ex.Arguments {
 		v := t.ProcessExpression(bh, argExp)
 		if v == nil {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("nil arg %d for %s", i, aliasClsName))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("nil arg %d for %s", i, aliasConstructorName))
 		}
 		raw := v.Load(bh)
 		if raw == nil {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("loaded nil arg %d for %s", i, aliasClsName))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("loaded nil arg %d for %s", i, aliasConstructorName))
 		}
 
 		// Implicit type cast if needed
@@ -81,10 +88,7 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 	if thisPtr == nil {
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("this pointer is nil for %s", cls.Name))
 	}
-	args = append(args, thisPtr)
-
-	// Call the function pointer
-	bh.N.NewCall(fnVal, args...)
+	return append(args, thisPtr)
 }
 
 // ProcessNewExpression orchestrates the lifecycle of a new class instance.
