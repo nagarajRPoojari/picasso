@@ -222,7 +222,7 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 	// since i am tracking packages with alias names, this func might be called multiple times
 	// for a package. .Declare() is assumed to avoid multiple llvm type/func declarations, otherwise
 	// which is fatal.
-	pipeline.NewPipeline(llvm.st, packageAST).Declare(pkg)
+	pipeline.NewPipeline(llvm.st, llvm.m, packageAST).Declare(pkg)
 }
 
 // importBasePackages resolve base module imports.

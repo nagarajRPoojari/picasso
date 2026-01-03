@@ -37,22 +37,5 @@ func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.Stri
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 0),
 	)
-
-	// returning pointer to global constant, making it immutable.
-	// @todo: may be i can support both mutable & immutable string here
-	// allocating it to a heap makes it mutable.
-
-	// malloc := t.st.CI.Funcs[c.FUNC_ALLOC]
-	// size := constant.NewInt(types.I64, int64(len(formatStr)+1))
-	// heapPtr := bh.N.NewCall(malloc, size)
-
-	// memcpy := t.st.CI.Funcs[c.FUNC_MEMCPY]
-	// i8ptr := types.NewPointer(types.I8)
-	// src := bh.N.NewBitCast(gep, i8ptr)
-	// dest := bh.N.NewBitCast(heapPtr, i8ptr)
-	// bh.N.NewCall(memcpy, dest, src, size, constant.NewBool(false))
-
-	// return tf.NewString(bh, heapPtr)
-
 	return tf.NewString(bh, gep)
 }

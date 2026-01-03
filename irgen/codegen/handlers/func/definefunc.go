@@ -78,7 +78,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	}
 
 	old := bh.N
-	block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
+	t.m.GetBlockHandler().(*block.BlockHandler).ProcessBlock(f, bh, fn.Body)
 	bh.V.NewBr(old)
 	if fn.ReturnType == nil {
 		bh.N.NewRet(nil)
@@ -116,7 +116,7 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	}
 
 	old := bh.N
-	block.BlockHandlerInst.ProcessBlock(f, bh, fn.Body)
+	t.m.GetBlockHandler().(*block.BlockHandler).ProcessBlock(f, bh, fn.Body)
 	bh.V.NewBr(old)
 
 	nullPtr := constant.NewNull((types.NewPointer(types.I8)))
@@ -124,19 +124,3 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	// Return it
 	bh.N.NewRet(nullPtr)
 }
-
-// func (t *FuncHandler) Init(block *bc.BlockHolder) {
-// 	// initTypes are to create special variables of named primitive types.
-// 	tps := []string{"int64", "int32", "int16", "int8", "string"}
-// 	for _, tp := range tps {
-// 		t.initTypes(block, tp)
-// 	}
-
-// 	for name := range t.st.GlobalTypeList {
-// 		t.initTypes(block, name)
-// 	}
-// }
-
-// func (t *FuncHandler) initTypes(block *bc.BlockHolder, s string) {
-// 	t.st.Vars.RegisterTypeHolders(block, s, t.st.TypeHandler.BuildVar(block, tf.NewType(s), nil))
-// }

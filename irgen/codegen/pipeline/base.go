@@ -2,16 +2,19 @@ package pipeline
 
 import (
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 )
 
 type Pipeline struct {
 	st   *state.State
 	tree ast.BlockStatement
+
+	m contract.Mediator
 }
 
-func NewPipeline(st *state.State, tree ast.BlockStatement) *Pipeline {
-	return &Pipeline{st: st, tree: tree}
+func NewPipeline(st *state.State, m contract.Mediator, tree ast.BlockStatement) *Pipeline {
+	return &Pipeline{st: st, tree: tree, m: m}
 }
 
 func (t *Pipeline) Register() {

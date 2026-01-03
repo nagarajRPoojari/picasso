@@ -12,6 +12,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",
+        "//irgen/codegen/contract",
         "//irgen/codegen/error",
         "//irgen/codegen/handlers/expression",
         "//irgen/codegen/handlers/state",

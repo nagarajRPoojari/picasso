@@ -32,15 +32,19 @@ func (t *BlockHandler) processForBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.
 	lowerExpr := st.Iterable.(ast.RangeExpression).Lower
 	upperExpr := st.Iterable.(ast.RangeExpression).Upper
 
-	indexVal := expression.ExpressionHandlerInst.ProcessExpression(bh, lowerExpr)
-
+	// start initializing index variable from lower bound expression.
+	// core logic is to put initialization in current block & create
+	// a new block for condition & incrementing, so that i can branch back to it after
+	// executing loop body.
+	// Note: index variables are kept i64, need to @verify this.
+	indexVal := t.m.GetExpressionHandler().(*expression.ExpressionHandler).ProcessExpression(bh, lowerExpr)
 	casted := t.st.TypeHandler.ImplicitTypeCast(bh, tf.INT, indexVal.Load(bh))
 	indexVal = t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT), casted)
 
 	iPtr := indexVal.Slot()
 	t.st.Vars.AddNewVar(st.Value, indexVal)
 
-	upperVal := expression.ExpressionHandlerInst.ProcessExpression(bh, upperExpr)
+	upperVal := t.m.GetExpressionHandler().(*expression.ExpressionHandler).ProcessExpression(bh, upperExpr)
 	casted = t.st.TypeHandler.ImplicitTypeCast(bh, tf.INT, upperVal.Load(bh))
 	upperVal = t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT), casted)
 
@@ -51,10 +55,14 @@ func (t *BlockHandler) processForBlock(fn *ir.Func, bh *bc.BlockHolder, st *ast.
 
 	bh.N.NewBr(loopCond.N)
 
+	// condition need to be done in new block so that i can iterate back to it.
+	// Note that it follows [a, b) logic, (i.e, excluding right bound)
 	iVal := loopCond.N.NewLoad(types.I64, iPtr)
 	cond := loopCond.N.NewICmp(enum.IPredSLT, iVal, upperVal.Load(loopCond))
 	loopCond.N.NewCondBr(cond, loopBody.N, loopEnd.N)
 
+	// loop blocks need to be appended to a temporary stack to remove 'break' statements
+	// with respect to last pushed loop block
 	t.st.Loopend = append(t.st.Loopend, state.LoopEntry{End: loopEnd})
 	t.ProcessBlock(fn, loopBody, st.Body)
 	t.st.Loopend = t.st.Loopend[:len(t.st.Loopend)-1]
@@ -99,7 +107,7 @@ func (t *BlockHandler) processWhileBlock(fn *ir.Func, bh *bc.BlockHolder, st *as
 	// store its state.
 	copyOfCondEntry := bc.NewBlockHolder(condEntry.V, condEntry.N)
 
-	res := expression.ExpressionHandlerInst.ProcessExpression(condEntry, st.Condition)
+	res := t.m.GetExpressionHandler().(*expression.ExpressionHandler).ProcessExpression(condEntry, st.Condition)
 
 	condBlock := condEntry
 	cond := res.Load(condBlock)
@@ -109,6 +117,8 @@ func (t *BlockHandler) processWhileBlock(fn *ir.Func, bh *bc.BlockHolder, st *as
 
 	bh.Update(bodyBlock.V, bodyBlock.N)
 
+	// loop blocks need to be appended to a temporary stack to remove 'break' statements
+	// with respect to last pushed loop block
 	t.st.Loopend = append(t.st.Loopend, state.LoopEntry{End: endBlock})
 	t.ProcessBlock(fn, bodyBlock, st.Body)
 	t.st.Loopend = t.st.Loopend[:len(t.st.Loopend)-1]

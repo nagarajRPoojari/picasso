@@ -10,70 +10,91 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
-// ProcessBlock translates a sequence of AST statements into LLVM IR instructions.
-// It acts as the primary dispatcher for the code generator, delegating specific
-// statement types to their respective handlers while managing the lifecycle
-// of lexical scopes and control flow integrity.
+// ProcessBlock serves as the central recursive dispatcher for transforming a sequence
+// of AST statements into LLVM IR instructions.
 //
-// Key logic:
-//   - Scope Management: Pushes a new variable scope onto the symbol table stack
-//     on entry and ensures its removal via 'defer' to prevent memory leaks or
-//     variable shadowing issues.
-//   - Dispatch Logic: Switches on concrete AST types to handle declarations,
-//     assignments, function calls, and complex control structures (If, While, For).
-//   - Early Termination: Detects 'Break' and 'Return' statements to immediately
-//     halt instruction emission for the current block, preventing unreachable
-//     code errors in the generated IR.
-//   - Loop Context: Validates 'Break' statements against the Loopend stack to
-//     ensure they only occur within valid iterative contexts.
+// Lifecycle:
+//  1. Scope Management: Automatically manages lexical scoping by pushing a new
+//     symbol table block on entry and popping it via 'defer' on exit.
+//  2. Dispatching: Iterates through the AST node slice, delegating specific
+//     codegen logic to specialized handlers (Statement, Expression, etc.)
+//     via the Mediator.
+//  3. Control Flow: Handles early termination for 'Break' and 'Return'
+//     statements to ensure subsequent unreachable AST nodes are not
+//     translated into the current basic block.
 func (t *BlockHandler) ProcessBlock(fn *ir.Func, bh *bc.BlockHolder, sts []ast.Statement) {
-	// add new scope block for variables
 	t.st.Vars.AddBlock()
 	defer t.st.Vars.RemoveBlock()
+
+	// Cache the handler to avoid repeated type assertions in the loop
+	sh := t.m.GetStatementHandler().(*statement.StatementHandler)
 
 	for _, stI := range sts {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
-			statement.StatementHandlerInst.DeclareVariable(bh, &st)
+			sh.DeclareVariable(bh, &st)
 
 		case ast.ExpressionStatement:
-			switch exp := st.Expression.(type) {
-			case ast.AssignmentExpression:
-				statement.StatementHandlerInst.AssignVariable(bh, &exp)
-			case ast.CallExpression:
-				statement.StatementHandlerInst.CallFunc(bh, exp)
-			case ast.NewExpression:
-				statement.StatementHandlerInst.ProcessNewExpression(bh, exp)
-			default:
-				errorutils.Abort(errorutils.InvalidStatement)
-			}
+			t.processExpressionStatement(st, bh, sh)
 
 		case ast.IfStatement:
 			t.processIfElseBlock(fn, bh, &st, nil)
+
 		case ast.ForeachStatement:
 			t.processForBlock(fn, bh, &st)
+
 		case ast.WhileStatement:
 			t.processWhileBlock(fn, bh, &st)
+
 		case ast.BreakStatement:
-			if len(t.st.Loopend) == 0 {
-				errorutils.Abort(errorutils.InvalidBreakStatement)
-			}
-			loopend := t.st.Loopend[len(t.st.Loopend)-1]
-			bh.N.NewBr(loopend.End.N)
-			// bh.Update(loopend.End.V, loopend.End.N)
+			t.handleBreak(bh)
+			return // Stop processing this block after a break
 
-			// return from this block immediately, simply ignoring all upcomming statements
-			return
 		case ast.ReturnStatement:
-			splits := strings.Split(fn.Name(), ".")
-			clsName := strings.Join(splits[:len(splits)-1], ".")
-			clsMeta := t.st.Classes[clsName]
-
-			funcName := fn.Name()
-			statement.StatementHandlerInst.Return(bh, &st, clsMeta.Returns[funcName])
-
-			// return from this block immediately, simply ignoring all upcomming statements
-			return
+			sh.Return(bh, &st, t.getRetType(fn))
+			return // Stop processing this block after a return
 		}
 	}
+}
+
+// processExpressionStatement handles standalone expressions (e.g, func calls, variable assignments etc.)
+func (t *BlockHandler) processExpressionStatement(st ast.ExpressionStatement, bh *bc.BlockHolder, sh *statement.StatementHandler) {
+	switch exp := st.Expression.(type) {
+	case ast.AssignmentExpression:
+		sh.AssignVariable(bh, &exp)
+	case ast.CallExpression:
+		sh.CallFunc(bh, exp)
+	case ast.NewExpression:
+		sh.ProcessNewExpression(bh, exp)
+	default:
+		errorutils.Abort(errorutils.InvalidStatement)
+	}
+}
+
+// handleBreak verifies if there is any breakable block (aka loop block)
+// if so, return to loopend block else throw InvalidBreakStatement error
+func (t *BlockHandler) handleBreak(bh *bc.BlockHolder) {
+	if len(t.st.Loopend) == 0 {
+		errorutils.Abort(errorutils.InvalidBreakStatement)
+	}
+
+	loopend := t.st.Loopend[len(t.st.Loopend)-1]
+	bh.N.NewBr(loopend.End.N)
+}
+
+// get return type of function based on explicit store in compiler state
+// Note: can't depend on fn.Sig.RetType since i'll lose extra informations
+// like signed/unsigned status.
+func (t *BlockHandler) getRetType(fn *ir.Func) ast.Type {
+	name := fn.Name()
+	idx := strings.LastIndex(name, ".")
+	if idx == -1 {
+		return nil // Or handle global functions
+	}
+
+	clsName := name[:idx]
+	if clsMeta, ok := t.st.Classes[clsName]; ok {
+		return clsMeta.Returns[name]
+	}
+	return nil
 }

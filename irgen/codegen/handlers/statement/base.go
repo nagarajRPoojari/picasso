@@ -1,21 +1,22 @@
 package statement
 
-import "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+import (
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+)
 
 // StatementHandler facilitates the translation of AST statement nodes into
 // their corresponding IR representations.
 type StatementHandler struct {
 	st *state.State
+	m  contract.Mediator
 }
 
 // NewStatementHandler creates a constructor for StatementHandler, ensuring
 // that it is properly bound to the compilation's lifecycle state.
-func NewStatementHandler(st *state.State) *StatementHandler {
+func NewStatementHandler(st *state.State, m contract.Mediator) *StatementHandler {
 	return &StatementHandler{
 		st: st,
+		m:  m,
 	}
 }
-
-// StatementHandlerInst serves as a package-level singleton to provide
-// global access to statement processing logic.
-var StatementHandlerInst *StatementHandler

@@ -66,11 +66,11 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 	}
 
 	// Compute field name in identifier map
-	fieldID := fmt.Sprintf("%s.%s", cls.Name, ex.Property)
-	idx, ok := classMeta.FieldIndexMap[fieldID]
+	fieldFqName := fmt.Sprintf("%s.%s", cls.Name, ex.Property)
+	idx, ok := classMeta.FieldIndexMap[fieldFqName]
 
 	if resolveRootMember(ex) != constants.THIS {
-		if _, ok := classMeta.InternalFields[fieldID]; ok {
+		if _, ok := classMeta.InternalFields[fieldFqName]; ok {
 			errorutils.Abort(errorutils.FieldNotAccessible, cls.Name, ex.Property)
 		}
 	}
@@ -143,7 +143,7 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 					Ptr:               f,
 					ArrayType:         tf.ARRAYSTRUCT,
 					ElemType:          classMeta.ArrayVarsEleTypes[idx],
-					ElementTypeString: classMeta.VarAST[fieldID].ExplicitType.GetUnderlyingType(),
+					ElementTypeString: classMeta.VarAST[fieldFqName].ExplicitType.GetUnderlyingType(),
 				}
 			}
 

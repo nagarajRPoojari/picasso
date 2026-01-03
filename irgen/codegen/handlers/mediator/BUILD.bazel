@@ -1,0 +1,18 @@
+load("@rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "mediator",
+    srcs = ["mediator.go"],
+    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/mediator",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//irgen/codegen/contract",
+        "//irgen/codegen/handlers/block",
+        "//irgen/codegen/handlers/class",
+        "//irgen/codegen/handlers/expression",
+        "//irgen/codegen/handlers/func",
+        "//irgen/codegen/handlers/interface",
+        "//irgen/codegen/handlers/state",
+        "//irgen/codegen/handlers/statement",
+    ],
+)

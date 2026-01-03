@@ -59,7 +59,7 @@ func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatemen
 	t.st.TypeHandler.RegisterInterface(aliasName, mi)
 }
 
-// DeclareFunctions populates the interface with its defined method signatures.
+// DeclareClassFuncs populates the interface with its defined method signatures.
 // It generates LLVM function prototypes for each method, including the
 // injection of the implicit 'this' parameter to support polymorphism.
 //
@@ -73,7 +73,7 @@ func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatemen
 //     when classes implement this interface.
 //   - Global Symbol Management: Registers methods in the GlobalFuncList to
 //     prevent duplicate linkage symbols and enable cross-module accessibility
-func (t *InterfaceHandler) DeclareFunctions(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
+func (t *InterfaceHandler) DeclareClassFuncs(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
 	aliasName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
 	for _, stI := range ifs.Body {
 		switch st := stI.(type) {

@@ -15,6 +15,7 @@ import (
 //   - For unassigned vars initialize then with corresponding zero value, except atomic types.
 //   - Do implicit typecasting for assigned vars.
 func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableDeclarationStatement) {
+	expHandler := t.m.GetExpressionHandler().(*expression.ExpressionHandler)
 	if t.st.Vars.Exists(st.Identifier) {
 		errorutils.Abort(errorutils.VariableRedeclaration, st.Identifier)
 	}
@@ -32,7 +33,7 @@ func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableD
 		}
 		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), init)
 	} else {
-		_v := expression.ExpressionHandlerInst.ProcessExpression(bh, st.AssignedValue)
+		_v := expHandler.ProcessExpression(bh, st.AssignedValue)
 		v = _v
 		casted := t.st.TypeHandler.ImplicitTypeCast(bh, st.ExplicitType.Get(), v.Load(bh))
 		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), casted)

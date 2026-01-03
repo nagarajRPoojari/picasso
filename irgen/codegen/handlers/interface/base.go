@@ -7,7 +7,10 @@
 //     signature hashes for implementation validation.
 package interfaceh
 
-import "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+import (
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+)
 
 // InterfaceHandler manages the transformation of Niyama interface declarations
 // into LLVM-compatible virtual tables. It ensures that method signatures
@@ -17,15 +20,13 @@ type InterfaceHandler struct {
 	// st provides access to the global compiler state, including the
 	// LLVM module, type registry, and cross-package symbol tables.
 	st *state.State
+
+	m contract.Mediator
 }
 
 // NewInterfaceHandler initializes a handler with the shared compilation state.
 // This allows the handler to register symbolic function definitions and
 // concrete types into the module's global scope.
-func NewInterfaceHandler(state *state.State) *InterfaceHandler {
-	return &InterfaceHandler{st: state}
+func NewInterfaceHandler(state *state.State, m contract.Mediator) *InterfaceHandler {
+	return &InterfaceHandler{st: state, m: m}
 }
-
-// InterfaceHandlerInst is the global singleton instance used by the
-// code generator to process interface-related AST nodes.
-var InterfaceHandlerInst *InterfaceHandler

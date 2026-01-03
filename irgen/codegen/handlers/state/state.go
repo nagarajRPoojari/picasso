@@ -96,6 +96,9 @@ type State struct {
 	Imports map[string]PackageEntry
 }
 
+type Handlers struct {
+}
+
 func NewCompileState(outputDir string, pkgName string, module *ir.Module) *State {
 	return &State{
 		OutputDir:         outputDir,

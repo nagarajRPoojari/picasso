@@ -10,7 +10,7 @@ import (
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 )
 
-// DeclareClassUDT registers a new User-Defined Type (UDT) within the LLVM module.
+// DeclareOpaqueClass registers a new User-Defined Type (UDT) within the LLVM module.
 // It initializes the class as an opaque struct to allow for recursive type
 // definitions (pointers to self) and prepares a MetaClass container to hold
 // field offsets, method symbols, and type metadata for semantic resolution.
@@ -20,7 +20,7 @@ import (
 //   - Defines a named opaque struct in the LLVM module.
 //   - Maps the class name to its MetaClass metadata in the global state for
 //     future field lookups and method dispatch.
-func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
+func (t *ClassHandler) DeclareOpaqueClass(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
 
 	clsName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(cls.Name)
 	aliasName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(cls.Name)
@@ -51,7 +51,7 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement, source
 	t.st.Classes[aliasName].Internal = cls.IsInternal
 }
 
-// DeclareFunctions orchestrates the declaration of all member functions
+// DeclareClassFuncs orchestrates the declaration of all member functions
 // associated with a class. It performs a pass over the class body and
 // inherited definitions to populate the function symbol table before
 // actual function bodies are emitted.
@@ -60,11 +60,11 @@ func (t *ClassHandler) DeclareClassUDT(cls ast.ClassDeclarationStatement, source
 //   - Iterates through the local AST body to register member functions.
 //   - Delegates signature creation to the FuncHandler to ensure consistent
 //     ABI naming and parameter lowering.
-func (t *ClassHandler) DeclareFunctions(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
+func (t *ClassHandler) DeclareClassFuncs(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
-			funcs.FuncHandlerInst.DeclareFunc(cls.Name, st, sourcePkg)
+			t.m.GetFuncHandler().(*funcs.FuncHandler).DeclareFunc(cls.Name, st, sourcePkg)
 		}
 	}
 }

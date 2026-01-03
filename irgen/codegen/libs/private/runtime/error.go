@@ -19,7 +19,7 @@ type ErrorHandler struct {
 
 var Instance *ErrorHandler
 
-func NewErrorHandler(mod *ir.Module) *ErrorHandler {
+func InitErrorHandler(mod *ir.Module) *ErrorHandler {
 	Instance = &ErrorHandler{
 		err: mod.NewFunc(RUNTIME_ERR, types.Void, ir.NewParam("msg", types.I8Ptr)),
 	}

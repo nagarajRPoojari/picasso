@@ -5,6 +5,7 @@
 package block
 
 import (
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 )
 
@@ -15,18 +16,17 @@ type BlockHandler struct {
 	// st represents the shared compilation state, including
 	// the current LLVM builder and symbol tables.
 	st *state.State
+
+	// represent mediator to access other handlers
+	m contract.Mediator
 }
 
 // NewBlockHandler initializes a handler with a reference to the
 // compiler's current state. This allows the handler to modify
 // the IR module and track scope-specific metadata.
-func NewBlockHandler(st *state.State) *BlockHandler {
+func NewBlockHandler(st *state.State, m contract.Mediator) *BlockHandler {
 	return &BlockHandler{
 		st: st,
+		m:  m,
 	}
 }
-
-// BlockHandlerInst is a global singleton instance of the BlockHandler.
-// It is typically initialized during the setup of the code generator
-// to provide a consistent entry point for block-level IR emission.
-var BlockHandlerInst *BlockHandler

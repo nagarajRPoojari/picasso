@@ -10,5 +10,6 @@ import (
 // CallFunc statements just uses function call expression handler ignoring return type of
 // function in runtime.
 func (t *StatementHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) tf.Var {
-	return expression.ExpressionHandlerInst.CallFunc(bh, ex)
+	expHandler := t.m.GetExpressionHandler().(*expression.ExpressionHandler)
+	return expHandler.CallFunc(bh, ex)
 }
