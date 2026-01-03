@@ -1,0 +1,3 @@
+s:hello world, len:11
+s:hello world, p:hello world
+formatted:hello world: 89
