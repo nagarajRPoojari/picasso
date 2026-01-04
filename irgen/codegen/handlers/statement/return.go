@@ -13,6 +13,10 @@ func (t *StatementHandler) Return(block *bc.BlockHolder, st *ast.ReturnStatement
 
 	val := v.Load(block)
 
-	r := t.st.TypeHandler.ImplicitTypeCast(block, rt.Get(), val)
-	block.N.NewRet(r)
+	if rt == nil {
+		block.N.NewRet(nil)
+	} else {
+		r := t.st.TypeHandler.ImplicitTypeCast(block, rt.Get(), val)
+		block.N.NewRet(r)
+	}
 }
