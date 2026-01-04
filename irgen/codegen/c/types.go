@@ -24,8 +24,6 @@ func (t *Interface) initArrayTypes(mod *ir.Module) {
 		types.I64,                   // length
 		types.I64,                   // rank
 	)
-
-	mod.NewTypeDef(TYPE_ARRAY, t.Types[TYPE_ARRAY])
 }
 
 // initAtomicTypes wraps fundamental scalar types in LLVM structures to
@@ -33,25 +31,26 @@ func (t *Interface) initArrayTypes(mod *ir.Module) {
 // distinction between standard and thread-safe variables during type
 // checking and IR lowering.
 func (t *Interface) initAtomicTypes(mod *ir.Module) {
+	// Boolean
 	t.Types[TYPE_ATOMIC_BOOL] = types.NewStruct(types.I1)
 
-	t.Types[TYPE_ATOMIC_CHAR] = types.NewStruct(types.I8)
+	// Exact-width signed integers
 	t.Types[TYPE_ATOMIC_INT8] = types.NewStruct(types.I8)
-
-	t.Types[TYPE_ATOMIC_SHORT] = types.NewStruct(types.I16)
 	t.Types[TYPE_ATOMIC_INT16] = types.NewStruct(types.I16)
-
-	t.Types[TYPE_ATOMIC_INT] = types.NewStruct(types.I32)
 	t.Types[TYPE_ATOMIC_INT32] = types.NewStruct(types.I32)
-
-	t.Types[TYPE_ATOMIC_LONG] = types.NewStruct(types.I64)
 	t.Types[TYPE_ATOMIC_INT64] = types.NewStruct(types.I64)
 
-	t.Types[TYPE_ATOMIC_LLONG] = types.NewStruct(types.I64)
+	// Exact-width unsigned integers
+	t.Types[TYPE_ATOMIC_UINT8] = types.NewStruct(types.I8)
+	t.Types[TYPE_ATOMIC_UINT16] = types.NewStruct(types.I16)
+	t.Types[TYPE_ATOMIC_UINT32] = types.NewStruct(types.I32)
+	t.Types[TYPE_ATOMIC_UINT64] = types.NewStruct(types.I64)
 
-	t.Types[TYPE_ATOMIC_FLOAT] = types.NewStruct(types.Float)
+	// Floating point
+	t.Types[TYPE_ATOMIC_FLOAT16] = types.NewStruct(types.Half)   // 16-bit
+	t.Types[TYPE_ATOMIC_FLOAT32] = types.NewStruct(types.Float)  // 32-bit
+	t.Types[TYPE_ATOMIC_FLOAT64] = types.NewStruct(types.Double) // 64-bit
 
-	t.Types[TYPE_ATOMIC_DOUBLE] = types.NewStruct(types.Double)
-
+	// Pointer (atomic_uintptr_t)
 	t.Types[TYPE_ATOMIC_PTR] = types.NewStruct(types.NewPointer(types.I8))
 }

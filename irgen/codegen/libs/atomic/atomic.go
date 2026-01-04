@@ -28,6 +28,8 @@ func (t *Sync) ListAllFuncs() map[string]function.Func {
 	funcs[c.ALIAS_ATOMIC_LOAD] = t.atomicLoad
 	funcs[c.ALIAS_ATOMIC_ADD] = t.atomicAdd
 	funcs[c.ALIAS_ATOMIC_SUB] = t.atomicSub
+	funcs[c.ALIAS_ATOMIC_CAS] = t.atomicCas
+	funcs[c.ALIAS_ATOMIC_EXCHANGE] = t.atomicExchange
 	return funcs
 }
 
@@ -52,6 +54,20 @@ func (t *Sync) atomicAdd(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.
 func (t *Sync) atomicSub(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
 	dest := utils.GetTypeString(args[0].Type())
 	method := c.Instance.Funcs[fmt.Sprintf("__public__atomic_sub_%s", extractBetween(dest, "_", "_"))]
+	return libutils.CallCFunc(typeHandler, method, bh, args)
+}
+
+func (t *Sync) atomicCas(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
+	dest := utils.GetTypeString(args[0].Type())
+	method := c.Instance.Funcs[fmt.Sprintf("__public__atomic_cas_%s", extractBetween(dest, "_", "_"))]
+
+	fmt.Printf("method: %v\n", method)
+	return libutils.CallCFunc(typeHandler, method, bh, args)
+}
+
+func (t *Sync) atomicExchange(typeHandler *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []tf.Var) tf.Var {
+	dest := utils.GetTypeString(args[0].Type())
+	method := c.Instance.Funcs[fmt.Sprintf("__public__atomic_exchange_%s", extractBetween(dest, "_", "_"))]
 	return libutils.CallCFunc(typeHandler, method, bh, args)
 }
 
