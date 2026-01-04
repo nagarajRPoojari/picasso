@@ -22,7 +22,9 @@
 #include <string.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <linux/futex.h>
 #include "os.h"
+#include <limits.h>
 
 extern char **environ;
 
@@ -706,4 +708,106 @@ int __public__munlockall(void) {
  */
 size_t __public__page_size(void) {
     return sysconf(_SC_PAGESIZE);
+}
+
+/** @futex: */
+
+/**
+ * @brief Wait on a futex word.
+ *
+ * The calling thread sleeps if *uaddr == val.
+ *
+ * @param uaddr Pointer to futex word.
+ * @param val Expected value.
+ * @param timeout Optional timeout (NULL for infinite wait).
+ * @return 0 on success or -1 on error.
+ */
+int __public__futex_wait(int *uaddr, int val, const struct timespec *timeout) {
+    return syscall(SYS_futex,uaddr,FUTEX_WAIT,val,timeout,NULL,0);
+}
+
+/**
+ * @brief Wake up threads waiting on a futex word.
+ *
+ * @param uaddr Pointer to futex word.
+ * @param count Maximum number of waiters to wake.
+ * @return Number of woken threads or -1 on error.
+ */
+int __public__futex_wake(int *uaddr, int count) {
+    return syscall(SYS_futex,uaddr,FUTEX_WAKE,count,NULL,NULL,0);
+}
+
+/**
+ * @brief Wait on a futex word with bitmask.
+ *
+ * The calling thread sleeps if (*uaddr & mask) == val.
+ *
+ * @param uaddr Pointer to futex word.
+ * @param val Expected value.
+ * @param timeout Optional timeout.
+ * @param mask Bitmask.
+ * @return 0 on success or -1 on error.
+ */
+int __public__futex_wait_bitset(int *uaddr,int val,const struct timespec *timeout,int mask) {
+    return syscall(SYS_futex, uaddr, FUTEX_WAIT_BITSET, val, timeout, NULL, mask);
+}
+
+/**
+ * @brief Wake threads waiting on a futex word using a bitmask.
+ *
+ * @param uaddr Pointer to futex word.
+ * @param count Maximum number of waiters to wake.
+ * @param mask Bitmask.
+ * @return Number of woken threads or -1 on error.
+ */
+int __public__futex_wake_bitset(int *uaddr, int count, int mask) {
+    return syscall(SYS_futex, uaddr, FUTEX_WAKE_BITSET, count, NULL, NULL, mask);
+}
+
+/**
+ * @brief Requeue waiters from one futex to another.
+ *
+ * Wakes up to wake_count waiters and requeues the rest to uaddr2.
+ *
+ * @param uaddr Source futex.
+ * @param wake_count Number of waiters to wake.
+ * @param requeue_count Number of waiters to requeue.
+ * @param uaddr2 Target futex.
+ * @return Number of affected waiters or -1 on error.
+ */
+int __public__futex_requeue( int *uaddr, int wake_count, int requeue_count, int *uaddr2) {
+    return syscall( SYS_futex, uaddr, FUTEX_REQUEUE, wake_count, requeue_count, uaddr2, 0);
+}
+
+/**
+ * @brief Wake one waiter and requeue remaining waiters.
+ *
+ * @param uaddr Source futex.
+ * @param uaddr2 Target futex.
+ * @param wake_count Number of waiters to wake.
+ * @param requeue_count Number of waiters to requeue.
+ * @return Number of affected waiters or -1 on error.
+ */
+int __public__futex_cmp_requeue( int *uaddr, int *uaddr2, int wake_count, int requeue_count, int val) {
+    return syscall( SYS_futex, uaddr, FUTEX_CMP_REQUEUE, wake_count, requeue_count, uaddr2, val);
+}
+
+/**
+ * @brief Wake a single waiter (optimized common case).
+ *
+ * @param uaddr Pointer to futex word.
+ * @return Number of woken threads or -1 on error.
+ */
+int __public__futex_wake_one(int *uaddr) {
+    return syscall( SYS_futex, uaddr, FUTEX_WAKE, 1, NULL, NULL, 0);
+}
+
+/**
+ * @brief Wake all waiters.
+ *
+ * @param uaddr Pointer to futex word.
+ * @return Number of woken threads or -1 on error.
+ */
+int __public__futex_wake_all(int *uaddr) {
+    return syscall( SYS_futex, uaddr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
 }
