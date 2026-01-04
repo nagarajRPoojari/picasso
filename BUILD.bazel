@@ -16,9 +16,12 @@ cc_library(
     copts = [
         "-g",
         "-O0",
+        "-std=c11",
         "-rdynamic",
         "-fno-omit-frame-pointer",
         "-I/usr/include/aarch64-linux-gnu",
+        "-D_GNU_SOURCE",              # <-- define globally
+        "-D_POSIX_C_SOURCE=200809L",  # <-- define globally
     ],
     includes = [
         "gc/headers",
@@ -50,6 +53,7 @@ cc_library(
     copts = [
         "-g",
         "-O0",
+        "-std=c11",
         "-fno-omit-frame-pointer",
         "-I/usr/include/aarch64-linux-gnu",
     ],
