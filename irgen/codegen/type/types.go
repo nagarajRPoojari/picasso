@@ -495,6 +495,8 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		default:
 			errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "string")
 		}
+	case "i32*":
+		return v
 	case "void":
 		return nil
 	case "array":
