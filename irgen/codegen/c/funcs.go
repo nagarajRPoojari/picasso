@@ -63,153 +63,6 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	)
 }
 
-// initAtomicFuncs defines the interface for thread-safe memory operations.
-// It maps atomic aliases (like INT8/CHAR) to the same underlying runtime
-// implementations and handles type-specific pointer signatures for atomic stores/loads.
-func (t *Interface) initAtomicFuncs(mod *ir.Module) {
-	// --- @bool ---
-	t.Funcs[FUNC_ATOMIC_STORE_BOOL] = mod.NewFunc(FUNC_ATOMIC_STORE_BOOL,
-		types.Void,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_BOOL])),
-		ir.NewParam("val", types.I1),
-	)
-	t.Funcs[FUNC_ATOMIC_LOAD_BOOL] = mod.NewFunc(FUNC_ATOMIC_LOAD_BOOL,
-		types.I1,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_BOOL])),
-	)
-
-	// --- @int8 ---
-	t.Funcs[FUNC_ATOMIC_STORE_CHAR] = mod.NewFunc(FUNC_ATOMIC_STORE_CHAR,
-		types.Void,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_CHAR])),
-		ir.NewParam("val", types.I8),
-	)
-	t.Funcs[FUNC_ATOMIC_STORE_INT8] = t.Funcs[FUNC_ATOMIC_STORE_CHAR]
-	t.Funcs[FUNC_ATOMIC_LOAD_CHAR] = mod.NewFunc(FUNC_ATOMIC_LOAD_CHAR,
-		types.I8,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_CHAR])),
-	)
-	t.Funcs[FUNC_ATOMIC_LOAD_INT8] = t.Funcs[FUNC_ATOMIC_LOAD_CHAR]
-	t.Funcs[FUNC_ATOMIC_ADD_CHAR] = mod.NewFunc(FUNC_ATOMIC_ADD_CHAR,
-		types.I8,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_CHAR])),
-		ir.NewParam("val", types.I8),
-	)
-	t.Funcs[FUNC_ATOMIC_ADD_INT8] = t.Funcs[FUNC_ATOMIC_ADD_CHAR]
-	t.Funcs[FUNC_ATOMIC_SUB_CHAR] = mod.NewFunc(FUNC_ATOMIC_SUB_CHAR,
-		types.I8,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_CHAR])),
-		ir.NewParam("val", types.I8),
-	)
-	t.Funcs[FUNC_ATOMIC_SUB_INT8] = t.Funcs[FUNC_ATOMIC_SUB_CHAR]
-
-	// --- @int16 ---
-	t.Funcs[FUNC_ATOMIC_STORE_SHORT] = mod.NewFunc(FUNC_ATOMIC_STORE_SHORT,
-		types.Void,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_SHORT])),
-		ir.NewParam("val", types.I16),
-	)
-	t.Funcs[FUNC_ATOMIC_STORE_INT16] = t.Funcs[FUNC_ATOMIC_STORE_SHORT]
-	t.Funcs[FUNC_ATOMIC_LOAD_SHORT] = mod.NewFunc(FUNC_ATOMIC_LOAD_SHORT,
-		types.I16,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_SHORT])),
-	)
-	t.Funcs[FUNC_ATOMIC_LOAD_INT16] = t.Funcs[FUNC_ATOMIC_LOAD_SHORT]
-	t.Funcs[FUNC_ATOMIC_ADD_SHORT] = mod.NewFunc(FUNC_ATOMIC_ADD_SHORT,
-		types.I16,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_SHORT])),
-		ir.NewParam("val", types.I16),
-	)
-	t.Funcs[FUNC_ATOMIC_ADD_INT16] = t.Funcs[FUNC_ATOMIC_ADD_SHORT]
-	t.Funcs[FUNC_ATOMIC_SUB_SHORT] = mod.NewFunc(FUNC_ATOMIC_SUB_SHORT,
-		types.I16,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_SHORT])),
-		ir.NewParam("val", types.I16),
-	)
-	t.Funcs[FUNC_ATOMIC_SUB_INT16] = t.Funcs[FUNC_ATOMIC_SUB_SHORT]
-
-	// --- @int32 ---
-	t.Funcs[FUNC_ATOMIC_STORE_INT] = mod.NewFunc(FUNC_ATOMIC_STORE_INT,
-		types.Void,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT])),
-		ir.NewParam("val", types.I32),
-	)
-	t.Funcs[FUNC_ATOMIC_STORE_INT32] = t.Funcs[FUNC_ATOMIC_STORE_INT]
-	t.Funcs[FUNC_ATOMIC_LOAD_INT] = mod.NewFunc(FUNC_ATOMIC_LOAD_INT,
-		types.I32,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT])),
-	)
-	t.Funcs[FUNC_ATOMIC_LOAD_INT32] = t.Funcs[FUNC_ATOMIC_LOAD_INT]
-	t.Funcs[FUNC_ATOMIC_ADD_INT] = mod.NewFunc(FUNC_ATOMIC_ADD_INT,
-		types.I32,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT])),
-		ir.NewParam("val", types.I32),
-	)
-	t.Funcs[FUNC_ATOMIC_ADD_INT32] = t.Funcs[FUNC_ATOMIC_ADD_INT]
-	t.Funcs[FUNC_ATOMIC_SUB_INT] = mod.NewFunc(FUNC_ATOMIC_SUB_INT,
-		types.I32,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT])),
-		ir.NewParam("val", types.I32),
-	)
-	t.Funcs[FUNC_ATOMIC_SUB_INT32] = t.Funcs[FUNC_ATOMIC_SUB_INT]
-
-	// --- @int64 ---
-	t.Funcs[FUNC_ATOMIC_STORE_LONG] = mod.NewFunc(FUNC_ATOMIC_STORE_LONG,
-		types.Void,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_LONG])),
-		ir.NewParam("val", types.I64),
-	)
-	t.Funcs[FUNC_ATOMIC_STORE_INT64] = t.Funcs[FUNC_ATOMIC_STORE_LONG]
-	t.Funcs[FUNC_ATOMIC_LOAD_LONG] = mod.NewFunc(FUNC_ATOMIC_LOAD_LONG,
-		types.I64,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_LONG])),
-	)
-	t.Funcs[FUNC_ATOMIC_LOAD_INT64] = t.Funcs[FUNC_ATOMIC_LOAD_LONG]
-	t.Funcs[FUNC_ATOMIC_ADD_LONG] = mod.NewFunc(FUNC_ATOMIC_ADD_LONG,
-		types.I64,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_LONG])),
-		ir.NewParam("val", types.I64),
-	)
-	t.Funcs[FUNC_ATOMIC_ADD_INT64] = t.Funcs[FUNC_ATOMIC_ADD_LONG]
-	t.Funcs[FUNC_ATOMIC_SUB_LONG] = mod.NewFunc(FUNC_ATOMIC_SUB_LONG,
-		types.I64,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_LONG])),
-		ir.NewParam("val", types.I64),
-	)
-	t.Funcs[FUNC_ATOMIC_SUB_INT64] = t.Funcs[FUNC_ATOMIC_SUB_LONG]
-
-	// --- floats and others unchanged ---
-	t.Funcs[FUNC_ATOMIC_STORE_FLOAT] = mod.NewFunc(FUNC_ATOMIC_STORE_FLOAT,
-		types.Void,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT])),
-		ir.NewParam("val", types.Float),
-	)
-	t.Funcs[FUNC_ATOMIC_LOAD_FLOAT] = mod.NewFunc(FUNC_ATOMIC_LOAD_FLOAT,
-		types.Float,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT])),
-	)
-
-	t.Funcs[FUNC_ATOMIC_STORE_DOUBLE] = mod.NewFunc(FUNC_ATOMIC_STORE_DOUBLE,
-		types.Void,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_DOUBLE])),
-		ir.NewParam("val", types.Double),
-	)
-	t.Funcs[FUNC_ATOMIC_LOAD_DOUBLE] = mod.NewFunc(FUNC_ATOMIC_LOAD_DOUBLE,
-		types.Double,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_DOUBLE])),
-	)
-
-	t.Funcs[FUNC_ATOMIC_STORE_PTR] = mod.NewFunc(FUNC_ATOMIC_STORE_PTR,
-		types.Void,
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_PTR])),
-		ir.NewParam("val", types.NewPointer(types.I8)),
-	)
-	t.Funcs[FUNC_ATOMIC_LOAD_PTR] = mod.NewFunc(FUNC_ATOMIC_LOAD_PTR,
-		types.NewPointer(types.I8),
-		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_PTR])),
-	)
-}
-
 func (t *Interface) initSyscalls(mod *ir.Module) {
 	t.Funcs[FUNC_SYSCALL_ERRNO] = mod.NewFunc(FUNC_SYSCALL_ERRNO, types.I32)
 
@@ -384,6 +237,72 @@ func (t *Interface) initSyscalls(mod *ir.Module) {
 	t.Funcs[FUNC_SYSCALL_MLOCKALL] = mod.NewFunc(FUNC_SYSCALL_MLOCKALL, types.I32, ir.NewParam("flags", types.I32))
 	t.Funcs[FUNC_SYSCALL_MUNLOCKALL] = mod.NewFunc(FUNC_SYSCALL_MUNLOCKALL, types.I32)
 	t.Funcs[FUNC_SYSCALL_PAGE_SIZE] = mod.NewFunc(FUNC_SYSCALL_PAGE_SIZE, types.I64)
+
+	// --- Futex syscalls ---
+
+	t.Funcs[FUNC_SYSCALL_FUTEX_WAIT] = mod.NewFunc(
+		FUNC_SYSCALL_FUTEX_WAIT,
+		types.I32,
+		ir.NewParam("uaddr", types.I32Ptr),
+		ir.NewParam("val", types.I32),
+		ir.NewParam("timeout", types.I8Ptr),
+	)
+
+	t.Funcs[FUNC_SYSCALL_FUTEX_WAKE] = mod.NewFunc(
+		FUNC_SYSCALL_FUTEX_WAKE,
+		types.I32,
+		ir.NewParam("uaddr", types.I32Ptr),
+		ir.NewParam("count", types.I32),
+	)
+
+	t.Funcs[FUNC_SYSCALL_FUTEX_WAIT_BITSET] = mod.NewFunc(
+		FUNC_SYSCALL_FUTEX_WAIT_BITSET,
+		types.I32,
+		ir.NewParam("uaddr", types.I32Ptr),
+		ir.NewParam("val", types.I32),
+		ir.NewParam("timeout", types.I8Ptr),
+		ir.NewParam("mask", types.I32),
+	)
+
+	t.Funcs[FUNC_SYSCALL_FUTEX_WAKE_BITSET] = mod.NewFunc(
+		FUNC_SYSCALL_FUTEX_WAKE_BITSET,
+		types.I32,
+		ir.NewParam("uaddr", types.I32Ptr),
+		ir.NewParam("count", types.I32),
+		ir.NewParam("mask", types.I32),
+	)
+
+	t.Funcs[FUNC_SYSCALL_FUTEX_REQUEUE] = mod.NewFunc(
+		FUNC_SYSCALL_FUTEX_REQUEUE,
+		types.I32,
+		ir.NewParam("uaddr", types.I32Ptr),
+		ir.NewParam("wake_count", types.I32),
+		ir.NewParam("requeue_count", types.I32),
+		ir.NewParam("uaddr2", types.I32Ptr),
+	)
+
+	t.Funcs[FUNC_SYSCALL_FUTEX_CMP_REQUEUE] = mod.NewFunc(
+		FUNC_SYSCALL_FUTEX_CMP_REQUEUE,
+		types.I32,
+		ir.NewParam("uaddr", types.I32Ptr),
+		ir.NewParam("uaddr2", types.I32Ptr),
+		ir.NewParam("wake_count", types.I32),
+		ir.NewParam("requeue_count", types.I32),
+		ir.NewParam("val", types.I32),
+	)
+
+	t.Funcs[FUNC_SYSCALL_FUTEX_WAKE_ONE] = mod.NewFunc(
+		FUNC_SYSCALL_FUTEX_WAKE_ONE,
+		types.I32,
+		ir.NewParam("uaddr", types.I32Ptr),
+	)
+
+	t.Funcs[FUNC_SYSCALL_FUTEX_WAKE_ALL] = mod.NewFunc(
+		FUNC_SYSCALL_FUTEX_WAKE_ALL,
+		types.I32,
+		ir.NewParam("uaddr", types.I32Ptr),
+	)
+
 }
 
 // initStdio declares standard input/output operations. It includes support
@@ -462,14 +381,14 @@ func (t *Interface) initStdio(mod *ir.Module) {
 	)
 
 	t.Funcs[FUNC_NET_READ] = mod.NewFunc(FUNC_NET_READ, types.I64,
-		ir.NewParam("fd", types.I32),
-		ir.NewParam("buf", types.NewPointer(types.I8)),
+		ir.NewParam("fd", types.I64),
+		ir.NewParam("buf", types.NewPointer(t.Types[TYPE_ARRAY])),
 		ir.NewParam("len", types.I64),
 	)
 
 	t.Funcs[FUNC_NET_WRITE] = mod.NewFunc(FUNC_NET_WRITE, types.I64,
-		ir.NewParam("fd", types.I32),
-		ir.NewParam("buf", types.NewPointer(types.I8)),
+		ir.NewParam("fd", types.I64),
+		ir.NewParam("buf", types.NewPointer(t.Types[TYPE_ARRAY])),
 		ir.NewParam("len", types.I64),
 	)
 
@@ -498,4 +417,727 @@ func (t *Interface) initStrs(mod *ir.Module) {
 		ir.NewParam("a", types.I8Ptr),
 		ir.NewParam("b", types.I8Ptr),
 	)
+}
+
+// initAtomicFuncs defines the interface for thread-safe memory operations.
+// It maps atomic aliases (like INT8/CHAR) to the same underlying runtime
+// implementations and handles type-specific pointer signatures for atomic stores/loads.
+func (t *Interface) initAtomicFuncs(mod *ir.Module) {
+	// atomic_store_bool
+	t.Funcs[FUNC_ATOMIC_STORE_BOOLEAN] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_BOOLEAN,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_BOOL])),
+		ir.NewParam("val", types.I1),
+	)
+
+	// atomic_load_bool
+	t.Funcs[FUNC_ATOMIC_LOAD_BOOLEAN] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_BOOLEAN,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_BOOL])),
+	)
+
+	// atomic_exchange_bool
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_BOOLEAN] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_BOOLEAN,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_BOOL])),
+		ir.NewParam("val", types.I1),
+	)
+
+	// atomic_compare_exchange_bool
+	t.Funcs[FUNC_ATOMIC_CAS_BOOLEAN] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_BOOLEAN,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_BOOL])),
+		ir.NewParam("expected", types.I1),
+		ir.NewParam("desired", types.I1),
+	)
+
+	// atomic_store_uint8
+	t.Funcs[FUNC_ATOMIC_STORE_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_UINT8,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_load_uint8
+	t.Funcs[FUNC_ATOMIC_LOAD_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_UINT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+	)
+
+	// atomic_add_uint8
+	t.Funcs[FUNC_ATOMIC_ADD_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_ADD_UINT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_sub_uint8
+	t.Funcs[FUNC_ATOMIC_SUB_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_SUB_UINT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_and_uint8
+	t.Funcs[FUNC_ATOMIC_AND_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_AND_UINT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_or_uint8
+	t.Funcs[FUNC_ATOMIC_OR_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_OR_UINT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_xor_uint8
+	t.Funcs[FUNC_ATOMIC_XOR_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_XOR_UINT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_exchange_uint8
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_UINT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_compare_exchange_uint8
+	t.Funcs[FUNC_ATOMIC_CAS_UINT8] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_UINT8,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT8])),
+		ir.NewParam("expected", types.I8),
+		ir.NewParam("desired", types.I8),
+	)
+
+	// atomic_store_uint16
+	t.Funcs[FUNC_ATOMIC_STORE_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_UINT16,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	// atomic_load_uint16
+	t.Funcs[FUNC_ATOMIC_LOAD_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_UINT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+	)
+
+	// atomic_add_uint16
+	t.Funcs[FUNC_ATOMIC_ADD_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_ADD_UINT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	// atomic_sub_uint16
+	t.Funcs[FUNC_ATOMIC_SUB_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_SUB_UINT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	// atomic_and_uint16
+	t.Funcs[FUNC_ATOMIC_AND_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_AND_UINT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	// atomic_or_uint16
+	t.Funcs[FUNC_ATOMIC_OR_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_OR_UINT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	// atomic_xor_uint16
+	t.Funcs[FUNC_ATOMIC_XOR_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_XOR_UINT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	// atomic_exchange_uint16
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_UINT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	// atomic_compare_exchange_uint16
+	t.Funcs[FUNC_ATOMIC_CAS_UINT16] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_UINT16,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT16])),
+		ir.NewParam("expected", types.I16),
+		ir.NewParam("desired", types.I16),
+	)
+
+	// atomic_store_uint32
+	t.Funcs[FUNC_ATOMIC_STORE_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_UINT32,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	// atomic_load_uint32
+	t.Funcs[FUNC_ATOMIC_LOAD_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_UINT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+	)
+
+	// atomic_add_uint32
+	t.Funcs[FUNC_ATOMIC_ADD_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_ADD_UINT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	// atomic_sub_uint32
+	t.Funcs[FUNC_ATOMIC_SUB_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_SUB_UINT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	// atomic_and_uint32
+	t.Funcs[FUNC_ATOMIC_AND_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_AND_UINT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	// atomic_or_uint32
+	t.Funcs[FUNC_ATOMIC_OR_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_OR_UINT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	// atomic_xor_uint32
+	t.Funcs[FUNC_ATOMIC_XOR_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_XOR_UINT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	// atomic_exchange_uint32
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_UINT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	// atomic_compare_exchange_uint32
+	t.Funcs[FUNC_ATOMIC_CAS_UINT32] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_UINT32,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT32])),
+		ir.NewParam("expected", types.I32),
+		ir.NewParam("desired", types.I32),
+	)
+
+	// atomic_store_uint64
+	t.Funcs[FUNC_ATOMIC_STORE_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_UINT64,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	// atomic_load_uint64
+	t.Funcs[FUNC_ATOMIC_LOAD_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_UINT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+	)
+
+	// atomic_add_uint64
+	t.Funcs[FUNC_ATOMIC_ADD_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_ADD_UINT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	// atomic_sub_uint64
+	t.Funcs[FUNC_ATOMIC_SUB_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_SUB_UINT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	// atomic_and_uint64
+	t.Funcs[FUNC_ATOMIC_AND_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_AND_UINT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	// atomic_or_uint64
+	t.Funcs[FUNC_ATOMIC_OR_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_OR_UINT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	// atomic_xor_uint64
+	t.Funcs[FUNC_ATOMIC_XOR_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_XOR_UINT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	// atomic_exchange_uint64
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_UINT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	// atomic_compare_exchange_uint64
+	t.Funcs[FUNC_ATOMIC_CAS_UINT64] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_UINT64,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_UINT64])),
+		ir.NewParam("expected", types.I64),
+		ir.NewParam("desired", types.I64),
+	)
+
+	// ---------------- int8 ----------------
+
+	// atomic_store_int8
+	t.Funcs[FUNC_ATOMIC_STORE_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_INT8,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_load_int8
+	t.Funcs[FUNC_ATOMIC_LOAD_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_INT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+	)
+
+	// atomic_add_int8
+	t.Funcs[FUNC_ATOMIC_ADD_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_ADD_INT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_sub_int8
+	t.Funcs[FUNC_ATOMIC_SUB_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_SUB_INT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_and_int8
+	t.Funcs[FUNC_ATOMIC_AND_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_AND_INT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_or_int8
+	t.Funcs[FUNC_ATOMIC_OR_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_OR_INT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_xor_int8
+	t.Funcs[FUNC_ATOMIC_XOR_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_XOR_INT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_exchange_int8
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_INT8,
+		types.I8,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+		ir.NewParam("val", types.I8),
+	)
+
+	// atomic_compare_exchange_int8
+	t.Funcs[FUNC_ATOMIC_CAS_INT8] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_INT8,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT8])),
+		ir.NewParam("expected", types.I8),
+		ir.NewParam("desired", types.I8),
+	)
+
+	// ---------------- int16 ----------------
+
+	t.Funcs[FUNC_ATOMIC_STORE_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_INT16,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	t.Funcs[FUNC_ATOMIC_LOAD_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_INT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+	)
+
+	t.Funcs[FUNC_ATOMIC_ADD_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_ADD_INT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	t.Funcs[FUNC_ATOMIC_SUB_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_SUB_INT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	t.Funcs[FUNC_ATOMIC_AND_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_AND_INT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	t.Funcs[FUNC_ATOMIC_OR_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_OR_INT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	t.Funcs[FUNC_ATOMIC_XOR_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_XOR_INT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_INT16,
+		types.I16,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+		ir.NewParam("val", types.I16),
+	)
+
+	t.Funcs[FUNC_ATOMIC_CAS_INT16] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_INT16,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT16])),
+		ir.NewParam("expected", types.I16),
+		ir.NewParam("desired", types.I16),
+	)
+
+	// ---------------- int32 ----------------
+
+	t.Funcs[FUNC_ATOMIC_STORE_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_INT32,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	t.Funcs[FUNC_ATOMIC_LOAD_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_INT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+	)
+
+	t.Funcs[FUNC_ATOMIC_ADD_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_ADD_INT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	t.Funcs[FUNC_ATOMIC_SUB_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_SUB_INT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	t.Funcs[FUNC_ATOMIC_AND_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_AND_INT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	t.Funcs[FUNC_ATOMIC_OR_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_OR_INT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	t.Funcs[FUNC_ATOMIC_XOR_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_XOR_INT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_INT32,
+		types.I32,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+		ir.NewParam("val", types.I32),
+	)
+
+	t.Funcs[FUNC_ATOMIC_CAS_INT32] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_INT32,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT32])),
+		ir.NewParam("expected", types.I32),
+		ir.NewParam("desired", types.I32),
+	)
+
+	// ---------------- int64 ----------------
+
+	t.Funcs[FUNC_ATOMIC_STORE_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_INT64,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	t.Funcs[FUNC_ATOMIC_LOAD_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_INT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+	)
+
+	t.Funcs[FUNC_ATOMIC_ADD_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_ADD_INT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	t.Funcs[FUNC_ATOMIC_SUB_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_SUB_INT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	t.Funcs[FUNC_ATOMIC_AND_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_AND_INT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	t.Funcs[FUNC_ATOMIC_OR_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_OR_INT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	t.Funcs[FUNC_ATOMIC_XOR_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_XOR_INT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_INT64,
+		types.I64,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+		ir.NewParam("val", types.I64),
+	)
+
+	t.Funcs[FUNC_ATOMIC_CAS_INT64] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_INT64,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_INT64])),
+		ir.NewParam("expected", types.I64),
+		ir.NewParam("desired", types.I64),
+	)
+
+	// atomic_store_float
+	t.Funcs[FUNC_ATOMIC_STORE_FLOAT32] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_FLOAT32,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT32])),
+		ir.NewParam("val", types.Float),
+	)
+
+	// atomic_load_float
+	t.Funcs[FUNC_ATOMIC_LOAD_FLOAT32] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_FLOAT32,
+		types.Float,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT32])),
+	)
+
+	// atomic_store_float16
+	t.Funcs[FUNC_ATOMIC_STORE_FLOAT16] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_FLOAT16,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT16])),
+		ir.NewParam("val", types.Half),
+	)
+
+	// atomic_load_float16
+	t.Funcs[FUNC_ATOMIC_LOAD_FLOAT16] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_FLOAT16,
+		types.Half,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT16])),
+	)
+
+	// atomic_exchange_float16
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_FLOAT16] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_FLOAT16,
+		types.Half,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT16])),
+		ir.NewParam("val", types.Half),
+	)
+
+	// atomic_compare_exchange_float16
+	t.Funcs[FUNC_ATOMIC_CAS_FLOAT16] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_FLOAT16,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT16])),
+		ir.NewParam("expected", types.Half),
+		ir.NewParam("desired", types.Half),
+	)
+
+	// atomic_exchange_float
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_FLOAT32] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_FLOAT32,
+		types.Float,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT32])),
+		ir.NewParam("val", types.Float),
+	)
+
+	// atomic_compare_exchange_float
+	t.Funcs[FUNC_ATOMIC_CAS_FLOAT32] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_FLOAT32,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT32])),
+		ir.NewParam("expected", types.Float),
+		ir.NewParam("desired", types.Float),
+	)
+
+	// atomic_store_double
+	t.Funcs[FUNC_ATOMIC_STORE_FLOAT64] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_FLOAT64,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT64])),
+		ir.NewParam("val", types.Double),
+	)
+
+	// atomic_load_double
+	t.Funcs[FUNC_ATOMIC_LOAD_FLOAT64] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_FLOAT64,
+		types.Double,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT64])),
+	)
+
+	// atomic_exchange_double
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_FLOAT64] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_FLOAT64,
+		types.Double,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT64])),
+		ir.NewParam("val", types.Double),
+	)
+
+	// atomic_compare_exchange_double
+	t.Funcs[FUNC_ATOMIC_CAS_FLOAT64] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_FLOAT64,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_FLOAT64])),
+		ir.NewParam("expected", types.Double),
+		ir.NewParam("desired", types.Double),
+	)
+
+	// atomic_store_ptr
+	t.Funcs[FUNC_ATOMIC_STORE_PTR] = mod.NewFunc(
+		FUNC_ATOMIC_STORE_PTR,
+		types.Void,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_PTR])),
+		ir.NewParam("val", types.NewPointer(types.I8)),
+	)
+
+	// atomic_load_ptr
+	t.Funcs[FUNC_ATOMIC_LOAD_PTR] = mod.NewFunc(
+		FUNC_ATOMIC_LOAD_PTR,
+		types.NewPointer(types.I8),
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_PTR])),
+	)
+
+	// atomic_exchange_ptr
+	t.Funcs[FUNC_ATOMIC_EXCHANGE_PTR] = mod.NewFunc(
+		FUNC_ATOMIC_EXCHANGE_PTR,
+		types.NewPointer(types.I8),
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_PTR])),
+		ir.NewParam("val", types.NewPointer(types.I8)),
+	)
+
+	// atomic_compare_exchange_ptr
+	t.Funcs[FUNC_ATOMIC_CAS_PTR] = mod.NewFunc(
+		FUNC_ATOMIC_CAS_PTR,
+		types.I1,
+		ir.NewParam("ptr", types.NewPointer(t.Types[TYPE_ATOMIC_PTR])),
+		ir.NewParam("expected", types.NewPointer(types.I8)),
+		ir.NewParam("desired", types.NewPointer(types.I8)),
+	)
+
 }
