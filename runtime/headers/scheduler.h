@@ -1,9 +1,19 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+
+#define _GNU_SOURCE
+#define _POSIX_C_SOURCE 200809L
+
+#include <signal.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <pthread.h>
 #include <ucontext.h>
+
 #include "task.h"
 #include "queue.h"
+
 
 /** 
  * Initial stack size allocated per task (in bytes).
