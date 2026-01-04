@@ -2,6 +2,7 @@ cc_binary(
     name = "niyama",
     srcs = ["main.c"],
     copts = [
+        "-std=c11",
         "-g",
         "-O0",
         "-rdynamic",
