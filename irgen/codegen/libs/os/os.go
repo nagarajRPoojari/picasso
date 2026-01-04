@@ -78,6 +78,14 @@ func (t *OSHandler) ListAllFuncs() map[string]function.Func {
 	funcs[c.ALIAS_SYSCALL_MLOCKALL] = t.mlockall
 	funcs[c.ALIAS_SYSCALL_MUNLOCKALL] = t.munlockall
 	funcs[c.ALIAS_SYSCALL_PAGE_SIZE] = t.page_size
+	funcs[c.ALIAS_SYSCALL_FUTEX_WAIT] = t.futex_wait
+	funcs[c.ALIAS_SYSCALL_FUTEX_WAKE] = t.futex_wake
+	funcs[c.ALIAS_SYSCALL_FUTEX_WAIT_BITSET] = t.futex_wait_bitset
+	funcs[c.ALIAS_SYSCALL_FUTEX_WAKE_BITSET] = t.futex_wake_bitset
+	funcs[c.ALIAS_SYSCALL_FUTEX_REQUEUE] = t.futex_requeue
+	funcs[c.ALIAS_SYSCALL_FUTEX_CMP_REQUEUE] = t.futex_cmp_requeue
+	funcs[c.ALIAS_SYSCALL_FUTEX_WAKE_ONE] = t.futex_wake_one
+	funcs[c.ALIAS_SYSCALL_FUTEX_WAKE_ALL] = t.futex_wake_all
 
 	return funcs
 }
@@ -374,5 +382,45 @@ func (t *OSHandler) munlockall(typeHandler *typedef.TypeHandler, module *ir.Modu
 
 func (t *OSHandler) page_size(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	fn := c.Instance.Funcs[c.FUNC_SYSCALL_PAGE_SIZE]
+	return libutils.CallCFunc(typeHandler, fn, bh, args)
+}
+
+func (t *OSHandler) futex_wait(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	fn := c.Instance.Funcs[c.FUNC_SYSCALL_FUTEX_WAIT]
+	return libutils.CallCFunc(typeHandler, fn, bh, args)
+}
+
+func (t *OSHandler) futex_wake(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	fn := c.Instance.Funcs[c.FUNC_SYSCALL_FUTEX_WAKE]
+	return libutils.CallCFunc(typeHandler, fn, bh, args)
+}
+
+func (t *OSHandler) futex_wake_one(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	fn := c.Instance.Funcs[c.FUNC_SYSCALL_FUTEX_WAKE_ONE]
+	return libutils.CallCFunc(typeHandler, fn, bh, args)
+}
+
+func (t *OSHandler) futex_wake_all(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	fn := c.Instance.Funcs[c.FUNC_SYSCALL_FUTEX_WAKE_ALL]
+	return libutils.CallCFunc(typeHandler, fn, bh, args)
+}
+
+func (t *OSHandler) futex_wait_bitset(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	fn := c.Instance.Funcs[c.FUNC_SYSCALL_FUTEX_WAIT_BITSET]
+	return libutils.CallCFunc(typeHandler, fn, bh, args)
+}
+
+func (t *OSHandler) futex_wake_bitset(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	fn := c.Instance.Funcs[c.FUNC_SYSCALL_FUTEX_WAKE_BITSET]
+	return libutils.CallCFunc(typeHandler, fn, bh, args)
+}
+
+func (t *OSHandler) futex_requeue(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	fn := c.Instance.Funcs[c.FUNC_SYSCALL_FUTEX_REQUEUE]
+	return libutils.CallCFunc(typeHandler, fn, bh, args)
+}
+
+func (t *OSHandler) futex_cmp_requeue(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	fn := c.Instance.Funcs[c.FUNC_SYSCALL_FUTEX_CMP_REQUEUE]
 	return libutils.CallCFunc(typeHandler, fn, bh, args)
 }
