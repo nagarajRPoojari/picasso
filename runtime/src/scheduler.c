@@ -1,21 +1,3 @@
-#include <ucontext.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <pthread.h>
-#include <sys/epoll.h>
-#include <sys/mman.h>
-#include <signal.h>
-#include <stdint.h> 
-#include <semaphore.h>
-#include <stdatomic.h>
-#include <signal.h>
-#include <ffi.h>
-#include <stdarg.h>
-
 #include "scheduler.h"
 #include "diskio.h"
 #include "queue.h"
@@ -24,6 +6,19 @@
 #include "gc.h"
 #include "initutils.h"
 #include "sigerr.h"
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#include <sys/epoll.h>
+#include <sys/mman.h>
+#include <semaphore.h>
+#include <stdatomic.h>
+#include <ffi.h>
+#include <stdarg.h>
 
 __thread task_t* current_task;
 
