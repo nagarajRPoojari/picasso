@@ -28,9 +28,7 @@ func (t *Pipeline) predeclareInterfraces(sourcePkg state.PackageEntry) {
 }
 
 func (t *Pipeline) registerTypes() {
-	tp := []string{c.TYPE_ATOMIC_BOOL, c.TYPE_ATOMIC_CHAR, c.TYPE_ATOMIC_SHORT, c.TYPE_ATOMIC_INT}
-	for _, tpc := range tp {
-		udt := t.st.CI.Types[tpc]
+	for tpc, udt := range t.st.CI.Types {
 		t.st.Module.NewTypeDef(tpc, udt)
 		mc := &typedef.MetaClass{
 			FieldIndexMap:     make(map[string]int),
