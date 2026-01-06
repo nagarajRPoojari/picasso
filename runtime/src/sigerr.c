@@ -1,5 +1,5 @@
-#include "sigerr.h"
-#define _GNU_SOURCE
+#include "platform.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <sys/mman.h>
 
+#include "sigerr.h"
 
 static void print_stacktrace(void) {
     unw_cursor_t cursor;

@@ -1,20 +1,5 @@
-
-#define _GNU_SOURCE
-#include <ucontext.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <pthread.h>
-#include <sys/epoll.h>
-#include <signal.h>
+#include "platform.h"
 #include <liburing.h>
-#include <string.h> 
-#include <ffi.h>
-#include <stdarg.h>
-
 #include "start.h"
 #include "array.h"
 #include "ggc.h"

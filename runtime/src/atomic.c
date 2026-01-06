@@ -1,3 +1,4 @@
+#include "platform.h"
 #include "atomic.h"
 #include <stdatomic.h>
 #include <stdint.h>

@@ -1,8 +1,6 @@
 #ifndef OS_H
 #define OS_H
 
-#define _DEFAULT_SOURCE
-#define _GNU_SOURCE
 #include <stdint.h>
 #include <stddef.h>
 #include <unistd.h>

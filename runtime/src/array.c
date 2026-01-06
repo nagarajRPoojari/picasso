@@ -1,3 +1,4 @@
+#include "platform.h"
 #include "array.h"
 #include "alloc.h"
 #include <stdlib.h>

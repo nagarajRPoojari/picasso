@@ -1,5 +1,5 @@
 
-#define _GNU_SOURCE
+#include "platform.h"
 #include "initutils.h"
 
 /**

@@ -1,10 +1,5 @@
-#define _GNU_SOURCE
+#include "platform.h"
 
-#include "netio.h"
-#include "task.h"
-#include "scheduler.h"
-#include "initutils.h"
-#include "queue.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -23,6 +18,12 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <signal.h>
+
+#include "netio.h"
+#include "task.h"
+#include "scheduler.h"
+#include "initutils.h"
+#include "queue.h"
 
 extern __thread task_t *current_task;
 extern int netio_epoll_id;

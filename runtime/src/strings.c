@@ -1,9 +1,12 @@
-#include "str.h"
+#include "platform.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <pthread.h>
+
+#include "str.h"
 #include "alloc.h"
 
 extern __thread arena_t* __arena__;
