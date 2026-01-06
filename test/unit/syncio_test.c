@@ -156,7 +156,7 @@ void test__public__sprintf(void) {
 void test__public__sfread(void) {
     FILE* file = fopen("test/data/test__public__sfread.txt", "r+");
 
-    Array* buf = mock_alloc_array(1024, sizeof(size_t), 1);
+    __public__array_t* buf = mock_alloc_array(1024, sizeof(size_t), 1);
     ssize_t r = __public__sfread((char*)file, buf, 1024, 0);
     
     TEST_ASSERT_EQUAL(57, r);
@@ -166,7 +166,7 @@ void test__public__sfread(void) {
 void test__public__sfwrite(void) {
     FILE* file = fopen("test/data/test__public__swrite.txt", "w");
     
-    Array* buf = mock_alloc_array(10, sizeof(size_t), 1);
+    __public__array_t* buf = mock_alloc_array(10, sizeof(size_t), 1);
     for(int i=0; i<10; i++) buf->data[i] = 'a' + i%26;
     ssize_t r = __public__sfwrite((char*)file, buf, 10, 0);
     
