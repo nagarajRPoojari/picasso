@@ -23,12 +23,12 @@ void tearDown(void) {
     /* @todo: graceful termination */
 }
 
-Array* mock_alloc_array(int count, int elem_size, int rank) {
+__public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
     size_t data_size = (size_t)count * elem_size;
     size_t shape_size = (size_t)rank * sizeof(int64_t);
-    size_t total_size = sizeof(Array) + data_size + shape_size;
+    size_t total_size = sizeof(__public__array_t) + data_size + shape_size;
 
-    Array* arr = (Array*)allocate(__test__global__arena__, total_size);
+    __public__array_t* arr = (__public__array_t*)allocate(__test__global__arena__, total_size);
 
     
     arr->data = (int8_t*)(arr + 1); 
@@ -93,7 +93,7 @@ static void* __public__ascan_thread_func(void* arg) {
     (void)arg;
 
     int saved_stdin;
-    Array *buf;
+    __public__array_t *buf;
 
     redirect_stdin_pipe("dummy input from user\n", &saved_stdin);
     
