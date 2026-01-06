@@ -1,10 +1,6 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-
-#define _GNU_SOURCE
-#define _POSIX_C_SOURCE 200809L
-
 #include <signal.h>
 #include <sys/mman.h>
 #include <unistd.h>

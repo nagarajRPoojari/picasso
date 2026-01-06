@@ -1,3 +1,4 @@
+#include "platform.h"
 #include "ggc.h"
 #include <stdio.h>
 #include <pthread.h>

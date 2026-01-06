@@ -1,12 +1,4 @@
-#include "scheduler.h"
-#include "diskio.h"
-#include "queue.h"
-#include "task.h"
-#include "alloc.h"
-#include "gc.h"
-#include "initutils.h"
-#include "sigerr.h"
-
+#include "platform.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -19,6 +11,15 @@
 #include <stdatomic.h>
 #include <ffi.h>
 #include <stdarg.h>
+
+#include "scheduler.h"
+#include "diskio.h"
+#include "queue.h"
+#include "task.h"
+#include "alloc.h"
+#include "gc.h"
+#include "initutils.h"
+#include "sigerr.h"
 
 __thread task_t* current_task;
 

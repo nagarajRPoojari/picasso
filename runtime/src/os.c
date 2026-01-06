@@ -6,8 +6,7 @@
  *
  * Linux-specific implementation.
  */
-
-#define _GNU_SOURCE
+#include "platform.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <unistd.h>

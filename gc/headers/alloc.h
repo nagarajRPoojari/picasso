@@ -1,7 +1,6 @@
 #ifndef ALLOC_H
 #define ALLOC_H
 
-#define _GNU_SOURCE
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>

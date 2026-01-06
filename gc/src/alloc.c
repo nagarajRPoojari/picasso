@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -8,6 +7,7 @@
 #include <sys/mman.h>
 #include <stdbool.h>
 #include <limits.h>
+
 #include "alloc.h"
 
 /* utils */

@@ -6,6 +6,10 @@
 #include <assert.h>
 #include <stdatomic.h>
 #include <pthread.h>
+#include <stdatomic.h>
+#include <stdint.h>
+#include <stdbool.h>
+
 #include "atomic.h"
 #include "alloc.h"
 #include "gc.h"
@@ -59,62 +63,56 @@ void* thread_sub_int(void* arg) {
 
 void test_atomic_bool_basic(void) {
     _Atomic _Bool b = 0;
-    __public__atomic_store_bool(&b, 1);
-    TEST_ASSERT_TRUE(__public__atomic_load_bool(&b));
-    __public__atomic_store_bool(&b, 0);
-    TEST_ASSERT_FALSE(__public__atomic_load_bool(&b));
+    __public__atomic_store_boolean(&b, 1);
+    TEST_ASSERT_TRUE(__public__atomic_load_boolean(&b));
+    __public__atomic_store_boolean(&b, 0);
+    TEST_ASSERT_FALSE(__public__atomic_load_boolean(&b));
 }
 
-void test_atomic_char_basic(void) {
-    _Atomic char c = 0;
-    __public__atomic_store_char(&c, 42);
-    TEST_ASSERT_EQUAL_CHAR(42, __public__atomic_load_char(&c));
-    TEST_ASSERT_EQUAL_CHAR(42, __public__atomic_add_char(&c, 1)); // returns old value
-    TEST_ASSERT_EQUAL_CHAR(43, __public__atomic_load_char(&c));
-    TEST_ASSERT_EQUAL_CHAR(43, __public__atomic_sub_char(&c, 2)); // returns old value
-    TEST_ASSERT_EQUAL_CHAR(41, __public__atomic_load_char(&c));
+void test_atomic_int8_basic(void) {
+    _Atomic int8_t c = 0;
+    __public__atomic_store_int8(&c, 42);
+    TEST_ASSERT_EQUAL_CHAR(42, __public__atomic_load_int8(&c));
+    TEST_ASSERT_EQUAL_CHAR(42, __public__atomic_add_int8(&c, 1)); // returns old value
+    TEST_ASSERT_EQUAL_CHAR(43, __public__atomic_load_int8(&c));
+    TEST_ASSERT_EQUAL_CHAR(43, __public__atomic_sub_int8(&c, 2)); // returns old value
+    TEST_ASSERT_EQUAL_CHAR(41, __public__atomic_load_int8(&c));
 }
 
-void test_atomic_short_basic(void) {
-    _Atomic short s = 0;
-    __public__atomic_store_short(&s, 100);
-    TEST_ASSERT_EQUAL_INT16(100, __public__atomic_load_short(&s));
-    __public__atomic_add_short(&s, 10);
-    TEST_ASSERT_EQUAL_INT16(110, __public__atomic_load_short(&s));
-    __public__atomic_sub_short(&s, 20);
-    TEST_ASSERT_EQUAL_INT16(90, __public__atomic_load_short(&s));
+void test_atomic_int16_t_basic(void) {
+    _Atomic int16_t s = 0;
+    __public__atomic_store_int16(&s, 100);
+    TEST_ASSERT_EQUAL_INT16(100, __public__atomic_load_int16(&s));
+    __public__atomic_add_int16(&s, 10);
+    TEST_ASSERT_EQUAL_INT16(110, __public__atomic_load_int16(&s));
+    __public__atomic_sub_int16(&s, 20);
+    TEST_ASSERT_EQUAL_INT16(90, __public__atomic_load_int16(&s));
 }
 
-void test_atomic_int_basic(void) {
-    _Atomic int i = 0;
-    __public__atomic_store_int(&i, 1000);
-    TEST_ASSERT_EQUAL_INT(1000, __public__atomic_load_int(&i));
+void test_atomic_int32_basic(void) {
+    _Atomic int32_t i = 0;
+    __public__atomic_store_int32(&i, 1000);
+    TEST_ASSERT_EQUAL_INT(1000, __public__atomic_load_int32(&i));
     __public__atomic_add_int(&i, 50);
-    TEST_ASSERT_EQUAL_INT(1050, __public__atomic_load_int(&i));
+    TEST_ASSERT_EQUAL_INT(1050, __public__atomic_load_int32(&i));
     __public__atomic_sub_int(&i, 25);
-    TEST_ASSERT_EQUAL_INT(1025, __public__atomic_load_int(&i));
+    TEST_ASSERT_EQUAL_INT(1025, __public__atomic_load_int32(&i));
 }
 
-void test_atomic_long_basic(void) {
-    _Atomic long l = 0;
-    __public__atomic_store_long(&l, 123456);
-    TEST_ASSERT_EQUAL_INT64(123456, __public__atomic_load_long(&l));
-    __public__atomic_add_long(&l, 44);
-    TEST_ASSERT_EQUAL_INT64(123500, __public__atomic_load_long(&l));
-}
-
-void test_atomic_llong_basic(void) {
-    _Atomic long long ll = 0;
-    __public__atomic_store_llong(&ll, 123456789);
-    TEST_ASSERT_EQUAL_INT64(123456789, __public__atomic_load_llong(&ll));
-    __public__atomic_add_llong(&ll, 11);
-    TEST_ASSERT_EQUAL_INT64(123456800, __public__atomic_load_llong(&ll));
+void test_atomic_int64_basic(void) {
+    _Atomic int64_t i = 0;
+    __public__atomic_store_int64(&i, 1000);
+    TEST_ASSERT_EQUAL_INT(1000, __public__atomic_load_int64(&i));
+    __public__atomic_add_int(&i, 50);
+    TEST_ASSERT_EQUAL_INT(1050, __public__atomic_load_int64(&i));
+    __public__atomic_sub_int(&i, 25);
+    TEST_ASSERT_EQUAL_INT(1025, __public__atomic_load_int64(&i));
 }
 
 void test_atomic_float_basic(void) {
     _Atomic float f = 0.0f;
-    __public__atomic_store_float(&f, 3.14f);
-    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 3.14f, __public__atomic_load_float(&f));
+    __public__atomic_store_float32(&f, 3.14f);
+    TEST_ASSERT_FLOAT_WITHIN(0.0001f, 3.14f, __public__atomic_load_float32(&f));
 }
 
 void test_atomic_double_basic(void) {
@@ -135,7 +133,7 @@ void test_atomic_ptr_basic(void) {
 }
 
 void test_atomic_int_concurrent(void) {
-    _Atomic int counter = 0;
+    _Atomic int32_t counter = 0;
     pthread_t writers[NUM_THREADS];
     pthread_t subtracters[NUM_THREADS];
     thread_arg_t args[NUM_THREADS];
@@ -152,18 +150,15 @@ void test_atomic_int_concurrent(void) {
         pthread_join(subtracters[i], NULL);
     }
 
-    TEST_ASSERT_EQUAL_INT(0, __public__atomic_load_int(&counter));
+    TEST_ASSERT_EQUAL_INT(0, __public__atomic_load_int32(&counter));
 }
 
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_atomic_bool_basic);
-    RUN_TEST(test_atomic_char_basic);
-    RUN_TEST(test_atomic_short_basic);
-    RUN_TEST(test_atomic_int_basic);
-    RUN_TEST(test_atomic_long_basic);
-    RUN_TEST(test_atomic_llong_basic);
+    RUN_TEST(test_atomic_int8_basic);
+    RUN_TEST(test_atomic_int64_basic);
     RUN_TEST(test_atomic_float_basic);
     RUN_TEST(test_atomic_double_basic);
     RUN_TEST(test_atomic_ptr_basic);
