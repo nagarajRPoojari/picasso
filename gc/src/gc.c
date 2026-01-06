@@ -229,14 +229,18 @@ static void gc_sweep() {
     }
 }
 
+void gc_collect() {
+    gc_stop_the_world();
+
+    gc_mark();
+    gc_sweep();
+
+    gc_resume_world();
+}
+
 void gc_run() {
     while (1) {
-        gc_stop_the_world();
-
-        gc_mark();
-        gc_sweep();
-
-        gc_resume_world();
+        gc_collect();
         usleep(GC_TIMEPERIOD);
     }
 }

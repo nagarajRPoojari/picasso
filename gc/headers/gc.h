@@ -7,7 +7,7 @@
 #include "scheduler.h" // external: runtime
 
 
-#define GC_TIMEPERIOD (900* 1000) // in microseconds
+#define GC_TIMEPERIOD (10 * 1000000)
 #define MAX_ARENAS 12
 #define MAX_SCHEDULERS 12 
 
@@ -33,6 +33,7 @@ arena_t* gc_create_global_arena();
 arena_t* gc_create_arena(kernel_thread_t* th);
 
 void gc_init(); 
+void gc_collect();
 void gc_stop_the_world();
 void gc_resume_world();
 
