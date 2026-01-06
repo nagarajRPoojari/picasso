@@ -11,7 +11,7 @@ typedef struct {
     int64_t* shape; 
     int64_t length; 
     int64_t rank;  
-} Array;
+} __public__array_t;
 
 /**
  * @brief allocate block of memory for array through custom allocator
@@ -19,7 +19,7 @@ typedef struct {
  * @param count length of array
  * @param elem_size size of each element
  */
-Array* __public__alloc_array(int count, int elem_size, int rank);
+__public__array_t* __public__alloc_array(int count, int elem_size, int rank);
 
 
 /**
@@ -27,5 +27,5 @@ Array* __public__alloc_array(int count, int elem_size, int rank);
  * 
  * @param arr array struct instance
  */
-void __public__debug_array_info(Array* arr);
+void __public__debug_array_info(__public__array_t* arr);
 #endif
