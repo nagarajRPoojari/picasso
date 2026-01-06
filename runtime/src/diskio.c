@@ -279,14 +279,14 @@ void async_file_write() {
  *
  * @return Pointer to the allocated buffer on success, or NULL on error.
  */
-Array* __public__ascan(int n) {
+__public__array_t* __public__ascan(int n) {
     if (n <= 0)
         return NULL;
 
     task_t *t = current_task;
 
     /* +1 for NUL */
-    Array* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
+    __public__array_t* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
     if (!buf)
         return NULL;
 
@@ -399,7 +399,7 @@ ssize_t __public__aprintf(const char* fmt, ...) {
  *
  * @return Number of bytes read on success (ssize_t), or -1 on error.
  */
-ssize_t __public__afread(char* f, Array* buf, int n, int offset) {
+ssize_t __public__afread(char* f, __public__array_t* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0)
         return -1;
 
@@ -451,7 +451,7 @@ ssize_t __public__afread(char* f, Array* buf, int n, int offset) {
  *
  * @return Number of bytes written on success (ssize_t), or -1 on error.
  */
-ssize_t __public__afwrite(char* f, Array* buf, int n, int offset) {
+ssize_t __public__afwrite(char* f, __public__array_t* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0)
         return -1;
 
@@ -500,10 +500,10 @@ ssize_t __public__afwrite(char* f, Array* buf, int n, int offset) {
  * @return Pointer to the allocated buffer containing the read data on success,
  *         or NULL on allocation failure or read error.
  */
-Array* __public__sscan(int n) {
+__public__array_t* __public__sscan(int n) {
     if (n <= 0) return NULL;
 
-    Array* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
+    __public__array_t* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
     if (!buf) return NULL;
 
     ssize_t r;
@@ -599,7 +599,7 @@ ssize_t __public__sprintf(const char *fmt, ...) {
  * @return Number of bytes actually read on success (0 indicates EOF),
  *         or -1 on error.
  */
-ssize_t __public__sfread(char* f, Array* buf, int n, int offset) {
+ssize_t __public__sfread(char* f, __public__array_t* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
@@ -642,7 +642,7 @@ ssize_t __public__sfread(char* f, Array* buf, int n, int offset) {
  * @return Number of bytes actually written on success,
  *         or -1 on error.
  */
-ssize_t __public__sfwrite(char* f, Array* buf, int n, int offset) {
+ssize_t __public__sfwrite(char* f, __public__array_t* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
