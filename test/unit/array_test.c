@@ -39,7 +39,7 @@ void test_alloc_array_basic(void) {
     int elem_size = sizeof(int);
     int rank = 3;
 
-    Array* arr = __public__alloc_array(count, elem_size, rank);
+    __public__array_t* arr = __public__alloc_array(count, elem_size, rank);
 
     TEST_ASSERT_NOT_NULL(arr);
     TEST_ASSERT_NOT_NULL(arr->data);
@@ -57,7 +57,7 @@ void test_alloc_array_zero_rank(void) {
     int elem_size = sizeof(double);
     int rank = 0;
 
-    Array* arr = __public__alloc_array(count, elem_size, rank);
+    __public__array_t* arr = __public__alloc_array(count, elem_size, rank);
 
     TEST_ASSERT_NOT_NULL(arr);
     TEST_ASSERT_NOT_NULL(arr->data);
@@ -75,7 +75,7 @@ void test_alloc_array_zero_count(void) {
     int elem_size = sizeof(int64_t);
     int rank = 2;
 
-    Array* arr = __public__alloc_array(count, elem_size, rank);
+    __public__array_t* arr = __public__alloc_array(count, elem_size, rank);
 
     TEST_ASSERT_NOT_NULL(arr);
     TEST_ASSERT_NOT_NULL(arr->data); // still allocated, but size 0
@@ -92,7 +92,7 @@ void test_alloc_array_large(void) {
     int elem_size = sizeof(float);
     int rank = 5;
 
-    Array* arr = __public__alloc_array(count, elem_size, rank);
+    __public__array_t* arr = __public__alloc_array(count, elem_size, rank);
 
     TEST_ASSERT_NOT_NULL(arr);
     TEST_ASSERT_NOT_NULL(arr->data);
@@ -110,7 +110,7 @@ void test_alloc_array_single_element(void) {
     int elem_size = sizeof(char);
     int rank = 1;
 
-    Array* arr = __public__alloc_array(count, elem_size, rank);
+    __public__array_t* arr = __public__alloc_array(count, elem_size, rank);
 
     TEST_ASSERT_NOT_NULL(arr);
     TEST_ASSERT_NOT_NULL(arr->data);
