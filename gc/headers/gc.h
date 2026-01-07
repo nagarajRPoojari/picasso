@@ -30,10 +30,12 @@ typedef struct gc_state {
 } gc_state_t;
 
 arena_t* gc_create_global_arena();
-arena_t* gc_create_arena(kernel_thread_t* th);
+arena_t* gc_create_arena();
+void gc_register_root(task_t* t);
+void gc_unregister_root(task_t* t);
 
 void gc_init(); 
-void gc_collect();
+void gc_start();
 void gc_stop_the_world();
 void gc_resume_world();
 

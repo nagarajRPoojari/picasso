@@ -69,20 +69,24 @@ static inline ssize_t get_size(free_chunk_t* fc) {
 }
 
 static inline ssize_t get_prev_size(free_chunk_t* fc) {
-    return fc->prev_size;
+    return fc->prev_size & __CHUNK_SIZE_MASK;
 }
 
 static inline ssize_t get_size_flags(free_chunk_t* fc) {
     return fc->size & __SIZE_BITS;
 }
 
+static inline ssize_t get_prev_size_flags(free_chunk_t* fc) {
+    return fc->prev_size & __SIZE_BITS;
+}
+
 static inline void set_size(free_chunk_t* fc, ssize_t size, ssize_t flags) {
     fc->size = size | flags;
 }
 
-static inline void set_prev_size(free_chunk_t* fc, ssize_t size) {
+static inline void set_prev_size(free_chunk_t* fc, ssize_t size, ssize_t flags) {
     assert(size != 0);
-    fc->prev_size = size;
+    fc->prev_size = size | flags;
 }
 
 static inline free_chunk_t* next_chunk(free_chunk_t* fc) {
@@ -94,7 +98,7 @@ static inline free_chunk_t* next_chunk(free_chunk_t* fc) {
 static inline free_chunk_t* prev_chunk(free_chunk_t* fc) {
     /* unsafe */
     return (free_chunk_t*)(
-        (char*)fc - HEADER_SIZE - fc->prev_size
+        (char*)fc - HEADER_SIZE - get_prev_size(fc)
     );
 }
 
@@ -312,7 +316,9 @@ static void insert_into_unsortedbin(arena_t* ar, free_chunk_t* fc) {
 
     unset_curr_inuse(fc);
     unset_prev_inuse(next_chunk(fc));
-    set_prev_size(next_chunk(fc), get_size(fc));
+
+    free_chunk_t* next_fc = next_chunk(fc);
+    set_prev_size(next_fc, get_size(fc), get_prev_size_flags(next_fc));
     
     /* set next_sizeptr & prev_sizeptr to NULL */
     /* by default set it to NULL, only when it goes to largebin it becomes a */
@@ -393,7 +399,7 @@ static free_chunk_t* largebin_search(arena_t* ar, size_t requested_size) {
 
 
                     set_size(remainder, remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
-                    set_prev_size(next_chunk(remainder), remainder_payload_size);
+                    set_prev_size(next_chunk(remainder), remainder_payload_size, 0);
                     /* unset_prev_inuse(next_chunk(remainder)) */
                     insert_into_unsortedbin(ar, remainder);
 
@@ -437,7 +443,7 @@ static free_chunk_t* unsortedbin_search(arena_t* ar, size_t requested_size) {
 
 
                 set_size(remainder, remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
-                set_prev_size(next_chunk(remainder), remainder_payload_size);
+                set_prev_size(next_chunk(remainder), remainder_payload_size, 0);
                 /* unset_prev_inuse(next_chunk(remainder)) */
                 insert_into_unsortedbin(ar, remainder);
 
@@ -480,7 +486,7 @@ static free_chunk_t* carve_from_top_chunk(arena_t* ar, size_t requested_size) {
             free_chunk_t* remainder = (free_chunk_t*)((char*)curr + HEADER_SIZE + requested_size);
 
             set_size(remainder, remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
-            set_prev_size(next_chunk(remainder), remainder_payload_size);
+            set_prev_size(next_chunk(remainder), remainder_payload_size, 0);
             /* unset_prev_inuse(next_chunk(remainder)) */
 
             set_size(curr, requested_size, get_size_flags(curr));
@@ -570,7 +576,7 @@ static free_chunk_t* forward_coalesce(arena_t* ar, free_chunk_t* fc) {
     if(next_fc == ar->top_chunk) {
         size_t updated_size = get_size(fc) + HEADER_SIZE + get_size(next_fc);
         set_size(fc, updated_size,  get_size_flags(fc));
-        set_prev_size(next_chunk(fc), updated_size);
+        set_prev_size(next_chunk(fc), updated_size, 0);
         ar->top_chunk = fc;
 
         return NULL;
@@ -583,7 +589,8 @@ static free_chunk_t* forward_coalesce(arena_t* ar, free_chunk_t* fc) {
     set_size(fc, updated_size,  get_size_flags(fc));
     
     /* need to update prev_size of next to next chunk */
-    set_prev_size(next_chunk(fc), updated_size);
+    next_fc = next_chunk(fc);
+    set_prev_size(next_fc, updated_size, get_prev_size_flags(next_fc));
 
     return fc;
 }
@@ -601,7 +608,8 @@ static free_chunk_t* backward_coalesce(arena_t* ar, free_chunk_t* fc) {
     set_size(prev_fc, updated_size,  get_size_flags(prev_fc));
 
     /* need to update prev_size of next to next chunk */
-    set_prev_size(next_chunk(prev_fc), updated_size);
+    fc = next_chunk(prev_fc);
+    set_prev_size(fc, updated_size, get_prev_size_flags(fc));
     return prev_fc;
 }
 
