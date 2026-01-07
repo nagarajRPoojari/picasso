@@ -178,7 +178,7 @@ int init_scheduler() {
         kernel_thread_map[i]->id = i;
         kernel_thread_map[i]->current = NULL;
         safe_q_init(&kernel_thread_map[i]->ready_q, SCHEDULER_LOCAL_QUEUE_SIZE);
-        unsafe_q_init(&kernel_thread_map[i]->wait_q, SCHEDULER_LOCAL_QUEUE_SIZE);
+        unsafe_ioq_init(&kernel_thread_map[i]->wait_q, SCHEDULER_LOCAL_QUEUE_SIZE);
 
         pthread_create(&sched_threads[i], NULL, scheduler_run, kernel_thread_map[i]);
     }
