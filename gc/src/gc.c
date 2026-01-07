@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stddef.h>
+#include <assert.h>
 
 #include "queue.h"
 #include "alloc.h"
@@ -13,14 +14,12 @@ gc_state_t gc_state;
 
 /* arenas to keep track of. Should be initialized by arena_create */
 arena_t* arenas[MAX_ARENAS];
+int arenas_count;
 
 arena_t* global_arena;
 
-int arenas_count;
-
-/* keep track of kernel/scheduler threads */
-kernel_thread_t* kts[MAX_SCHEDULERS];
-int kts_count;
+/* all roots to be scanned */
+safe_gcqueue_t* roots;
 
 /* forward declarations */
 static void gc_mark_mem_region(char *start, char *end);
@@ -31,10 +30,19 @@ arena_t* gc_create_global_arena() {
     return ar;
 }
 
-arena_t* gc_create_arena(kernel_thread_t* kt) {
-    /* register thread*/
-    kts[kts_count++] = kt;
+void gc_register_root(task_t* t) {
+    assert(roots != NULL);
+    assert(t != NULL);
+    safe_gcq_push(roots, t);
+}
 
+void gc_unregister_root(task_t* t) {
+    assert(roots != NULL);
+    assert(t != NULL);
+    safe_gcq_remove(roots, t);
+}
+
+arena_t* gc_create_arena() {
     if(arenas_count + 1 > MAX_ARENAS) {
         perror("failed to create new arena: arena count reached max\n");
         return NULL;
@@ -157,45 +165,21 @@ static void gc_mark_task(ucontext_t *ctx) {
 }
 
 static void gc_mark() {
+    wait_q_metadata_t* head = roots->head;
+    wait_q_metadata_t* tm = roots->head;
 
+    if(roots == NULL || head == NULL) return;
 
-    for(int kti = 0; kti < kts_count; kti++ ){
-
-        kernel_thread_t* kt = kts[kti];
-        /* It took 9hr to debug the issue. previously scanning only RUNNING task stack, 
-        need to scan all task stack. */
-        task_node_t* task_q_head = kt->ready_q.head;
-        while(task_q_head) {
-            task_t* t = task_q_head->t;
-            if(t->state != TASK_FINISHED)
-                gc_mark_task(&t->ctx);
-
-
-            task_q_head = task_q_head->next;
+    do {
+        task_t* t = tm->t;
+        if(t->state != TASK_FINISHED) {
+            // printf("[SCANNING] %p \n", t);
+            gc_mark_task(&t->ctx);
         }
 
-        wait_q_metadata_t* wait_q_head = kt->wait_q.head;
-        wait_q_metadata_t* curr = wait_q_head;
-        while(curr) {
-            task_t* t = curr->t;
-            if(t->state != TASK_FINISHED)
-                gc_mark_task(&t->ctx);
-                
-            curr = curr->fd;
-
-            if(curr == wait_q_head) break;
-        }
-
-        if (!kt->current) {
-            continue; 
-        }
-
-        if(kt->current->state != TASK_FINISHED)
-            gc_mark_task(&kt->current->ctx);
-
-    }
+        tm = tm->fd;
+    }while(tm != NULL && tm != head);
 }
-
 
 
 static void gc_sweep() {
@@ -230,24 +214,30 @@ static void gc_sweep() {
     }
 }
 
-void gc_collect() {
+static void gc_collect() {
     gc_stop_the_world();
-
+    
     gc_mark();
     gc_sweep();
-
+    
     gc_resume_world();
 }
 
-void gc_run() {
+static void gc_run() {
     while (1) {
         gc_collect();
         usleep(GC_TIMEPERIOD);
     }
 }
 
-
 void gc_init() {
+    roots = (safe_gcqueue_t*)malloc(sizeof(safe_gcqueue_t));
+    safe_gcq_init(roots, INT32_MAX);
+}
+
+void gc_start() {
+    assert(roots != NULL);
+
     atomic_store(&gc_state.world_stopped, 0);
     atomic_store(&gc_state.stopped_count, 0);
     atomic_store(&gc_state.total_threads, 0);
@@ -255,10 +245,9 @@ void gc_init() {
     pthread_cond_init(&gc_state.cv_mutators_stopped, 0);
     pthread_cond_init(&gc_state.cv_world_resumed, 0);
     pthread_cond_init(&gc_state.add_lock, 0);
-
-
+    
     pthread_t t;
-    pthread_create(&t, NULL, gc_run, 0);
+    pthread_create(&t, NULL, gc_run, NULL);
 }
 
 void gc_stop_the_world() {
