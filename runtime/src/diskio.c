@@ -97,7 +97,7 @@ void async_stdin_read(task_t *t) {
 
     io_uring_sqe_set_data(sqe, t);
 
-    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
 
     int ret = io_uring_submit(ring);
     if (ret < 0) {
@@ -148,7 +148,7 @@ void async_stdout_write() {
     io_uring_prep_write(sqe, STDOUT_FILENO, t->io.buf, t->io.req_n, 0);
     io_uring_sqe_set_data(sqe, t);
 
-    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
 
     int ret = io_uring_submit(ring);
     if (ret < 0) {
@@ -198,7 +198,7 @@ void async_file_read() {
 
     io_uring_sqe_set_data(sqe, t);
 
-    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
 
     int ret = io_uring_submit(ring);
     if (ret < 0) {
@@ -249,7 +249,7 @@ void async_file_write() {
 
     io_uring_sqe_set_data(sqe, t);
 
-    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
 
     int ret = io_uring_submit(ring);
     if (ret < 0) {

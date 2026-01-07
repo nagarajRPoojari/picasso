@@ -116,7 +116,7 @@ ssize_t __public__net_accept(int64_t listen_fd) {
         ep_mod(epfd, listen_fd, t, EPOLLIN);
     }
 
-    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
 
     task_yield(kernel_thread_map[t->sched_id]);
     errno = t->io.io_err;
@@ -161,7 +161,7 @@ ssize_t __public__net_read(int64_t fd, __public__array_t *buf, size_t len) {
         ep_mod(epfd, fd, t, EPOLLIN);
     }
 
-    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
 
     task_yield(kernel_thread_map[t->sched_id]);
     errno = t->io.io_err;
@@ -206,7 +206,7 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) {
         ep_mod(epfd, fd, t, EPOLLOUT);
     }
 
-    unsafe_q_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
 
     task_yield(kernel_thread_map[t->sched_id]);
     errno = t->io.io_err;

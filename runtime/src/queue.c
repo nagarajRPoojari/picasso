@@ -35,7 +35,7 @@ void safe_q_init(safe_queue_t *q, int size) {
  * @param t Task to push.
  */
 void safe_q_push(safe_queue_t *q, task_t *t) {
-    task_node_t *n = allocate(__global__arena__, sizeof(*n)); /* need to be freed */
+    task_node_t *n = allocate(__global__arena__, sizeof(n)); /* need to be freed */
     n->t = t; n->next = NULL;
 
     pthread_mutex_lock(&q->lock);
@@ -121,7 +121,7 @@ task_t *safe_q_pop_wait(safe_queue_t *q) {
  * @param q Pointer to the queue to initialize.
  * @param size Maximum number of elements allowed in the queue.
  */
-void unsafe_q_init(unsafe_queue_t *q, int size) {
+void unsafe_ioq_init(unsafe_queue_t *q, int size) {
     q->head = NULL;
     q->size_limit = size;
 }
@@ -144,7 +144,7 @@ void unsafe_q_init(unsafe_queue_t *q, int size) {
  * @param q Pointer to the queue.
  * @param t Pointer to the task to insert.
  */
-void unsafe_q_push(unsafe_queue_t *q, task_t *t) {
+void unsafe_ioq_push(unsafe_queue_t *q, task_t *t) {
     wait_q_metadata_t *n = allocate(__global__arena__, sizeof(wait_q_metadata_t)); /* must be freed later */
     if (!n) abort();   /* optional but sane */
     n->t = t;
@@ -184,7 +184,7 @@ void unsafe_q_push(unsafe_queue_t *q, task_t *t) {
  *
  * @return 1 if the task was successfully removed, 0 otherwise.
  */
-int unsafe_q_remove(unsafe_queue_t *q, task_t *t) {
+int unsafe_ioq_remove(unsafe_queue_t *q, task_t *t) {
     wait_q_metadata_t *wq = t->wq;
     if (!wq || !q->head)
         return 0;
@@ -206,6 +206,116 @@ int unsafe_q_remove(unsafe_queue_t *q, task_t *t) {
     t->wq = NULL;
 
     release(__global__arena__, wq);
+    return 1;
+}
+
+/**
+ * @brief Initialize a thread-safe queue.
+ * 
+ * @param q Pointer to the queue to initialize.
+ * @param size Maximum number of elements allowed in the queue.
+ */
+void safe_gcq_init(safe_gcqueue_t *q, int size) {
+    q->head = NULL;
+    q->size_limit = size;
+
+    pthread_mutex_init(&q->lock, NULL);
+    pthread_cond_init(&q->cond, NULL);
+}
+
+/**
+ * @brief Insert a task into an safe intrusive wait queue.
+ *
+ * Allocates and attaches wait-queue metadata for the given task and inserts it
+ * into the queue. The queue is implemented as a circular doubly linked list,
+ * and the new element becomes the head of the queue.
+ *
+ * This operation is non-blocking and performs no synchronization; the caller
+ * must ensure external safety (e.g., single-threaded execution or proper
+ * locking). This function does not enforce any queue size limits and does not
+ * perform any wake-up or notification logic by itself.
+ *
+ * The allocated wait-queue metadata must be freed when the task is removed
+ * from the queue.
+ *
+ * @param q Pointer to the queue.
+ * @param t Pointer to the task to insert.
+ */
+void safe_gcq_push(safe_gcqueue_t *q, task_t *t) {
+    wait_q_metadata_t *n = allocate(__global__arena__, sizeof(wait_q_metadata_t)); /* must be freed later */
+    if (!n) abort();   /* optional but sane */
+    n->t = t;
+    t->gcq = n; 
+
+    pthread_mutex_lock(&q->lock);
+    /* empty queue */
+    if (!q->head) {
+        n->fd = n;
+        n->bk = n;
+        q->head = n;
+
+        // signal only one consumer thread about the availability
+        pthread_cond_signal(&q->cond);
+        pthread_mutex_unlock(&q->lock);
+        return;
+    }
+
+    wait_q_metadata_t *head = q->head;
+
+    n->fd = head;        
+    n->bk = head->bk;    
+
+    head->bk->fd = n;     
+    head->bk = n;        
+    q->head = n; 
+
+    // signal only one consumer thread about the availability
+    pthread_cond_signal(&q->cond);
+    pthread_mutex_unlock(&q->lock);
+}
+
+/**
+ * @brief Remove a specific task from an safe wait queue.
+ *
+ * Removes the given task's wait-queue metadata from the queue if present.
+ * This operation is non-blocking and performs no synchronization; the caller
+ * must ensure external safety (e.g., single-threaded access or proper locking).
+ *
+ * If the task is not associated with a wait queue or the queue is empty,
+ * the function does nothing.
+ *
+ * @param q Pointer to the queue from which the task should be removed.
+ * @param t Pointer to the task to remove.
+ *
+ * @return 1 if the task was successfully removed, 0 otherwise.
+ */
+int safe_gcq_remove(safe_gcqueue_t *q, task_t *t) {
+    pthread_mutex_lock(&q->lock);
+
+    wait_q_metadata_t *gcq = t->gcq;
+    if (!gcq || !q->head)
+        return 0;
+
+    if (gcq->fd == gcq) {
+        /* single element */
+        q->head = NULL;
+        pthread_mutex_unlock(&q->lock);
+    } else {
+
+        gcq->fd->bk = gcq->bk;
+        gcq->bk->fd = gcq->fd;
+
+        if (q->head == gcq)
+            q->head = gcq->fd;
+    }
+
+    gcq->fd = NULL;
+    gcq->bk = NULL;
+    t->gcq = NULL;
+
+    pthread_mutex_unlock(&q->lock);
+
+    release(__global__arena__, gcq);
     return 1;
 }
 

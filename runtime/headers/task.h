@@ -112,6 +112,7 @@ typedef struct task {
 
     wait_q_metadata_t* wq;
 
+    wait_q_metadata_t* gcq;
 } task_t;
 
 #endif

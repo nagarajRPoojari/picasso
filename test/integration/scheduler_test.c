@@ -70,11 +70,12 @@ int main(void) {
     __global__arena__ = gc_create_global_arena();
 
     srand(time(NULL));
+    gc_init();
 
     init_io();
     init_scheduler();
 
-    gc_init();
+    gc_start();
 
     RUN_TEST(test_scheduler_executes_tasks);
 

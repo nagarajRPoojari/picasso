@@ -28,7 +28,7 @@
  * Tasks pushed beyond this may need to go to a global queue or block.
  * @todo: use this
  */
-#define SCHEDULER_LOCAL_QUEUE_SIZE 4024
+#define SCHEDULER_LOCAL_QUEUE_SIZE 40240
 
 /** 
  * Size of the guard page used for stack overflow detection (in bytes).

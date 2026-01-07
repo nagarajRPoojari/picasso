@@ -145,6 +145,7 @@ void init_stack_signal_handler() {
  */
 void task_destroy(task_t *t) {
     if (!t) return;
+    gc_unregister_root(t);
 
     void* original_base = (char*)t->stack - PAGE_SIZE; 
     size_t total_size = t->stack_size + PAGE_SIZE;
@@ -214,7 +215,8 @@ void init_timer_signal_handler(void *arg) {
 
 task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
     task_t *t = allocate(__global__arena__, sizeof(task_t));
-
+    
+    
     if (!t) { 
         perror("calloc"); 
         exit(1); 
@@ -250,6 +252,8 @@ task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
 
     // make trampoline
     makecontext(&t->ctx, (void(*)(void))task_trampoline, 2, t, payload);
+
+    gc_register_root(t);
     return t;
 }
 
@@ -339,7 +343,7 @@ void* scheduler_run(void* arg) {
             atomic_fetch_add(&gc_state.total_threads, 1);
             pthread_mutex_unlock(&gc_state.add_lock);
 
-            unsafe_q_remove(&kt->wait_q, t);
+            unsafe_ioq_remove(&kt->wait_q, t);
 
             t->state = TASK_RUNNING;
             task_resume(t, kt);

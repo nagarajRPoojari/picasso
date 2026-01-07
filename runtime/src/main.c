@@ -20,9 +20,10 @@ int main(void) {
     init_io();
     init_scheduler();
 
-    thread(start, 0);
     gc_init();
+    thread(start, 0);
 
+    gc_start();
     wait_for_schedulers();
 
     clean_scheduler();

@@ -167,10 +167,12 @@ int main(void) {
     srand(time(NULL));
 
     __global__arena__ = gc_create_global_arena();
+    gc_init();
 
     init_io();
     init_scheduler();
-    gc_init();
+
+    gc_start();
 
     UNITY_BEGIN();
     RUN_TEST(test_netio_read_basic);
