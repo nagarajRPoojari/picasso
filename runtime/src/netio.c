@@ -277,7 +277,7 @@ ssize_t __public__net_dial(const char *addr, uint16_t port) {
     sa->sin_port = htons(port);
 
     if (inet_pton(AF_INET, addr, &sa->sin_addr) != 1) {
-        free(sa);
+        release(__arena__, sa);
         close(fd);
         errno = EINVAL;
         return -1;
@@ -286,12 +286,12 @@ ssize_t __public__net_dial(const char *addr, uint16_t port) {
     int r = connect(fd, (struct sockaddr *)sa, sizeof(*sa));
     if (r == 0) {
         /* connected immediately */
-        free(sa);
+        release(__arena__, sa);
         return fd;
     }
 
     if (errno != EINPROGRESS) {
-        free(sa);
+        release(__arena__, sa);
         close(fd);
         return -1;
     }
@@ -313,7 +313,7 @@ ssize_t __public__net_dial(const char *addr, uint16_t port) {
     int epfd = netio_epoll_id;
     if (ep_add(epfd, fd, t, EPOLLOUT) < 0) {
         if (errno != EEXIST){
-            free(sa);
+            release(__arena__, sa);
             close(fd);
             return -1;
         }
@@ -422,21 +422,22 @@ void *netio_worker(void *arg) {
             }
 
             case IO_READ: {
-                ssize_t r = read(
+                ssize_t r = recv(
                     t->io.fd,
                     (char *)t->io.buf + t->io.offset,
-                    t->io.req_n - t->io.offset
+                    t->io.req_n - t->io.offset,
+                    0   // no flags: identical to read() for TCP
                 );
 
                 if (r > 0) {
                     t->io.offset += r;
                     t->io.done_n = t->io.offset;
                 } else if (r == 0) {
-                    /* EOF */
+                    /* Peer performed orderly shutdown (TCP FIN) */
                     t->io.done_n = t->io.offset;
                     ep_del(epfd, t->io.fd);
                 } else {
-                    if (errno == EAGAIN) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         ep_mod(epfd, t->io.fd, t, EPOLLIN);
                         break;
                     }
@@ -453,14 +454,15 @@ void *netio_worker(void *arg) {
             }
 
             case IO_WRITE: {
-                ssize_t w = write(
+                ssize_t w = send(
                     t->io.fd,
                     (char *)t->io.buf + t->io.offset,
-                    t->io.req_n - t->io.offset
+                    t->io.req_n - t->io.offset,
+                    MSG_NOSIGNAL
                 );
 
                 if (w < 0) {
-                    if (errno == EAGAIN) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         ep_mod(epfd, t->io.fd, t, EPOLLOUT);
                         break;
                     }
