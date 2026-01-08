@@ -96,8 +96,40 @@ cc_test(
 )
 
 cc_test(
-    name = "netio_test",
+    name = "netio_test_read",
     srcs = ["integration/netio_test/anread.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "netio_test_write",
+    srcs = ["integration/netio_test/anwrite.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "sync_rwmutex_rlock_test",
+    srcs = ["integration/sync/rwmutex/rlock.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "sync_rwmutex_rwlock_test",
+    srcs = ["integration/sync/rwmutex/rwlock.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "sync_mutex_test",
+    srcs = ["integration/sync/mutex.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,

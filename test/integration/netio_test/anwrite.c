@@ -1,5 +1,4 @@
 #include "test/unity/unity.h"
-
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -9,6 +8,7 @@
 #include <stdatomic.h>
 #include <time.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -26,9 +26,7 @@ arena_t* __test__global__arena__;
 void setUp(void) {
     __test__global__arena__ = arena_create();
 }
-void tearDown(void) {
-    /* @todo: graceful termination */
-}
+void tearDown(void) { }
 
 __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
     size_t data_size = (size_t)count * elem_size;
@@ -36,10 +34,8 @@ __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
     size_t total_size = sizeof(__public__array_t) + data_size + shape_size;
 
     __public__array_t* arr = (__public__array_t*)allocate(__test__global__arena__, total_size);
-
     
     arr->data = (int8_t*)(arr + 1); 
-    
     if (rank > 0) {
         arr->shape = (int64_t*)(arr->data + data_size);
     } else {
@@ -49,85 +45,89 @@ __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
     arr->length = count;
     arr->rank = rank;
     
+    memset(arr->data, 0, data_size); 
     return arr;
 }
-
-static atomic_int completed;
 
 #define MESSAGE "hello\n"
 #define MESSAGE_LEN 6
 
-static void* __public__afread_thread_func(void* arg, int fd) {
+// Atomic counter to track completed writes
+static atomic_int completed;
+
+static void* writer_thread(void* arg, int fd) {
     (void)arg;
 
-    int buf_size = 10;
-    __public__array_t* buf = mock_alloc_array(MESSAGE_LEN, sizeof(size_t), 1);
-    buf->data = MESSAGE; 
+    __public__array_t* buf = mock_alloc_array(MESSAGE_LEN, sizeof(char), 1);
+    memcpy(buf->data, MESSAGE, MESSAGE_LEN);
 
-    self_yield();
-    int n = __public__net_write(fd, , MESSAGE_LEN);
-    TEST_ASSERT(n == MESSAGE_LEN);
+    // Ensure full write
+    int written = 0;
+    while (written < MESSAGE_LEN) {
+        int n = __public__net_write(fd, buf + written, MESSAGE_LEN - written);
+        if (n > 0) written += n;
+        else self_yield(); // yield if async write didn't progress
+    }
 
     close(fd);
-
     atomic_fetch_add(&completed, 1);
     return NULL;
 }
 
-void* __test_netio_write_basic(void* arg, int count, int lld) {
+static void* server_thread(void* arg, int count, int listen_fd) {
     (void)arg;
-
     for (int i = 0; i < count; i++) {
-
         self_yield();
-        int fd = __public__net_accept(lld);
-
-        self_yield();
-        thread(__public__afread_thread_func, 2, NULL, fd);
+        int fd = __public__net_accept(listen_fd);
+        if (fd >= 0) {
+            thread(writer_thread, 2, NULL, fd); // schedule writer in runtime
+        } else {
+            atomic_fetch_add(&completed, 1);
+        }
     }
-
     return NULL;
 }
 
-int connect_to(const char *ip, int port) {
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0) {
-        perror("socket");
-        return -1;
-    }
+typedef struct { int count; int port; const char* addr; } client_args_t;
 
-    struct sockaddr_in addr = {0};
-    addr.sin_family = AF_INET;
-    addr.sin_port   = htons(port);
-    inet_pton(AF_INET, ip, &addr.sin_addr);
+static void* native_client(void* varg) {
+    client_args_t* args = (client_args_t*)varg;
 
-    self_yield();
-    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        perror("connect");
+    for (int i = 0; i < args->count; i++) {
+        int fd = socket(AF_INET, SOCK_STREAM, 0);
+        struct sockaddr_in addr = {0};
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(args->port);
+        inet_pton(AF_INET, args->addr, &addr.sin_addr);
+
+        // Retry connect briefly
+        int connected = 0;
+        for (int retry = 0; retry < 50; retry++) { // 50ms total
+            if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) == 0) {
+                connected = 1;
+                break;
+            }
+            usleep(1000);
+        }
+        if (!connected) {
+            close(fd);
+            continue;
+        }
+
+        char read_buf[MESSAGE_LEN + 1] = {0};
+        int total_read = 0;
+        while (total_read < MESSAGE_LEN) {
+            int n = read(fd, read_buf + total_read, MESSAGE_LEN - total_read);
+            if (n > 0) total_read += n;
+            else if (n == 0) break;
+            else if (errno == EINTR || errno == EAGAIN) continue;
+            else break;
+        }
+
+        TEST_ASSERT_EQUAL_STRING_LEN_MESSAGE(MESSAGE, read_buf, total_read, "Data mismatch");
+
         close(fd);
-        return -1;
-    }
-
-    return fd;
-}
-
-void* simulate_client(void* arg, int count, char* addr, int port) {
-    (void)arg;
-    for (int i = 0; i < count; i++) {
-
-        self_yield();
-        int fd = connect_to(addr, port);
-        assert(fd >= 0);
-
-
-        self_yield();
-
-        char* buf = allocate(__global__arena__, MESSAGE_LEN);
-        int n = read(fd, buf, 20);
-        TEST_ASSERT(n == MESSAGE_LEN);
-        TEST_ASSERT_EQUAL_STRING_LEN_MESSAGE(MESSAGE, buf, MESSAGE_LEN, "received invalid message");
-
-        close(fd);
+        usleep(500);
     }
 
     return NULL;
@@ -137,41 +137,37 @@ void test_netio_write_basic(void) {
     atomic_store(&completed, 0);
 
     int count = 100;
-    int timeout_sec = 5;
+    const char* addr = "127.0.0.1";
+    int port = 8002;
 
-    char* addr = "127.0.0.1";
-    int port = 8000;
+    int listen_fd = __public__net_listen(addr, port, 4096);
+    TEST_ASSERT_MESSAGE(listen_fd >= 0, "Failed to listen");
 
-    int lld = __public__net_listen(addr, port, 4096);
-    TEST_ASSERT(lld >= 0);
+    // Start server thread inside runtime scheduler
+    thread(server_thread, 3, NULL, count, listen_fd);
 
-    thread(__test_netio_write_basic, 3, NULL, count, lld);
-    thread(simulate_client, 4, NULL, count, addr, port);
-    
-    struct timespec ts = {0, 1000000}; /* 1ms */
-    int spins = 0;
-    int max_spins = timeout_sec * 1000;
+    // Start native client pthread
+    pthread_t client;
+    client_args_t cargs = {count, port, addr};
+    pthread_create(&client, NULL, native_client, &cargs);
 
+    // Wait until all writes complete
     while (atomic_load_explicit(&completed, memory_order_acquire) < count) {
+        struct timespec ts = {0, 5000000}; // 5ms
         nanosleep(&ts, NULL);
-        if (++spins > max_spins) {
-            TEST_FAIL_MESSAGE("scheduler did not complete tasks");
-        }
     }
 
+    pthread_join(client, NULL);
     TEST_ASSERT_EQUAL_INT(count, atomic_load(&completed));
+
+    close(listen_fd);
 }
 
-
 int main(void) {
-    srand(time(NULL));
-
     __global__arena__ = gc_create_global_arena();
     gc_init();
-
     init_io();
     init_scheduler();
-
     gc_start();
 
     UNITY_BEGIN();

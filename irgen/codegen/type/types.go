@@ -70,6 +70,9 @@ const (
 	ATOMIC_DOUBLE = "atomic_double_t"
 
 	ATOMIC_PTR = "atomic_ptr_t"
+
+	RWMUTEX = "rwmutex"
+	MUTEX   = "mutex"
 )
 
 type TypeHandler struct {
@@ -364,6 +367,9 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		c.Update(bh, init)
 		return c
 	}
+
+	fmt.Printf("targetType: %v\n", targetType)
+	panic("")
 
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidNativeType, _type)
 	return nil
