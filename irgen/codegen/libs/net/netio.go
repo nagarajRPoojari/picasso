@@ -27,12 +27,18 @@ func (t *NetIO) ListAllFuncs() map[string]function.Func {
 	funcs[c.ALIAS_NET_ACCEPT] = t.accept
 	funcs[c.ALIAS_NET_READ] = t.read
 	funcs[c.ALIAS_NET_WRITE] = t.write
+	funcs[c.ALIAS_NET_DIAL] = t.dial
 	return funcs
 }
 
 func (t *NetIO) listen(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	listen := c.Instance.Funcs[c.FUNC_NET_LISTEN]
 	return libutils.CallCFunc(typeHandler, listen, bh, args)
+}
+
+func (t *NetIO) dial(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	dialer := c.Instance.Funcs[c.FUNC_NET_DIAL]
+	return libutils.CallCFunc(typeHandler, dialer, bh, args)
 }
 
 func (t *NetIO) accept(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {

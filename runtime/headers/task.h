@@ -22,6 +22,7 @@ typedef enum {
     IO_ACCEPT,
     IO_READ,
     IO_WRITE,
+    IO_CONNECT,
 } netio_op_t;
 
 typedef struct {

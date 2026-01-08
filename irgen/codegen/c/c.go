@@ -719,11 +719,13 @@ const (
 	FUNC_NET_ACCEPT = "__public__net_accept"
 	FUNC_NET_READ   = "__public__net_read"
 	FUNC_NET_WRITE  = "__public__net_write"
+	FUNC_NET_DIAL   = "__public__net_dial"
 
 	ALIAS_NET_LISTEN = "listen"
 	ALIAS_NET_ACCEPT = "accept"
 	ALIAS_NET_READ   = "read"
 	ALIAS_NET_WRITE  = "write"
+	ALIAS_NET_DIAL   = "dial"
 )
 
 // Interface maintains a registry of available external functions and
