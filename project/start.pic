@@ -1,33 +1,11 @@
 using "builtin/syncio";
 using "builtin/array";
-using "types";
-
-class Student {
-    say name: types.String;
-    say age: int;
-
-    fn Student(name: types.String, age: int) {
-        this.name = name;
-        this.age = age;
-    }
-
-    fn Print() {
-        syncio.printf("Student: {name: %s, age: %d}\n", this.name.Get(), this.age);
-    }
-}
-
+using "builtin/types";
 
 fn start() {
-    say students:[]start.Student = array.create(start.Student, 10);
-    foreach i in 0..10 {
-        say s: types.Wrapper = new types.Wrapper();
-        students[i] = new start.Student(s.Get(), 23);
-        students[i].Print();
+    say arr:[]int = array.create(int, 10);
 
-        syncio.printf("> \t%p \n", students[i]);
-    }
-    foreach i in 0..10 {
-        syncio.printf("> %p \n", students[i]);
-        syncio.printf("> %s, %d \n", students[i].name.Get(), students[i].age);
-    }
+
+
+    syncio.printf("type of arr = %s \n", types.type(arr));
 }
