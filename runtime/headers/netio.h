@@ -108,4 +108,7 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) ;
  */
 ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog);
 
+
+ssize_t __public__net_dial(const char *addr, uint16_t port);
+
 #endif

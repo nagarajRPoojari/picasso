@@ -394,8 +394,13 @@ func (t *Interface) initStdio(mod *ir.Module) {
 
 	t.Funcs[FUNC_NET_LISTEN] = mod.NewFunc(FUNC_NET_LISTEN, types.I64,
 		ir.NewParam("addr", types.NewPointer(types.I8)),
-		ir.NewParam("port", types.I64),
-		ir.NewParam("backlog", types.I32),
+		ir.NewParam("port", types.I16),
+		ir.NewParam("backlog", types.I64),
+	)
+
+	t.Funcs[FUNC_NET_DIAL] = mod.NewFunc(FUNC_NET_DIAL, types.I64,
+		ir.NewParam("addr", types.NewPointer(types.I8)),
+		ir.NewParam("port", types.I16),
 	)
 }
 

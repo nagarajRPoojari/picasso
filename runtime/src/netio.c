@@ -27,7 +27,7 @@
 
 extern __thread task_t *current_task;
 extern int netio_epoll_id;
-
+extern __thread arena_t* __arena__;
 /**
  * @brief Add a file descriptor to an epoll instance.
  *
@@ -260,6 +260,76 @@ ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog) {
     return fd;
 }
 
+ssize_t __public__net_dial(const char *addr, uint16_t port) {
+    int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+    if (fd < 0)
+        return -1;
+
+    struct sockaddr_in *sa = allocate(__arena__, sizeof(*sa));
+    if (!sa) {
+        close(fd);
+        errno = ENOMEM;
+        return -1;
+    }
+
+    memset(sa, 0, sizeof(*sa));
+    sa->sin_family = AF_INET;
+    sa->sin_port = htons(port);
+
+    if (inet_pton(AF_INET, addr, &sa->sin_addr) != 1) {
+        free(sa);
+        close(fd);
+        errno = EINVAL;
+        return -1;
+    }
+
+    int r = connect(fd, (struct sockaddr *)sa, sizeof(*sa));
+    if (r == 0) {
+        /* connected immediately */
+        free(sa);
+        return fd;
+    }
+
+    if (errno != EINPROGRESS) {
+        free(sa);
+        close(fd);
+        return -1;
+    }
+
+    task_t *t = current_task;
+
+    t->io = (io_metadata_t){
+        .fd       = fd,
+        .buf      = NULL,
+        .req_n    = 0,
+        .offset   = 0,
+        .op       = IO_CONNECT,
+        .io_done  = 0,
+        .io_err   = 0,
+        .addr     = sa,
+        .addrlen  = sizeof(*sa),
+    };
+
+    int epfd = netio_epoll_id;
+    if (ep_add(epfd, fd, t, EPOLLOUT) < 0) {
+        if (errno != EEXIST){
+            free(sa);
+            close(fd);
+            return -1;
+        }
+        ep_mod(epfd, fd, t, EPOLLOUT);
+    }
+
+    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+    task_yield(kernel_thread_map[t->sched_id]);
+
+    errno = t->io.io_err;
+    ssize_t ret = t->io.done_n;
+
+    return ret;
+}
+
+
 
 /**
  * @brief Network I/O worker thread event loop.
@@ -303,6 +373,29 @@ void *netio_worker(void *arg) {
             t->io.io_err = 0;
 
             switch (t->io.op) {
+
+            case IO_CONNECT: {
+                int err = 0;
+                socklen_t len = sizeof(err);
+
+                if (getsockopt(t->io.fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
+                    t->io.io_err = errno;
+                    t->io.done_n = -1;
+                    ep_del(epfd, t->io.fd);
+                } else if (err != 0) {
+                    t->io.io_err = err;
+                    t->io.done_n = -1;
+                    ep_del(epfd, t->io.fd);
+                } else {
+                    /* Connected successfully */
+                    t->io.done_n = t->io.fd;
+                }
+
+                t->io.io_done = 1;
+                safe_q_push(&kernel_thread_map[t->sched_id]->ready_q, t);
+                break;
+            }
+
 
             case IO_ACCEPT: {
                 int cfd = accept4(
