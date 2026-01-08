@@ -85,7 +85,9 @@ const (
 	FUNC_ARRAY_ALLOC  = "__public__alloc_array"
 	ALIAS_ARRAY_ALLOC = "alloc_array"
 
-	TYPE_ARRAY = "array"
+	TYPE_ARRAY   = "array"
+	TYPE_RWMUTEX = "rwmutex"
+	TYPE_MUTEX   = "mutex"
 
 	// String and Container Operations
 	FUNC_STRLEN   = "__public__strlen"
@@ -237,6 +239,26 @@ const (
 	TYPE_ATOMIC_FLOAT64 = "atomic_float64_t" // 64-bit double
 
 	TYPE_ATOMIC_PTR = "atomic_uintptr_t"
+
+	FUNC_RWMUTEX_CREATE   = "__public__rwmutex_create"
+	FUNC_RWMUTEX_RLOCK    = "__public__rwmutex_rlock"
+	FUNC_RWMUTEX_RWLOCK   = "__public__rwmutex_rwlock"
+	FUNC_RWMUTEX_RUNLOCK  = "__public__rwmutex_runlock"
+	FUNC_RWMUTEX_RWUNLOCK = "__public__rwmutex_rwunlock"
+
+	FUNC_MUTEX_CREATE = "__public__mutex_create"
+	FUNC_MUTEX_LOCK   = "__public__mutex_lock"
+	FUNC_MUTEX_UNLOCK = "__public__mutex_unlock"
+
+	ALIAS_RWMUTEX_CREATE   = "create_rwmutex"
+	ALIAS_RWMUTEX_RLOCK    = "rlock"
+	ALIAS_RWMUTEX_RWLOCK   = "rwlock"
+	ALIAS_RWMUTEX_RUNLOCK  = "runlock"
+	ALIAS_RWMUTEX_RWUNLOCK = "rwunlock"
+
+	ALIAS_MUTEX_CREATE = "create_mutex"
+	ALIAS_MUTEX_LOCK   = "lock"
+	ALIAS_MUTEX_UNLOCK = "unlock"
 
 	// syscalls
 	FUNC_SYSCALL_ERRNO             = "__public__errno"

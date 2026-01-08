@@ -1140,4 +1140,52 @@ func (t *Interface) initAtomicFuncs(mod *ir.Module) {
 		ir.NewParam("desired", types.NewPointer(types.I8)),
 	)
 
+	// rwmutex
+	t.Funcs[FUNC_RWMUTEX_CREATE] = mod.NewFunc(
+		FUNC_RWMUTEX_CREATE,
+		types.NewPointer(t.Types[TYPE_RWMUTEX]),
+	)
+
+	t.Funcs[FUNC_RWMUTEX_RLOCK] = mod.NewFunc(
+		FUNC_RWMUTEX_RLOCK,
+		types.Void,
+		ir.NewParam("mux", types.NewPointer(t.Types[TYPE_RWMUTEX])),
+	)
+
+	t.Funcs[FUNC_RWMUTEX_RWLOCK] = mod.NewFunc(
+		FUNC_RWMUTEX_RWLOCK,
+		types.Void,
+		ir.NewParam("mux", types.NewPointer(t.Types[TYPE_RWMUTEX])),
+	)
+
+	t.Funcs[FUNC_RWMUTEX_RUNLOCK] = mod.NewFunc(
+		FUNC_RWMUTEX_RUNLOCK,
+		types.Void,
+		ir.NewParam("mux", types.NewPointer(t.Types[TYPE_RWMUTEX])),
+	)
+
+	t.Funcs[FUNC_RWMUTEX_RWUNLOCK] = mod.NewFunc(
+		FUNC_RWMUTEX_RWUNLOCK,
+		types.Void,
+		ir.NewParam("mux", types.NewPointer(t.Types[TYPE_RWMUTEX])),
+	)
+
+	// mutex
+	t.Funcs[FUNC_MUTEX_CREATE] = mod.NewFunc(
+		FUNC_MUTEX_CREATE,
+		types.NewPointer(t.Types[TYPE_MUTEX]),
+	)
+
+	t.Funcs[FUNC_MUTEX_LOCK] = mod.NewFunc(
+		FUNC_MUTEX_LOCK,
+		types.Void,
+		ir.NewParam("mux", types.NewPointer(t.Types[TYPE_MUTEX])),
+	)
+
+	t.Funcs[FUNC_MUTEX_UNLOCK] = mod.NewFunc(
+		FUNC_MUTEX_UNLOCK,
+		types.Void,
+		ir.NewParam("mux", types.NewPointer(t.Types[TYPE_MUTEX])),
+	)
+
 }

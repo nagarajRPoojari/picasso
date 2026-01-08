@@ -17,7 +17,7 @@ func (t *Interface) registerTypes(mod *ir.Module) {
 // It creates a struct containing a generic data pointer, a shape descriptor,
 // the flat length, and the dimensional rank. This definition is registered
 // as a named type in the LLVM module for cross-function consistency
-func (t *Interface) initArrayTypes(mod *ir.Module) {
+func (t *Interface) initArrayTypes(_ *ir.Module) {
 	t.Types[TYPE_ARRAY] = types.NewStruct(
 		types.NewPointer(types.I8),  // data
 		types.NewPointer(types.I64), // shape (i64*)
@@ -30,7 +30,7 @@ func (t *Interface) initArrayTypes(mod *ir.Module) {
 // represent atomic variables. Wrapping these in structs provides a clear
 // distinction between standard and thread-safe variables during type
 // checking and IR lowering.
-func (t *Interface) initAtomicTypes(mod *ir.Module) {
+func (t *Interface) initAtomicTypes(_ *ir.Module) {
 	// Boolean
 	t.Types[TYPE_ATOMIC_BOOL] = types.NewStruct(types.I1)
 
@@ -53,4 +53,8 @@ func (t *Interface) initAtomicTypes(mod *ir.Module) {
 
 	// Pointer (atomic_uintptr_t)
 	t.Types[TYPE_ATOMIC_PTR] = types.NewStruct(types.NewPointer(types.I8))
+
+	t.Types[TYPE_RWMUTEX] = types.NewStruct()
+
+	t.Types[TYPE_MUTEX] = types.NewStruct()
 }
