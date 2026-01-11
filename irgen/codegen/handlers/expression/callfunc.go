@@ -11,6 +11,7 @@ import (
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
+	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/libutils"
 	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
@@ -35,9 +36,13 @@ func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) 
 		return ret
 	}
 
+	if ret, ok := t.callFFIMethod(bh, ex); ok {
+		return ret
+	}
+
 	switch m := ex.Method.(type) {
 	case ast.SymbolExpression:
-		return t.callBuiltinMethod(bh, ex, m)
+		return t.callNativeMethods(bh, ex, m)
 
 	case ast.MemberExpression:
 		return t.callClassMethod(bh, ex, m)
@@ -72,7 +77,41 @@ func (t *ExpressionHandler) callLibMethod(bh *bc.BlockHolder, ex ast.CallExpress
 	return ret, true
 }
 
-func (t *ExpressionHandler) callBuiltinMethod(bh *bc.BlockHolder, ex ast.CallExpression, methodName ast.SymbolExpression) tf.Var {
+func (t *ExpressionHandler) callFFIMethod(bh *bc.BlockHolder, ex ast.CallExpression) (tf.Var, bool) {
+	m, ok := ex.Method.(ast.MemberExpression)
+	if !ok {
+		return nil, false
+	}
+
+	x, ok := m.Member.(ast.SymbolExpression)
+	if !ok {
+		return nil, false
+	}
+
+	moduleName := t.st.Imports[x.Value].Name
+	fnName := m.Property
+
+	ffiModule, ok := t.st.FFIModules[moduleName]
+	if !ok {
+		return nil, false
+	}
+
+	fn, ok := ffiModule.Methods[fnName]
+	if !ok {
+		return nil, false
+	}
+
+	args := make([]tf.Var, 0)
+	for _, v := range ex.Arguments {
+		res := t.ProcessExpression(bh, v)
+		args = append(args, res)
+	}
+
+	ret := libutils.CallCFunc(t.st.TypeHandler, fn, bh, args)
+	return ret, true
+}
+
+func (t *ExpressionHandler) callNativeMethods(bh *bc.BlockHolder, ex ast.CallExpression, methodName ast.SymbolExpression) tf.Var {
 	// @fix: refactor this piece of code
 	// thread() special functions comes from base modules but exception for module_name.func() format
 	// in future i might add many such special funcs, so need to be kept somewhere else.

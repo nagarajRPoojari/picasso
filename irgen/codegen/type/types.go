@@ -368,9 +368,6 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		return c
 	}
 
-	fmt.Printf("targetType: %v\n", targetType)
-	panic("")
-
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidNativeType, _type)
 	return nil
 }

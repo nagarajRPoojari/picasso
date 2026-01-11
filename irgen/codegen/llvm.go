@@ -41,6 +41,10 @@ func NewLLVM(pkgName string, outputDir string) *LLVM {
 	return &LLVM{st: st, m: m, ModuleName: pkgName}
 }
 
+func (t *LLVM) GetModule() *ir.Module {
+	return t.st.Module
+}
+
 func (t *LLVM) AddImportEntry(entry state.PackageEntry) {
 	t.st.Imports[entry.Alias] = entry
 }

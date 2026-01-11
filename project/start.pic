@@ -2,10 +2,9 @@ using "builtin/syncio";
 using "builtin/array";
 using "builtin/types";
 
+using "c/ffi/xy" as xy;
+
 fn start() {
-    say arr:[]int = array.create(int, 10);
-
-
-
-    syncio.printf("type of arr = %s \n", types.type(arr));
+    say co: struct.Coordinate = xy.create_coordinate(10, 200);
+    xy.print_coordinate(co);
 }

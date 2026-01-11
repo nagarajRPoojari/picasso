@@ -22,6 +22,7 @@ go_library(
         "//irgen/codegen/handlers/constants",
         "//irgen/codegen/handlers/state",
         "//irgen/codegen/handlers/utils",
+        "//irgen/codegen/libs/libutils",
         "//irgen/codegen/type",
         "//irgen/codegen/type/block",
         "//irgen/codegen/type/primitives/boolean",

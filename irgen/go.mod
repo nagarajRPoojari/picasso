@@ -9,6 +9,7 @@ require (
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
+	github.com/llir/ll v0.0.0-20220802205332-9207a04d0275 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -23,7 +24,6 @@ require (
 	github.com/llir/llvm v0.3.7-0.20241206180354-f0912dd3bef2
 	github.com/mewmew/float v0.0.0-20211212214546-4fe539893335 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/sanity-io/litter v1.5.8
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/sys v0.35.0 // indirect

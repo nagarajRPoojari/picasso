@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/llir/llvm/asm"
+	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
 	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
@@ -27,6 +29,8 @@ type generator struct {
 
 	// llvm instance of all packages.
 	llvms map[string]*LLVM
+
+	ffiModules map[string]*ir.Module
 
 	// outputDir is directory where IR & info files will be dumped.
 	outputDir string
@@ -51,6 +55,7 @@ func NewGenerator(projectDir string) *generator {
 		packages:     modifiedPkgs,
 		allPkgs:      allPkgs,
 		llvms:        make(map[string]*LLVM),
+		ffiModules:   make(map[string]*ir.Module),
 		outputDir:    outputDir,
 		builtPkgs:    make(map[string]struct{}),
 		visitingPkgs: make(map[string]struct{}),
@@ -129,6 +134,11 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 		t.buildPackage(imp)
 	}
 
+	ffiImports := t.extractFFIimports(tree)
+	for _, imp := range ffiImports {
+		t.buildFFIPackage(imp)
+	}
+
 	// Create new LLVM context for this package (Safe, as children are finished)
 	llvm := NewLLVM(pkgName, t.outputDir)
 	t.llvms[pkgName] = llvm
@@ -149,12 +159,48 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 	t.builtPkgs[pkgName] = struct{}{}
 }
 
+func (t *generator) buildFFIPackage(pkg state.PackageEntry) {
+	if _, ok := t.ffiModules[pkg.Name]; ok {
+		return
+	}
+
+	split := strings.Split(pkg.Name, ".")
+	path := filepath.Join(t.outputDir, "tmp", fmt.Sprintf("%s.ll", split[len(split)-1]))
+
+	// Read original .ll file
+	input, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+
+	// Parse LLVM IR
+	mod, err := asm.ParseBytes(path, input)
+	if err != nil {
+		panic(err)
+	}
+
+	t.ffiModules[pkg.Name] = mod
+}
+
 // extractUserImports returns only the names of non-builtin imported packages.
 func (t *generator) extractUserImports(tree ast.BlockStatement) []state.PackageEntry {
 	var imports []state.PackageEntry
 	for _, st := range tree.Body {
 		if stc, ok := st.(ast.ImportStatement); ok {
-			if !stc.IsBasePkg() {
+			if !stc.IsBuiltIn() && !stc.IsFFI() {
+				fmt.Printf("stc: %v\n", stc)
+				imports = append(imports, state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
+			}
+		}
+	}
+	return imports
+}
+
+func (t *generator) extractFFIimports(tree ast.BlockStatement) []state.PackageEntry {
+	var imports []state.PackageEntry
+	for _, st := range tree.Body {
+		if stc, ok := st.(ast.ImportStatement); ok {
+			if stc.IsFFI() {
 				imports = append(imports, state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
 			}
 		}
@@ -173,9 +219,18 @@ func (t *generator) resolveImports(tree ast.BlockStatement, directUserImports []
 
 	for _, st := range tree.Body {
 		if stc, ok := st.(ast.ImportStatement); ok {
-			if stc.IsBasePkg() {
+			if stc.IsBuiltIn() {
 				t.importBasePackages(llvm.st.LibMethods, stc.EndName())
+			} else if stc.IsFFI() {
+				ffiModule := t.ffiModules[stc.Name]
+				splits := strings.Split(stc.Name, ".")
+				modifiedFFIModuleName := splits[len(splits)-1]
+
+				RegisterDeclarations(llvm.st, state.PackageEntry{Name: modifiedFFIModuleName, Alias: stc.Alias}, llvm.GetModule(), ffiModule)
+				llvm.AddImportEntry(state.PackageEntry{Name: modifiedFFIModuleName, Alias: stc.Alias})
+				continue
 			}
+
 			llvm.AddImportEntry(state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
 		}
 	}
@@ -214,7 +269,7 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 	}
 
 	for _, st := range packageAST.Body {
-		if stc, ok := st.(ast.ImportStatement); ok && stc.IsBasePkg() {
+		if stc, ok := st.(ast.ImportStatement); ok && stc.IsBuiltIn() {
 			t.importBasePackages(llvm.st.LibMethods, stc.EndName())
 		}
 	}
