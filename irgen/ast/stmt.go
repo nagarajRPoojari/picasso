@@ -128,8 +128,12 @@ func (t ImportStatement) GetSrc() SourceLoc {
 	return t.SourceLoc
 }
 
-func (t ImportStatement) IsBasePkg() bool {
+func (t ImportStatement) IsBuiltIn() bool {
 	return strings.HasPrefix(t.Name, "builtin")
+}
+
+func (t ImportStatement) IsFFI() bool {
+	return strings.HasPrefix(t.Name, "c.ffi")
 }
 
 func (t ImportStatement) EndName() string {

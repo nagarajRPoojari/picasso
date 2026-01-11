@@ -79,6 +79,9 @@ type State struct {
 	// Imported base library functions. comes from builtin module import.
 	LibMethods map[string]function.Func
 
+	// ffi method
+	FFIModules map[string]FFIDeclarations
+
 	// Global string counter for unique string literals
 	// @todo: need to fix this
 	StrCounter int
@@ -96,6 +99,12 @@ type State struct {
 	Imports map[string]PackageEntry
 }
 
+type FFIDeclarations struct {
+	Methods map[string]*ir.Func
+	Globals map[string]*ir.Global
+	Types   map[string]*types.Type
+}
+
 type Handlers struct {
 }
 
@@ -108,6 +117,7 @@ func NewCompileState(outputDir string, pkgName string, module *ir.Module) *State
 		Module:            module,
 		TypeHandler:       tf.NewTypeHandler(),
 		TypeHeirarchy:     *NewTypeHeirarchy(),
+		FFIModules:        map[string]FFIDeclarations{},
 		Vars:              scope.NewVarTree(),
 		Classes:           make(map[string]*tf.MetaClass),
 		Interfaces:        make(map[string]*tf.MetaInterface),

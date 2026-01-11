@@ -43,7 +43,7 @@ func (t *BuildCache) buildTree(it *ImportTree, visitStack map[string]struct{}, p
 	for _, stmt := range pkg.Body {
 		if imp, ok := stmt.(ast.ImportStatement); ok {
 			// avoid base package
-			if imp.IsBasePkg() {
+			if imp.IsBuiltIn() || imp.IsFFI() {
 				continue
 			}
 			// use fully qualified name .Name instead of .Alias

@@ -12,7 +12,6 @@ cc_binary(
     visibility = ["//visibility:public"],
 )
 
-
 e2e_tests(
     name = "all_tests",
     niyama = "//cli:niyama",
