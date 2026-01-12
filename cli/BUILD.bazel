@@ -9,8 +9,10 @@ cc_binary(
         "-fno-omit-frame-pointer",
     ],
     data = [
+        "//:runtime_headers",
         "//:runtime_lib",
         "//irgen",
+        "//libs:ffi_libs",
     ],
     linkopts = [
         "-L/usr/lib",
