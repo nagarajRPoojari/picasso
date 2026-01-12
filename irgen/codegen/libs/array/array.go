@@ -26,9 +26,9 @@ func (t *ArrayHandler) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+func (t *ArrayHandler) create(_ *ir.Func, th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	dims := make([]value.Value, 0)
-	size := _types.NewTypeHandler().Size(th, module, bh, []tf.Var{args[0]})
+	size := _types.NewTypeHandler().Size(nil, th, module, bh, []tf.Var{args[0]})
 	for _, i := range args[1:] {
 		toInt := th.ImplicitIntCast(bh, i.Load(bh), types.I64)
 
@@ -37,13 +37,13 @@ func (t *ArrayHandler) create(th *tf.TypeHandler, module *ir.Module, bh *bc.Bloc
 	return typedef.NewArray(bh, args[0].Type(), size.Load(bh), dims, args[0].NativeTypeString())
 }
 
-func (t *ArrayHandler) len(th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+func (t *ArrayHandler) len(_ *ir.Func, th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	arr := args[0].(*tf.Array)
 	length := arr.Len(bh)
 	return length
 }
 
-func (t *ArrayHandler) shape(th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+func (t *ArrayHandler) shape(_ *ir.Func, th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	arr := args[0].(*tf.Array)
 	shape := arr.LoadShapeArray(bh)
 	return shape

@@ -4,7 +4,6 @@ go_library(
     name = "c",
     srcs = [
         "c.go",
-        "constants.go",
         "funcs.go",
         "types.go",
     ],
@@ -12,7 +11,6 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_llir_llvm//ir",
-        "@com_github_llir_llvm//ir/enum",
         "@com_github_llir_llvm//ir/types",
     ],
 )

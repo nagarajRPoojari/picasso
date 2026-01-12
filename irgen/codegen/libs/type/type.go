@@ -24,7 +24,7 @@ func (t *TypeHandler) ListAllFuncs() map[string]function.Func {
 	return funcs
 }
 
-func (t *TypeHandler) Size(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+func (t *TypeHandler) Size(_ *ir.Func, typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	// assume args[0] holds the type or var we want sizeof
 	typ := args[0].Type() // this should be `types.Type`
 
@@ -44,7 +44,7 @@ func (t *TypeHandler) Size(typeHandler *typedef.TypeHandler, module *ir.Module, 
 	}
 }
 
-func (t *TypeHandler) TypeOf(typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+func (t *TypeHandler) TypeOf(_ *ir.Func, typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	typ := args[0].NativeTypeString()
 
 	strConst := constant.NewCharArrayFromString(typ + "\x00")

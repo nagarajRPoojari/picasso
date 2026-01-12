@@ -139,12 +139,18 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 		t.buildFFIPackage(imp)
 	}
 
+	stdlibImports := t.extractStdLibImports(tree)
+	for _, imp := range stdlibImports {
+		t.buildStdLib(imp)
+	}
+
 	// Create new LLVM context for this package (Safe, as children are finished)
 	llvm := NewLLVM(pkgName, t.outputDir)
 	t.llvms[pkgName] = llvm
 
 	// Resolve Imports: Declare symbols from direct and transitive dependencies (B and C)
-	t.resolveImports(tree, directUserImports, llvm)
+	t.resolveUserImports(tree, directUserImports, llvm)
+	t.resolveStdLibImports(tree, stdlibImports, llvm)
 	llvm.AddImportEntry(state.PackageEntry{Name: pkgName, Alias: pkgName})
 
 	// Compile
@@ -182,13 +188,43 @@ func (t *generator) buildFFIPackage(pkg state.PackageEntry) {
 	t.ffiModules[pkg.Name] = mod
 }
 
+func (t *generator) buildStdLib(pkg state.PackageEntry) {
+	split := strings.Split(pkg.Name, ".")
+	modName := split[len(split)-1]
+
+	if _, ok := t.ffiModules[pkg.Name]; ok {
+		return
+	}
+
+	path := filepath.Join(t.outputDir, "tmp", fmt.Sprintf("%s.ll", modName))
+
+	// Read original .ll file
+	input, err := os.ReadFile(path)
+	if err != nil {
+		_, ok := libs.ModuleList[modName]
+		if ok {
+			// indicates it has be overriden in codegen/bins
+			return
+		}
+
+		panic(err)
+	}
+
+	// Parse LLVM IR
+	mod, err := asm.ParseBytes(path, input)
+	if err != nil {
+		panic(err)
+	}
+
+	t.ffiModules[pkg.Name] = mod
+}
+
 // extractUserImports returns only the names of non-builtin imported packages.
 func (t *generator) extractUserImports(tree ast.BlockStatement) []state.PackageEntry {
 	var imports []state.PackageEntry
 	for _, st := range tree.Body {
 		if stc, ok := st.(ast.ImportStatement); ok {
 			if !stc.IsBuiltIn() && !stc.IsFFI() {
-				fmt.Printf("stc: %v\n", stc)
 				imports = append(imports, state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
 			}
 		}
@@ -208,9 +244,21 @@ func (t *generator) extractFFIimports(tree ast.BlockStatement) []state.PackageEn
 	return imports
 }
 
-func (t *generator) resolveImports(tree ast.BlockStatement, directUserImports []state.PackageEntry, llvm *LLVM) {
+func (t *generator) extractStdLibImports(tree ast.BlockStatement) []state.PackageEntry {
+	var imports []state.PackageEntry
+	for _, st := range tree.Body {
+		if stc, ok := st.(ast.ImportStatement); ok {
+			if stc.IsBuiltIn() {
+				imports = append(imports, state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
+			}
+		}
+	}
+	return imports
+}
+
+func (t *generator) resolveUserImports(tree ast.BlockStatement, directUserImports []state.PackageEntry, llvm *LLVM) {
 	// declared map tracks all packages added to this module's symbol table to prevent redundancy
-	// key should be alias name. resolveImports is called specific to a module & its imported
+	// key should be alias name. resolveUserImports is called specific to a module & its imported
 	// packages must be tracked with its alias names instead of fully qualified name.
 	// e.g issue, imported package 'a' could have been imported multiple times in lower levels, tracking its
 	// declaration by fully qualified name prevents running .Declare with alias. therefore track with
@@ -219,24 +267,35 @@ func (t *generator) resolveImports(tree ast.BlockStatement, directUserImports []
 
 	for _, st := range tree.Body {
 		if stc, ok := st.(ast.ImportStatement); ok {
-			if stc.IsBuiltIn() {
-				t.importBasePackages(llvm.st.LibMethods, stc.EndName())
-			} else if stc.IsFFI() {
-				ffiModule := t.ffiModules[stc.Name]
-				splits := strings.Split(stc.Name, ".")
-				modifiedFFIModuleName := splits[len(splits)-1]
+			if stc.IsBuiltIn() || stc.IsFFI() {
+				modifiedFFIModuleName := stc.EndName()
 
-				RegisterDeclarations(llvm.st, state.PackageEntry{Name: modifiedFFIModuleName, Alias: stc.Alias}, llvm.GetModule(), ffiModule)
+				ffiModule, ok := t.ffiModules[stc.Name]
+				if stc.IsBuiltIn() && !ok {
+					// indicates an codegen/libs overriden module
+					if _, ok := libs.ModuleList[modifiedFFIModuleName]; !ok {
+						errorutils.Abort(errorutils.UnknownModule, stc.Name)
+					}
+				} else {
+					RegisterDeclarations(llvm.st, state.PackageEntry{Name: modifiedFFIModuleName, Alias: stc.Alias}, llvm.GetModule(), ffiModule)
+				}
+
 				llvm.AddImportEntry(state.PackageEntry{Name: modifiedFFIModuleName, Alias: stc.Alias})
-				continue
+			} else {
+				llvm.AddImportEntry(state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
 			}
-
-			llvm.AddImportEntry(state.PackageEntry{Name: stc.Name, Alias: stc.Alias})
 		}
 	}
 
 	for _, pkgName := range directUserImports {
 		t.recursiveTransitiveDeclaration(pkgName, llvm, declared)
+	}
+}
+
+func (t *generator) resolveStdLibImports(tree ast.BlockStatement, stdLibImports []state.PackageEntry, llvm *LLVM) {
+	for _, pkgName := range stdLibImports {
+		splits := strings.Split(pkgName.Name, ".")
+		t.importBasePackages(llvm.st.LibMethods, splits[len(splits)-1])
 	}
 }
 
@@ -268,6 +327,7 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 		t.recursiveTransitiveDeclaration(sub, llvm, declared)
 	}
 
+	fmt.Printf("pkgFullName: %v\n", pkgFullName)
 	for _, st := range packageAST.Body {
 		if stc, ok := st.(ast.ImportStatement); ok && stc.IsBuiltIn() {
 			t.importBasePackages(llvm.st.LibMethods, stc.EndName())
@@ -284,7 +344,7 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 func (t *generator) importBasePackages(methodMap map[string]function.Func, module string) {
 	mod, ok := libs.ModuleList[module]
 	if !ok {
-		errorutils.Abort(errorutils.UnknownModule, module)
+		return
 	}
 	for name, f := range mod.ListAllFuncs() {
 		n := fmt.Sprintf("%s.%s.%s", BUILTIN, module, name)

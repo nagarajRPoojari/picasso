@@ -6,4 +6,4 @@ import (
 	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
 )
 
-type Func func(typeHandler *typedef.TypeHandler, module *ir.Module, block *bc.BlockHolder, args []typedef.Var) typedef.Var
+type Func func(f *ir.Func, typeHandler *typedef.TypeHandler, module *ir.Module, block *bc.BlockHolder, args []typedef.Var) typedef.Var
