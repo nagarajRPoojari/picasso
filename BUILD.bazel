@@ -3,6 +3,12 @@ load("@gazelle//:def.bzl", "gazelle")
 # gazelle:prefix github.com/nagarajRPoojari/niyama
 gazelle(name = "gazelle")
 
+filegroup(
+    name = "runtime_headers",
+    srcs = glob(["runtime/headers/*.h"]),
+    visibility = ["//visibility:public"],
+)
+
 cc_library(
     name = "runtime_lib",
     srcs = glob([
