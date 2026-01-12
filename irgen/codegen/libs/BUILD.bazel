@@ -7,13 +7,8 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen/libs/array",
-        "//irgen/codegen/libs/atomic",
-        "//irgen/codegen/libs/crypto",
         "//irgen/codegen/libs/func",
         "//irgen/codegen/libs/io",
-        "//irgen/codegen/libs/net",
-        "//irgen/codegen/libs/os",
-        "//irgen/codegen/libs/strings",
         "//irgen/codegen/libs/type",
     ],
 )

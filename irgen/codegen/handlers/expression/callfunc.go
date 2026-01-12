@@ -3,6 +3,7 @@ package expression
 import (
 	"fmt"
 
+	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
@@ -62,10 +63,22 @@ func (t *ExpressionHandler) callLibMethod(bh *bc.BlockHolder, ex ast.CallExpress
 	}
 
 	// base module func calls are strictly expected to be in module_name.func() format. e.g, syncio.printf
-	fName := fmt.Sprintf("%s.%s", t.st.Imports[x.Value].Name, m.Property)
+	fName := fmt.Sprintf("%s.%s.%s", constants.BUILTIN, t.st.Imports[x.Value].Name, m.Property)
 	f, ok := t.st.LibMethods[fName]
+
 	if !ok {
 		return nil, false
+	}
+
+	var fn *ir.Func
+	{
+		moduleName := t.st.Imports[x.Value].Name
+		fnName := fmt.Sprintf("__public__%s_%s", moduleName, m.Property)
+
+		ffiModule, ok := t.st.FFIModules[moduleName]
+		if ok {
+			fn, _ = ffiModule.Methods[fnName]
+		}
 	}
 
 	args := make([]tf.Var, 0)
@@ -73,7 +86,7 @@ func (t *ExpressionHandler) callLibMethod(bh *bc.BlockHolder, ex ast.CallExpress
 		res := t.ProcessExpression(bh, v)
 		args = append(args, res)
 	}
-	ret := f(t.st.TypeHandler, t.st.Module, bh, args)
+	ret := f(fn, t.st.TypeHandler, t.st.Module, bh, args)
 	return ret, true
 }
 
@@ -89,7 +102,7 @@ func (t *ExpressionHandler) callFFIMethod(bh *bc.BlockHolder, ex ast.CallExpress
 	}
 
 	moduleName := t.st.Imports[x.Value].Name
-	fnName := m.Property
+	fnName := fmt.Sprintf("__public__%s_%s", moduleName, m.Property)
 
 	ffiModule, ok := t.st.FFIModules[moduleName]
 	if !ok {
