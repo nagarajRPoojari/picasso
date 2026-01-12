@@ -1,7 +1,10 @@
 package generator
 
 import (
+	"strings"
+
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
 	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
@@ -52,7 +55,7 @@ func RegisterDeclarations(st *state.State, pkg state.PackageEntry, dst, src *ir.
 	}
 
 	copyFuncDecls(st.FFIModules[pkg.Name].Methods, dst, src, funcs)
-	copyGlobalDecls(st.FFIModules[pkg.Name].Globals, dst, src, globals)
+	copyGlobalDecls(st, st.FFIModules[pkg.Name].Globals, dst, src, globals)
 	copyTypeDecls(st, st.FFIModules[pkg.Name].Types, dst, src, types_)
 }
 
@@ -114,10 +117,14 @@ func copyFuncDecls(funcs map[string]*ir.Func, dst, src *ir.Module, existing map[
 	}
 }
 
-func copyGlobalDecls(globals map[string]*ir.Global, dst, src *ir.Module, existing map[string]struct{}) {
+func copyGlobalDecls(_ *state.State, globals map[string]*ir.Global, dst, src *ir.Module, existing map[string]struct{}) {
 	for _, g := range src.Globals {
 		// declarations only
-		if g.Init != nil {
+		if g.Init == nil {
+			continue
+		}
+
+		if !strings.HasPrefix(g.Name(), "__public__") {
 			continue
 		}
 
@@ -129,7 +136,7 @@ func copyGlobalDecls(globals map[string]*ir.Global, dst, src *ir.Module, existin
 			GlobalIdent: g.GlobalIdent,
 			ContentType: g.ContentType,
 			AddrSpace:   g.AddrSpace,
-			Linkage:     g.Linkage,
+			Linkage:     enum.LinkageExternal,
 			Visibility:  g.Visibility,
 			UnnamedAddr: g.UnnamedAddr,
 			Align:       g.Align,

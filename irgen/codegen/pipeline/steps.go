@@ -1,8 +1,6 @@
 package pipeline
 
 import (
-	"fmt"
-
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/niyama/irgen/ast"
@@ -73,18 +71,6 @@ func (t *Pipeline) declareInterfaceFields(sourcePkg state.PackageEntry) {
 	for _, i := range roots {
 		t.m.GetInterfaceHandler().(*interfaceh.InterfaceHandler).DefineInterfaceUDT(i, sourcePkg)
 	}
-}
-
-func cyclicCheck(child string, parent map[string]string, isV map[string]struct{}) {
-	isV[child] = struct{}{}
-	p := parent[child]
-	if p != "" {
-		if _, ok := isV[p]; ok {
-			panic(fmt.Sprintf("cyclic inheritance found involving %s", p))
-		}
-		cyclicCheck(p, parent, isV)
-	}
-	delete(isV, child)
 }
 
 func (t *Pipeline) declareClassFuncs(sourcePkg state.PackageEntry) {
