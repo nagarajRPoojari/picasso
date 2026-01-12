@@ -14,6 +14,19 @@ static void die(const char *msg) {
     exit(1);
 }
 
+static void get_tool_root(char *out, size_t sz) {
+    const char *runfiles = getenv("RUNFILES_DIR");
+    if (runfiles) {
+        if (snprintf(out, sz, "%s/_main", runfiles) >= (int)sz)
+            die("toolRoot path too long");
+    } else {
+        if (getcwd(out, sz) == NULL) {
+            perror("getcwd");
+            exit(1);
+        }
+    }
+}
+
 static void run_cmd(char *const argv[]) {
     pid_t pid = fork();
     if (pid < 0)
@@ -35,121 +48,123 @@ static void run_cmd(char *const argv[]) {
     }
 }
 
-/* FFI IR + native object generation */
-static void generate_ffi_irs(const char *dir, const char *buildDir) {
-    char ffiRoot[PATH_MAX];
-    if (snprintf(ffiRoot, sizeof(ffiRoot), "%s/c/ffi", dir) >= (int)sizeof(ffiRoot))
-        die("ffiRoot path too long");
-
-    char tmpDir[PATH_MAX];
-    if (snprintf(tmpDir, sizeof(tmpDir), "%s/tmp", buildDir) >= (int)sizeof(tmpDir))
-        die("tmpDir path too long");
-
-    char ffiObjDir[PATH_MAX];
-    if (snprintf(ffiObjDir, sizeof(ffiObjDir),
-                 "%s/tmp/ffi-obj", buildDir) >= (int)sizeof(ffiObjDir))
-        die("ffiObjDir path too long");
-
-    /* mkdir -p build/tmp build/tmp/ffi-obj */
-    char *mkdir_tmp[] = { "mkdir", "-p", tmpDir, NULL };
-    run_cmd(mkdir_tmp);
-
-    char *mkdir_obj[] = { "mkdir", "-p", ffiObjDir, NULL };
-    run_cmd(mkdir_obj);
-
+static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir, const char *ffiObjDir, const char *runtimeIncDir, int gen_objects) {
     DIR *d = opendir(ffiRoot);
-    if (!d) die("opendir c/ffi");
+    if (!d && !runtimeIncDir) return;
+    if (!d) die("opendir ffiRoot");
 
     struct dirent *ent;
     while ((ent = readdir(d)) != NULL) {
-        if (ent->d_name[0] == '.')
-            continue;
+        if (ent->d_name[0] == '.') continue;
 
         char tuDir[PATH_MAX];
-        if (snprintf(tuDir, sizeof(tuDir),
-                     "%s/%s", ffiRoot, ent->d_name) >= (int)sizeof(tuDir))
+        if (snprintf(tuDir, sizeof(tuDir), "%s/%s", ffiRoot, ent->d_name) >= (int)sizeof(tuDir))
             die("tuDir path too long");
 
         struct stat st;
-        if (stat(tuDir, &st) != 0 || !S_ISDIR(st.st_mode))
-            continue;
-
-        /* ffi_stub.c → LLVM IR */
+        if (stat(tuDir, &st) != 0 || !S_ISDIR(st.st_mode)) continue;
 
         char stub[PATH_MAX];
-        if (snprintf(stub, sizeof(stub),
-                     "%s/ffi_stub.c", tuDir) >= (int)sizeof(stub))
+        if (snprintf(stub, sizeof(stub), "%s/ffi_stub.c", tuDir) >= (int)sizeof(stub))
             die("stub path too long");
 
         if (access(stub, R_OK) != 0) {
-            fprintf(stderr, "warning: %s missing ffi_stub.c, skipping TU\n", tuDir);
+            fprintf(stderr, "warning: %s missing ffi_stub.c, skipping\n", tuDir);
             continue;
         }
 
         char outLL[PATH_MAX];
-        if (snprintf(outLL, sizeof(outLL),
-                     "%s/%s.ll", tmpDir, ent->d_name) >= (int)sizeof(outLL))
+        if (snprintf(outLL, sizeof(outLL), "%s/%s.ll", tmpDir, ent->d_name) >= (int)sizeof(outLL))
             die("outLL path too long");
 
-        printf("FFI IRGEN: %s\n", ent->d_name);
+        /* clang -S -emit-llvm */
+        char *clang_ll[20];
+        int i = 0;
 
-        char *clang_ll[] = {
-            "clang",
-            "-S",
-            "-emit-llvm",
-            "-g0",
-            "-I", tuDir,
-            stub,
-            "-o", outLL,
-            NULL
-        };
+        clang_ll[i++] = "clang";
+        clang_ll[i++] = "-S";
+        clang_ll[i++] = "-emit-llvm";
+        clang_ll[i++] = "-g0";
+
+        /* runtime headers first */
+        if (runtimeIncDir) {
+            clang_ll[i++] = "-I";
+            clang_ll[i++] = (char *)runtimeIncDir;
+        }
+
+        /* TU-local headers */
+        clang_ll[i++] = "-I";
+        clang_ll[i++] = (char *)tuDir;
+
+        clang_ll[i++] = (char *)stub;
+        clang_ll[i++] = "-o";
+        clang_ll[i++] = outLL;
+        clang_ll[i++] = NULL;
+
         run_cmd(clang_ll);
 
-        /* compile all other .c → native .o */
+        if (!gen_objects) continue;
+
+        /* compile other .c → native .o */
         DIR *cd = opendir(tuDir);
-        if (!cd)
-            die("opendir tuDir");
+        if (!cd) die("opendir tuDir");
 
         struct dirent *cent;
         while ((cent = readdir(cd)) != NULL) {
-            if (!strstr(cent->d_name, ".c"))
-                continue;
-
-            if (!strcmp(cent->d_name, "ffi_stub.c"))
-                continue;
+            if (!strstr(cent->d_name, ".c")) continue;
+            if (!strcmp(cent->d_name, "ffi_stub.c")) continue;
 
             char cfile[PATH_MAX];
-            if (snprintf(cfile, sizeof(cfile),
-                         "%s/%s", tuDir, cent->d_name) >= (int)sizeof(cfile))
+            if (snprintf(cfile, sizeof(cfile), "%s/%s", tuDir, cent->d_name) >= (int)sizeof(cfile))
                 die("cfile path too long");
 
             char obj[PATH_MAX];
-            if (snprintf(obj, sizeof(obj),
-                         "%s/%s_%s.o",
-                         ffiObjDir,
-                         ent->d_name,
-                         cent->d_name) >= (int)sizeof(obj))
+            if (snprintf(obj, sizeof(obj), "%s/%s_%s.o", ffiObjDir, ent->d_name, cent->d_name) >= (int)sizeof(obj))
                 die("obj path too long");
 
-            /* strip ".c" */
-            // obj[strlen(obj) - 2] = '\0';
-
-            char *cc_obj[] = {
-                "cc",
-                "-c",
-                "-fPIC",
-                "-I", tuDir,
-                cfile,
-                "-o", obj,
-                NULL
-            };
+            char *cc_obj[16];
+            i = 0;
+            cc_obj[i++] = "cc";
+            cc_obj[i++] = "-c";
+            cc_obj[i++] = "-fPIC";
+            cc_obj[i++] = "-I";
+            cc_obj[i++] = (char *)tuDir;
+            if (runtimeIncDir) {
+                cc_obj[i++] = "-I";
+                cc_obj[i++] = (char *)runtimeIncDir;
+            }
+            cc_obj[i++] = cfile;
+            cc_obj[i++] = "-o";
+            cc_obj[i++] = obj;
+            cc_obj[i++] = NULL;
 
             run_cmd(cc_obj);
         }
         closedir(cd);
     }
-
     closedir(d);
+}
+
+static void generate_ffi_irs(const char *dir, const char *buildDir) {
+    char ffiRoot[PATH_MAX];
+    snprintf(ffiRoot, sizeof(ffiRoot), "%s/c/ffi", dir);
+
+    char tmpDir[PATH_MAX];
+    snprintf(tmpDir, sizeof(tmpDir), "%s/tmp", buildDir);
+
+    char ffiObjDir[PATH_MAX];
+    snprintf(ffiObjDir, sizeof(ffiObjDir), "%s/tmp/ffi-obj", buildDir);
+
+    run_cmd((char *[]){"mkdir", "-p", tmpDir, NULL});
+    run_cmd((char *[]){"mkdir", "-p", ffiObjDir, NULL});
+
+    generate_ffi_irs_from_root(
+        ffiRoot,
+        tmpDir,
+        ffiObjDir,
+        NULL,
+        1
+    );
 }
 
 /* main */
@@ -168,23 +183,36 @@ int main(int argc, char **argv) {
         const char *dir = argv[2];
 
         char buildDir[PATH_MAX];
-        if (snprintf(buildDir, sizeof(buildDir),
-                     "%s/build", dir) >= (int)sizeof(buildDir))
-            die("buildDir path too long");
+        snprintf(buildDir, sizeof(buildDir), "%s/build", dir);
 
-        char *mkdir_build[] = { "mkdir", "-p", buildDir, NULL };
-        run_cmd(mkdir_build);
+        run_cmd((char *[]){"mkdir", "-p", buildDir, NULL});
 
-        /* FFI IR + native objects */
+        /* project FFI IR + objects */
         generate_ffi_irs(dir, buildDir);
 
+        /* stdlib FFI IRs */
+        char toolRoot[PATH_MAX];
+        get_tool_root(toolRoot, sizeof(toolRoot));
+
+        char libsDir[PATH_MAX];
+        snprintf(libsDir, sizeof(libsDir), "%s/libs", toolRoot);
+
+        char runtimeHdrs[PATH_MAX];
+        snprintf(runtimeHdrs, sizeof(runtimeHdrs), "%s/runtime/headers", toolRoot);
+
+        char tmpDir[PATH_MAX];
+        snprintf(tmpDir, sizeof(tmpDir), "%s/build/tmp", dir);
+
+        generate_ffi_irs_from_root(
+            libsDir,
+            tmpDir,
+            NULL,
+            runtimeHdrs,
+            0
+        );
+
         /* language IR generation */
-        char *irgen[] = {
-            IRGEN_BIN,
-            "gen",
-            (char *)dir,
-            NULL
-        };
+        char *irgen[] = { IRGEN_BIN, "gen", (char *)dir, NULL };
         run_cmd(irgen);
 
         /* .ll → .bc */
@@ -216,7 +244,13 @@ int main(int argc, char **argv) {
         /* final link */
         char *link[] = {
             "sh", "-c",
-            "cc \"$1\"/*.o \"$1\"/tmp/ffi-obj/*.o "
+            "set -e; "
+            "OBJS=\"$1\"/*.o; "
+            "FFI_OBJS=\"\"; "
+            "if [ -d \"$1/tmp/ffi-obj\" ] && ls \"$1/tmp/ffi-obj\"/*.o >/dev/null 2>&1; then "
+            "  FFI_OBJS=\"$1/tmp/ffi-obj\"/*.o; "
+            "fi; "
+            "cc $OBJS $FFI_OBJS "
             RUNTIME_LIB_PATH
             " -o \"$1/a.out\" "
             "-rdynamic "
@@ -229,6 +263,7 @@ int main(int argc, char **argv) {
         };
         run_cmd(link);
 
+
         return 0;
     }
 
@@ -239,10 +274,7 @@ int main(int argc, char **argv) {
         }
 
         char exe[PATH_MAX];
-        if (snprintf(exe, sizeof(exe),
-                     "%s/build/a.out", argv[2]) >= (int)sizeof(exe))
-            die("exe path too long");
-
+        snprintf(exe, sizeof(exe), "%s/build/a.out", argv[2]);
         execl(exe, exe, (char *)NULL);
         die("exec");
     }
