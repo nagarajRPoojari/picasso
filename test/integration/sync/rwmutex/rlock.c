@@ -49,7 +49,7 @@ __public__rwmutex_t* mocked_rwmutex_create() {
 }
 
 void* reader(__public__rwmutex_t* mu) {
-    __public__rwmutex_rlock(mu);
+    __public__sync_rwmutex_rlock(mu);
     atomic_fetch_add(&readers_in, 1);
     
     if(atomic_load(&writers_in) > 0){
@@ -59,7 +59,7 @@ void* reader(__public__rwmutex_t* mu) {
     atomic_fetch_sub(&readers_in, 1);
     
     atomic_fetch_add(&completed, 1);
-    __public__rwmutex_runlock(mu);
+    __public__sync_rwmutex_runlock(mu);
     return NULL;
 }
 
