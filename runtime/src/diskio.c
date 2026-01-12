@@ -338,7 +338,7 @@ __public__array_t* __public__ascan(int n) {
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__aprintf(const char* fmt, ...) {
+ssize_t __public__asyncio_printf(const char* fmt, ...) {
     if (!fmt) return NULL;
 
     va_list ap;
@@ -400,7 +400,7 @@ ssize_t __public__aprintf(const char* fmt, ...) {
  *
  * @return Number of bytes read on success (ssize_t), or -1 on error.
  */
-ssize_t __public__afread(char* f, __public__array_t* buf, int n, int offset) {
+ssize_t __public__asyncio_fread(char* f, __public__array_t* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0)
         return -1;
 
@@ -452,7 +452,7 @@ ssize_t __public__afread(char* f, __public__array_t* buf, int n, int offset) {
  *
  * @return Number of bytes written on success (ssize_t), or -1 on error.
  */
-ssize_t __public__afwrite(char* f, __public__array_t* buf, int n, int offset) {
+ssize_t __public__asyncio_fwrite(char* f, __public__array_t* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0)
         return -1;
 
@@ -501,7 +501,7 @@ ssize_t __public__afwrite(char* f, __public__array_t* buf, int n, int offset) {
  * @return Pointer to the allocated buffer containing the read data on success,
  *         or NULL on allocation failure or read error.
  */
-__public__array_t* __public__sscan(int n) {
+__public__array_t* __public__syncio_scan(int n) {
     if (n <= 0) return NULL;
 
     __public__array_t* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
@@ -542,7 +542,7 @@ __public__array_t* __public__sscan(int n) {
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__sprintf(const char *fmt, ...) {
+ssize_t __public__syncio_printf(const char *fmt, ...) {
     if (!fmt)
         return -1;
 
@@ -600,7 +600,7 @@ ssize_t __public__sprintf(const char *fmt, ...) {
  * @return Number of bytes actually read on success (0 indicates EOF),
  *         or -1 on error.
  */
-ssize_t __public__sfread(char* f, __public__array_t* buf, int n, int offset) {
+ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
@@ -643,7 +643,7 @@ ssize_t __public__sfread(char* f, __public__array_t* buf, int n, int offset) {
  * @return Number of bytes actually written on success,
  *         or -1 on error.
  */
-ssize_t __public__sfwrite(char* f, __public__array_t* buf, int n, int offset) {
+ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offset) {
     if (!f || !buf || n <= 0 || offset < 0) return -1;
     
     int fd = fileno((FILE*)f);
@@ -663,4 +663,43 @@ ssize_t __public__sfwrite(char* f, __public__array_t* buf, int n, int offset) {
     }
 
     return (ssize_t)total;
+}
+
+char*  __public__syncio_fopen(const char* filename, const char* mode) {
+    FILE* f = fopen(filename, mode);
+    if (!f) {
+        perror("fopen failed");
+        return NULL;
+    }
+    return (uintptr_t)f;
+}
+
+int64_t __public__syncio_fclose(FILE* f) {
+    if (!f) return -1;
+    int ret = fclose(f);
+    if (ret != 0) {
+        perror("fclose failed");
+        return -1;
+    }
+    return 0;
+}
+
+int64_t __public__syncio_fseek(FILE* f, int64_t offset, int whence) {
+    if (!f) return -1;
+    int ret = fseek(f, (long)offset, whence);
+    if (ret != 0) {
+        perror("fseek failed");
+        return -1;
+    }
+    return 0;
+}
+
+int64_t __public__syncio_fflush(FILE* f) {
+    if (!f) return -1;
+    int ret = fflush(f);
+    if (ret != 0) {
+        perror("fflush failed");
+        return -1;
+    }
+    return 0;
 }

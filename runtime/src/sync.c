@@ -9,7 +9,7 @@
 
 extern __thread arena_t* __arena__;
 
-__public__rwmutex_t* __public__rwmutex_create() {
+__public__rwmutex_t* __public__sync_rwmutex_create() {
     assert(__arena__ != NULL);
     __public__rwmutex_t* mux = (__public__rwmutex_t*)allocate(__arena__, sizeof(__public__rwmutex_t));
     safe_q_init(&mux->readers, SCHEDULER_LOCAL_QUEUE_SIZE);
@@ -21,7 +21,7 @@ __public__rwmutex_t* __public__rwmutex_create() {
     return mux;
 }
 
-void __public__rwmutex_rlock(__public__rwmutex_t* mux) {
+void __public__sync_rwmutex_rlock(__public__rwmutex_t* mux) {
     int64_t old;
 
     for (;;) {
@@ -53,7 +53,7 @@ void __public__rwmutex_rlock(__public__rwmutex_t* mux) {
     }
 }
 
-void __public__rwmutex_runlock(__public__rwmutex_t* mux) {
+void __public__sync_rwmutex_runlock(__public__rwmutex_t* mux) {
     int64_t prev = atomic_fetch_sub_explicit(
         &mux->state,
         READER_INC,
@@ -71,7 +71,7 @@ void __public__rwmutex_runlock(__public__rwmutex_t* mux) {
     }
 }
 
-void __public__rwmutex_rwlock(__public__rwmutex_t* mux) {
+void __public__sync_rwmutex_rwlock(__public__rwmutex_t* mux) {
     int64_t old;
 
     for (;;) {
@@ -108,7 +108,7 @@ void __public__rwmutex_rwlock(__public__rwmutex_t* mux) {
     }
 }
 
-void __public__rwmutex_rwunlock(__public__rwmutex_t* mux) {
+void __public__sync_rwmutex_rwunlock(__public__rwmutex_t* mux) {
     pthread_mutex_lock(&mux->lock);
     
     // FLAW: Setting state to 0 here allows new readers to "barge in" 
@@ -130,7 +130,7 @@ void __public__rwmutex_rwunlock(__public__rwmutex_t* mux) {
     pthread_mutex_unlock(&mux->lock);
 }
 
-__public__mutex_t* __public__mutex_create() {
+__public__mutex_t* __public__sync_mutex_create() {
     __public__mutex_t* mux = (__public__mutex_t*)allocate(__arena__, sizeof(__public__mutex_t));
     pthread_mutex_init(&mux->lock, NULL);
     safe_q_init(&mux->waiters, SCHEDULER_LOCAL_QUEUE_SIZE);
@@ -138,7 +138,7 @@ __public__mutex_t* __public__mutex_create() {
     return mux;
 }
 
-void __public__mutex_lock(__public__mutex_t* mtx) {
+void __public__sync_mutex_lock(__public__mutex_t* mtx) {
     int64_t expected = 0;
 
     // Fast path: try to grab lock immediately
@@ -171,7 +171,7 @@ void __public__mutex_lock(__public__mutex_t* mtx) {
     }
 }
 
-void __public__mutex_unlock(__public__mutex_t* mtx) {
+void __public__sync_mutex_unlock(__public__mutex_t* mtx) {
     pthread_mutex_lock(&mtx->lock);
 
     // Mark the mutex as free

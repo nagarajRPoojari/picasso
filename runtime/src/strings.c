@@ -11,7 +11,7 @@
 
 extern __thread arena_t* __arena__;
 
-char* __public__format(const char* fmt, ...) {
+char* __public__strings_format(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
 
@@ -41,10 +41,10 @@ char* __public__format(const char* fmt, ...) {
 }
 
 
-int __public__len(const char* str) {
+int __public__strings_length(const char* str) {
     return strlen(str);
 }
 
-int __public__compare(const char* str1, const char* str2) {
+int __public__strings_compare(const char* str1, const char* str2) {
     return strcmp(str1, str2);
 }

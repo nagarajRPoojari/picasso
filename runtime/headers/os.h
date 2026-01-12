@@ -18,6 +18,9 @@
 #include <dirent.h>
 #include <linux/futex.h>
 
+#ifndef O_DIRECT
+#define O_DIRECT 0
+#endif
 
 /** Operation would block */
 const int OS_EAGAIN = EAGAIN;
@@ -192,41 +195,41 @@ const int OS_EACCES = EACCES;
  *
  * @return Current errno.
  */
-int __public__errno(void);
+int __public__os_errno(void);
 /**
  * @brief Get current process ID.
  *
  * @return Process ID.
  */
-int __public__getpid(void);
+int __public__os_getpid(void);
 
 /**
  * @brief Get parent process ID.
  *
  * @return Parent process ID.
  */
-int __public__getppid(void);
+int __public__os_getppid(void);
 
 /**
  * @brief Get calling thread ID.
  *
  * @return Thread ID.
  */
-int __public__gettid(void);
+int __public__os_gettid(void);
 
 /**
  * @brief Terminate the current process immediately.
  *
  * @param code Exit status.
  */
-void __public__exit(int code);
+void __public__os_exit(int code);
 
 /**
  * @brief Create a new process.
  *
  * @return 0 in child, child PID in parent, or -1 on error.
  */
-int __public__fork(void);
+int __public__os_fork(void);
 
 /**
  * @brief Wait for process state change.
@@ -237,7 +240,7 @@ int __public__fork(void);
  *
  * @return PID of child or -1 on error.
  */
-int __public__waitpid(int pid, int *status, int options);
+int __public__os_waitpid(int pid, int *status, int options);
 
 /**
  * @brief Send a signal to a process.
@@ -247,7 +250,7 @@ int __public__waitpid(int pid, int *status, int options);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__kill(int pid, int sig);
+int __public__os_kill(int pid, int sig);
 
 /**
  * @brief Execute a program with explicit environment.
@@ -258,7 +261,7 @@ int __public__kill(int pid, int sig);
  *
  * @return -1 on error (does not return on success).
  */
-int __public__execve(const char *path, char *const argv[], char *const envp[]);
+int __public__os_execve(const char *path, char *const argv[], char *const envp[]);
 
 /**
  * @brief Execute a program using current environment.
@@ -268,7 +271,7 @@ int __public__execve(const char *path, char *const argv[], char *const envp[]);
  *
  * @return -1 on error (does not return on success).
  */
-int __public__execvp(const char *file, char *const argv[]);
+int __public__os_execvp(const char *file, char *const argv[]);
 
 extern char **environ;
 
@@ -277,7 +280,7 @@ extern char **environ;
  *
  * @return Pointer to environment vector.
  */
-char **__public__environ(void);
+char **__public__os_environ(void);
 /**
  * @brief Get environment variable value.
  *
@@ -285,7 +288,7 @@ char **__public__environ(void);
  *
  * @return Value string or NULL if not found.
  */
-const char *__public__getenv(const char *key);
+const char *__public__os_getenv(const char *key);
 
 /**
  * @brief Set an environment variable.
@@ -296,7 +299,7 @@ const char *__public__getenv(const char *key);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__setenv(const char *key, const char *value, int overwrite);
+int __public__os_setenv(const char *key, const char *value, int overwrite);
 /**
  * @brief Remove an environment variable.
  *
@@ -304,7 +307,7 @@ int __public__setenv(const char *key, const char *value, int overwrite);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__unsetenv(const char *key);
+int __public__os_unsetenv(const char *key);
 
 /**
  * @brief Get current working directory.
@@ -314,7 +317,7 @@ int __public__unsetenv(const char *key);
  *
  * @return Length of path or -1 on error.
  */
-int __public__getcwd(char *buf, size_t size);
+int __public__os_getcwd(char *buf, size_t size);
 
 /**
  * @brief Change current working directory.
@@ -323,57 +326,57 @@ int __public__getcwd(char *buf, size_t size);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__chdir(const char *path);
+int __public__os_chdir(const char *path);
 
 /**
  * @brief Get real user ID.
  */
-int __public__getuid(void);
+int __public__os_getuid(void);
 
 /**
  * @brief Get effective user ID.
  */
-int __public__geteuid(void);
+int __public__os_geteuid(void);
 
 /**
  * @brief Get real group ID.
  */
-int __public__getgid(void);
+int __public__os_getgid(void);
 
 /**
  * @brief Get effective group ID.
  */
-int __public__getegid(void);
+int __public__os_getegid(void);
 
 /**
  * @brief Set user ID.
  */
-int __public__setuid(int uid);
+int __public__os_setuid(int uid);
 
 /**
  * @brief Set group ID.
  */
-int __public__setgid(int gid);
+int __public__os_setgid(int gid);
 
 /**
  * @brief Set process group ID.
  */
-int __public__setpgid(int pid, int pgid);
+int __public__os_setpgid(int pid, int pgid);
 
 /**
  * @brief Get process group ID.
  */
-int __public__getpgid(int pid);
+int __public__os_getpgid(int pid);
 
 /**
  * @brief Get current process group ID.
  */
-int __public__getpgrp(void);
+int __public__os_getpgrp(void);
 
 /**
  * @brief Create a new session.
  */
-int __public__setsid(void);
+int __public__os_setsid(void);
 
 /**
  * @brief Get resource limit.
@@ -381,7 +384,7 @@ int __public__setsid(void);
  * @param resource Resource type.
  * @param rlim     Pointer to rlimit struct.
  */
-int __public__getrlimit(int resource, void *rlim);
+int __public__os_getrlimit(int resource, void *rlim);
 
 /**
  * @brief Set resource limit.
@@ -389,7 +392,7 @@ int __public__getrlimit(int resource, void *rlim);
  * @param resource Resource type.
  * @param rlim     Pointer to rlimit struct.
  */
-int __public__setrlimit(int resource, const void *rlim);
+int __public__os_setrlimit(int resource, const void *rlim);
 
 /**
  * @brief Install a signal handler.
@@ -399,7 +402,7 @@ int __public__setrlimit(int resource, const void *rlim);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__signal_install(int sig, void (*handler)(int));
+int __public__os_signal_install(int sig, void (*handler)(int));
 
 /**
  * @brief Open a file.
@@ -410,7 +413,7 @@ int __public__signal_install(int sig, void (*handler)(int));
  *
  * @return File descriptor or -1 on error.
  */
-int __public__open(const char *path, int flags, int mode);
+int __public__os_open(const char *path, int flags, int mode);
 
 /**
  * @brief Close a file descriptor.
@@ -419,7 +422,7 @@ int __public__open(const char *path, int flags, int mode);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__close(int fd);
+int __public__os_close(int fd);
 
 /**
  * @brief Read from a file descriptor.
@@ -430,7 +433,7 @@ int __public__close(int fd);
  *
  * @return Bytes read, 0 on EOF, or -1 on error.
  */
-ssize_t __public__read(int fd, void *buf, size_t n);
+ssize_t __public__os_read(int fd, void *buf, size_t n);
 
 /**
  * @brief Write to a file descriptor.
@@ -441,7 +444,7 @@ ssize_t __public__read(int fd, void *buf, size_t n);
  *
  * @return Bytes written or -1 on error.
  */
-ssize_t __public__write(int fd, const void *buf, size_t n);
+ssize_t __public__os_write(int fd, const void *buf, size_t n);
 
 /**
  * @brief Reposition file offset.
@@ -452,7 +455,7 @@ ssize_t __public__write(int fd, const void *buf, size_t n);
  *
  * @return New offset or -1 on error.
  */
-off_t __public__lseek(int fd, off_t offset, int whence);
+off_t __public__os_lseek(int fd, off_t offset, int whence);
 
 /**
  * @brief Get file status.
@@ -462,7 +465,7 @@ off_t __public__lseek(int fd, off_t offset, int whence);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__fstat(int fd, struct stat *st);
+int __public__os_fstat(int fd, struct stat *st);
 /**
  * @brief Duplicate a file descriptor.
  *
@@ -470,7 +473,7 @@ int __public__fstat(int fd, struct stat *st);
  *
  * @return New file descriptor or -1 on error.
  */
-int __public__dup(int fd);
+int __public__os_dup(int fd);
 
 /**
  * @brief Duplicate a file descriptor to a specific value.
@@ -480,7 +483,7 @@ int __public__dup(int fd);
  *
  * @return New FD or -1 on error.
  */
-int __public__dup2(int oldfd, int newfd);
+int __public__os_dup2(int oldfd, int newfd);
 
 /**
  * @brief Control file descriptor behavior.
@@ -491,7 +494,7 @@ int __public__dup2(int oldfd, int newfd);
  *
  * @return Result or -1 on error.
  */
-int __public__fcntl(int fd, int cmd, long arg);
+int __public__os_fcntl(int fd, int cmd, long arg);
 
 /**
  * @brief Create a directory.
@@ -501,7 +504,7 @@ int __public__fcntl(int fd, int cmd, long arg);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__mkdir(const char *path, int mode);
+int __public__os_mkdir(const char *path, int mode);
 
 /**
  * @brief Remove an empty directory.
@@ -510,7 +513,7 @@ int __public__mkdir(const char *path, int mode);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__rmdir(const char *path);
+int __public__os_rmdir(const char *path);
 
 /**
  * @brief Remove a file.
@@ -519,7 +522,7 @@ int __public__rmdir(const char *path);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__unlink(const char *path);
+int __public__os_unlink(const char *path);
 
 /**
  * @brief Rename a filesystem object.
@@ -529,7 +532,7 @@ int __public__unlink(const char *path);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__rename(const char *oldpath, const char *newpath);
+int __public__os_rename(const char *oldpath, const char *newpath);
 
 /**
  * @brief Rename with flags.
@@ -540,7 +543,7 @@ int __public__rename(const char *oldpath, const char *newpath);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__renameat2(const char *oldpath, const char *newpath, int flags);
+int __public__os_renameat2(const char *oldpath, const char *newpath, int flags);
 
 /**
  * @brief Create a hard link.
@@ -550,7 +553,7 @@ int __public__renameat2(const char *oldpath, const char *newpath, int flags);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__link(const char *oldpath, const char *newpath);
+int __public__os_link(const char *oldpath, const char *newpath);
 
 /**
  * @brief Create a symbolic link.
@@ -560,7 +563,7 @@ int __public__link(const char *oldpath, const char *newpath);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__symlink(const char *target, const char *linkpath);
+int __public__os_symlink(const char *target, const char *linkpath);
 
 /**
  * @brief Read a symbolic link.
@@ -571,7 +574,7 @@ int __public__symlink(const char *target, const char *linkpath);
  *
  * @return Number of bytes written or -1 on error.
  */
-ssize_t __public__readlink(const char *path, char *buf, size_t size);
+ssize_t __public__os_readlink(const char *path, char *buf, size_t size);
 
 /**
  * @brief Get file metadata (follow symlinks).
@@ -581,7 +584,7 @@ ssize_t __public__readlink(const char *path, char *buf, size_t size);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__stat(const char *path, struct stat *st);
+int __public__os_stat(const char *path, struct stat *st);
 
 /**
  * @brief Get file metadata (do not follow symlinks).
@@ -591,7 +594,7 @@ int __public__stat(const char *path, struct stat *st);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__lstat(const char *path, struct stat *st);
+int __public__os_lstat(const char *path, struct stat *st);
 
 /**
  * @brief Check access permissions.
@@ -601,7 +604,7 @@ int __public__lstat(const char *path, struct stat *st);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__access(const char *path, int mode);
+int __public__os_access(const char *path, int mode);
 
 /**
  * @brief Read directory entries.
@@ -615,7 +618,7 @@ int __public__access(const char *path, int mode);
  *
  * @return Number of bytes read or -1 on error.
  */
-int __public__getdents64(int fd, void *buf, size_t size);
+int __public__os_getdents64(int fd, void *buf, size_t size);
 
 /**
  * @brief Map virtual memory.
@@ -629,7 +632,7 @@ int __public__getdents64(int fd, void *buf, size_t size);
  *
  * @return Pointer to mapped memory or MAP_FAILED.
  */
-void *__public__mmap(void *addr, size_t len, int prot,
+void *__public__os_mmap(void *addr, size_t len, int prot,
               int flags, int fd, size_t off);
 
 /**
@@ -640,7 +643,7 @@ void *__public__mmap(void *addr, size_t len, int prot,
  *
  * @return 0 on success or -1 on error.
  */
-int __public__munmap(void *addr, size_t len);
+int __public__os_munmap(void *addr, size_t len);
 
 /**
  * @brief Change memory protection.
@@ -651,7 +654,7 @@ int __public__munmap(void *addr, size_t len);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__mprotect(void *addr, size_t len, int prot);
+int __public__os_mprotect(void *addr, size_t len, int prot);
 
 /**
  * @brief Advise kernel about memory usage.
@@ -662,7 +665,7 @@ int __public__mprotect(void *addr, size_t len, int prot);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__madvise(void *addr, size_t len, int advice);
+int __public__os_madvise(void *addr, size_t len, int advice);
 /**
  * @brief Lock memory into RAM.
  *
@@ -671,7 +674,7 @@ int __public__madvise(void *addr, size_t len, int advice);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__mlock(void *addr, size_t len);
+int __public__os_mlock(void *addr, size_t len);
 
 /**
  * @brief Unlock memory.
@@ -681,7 +684,7 @@ int __public__mlock(void *addr, size_t len);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__munlock(void *addr, size_t len);
+int __public__os_munlock(void *addr, size_t len);
 
 /**
  * @brief Control future/current memory locking.
@@ -690,21 +693,21 @@ int __public__munlock(void *addr, size_t len);
  *
  * @return 0 on success or -1 on error.
  */
-int __public__mlockall(int flags);
+int __public__os_mlockall(int flags);
 
 /**
  * @brief Unlock all locked memory.
  *
  * @return 0 on success or -1 on error.
  */
-int __public__munlockall(void);
+int __public__os_munlockall(void);
 
 /**
  * @brief Get system page size.
  *
  * @return Page size in bytes.
  */
-size_t __public__page_size(void);
+size_t __public__os_page_size(void);
 
 /** @futex: */
 
@@ -718,7 +721,7 @@ size_t __public__page_size(void);
  * @param timeout Optional timeout (NULL for infinite wait).
  * @return 0 on success or -1 on error.
  */
-int __public__futex_wait(int *uaddr, int val, const struct timespec *timeout);
+int __public__os_futex_wait(int *uaddr, int val, const struct timespec *timeout);
 
 /**
  * @brief Wake up threads waiting on a futex word.
@@ -727,7 +730,7 @@ int __public__futex_wait(int *uaddr, int val, const struct timespec *timeout);
  * @param count Maximum number of waiters to wake.
  * @return Number of woken threads or -1 on error.
  */
-int __public__futex_wake(int *uaddr, int count);
+int __public__os_futex_wake(int *uaddr, int count);
 
 /**
  * @brief Wait on a futex word with bitmask.
@@ -740,7 +743,7 @@ int __public__futex_wake(int *uaddr, int count);
  * @param mask Bitmask.
  * @return 0 on success or -1 on error.
  */
-int __public__futex_wait_bitset(int *uaddr,int val,const struct timespec *timeout,int mask);
+int __public__os_futex_wait_bitset(int *uaddr,int val,const struct timespec *timeout,int mask);
 
 /**
  * @brief Wake threads waiting on a futex word using a bitmask.
@@ -750,7 +753,7 @@ int __public__futex_wait_bitset(int *uaddr,int val,const struct timespec *timeou
  * @param mask Bitmask.
  * @return Number of woken threads or -1 on error.
  */
-int __public__futex_wake_bitset(int *uaddr, int count, int mask);
+int __public__os_futex_wake_bitset(int *uaddr, int count, int mask);
 
 /**
  * @brief Requeue waiters from one futex to another.
@@ -763,7 +766,7 @@ int __public__futex_wake_bitset(int *uaddr, int count, int mask);
  * @param uaddr2 Target futex.
  * @return Number of affected waiters or -1 on error.
  */
-int __public__futex_requeue( int *uaddr, int wake_count, int requeue_count, int *uaddr2);
+int __public__os_futex_requeue( int *uaddr, int wake_count, int requeue_count, int *uaddr2);
 
 /**
  * @brief Wake one waiter and requeue remaining waiters.
@@ -774,7 +777,7 @@ int __public__futex_requeue( int *uaddr, int wake_count, int requeue_count, int 
  * @param requeue_count Number of waiters to requeue.
  * @return Number of affected waiters or -1 on error.
  */
-int __public__futex_cmp_requeue( int *uaddr, int *uaddr2, int wake_count, int requeue_count, int val);
+int __public__os_futex_cmp_requeue( int *uaddr, int *uaddr2, int wake_count, int requeue_count, int val);
 
 
 /**
@@ -783,7 +786,7 @@ int __public__futex_cmp_requeue( int *uaddr, int *uaddr2, int wake_count, int re
  * @param uaddr Pointer to futex word.
  * @return Number of woken threads or -1 on error.
  */
-int __public__futex_wake_one(int *uaddr);
+int __public__os_futex_wake_one(int *uaddr);
 
 /**
  * @brief Wake all waiters.
@@ -791,5 +794,5 @@ int __public__futex_wake_one(int *uaddr);
  * @param uaddr Pointer to futex word.
  * @return Number of woken threads or -1 on error.
  */
-int __public__futex_wake_all(int *uaddr);
+int __public__os_futex_wake_all(int *uaddr);
 #endif

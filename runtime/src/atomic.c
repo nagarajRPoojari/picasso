@@ -1037,7 +1037,7 @@ _Bool __public__atomic_cas_double( _Atomic double *ptr, double expected, double 
  * @param ptr Pointer to an atomic pointer variable.
  * @param val Pointer value to store.
  */
-void __public__atomic_store_ptr(_Atomic void **ptr, void *val) { 
+void __public__atomic_store_ptr(_Atomic uintptr_t **ptr, void *val) { 
     atomic_store(ptr, val); 
 }
 /**
@@ -1045,7 +1045,7 @@ void __public__atomic_store_ptr(_Atomic void **ptr, void *val) {
  * @param ptr Pointer to an atomic pointer variable.
  * @return The loaded pointer value.
  */
-void *__public__atomic_load_ptr(_Atomic void **ptr) { 
+void *__public__atomic_load_ptr(_Atomic uintptr_t **ptr) { 
     return atomic_load(ptr); 
 }
 /**
@@ -1055,7 +1055,7 @@ void *__public__atomic_load_ptr(_Atomic void **ptr) {
  * @param desired Desired pointer value.
  * @return True if the swap was successful, false otherwise.
  */
-_Bool __public__atomic_cas_ptr(_Atomic void **ptr, void *expected, void *desired) {
+_Bool __public__atomic_cas_ptr(_Atomic uintptr_t **ptr, void *expected, void *desired) {
     return atomic_compare_exchange_strong(ptr, &expected, desired);
 }
 
@@ -1065,6 +1065,6 @@ _Bool __public__atomic_cas_ptr(_Atomic void **ptr, void *expected, void *desired
  * @param val Pointer value to store.
  * @return The previous pointer stored in *ptr.
  */
-void *__public__atomic_exchange_ptr(_Atomic void **ptr, void *val) {
+void *__public__atomic_exchange_ptr(_Atomic uintptr_t **ptr, void *val) {
     return atomic_exchange(ptr, val);
 }

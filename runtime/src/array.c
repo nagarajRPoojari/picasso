@@ -37,6 +37,10 @@ __public__array_t* __public__alloc_array(int count, int elem_size, int rank) {
     return arr;
 }
 
+int64_t __public__len(__public__array_t* arr) {
+    return arr->length;
+}
+
 /** @deprecated */
 void __public__debug_array_info(__public__array_t* arr) {
     if (arr == NULL) {

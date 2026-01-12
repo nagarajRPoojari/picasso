@@ -1,6 +1,8 @@
 #ifndef DISKIO_H
 #define DISKIO_H
 
+#include "stdio.h"
+
 #include "queue.h"
 #include "task.h"
 #include "array.h"
@@ -132,7 +134,7 @@ void async_file_write();
  *
  * @return Pointer to the allocated buffer on success, or NULL on error.
  */
-__public__array_t* __public__ascan(int n);
+__public__array_t* __public__asyncio_scan(int n);
 
 /**
  * @brief Format and write output to STDOUT, suspending the current task until done.
@@ -154,7 +156,7 @@ __public__array_t* __public__ascan(int n);
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__aprintf(const char* fmt, ...);
+ssize_t __public__asyncio_printf(const char* fmt, ...);
 
 /**
  * @brief Read up to n bytes from a file at a given offset, suspending the current task.
@@ -176,7 +178,7 @@ ssize_t __public__aprintf(const char* fmt, ...);
  *
  * @return Number of bytes read on success (ssize_t), or -1 on error.
  */
-ssize_t __public__afread(char* f, __public__array_t* buf, int n, int offset);
+ssize_t __public__asyncio_fread(char* f, __public__array_t* buf, int n, int offset);
 
 /**
  * @brief Write up to n bytes to a file at a given offset, suspending the current task.
@@ -198,7 +200,7 @@ ssize_t __public__afread(char* f, __public__array_t* buf, int n, int offset);
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__afwrite(char* f, __public__array_t* buf, int n, int offset);
+ssize_t __public__asyncio_fwrite(char* f, __public__array_t* buf, int n, int offset);
 
 /**
  * @brief Synchronously read up to n bytes from STDIN.
@@ -217,7 +219,7 @@ ssize_t __public__afwrite(char* f, __public__array_t* buf, int n, int offset);
  * @return Pointer to the allocated buffer containing the read data on success,
  *         or NULL on allocation failure or read error.
  */
-__public__array_t* __public__sscan(int n);
+__public__array_t* __public__syncio_scan(int n);
 
 /**
  * @brief Synchronously write formatted output to STDOUT.
@@ -237,7 +239,7 @@ __public__array_t* __public__sscan(int n);
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__sprintf(const char *fmt, ...) ;
+ssize_t __public__syncio_printf(const char *fmt, ...) ;
 
 /**
  * @brief Synchronously read up to n bytes from a file at a given offset.
@@ -260,7 +262,7 @@ ssize_t __public__sprintf(const char *fmt, ...) ;
  * @return Number of bytes actually read on success (0 indicates EOF),
  *         or -1 on error.
  */
-ssize_t __public__sfread(char* f, __public__array_t* buf, int n, int offset);
+ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offset);
 
 /**
  * @brief Synchronously write up to n bytes to a file at a given offset.
@@ -283,5 +285,10 @@ ssize_t __public__sfread(char* f, __public__array_t* buf, int n, int offset);
  * @return Number of bytes actually written on success,
  *         or -1 on error.
  */
-ssize_t __public__sfwrite(char* f, __public__array_t* buf, int n, int offset);
+ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offset);
+
+char* __public__syncio_fopen(const char* filename, const char* mode);
+int64_t __public__syncio_fclose(FILE* f);
+int64_t __public__syncio_fseek(FILE* f, int64_t offset, int whence);
+int64_t __public__syncio_fflush(FILE* f);
 #endif

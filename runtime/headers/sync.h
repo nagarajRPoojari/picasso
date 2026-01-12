@@ -19,11 +19,11 @@ typedef struct __public__rwmutex {
 }__public__rwmutex_t;
 
 
-__public__rwmutex_t* __public__rwmutex_create();
-void __public__rwmutex_rlock(__public__rwmutex_t* mux);
-void __public__rwmutex_rwlock(__public__rwmutex_t* mux);
-void __public__rwmutex_runlock(__public__rwmutex_t* mux);
-void __public__rwmutex_rwunlock(__public__rwmutex_t* mux);
+__public__rwmutex_t* __public__sync_rwmutex_create();
+void __public__sync_rwmutex_rlock(__public__rwmutex_t* mux);
+void __public__sync_rwmutex_rwlock(__public__rwmutex_t* mux);
+void __public__sync_rwmutex_runlock(__public__rwmutex_t* mux);
+void __public__sync_rwmutex_rwunlock(__public__rwmutex_t* mux);
 
 
 
@@ -33,8 +33,8 @@ typedef struct __public__mutex {
     safe_queue_t waiters;
 }__public__mutex_t;
 
-__public__mutex_t* __public__mutex_create(void);
-void __public__mutex_lock(__public__mutex_t* mtx);
-void __public__mutex_unlock(__public__mutex_t* mtx);
+__public__mutex_t* __public__sync_mutex_create(void);
+void __public__sync_mutex_lock(__public__mutex_t* mtx);
+void __public__sync_mutex_unlock(__public__mutex_t* mtx);
 
 #endif
