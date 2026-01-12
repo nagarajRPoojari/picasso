@@ -32,7 +32,7 @@ extern char **environ;
  *
  * @return Current errno.
  */
-int __public__errno(void) {
+int __public__os_errno(void) {
     return errno;
 }
 
@@ -41,7 +41,7 @@ int __public__errno(void) {
  *
  * @return Process ID.
  */
-int __public__getpid(void) {
+int __public__os_getpid(void) {
     return syscall(SYS_getpid);
 }
 
@@ -50,7 +50,7 @@ int __public__getpid(void) {
  *
  * @return Parent process ID.
  */
-int __public__getppid(void) {
+int __public__os_getppid(void) {
     return syscall(SYS_getppid);
 }
 
@@ -59,7 +59,7 @@ int __public__getppid(void) {
  *
  * @return Thread ID.
  */
-int __public__gettid(void) {
+int __public__os_gettid(void) {
     return syscall(SYS_gettid);
 }
 
@@ -68,7 +68,7 @@ int __public__gettid(void) {
  *
  * @param code Exit status.
  */
-void __public__exit(int code) {
+void __public__os_exit(int code) {
     syscall(SYS_exit, code);
     __builtin_unreachable();
 }
@@ -78,7 +78,7 @@ void __public__exit(int code) {
  *
  * @return 0 in child, child PID in parent, or -1 on error.
  */
-int __public__fork(void) {
+int __public__os_fork(void) {
     return syscall(SYS_clone, SIGCHLD, 0, 0, 0, 0);
 }
 
@@ -91,7 +91,7 @@ int __public__fork(void) {
  *
  * @return PID of child or -1 on error.
  */
-int __public__waitpid(int pid, int *status, int options) {
+int __public__os_waitpid(int pid, int *status, int options) {
     return syscall(SYS_wait4, pid, status, options, NULL);
 }
 
@@ -103,7 +103,7 @@ int __public__waitpid(int pid, int *status, int options) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__kill(int pid, int sig) {
+int __public__os_kill(int pid, int sig) {
     return syscall(SYS_kill, pid, sig);
 }
 
@@ -116,7 +116,7 @@ int __public__kill(int pid, int sig) {
  *
  * @return -1 on error (does not return on success).
  */
-int __public__execve(const char *path, char *const argv[], char *const envp[]) {
+int __public__os_execve(const char *path, char *const argv[], char *const envp[]) {
     return syscall(SYS_execve, path, argv, envp);
 }
 
@@ -128,7 +128,7 @@ int __public__execve(const char *path, char *const argv[], char *const envp[]) {
  *
  * @return -1 on error (does not return on success).
  */
-int __public__execvp(const char *file, char *const argv[]) {
+int __public__os_execvp(const char *file, char *const argv[]) {
     return syscall(SYS_execve, file, argv, environ);
 }
 
@@ -137,7 +137,7 @@ int __public__execvp(const char *file, char *const argv[]) {
  *
  * @return Pointer to environment vector.
  */
-char **__public__environ(void) {
+char **__public__os_environ(void) {
     return environ;
 }
 
@@ -148,7 +148,7 @@ char **__public__environ(void) {
  *
  * @return Value string or NULL if not found.
  */
-const char *__public__getenv(const char *key) {
+const char *__public__os_getenv(const char *key) {
     size_t klen = strlen(key);
     for (char **e = environ; *e; e++) {
         if (!strncmp(*e, key, klen) && (*e)[klen] == '=') {
@@ -167,8 +167,8 @@ const char *__public__getenv(const char *key) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__setenv(const char *key, const char *value, int overwrite) {
-    if (!overwrite && __public__getenv(key))
+int __public__os_setenv(const char *key, const char *value, int overwrite) {
+    if (!overwrite && __public__os_getenv(key))
         return 0;
 
     size_t klen = strlen(key), vlen = strlen(value);
@@ -202,7 +202,7 @@ int __public__setenv(const char *key, const char *value, int overwrite) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__unsetenv(const char *key) {
+int __public__os_unsetenv(const char *key) {
     size_t klen = strlen(key);
     for (int i = 0; environ[i]; i++) {
         if (!strncmp(environ[i], key, klen) && environ[i][klen] == '=') {
@@ -223,7 +223,7 @@ int __public__unsetenv(const char *key) {
  *
  * @return Length of path or -1 on error.
  */
-int __public__getcwd(char *buf, size_t size) {
+int __public__os_getcwd(char *buf, size_t size) {
     return syscall(SYS_getcwd, buf, size);
 }
 
@@ -234,77 +234,77 @@ int __public__getcwd(char *buf, size_t size) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__chdir(const char *path) {
+int __public__os_chdir(const char *path) {
     return syscall(SYS_chdir, path);
 }
 
 /**
  * @brief Get real user ID.
  */
-int __public__getuid(void) {
+int __public__os_getuid(void) {
     return syscall(SYS_getuid);
 }
 
 /**
  * @brief Get effective user ID.
  */
-int __public__geteuid(void) {
+int __public__os_geteuid(void) {
     return syscall(SYS_geteuid);
 }
 
 /**
  * @brief Get real group ID.
  */
-int __public__getgid(void) {
+int __public__os_getgid(void) {
     return syscall(SYS_getgid);
 }
 
 /**
  * @brief Get effective group ID.
  */
-int __public__getegid(void) {
+int __public__os_getegid(void) {
     return syscall(SYS_getegid);
 }
 
 /**
  * @brief Set user ID.
  */
-int __public__setuid(int uid) {
+int __public__os_setuid(int uid) {
     return syscall(SYS_setuid, uid);
 }
 
 /**
  * @brief Set group ID.
  */
-int __public__setgid(int gid) {
+int __public__os_setgid(int gid) {
     return syscall(SYS_setgid, gid);
 }
 
 /**
  * @brief Set process group ID.
  */
-int __public__setpgid(int pid, int pgid) {
+int __public__os_setpgid(int pid, int pgid) {
     return syscall(SYS_setpgid, pid, pgid);
 }
 
 /**
  * @brief Get process group ID.
  */
-int __public__getpgid(int pid) {
+int __public__os_getpgid(int pid) {
     return syscall(SYS_getpgid, pid);
 }
 
 /**
  * @brief Get current process group ID.
  */
-int __public__getpgrp(void) {
+int __public__os_getpgrp(void) {
     return syscall(SYS_getpgid, 0);
 }
 
 /**
  * @brief Create a new session.
  */
-int __public__setsid(void) {
+int __public__os_setsid(void) {
     return syscall(SYS_setsid);
 }
 
@@ -314,7 +314,7 @@ int __public__setsid(void) {
  * @param resource Resource type.
  * @param rlim     Pointer to rlimit struct.
  */
-int __public__getrlimit(int resource, void *rlim) {
+int __public__os_getrlimit(int resource, void *rlim) {
     return syscall(SYS_getrlimit, resource, rlim);
 }
 
@@ -324,7 +324,7 @@ int __public__getrlimit(int resource, void *rlim) {
  * @param resource Resource type.
  * @param rlim     Pointer to rlimit struct.
  */
-int __public__setrlimit(int resource, const void *rlim) {
+int __public__os_setrlimit(int resource, const void *rlim) {
     return syscall(SYS_setrlimit, resource, rlim);
 }
 
@@ -336,7 +336,7 @@ int __public__setrlimit(int resource, const void *rlim) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__signal_install(int sig, void (*handler)(int)) {
+int __public__os_signal_install(int sig, void (*handler)(int)) {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = handler;
@@ -352,7 +352,7 @@ int __public__signal_install(int sig, void (*handler)(int)) {
  *
  * @return File descriptor or -1 on error.
  */
-int __public__open(const char *path, int flags, int mode) {
+int __public__os_open(const char *path, int flags, int mode) {
     return syscall(SYS_openat, AT_FDCWD, path, flags, mode);
 }
 
@@ -363,7 +363,7 @@ int __public__open(const char *path, int flags, int mode) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__close(int fd) {
+int __public__os_close(int fd) {
     return syscall(SYS_close, fd);
 }
 
@@ -376,7 +376,7 @@ int __public__close(int fd) {
  *
  * @return Bytes read, 0 on EOF, or -1 on error.
  */
-ssize_t __public__read(int fd, void *buf, size_t n) {
+ssize_t __public__os_read(int fd, void *buf, size_t n) {
     return syscall(SYS_read, fd, buf, n);
 }
 
@@ -389,7 +389,7 @@ ssize_t __public__read(int fd, void *buf, size_t n) {
  *
  * @return Bytes written or -1 on error.
  */
-ssize_t __public__write(int fd, const void *buf, size_t n) {
+ssize_t __public__os_write(int fd, const void *buf, size_t n) {
     return syscall(SYS_write, fd, buf, n);
 }
 
@@ -402,7 +402,7 @@ ssize_t __public__write(int fd, const void *buf, size_t n) {
  *
  * @return New offset or -1 on error.
  */
-off_t __public__lseek(int fd, off_t offset, int whence) {
+off_t __public__os_lseek(int fd, off_t offset, int whence) {
     return syscall(SYS_lseek, fd, offset, whence);
 }
 
@@ -414,7 +414,7 @@ off_t __public__lseek(int fd, off_t offset, int whence) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__fstat(int fd, struct stat *st) {
+int __public__os_fstat(int fd, struct stat *st) {
     return syscall(SYS_fstat, fd, st);
 }
 
@@ -425,7 +425,7 @@ int __public__fstat(int fd, struct stat *st) {
  *
  * @return New file descriptor or -1 on error.
  */
-int __public__dup(int fd) {
+int __public__os_dup(int fd) {
     return syscall(SYS_dup, fd);
 }
 
@@ -437,7 +437,7 @@ int __public__dup(int fd) {
  *
  * @return New FD or -1 on error.
  */
-int __public__dup2(int oldfd, int newfd) {
+int __public__os_dup2(int oldfd, int newfd) {
     return syscall(SYS_dup3, oldfd, newfd, 0);
 }
 
@@ -450,7 +450,7 @@ int __public__dup2(int oldfd, int newfd) {
  *
  * @return Result or -1 on error.
  */
-int __public__fcntl(int fd, int cmd, long arg) {
+int __public__os_fcntl(int fd, int cmd, long arg) {
     return syscall(SYS_fcntl, fd, cmd, arg);
 }
 
@@ -462,7 +462,7 @@ int __public__fcntl(int fd, int cmd, long arg) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__mkdir(const char *path, int mode) {
+int __public__os_mkdir(const char *path, int mode) {
     return syscall(SYS_mkdirat, AT_FDCWD, path, mode);
 }
 
@@ -473,7 +473,7 @@ int __public__mkdir(const char *path, int mode) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__rmdir(const char *path) {
+int __public__os_rmdir(const char *path) {
     return syscall(SYS_unlinkat, AT_FDCWD, path, AT_REMOVEDIR);
 }
 
@@ -484,7 +484,7 @@ int __public__rmdir(const char *path) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__unlink(const char *path) {
+int __public__os_unlink(const char *path) {
     return syscall(SYS_unlinkat, AT_FDCWD, path, 0);
 }
 
@@ -496,7 +496,7 @@ int __public__unlink(const char *path) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__rename(const char *oldpath, const char *newpath) {
+int __public__os_rename(const char *oldpath, const char *newpath) {
     return syscall(SYS_renameat, AT_FDCWD, oldpath, AT_FDCWD, newpath);
 }
 
@@ -509,7 +509,7 @@ int __public__rename(const char *oldpath, const char *newpath) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__renameat2(const char *oldpath, const char *newpath, int flags) {
+int __public__os_renameat2(const char *oldpath, const char *newpath, int flags) {
     return syscall(SYS_renameat2, AT_FDCWD, oldpath, AT_FDCWD, newpath, flags);
 }
 
@@ -521,7 +521,7 @@ int __public__renameat2(const char *oldpath, const char *newpath, int flags) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__link(const char *oldpath, const char *newpath) {
+int __public__os_link(const char *oldpath, const char *newpath) {
     return syscall(SYS_linkat, AT_FDCWD, oldpath, AT_FDCWD, newpath, 0);
 }
 
@@ -533,7 +533,7 @@ int __public__link(const char *oldpath, const char *newpath) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__symlink(const char *target, const char *linkpath) {
+int __public__os_symlink(const char *target, const char *linkpath) {
     return syscall(SYS_symlinkat, target, AT_FDCWD, linkpath);
 }
 
@@ -546,7 +546,7 @@ int __public__symlink(const char *target, const char *linkpath) {
  *
  * @return Number of bytes written or -1 on error.
  */
-ssize_t __public__readlink(const char *path, char *buf, size_t size) {
+ssize_t __public__os_readlink(const char *path, char *buf, size_t size) {
     return syscall(SYS_readlinkat, AT_FDCWD, path, buf, size);
 }
 
@@ -558,7 +558,7 @@ ssize_t __public__readlink(const char *path, char *buf, size_t size) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__access(const char *path, int mode) {
+int __public__os_access(const char *path, int mode) {
     return syscall(SYS_faccessat, AT_FDCWD, path, mode, 0);
 }
 
@@ -570,7 +570,7 @@ int __public__access(const char *path, int mode) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__stat(const char *path, struct stat *st) {
+int __public__os_stat(const char *path, struct stat *st) {
     return syscall(SYS_newfstatat, AT_FDCWD, path, st, 0);
 }
 
@@ -582,7 +582,7 @@ int __public__stat(const char *path, struct stat *st) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__lstat(const char *path, struct stat *st) {
+int __public__os_lstat(const char *path, struct stat *st) {
     return syscall(SYS_newfstatat, AT_FDCWD, path, st, AT_SYMLINK_NOFOLLOW);
 }
 
@@ -598,7 +598,7 @@ int __public__lstat(const char *path, struct stat *st) {
  *
  * @return Number of bytes read or -1 on error.
  */
-int __public__getdents64(int fd, void *buf, size_t size) {
+int __public__os_getdents64(int fd, void *buf, size_t size) {
     return syscall(SYS_getdents64, fd, buf, size);
 }
 
@@ -614,7 +614,7 @@ int __public__getdents64(int fd, void *buf, size_t size) {
  *
  * @return Pointer to mapped memory or MAP_FAILED.
  */
-void *__public__mmap(void *addr, size_t len, int prot, int flags, int fd, size_t off) {
+void *__public__os_mmap(void *addr, size_t len, int prot, int flags, int fd, size_t off) {
     return (void *)syscall(SYS_mmap, addr, len, prot, flags, fd, off);
 }
 
@@ -626,7 +626,7 @@ void *__public__mmap(void *addr, size_t len, int prot, int flags, int fd, size_t
  *
  * @return 0 on success or -1 on error.
  */
-int __public__munmap(void *addr, size_t len) {
+int __public__os_munmap(void *addr, size_t len) {
     return syscall(SYS_munmap, addr, len);
 }
 
@@ -639,7 +639,7 @@ int __public__munmap(void *addr, size_t len) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__mprotect(void *addr, size_t len, int prot) {
+int __public__os_mprotect(void *addr, size_t len, int prot) {
     return syscall(SYS_mprotect, addr, len, prot);
 }
 
@@ -652,7 +652,7 @@ int __public__mprotect(void *addr, size_t len, int prot) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__madvise(void *addr, size_t len, int advice) {
+int __public__os_madvise(void *addr, size_t len, int advice) {
     return syscall(SYS_madvise, addr, len, advice);
 }
 
@@ -664,7 +664,7 @@ int __public__madvise(void *addr, size_t len, int advice) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__mlock(void *addr, size_t len) {
+int __public__os_mlock(void *addr, size_t len) {
     return syscall(SYS_mlock, addr, len);
 }
 
@@ -676,7 +676,7 @@ int __public__mlock(void *addr, size_t len) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__munlock(void *addr, size_t len) {
+int __public__os_munlock(void *addr, size_t len) {
     return syscall(SYS_munlock, addr, len);
 }
 
@@ -687,7 +687,7 @@ int __public__munlock(void *addr, size_t len) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__mlockall(int flags) {
+int __public__os_mlockall(int flags) {
     return syscall(SYS_mlockall, flags);
 }
 
@@ -696,7 +696,7 @@ int __public__mlockall(int flags) {
  *
  * @return 0 on success or -1 on error.
  */
-int __public__munlockall(void) {
+int __public__os_munlockall(void) {
     return syscall(SYS_munlockall);
 }
 
@@ -705,7 +705,7 @@ int __public__munlockall(void) {
  *
  * @return Page size in bytes.
  */
-size_t __public__page_size(void) {
+size_t __public__os_page_size(void) {
     return sysconf(_SC_PAGESIZE);
 }
 
@@ -721,7 +721,7 @@ size_t __public__page_size(void) {
  * @param timeout Optional timeout (NULL for infinite wait).
  * @return 0 on success or -1 on error.
  */
-int __public__futex_wait(int *uaddr, int val, const struct timespec *timeout) {
+int __public__os_futex_wait(int *uaddr, int val, const struct timespec *timeout) {
     return syscall(SYS_futex,uaddr,FUTEX_WAIT,val,timeout,NULL,0);
 }
 
@@ -732,7 +732,7 @@ int __public__futex_wait(int *uaddr, int val, const struct timespec *timeout) {
  * @param count Maximum number of waiters to wake.
  * @return Number of woken threads or -1 on error.
  */
-int __public__futex_wake(int *uaddr, int count) {
+int __public__os_futex_wake(int *uaddr, int count) {
     return syscall(SYS_futex,uaddr,FUTEX_WAKE,count,NULL,NULL,0);
 }
 
@@ -747,7 +747,7 @@ int __public__futex_wake(int *uaddr, int count) {
  * @param mask Bitmask.
  * @return 0 on success or -1 on error.
  */
-int __public__futex_wait_bitset(int *uaddr,int val,const struct timespec *timeout,int mask) {
+int __public__os_futex_wait_bitset(int *uaddr,int val,const struct timespec *timeout,int mask) {
     return syscall(SYS_futex, uaddr, FUTEX_WAIT_BITSET, val, timeout, NULL, mask);
 }
 
@@ -759,7 +759,7 @@ int __public__futex_wait_bitset(int *uaddr,int val,const struct timespec *timeou
  * @param mask Bitmask.
  * @return Number of woken threads or -1 on error.
  */
-int __public__futex_wake_bitset(int *uaddr, int count, int mask) {
+int __public__os_futex_wake_bitset(int *uaddr, int count, int mask) {
     return syscall(SYS_futex, uaddr, FUTEX_WAKE_BITSET, count, NULL, NULL, mask);
 }
 
@@ -774,7 +774,7 @@ int __public__futex_wake_bitset(int *uaddr, int count, int mask) {
  * @param uaddr2 Target futex.
  * @return Number of affected waiters or -1 on error.
  */
-int __public__futex_requeue( int *uaddr, int wake_count, int requeue_count, int *uaddr2) {
+int __public__os_futex_requeue( int *uaddr, int wake_count, int requeue_count, int *uaddr2) {
     return syscall( SYS_futex, uaddr, FUTEX_REQUEUE, wake_count, requeue_count, uaddr2, 0);
 }
 
@@ -787,7 +787,7 @@ int __public__futex_requeue( int *uaddr, int wake_count, int requeue_count, int 
  * @param requeue_count Number of waiters to requeue.
  * @return Number of affected waiters or -1 on error.
  */
-int __public__futex_cmp_requeue( int *uaddr, int *uaddr2, int wake_count, int requeue_count, int val) {
+int __public__os_futex_cmp_requeue( int *uaddr, int *uaddr2, int wake_count, int requeue_count, int val) {
     return syscall( SYS_futex, uaddr, FUTEX_CMP_REQUEUE, wake_count, requeue_count, uaddr2, val);
 }
 
@@ -797,7 +797,7 @@ int __public__futex_cmp_requeue( int *uaddr, int *uaddr2, int wake_count, int re
  * @param uaddr Pointer to futex word.
  * @return Number of woken threads or -1 on error.
  */
-int __public__futex_wake_one(int *uaddr) {
+int __public__os_futex_wake_one(int *uaddr) {
     return syscall( SYS_futex, uaddr, FUTEX_WAKE, 1, NULL, NULL, 0);
 }
 
@@ -807,6 +807,6 @@ int __public__futex_wake_one(int *uaddr) {
  * @param uaddr Pointer to futex word.
  * @return Number of woken threads or -1 on error.
  */
-int __public__futex_wake_all(int *uaddr) {
+int __public__os_futex_wake_all(int *uaddr) {
     return syscall( SYS_futex, uaddr, FUTEX_WAKE, INT_MAX, NULL, NULL, 0);
 }
