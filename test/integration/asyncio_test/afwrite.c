@@ -78,7 +78,7 @@ static void* __public__afwrite_thread_func(void* arg) {
 
     __public__array_t* buf = mock_alloc_array(10, sizeof(size_t), 1);
     for(int i=0; i<10; i++) buf->data[i] = 'a' + i%26;
-    ssize_t r = __public__sfwrite(file, buf, 10, 0);
+    ssize_t r = __public__asyncio_fwrite(file, buf, 10, 0);
     fclose(file);
 
     TEST_ASSERT_EQUAL(10, r);

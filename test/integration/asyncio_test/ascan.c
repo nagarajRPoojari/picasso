@@ -98,7 +98,7 @@ static void* __public__ascan_thread_func(void* arg) {
     redirect_stdin_pipe("dummy input from user\n", &saved_stdin);
     
     self_yield();
-    buf = __public__ascan(11);
+    buf = __public__syncio_scan(11);
     restore_stdin(saved_stdin);
 
     TEST_ASSERT_NOT_NULL(buf);

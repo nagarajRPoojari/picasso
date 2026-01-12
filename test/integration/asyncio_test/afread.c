@@ -77,7 +77,7 @@ static void* __public__afread_thread_func(void* arg) {
     TEST_ASSERT_NOT_NULL(file);
 
     __public__array_t* buf = mock_alloc_array(1024, sizeof(size_t), 1);
-    ssize_t r = __public__afread(file, buf, 1024, 0);
+    ssize_t r = __public__asyncio_fread(file, buf, 1024, 0);
     fclose(file);
 
     TEST_ASSERT_EQUAL(57, r);

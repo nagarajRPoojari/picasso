@@ -102,7 +102,7 @@ void test__public__sscan(void) {
 
     /* small reads */
     redirect_stdin_pipe("dummy input from user\n", &saved_stdin);
-    buf = __public__sscan(11);
+    buf = __public__syncio_scan(11);
     restore_stdin(saved_stdin);
 
     TEST_ASSERT_NOT_NULL(buf);
@@ -117,7 +117,7 @@ void test__public__sscan(void) {
     input[n - 1] = '\0';
 
     redirect_stdin_pipe(input, &saved_stdin);
-    buf = __public__sscan(n - 1);
+    buf = __public__syncio_scan(n - 1);
     restore_stdin(saved_stdin);
 
     TEST_ASSERT_NOT_NULL(buf);
@@ -125,7 +125,7 @@ void test__public__sscan(void) {
 
     /* input < requested length (read-some semantics) */
     redirect_stdin_pipe("input is only", &saved_stdin);
-    buf = __public__sscan(20);
+    buf = __public__syncio_scan(20);
     restore_stdin(saved_stdin);
 
     TEST_ASSERT_NOT_NULL(buf);
@@ -138,7 +138,7 @@ void test__public__sprintf(void) {
     int readfd = redirect_stdout_pipe(&saved_stdout);
 
     /* call function */
-    ssize_t ret = __public__sprintf("hello %d %s", 42, "world");
+    ssize_t ret = __public__syncio_printf("hello %d %s", 42, "world");
 
     /* restore stdout */
     restore_stout(saved_stdout);
@@ -157,7 +157,7 @@ void test__public__sfread(void) {
     FILE* file = fopen("test/data/test__public__sfread.txt", "r+");
 
     __public__array_t* buf = mock_alloc_array(1024, sizeof(size_t), 1);
-    ssize_t r = __public__sfread((char*)file, buf, 1024, 0);
+    ssize_t r = __public__syncio_fread((char*)file, buf, 1024, 0);
     
     TEST_ASSERT_EQUAL(57, r);
     TEST_ASSERT_EQUAL_STRING("Synchronously read n bytes from a file at a given offset.", buf->data);
@@ -168,7 +168,7 @@ void test__public__sfwrite(void) {
     
     __public__array_t* buf = mock_alloc_array(10, sizeof(size_t), 1);
     for(int i=0; i<10; i++) buf->data[i] = 'a' + i%26;
-    ssize_t r = __public__sfwrite((char*)file, buf, 10, 0);
+    ssize_t r = __public__syncio_fwrite((char*)file, buf, 10, 0);
     
     TEST_ASSERT_EQUAL(10, r);
 }

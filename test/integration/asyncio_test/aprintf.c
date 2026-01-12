@@ -69,7 +69,7 @@ static void* __public__aprintf_thread_func(void* arg) {
     int readfd = redirect_stdout_pipe(&saved_stdout, &write_end);
 
     self_yield();
-    ssize_t ret = __public__aprintf("hello %d %s", 42, "world");
+    ssize_t ret = __public__asyncio_printf("hello %d %s", 42, "world");
 
     restore_stdout(saved_stdout, write_end);
 
