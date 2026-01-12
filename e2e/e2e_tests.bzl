@@ -35,6 +35,8 @@ def e2e_tests(name, runner, niyama):
                 "//irgen",
                 "//:runtime_lib",
                 ":%s" % filegroup_name,
+                "//:runtime_headers",
+                "//libs:ffi_libs", 
             ],
             timeout = "long",
             visibility = ["//visibility:public"],
