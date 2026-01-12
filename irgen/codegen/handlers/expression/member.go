@@ -33,16 +33,18 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 	x, ok := ex.Member.(ast.SymbolExpression)
 	if ok {
 		if _, ok := t.st.Imports[x.Value]; ok {
-			// fName := fmt.Sprintf("%s.%s", t.st.Imports[x.Value].Name, ex.Property)
-			v, ok := t.st.CI.Constants[ex.Property]
-			if !ok {
-				if v, ok := t.st.Vars.Search(fmt.Sprintf("%s.%s", x.Value, ex.Property)); ok {
-					return v
+			ffd, ok := t.st.FFIModules[x.Value]
+			if ok {
+				v, ok := ffd.Globals[fmt.Sprintf("__public__%s_%s", x.Value, ex.Property)]
+				if ok {
+					val := bh.N.NewLoad(v.ContentType, v)
+					return t.st.TypeHandler.BuildVar(bh, tf.NewType(v.ContentType.String()), val)
 				}
-				errorutils.Abort(errorutils.UnknownVariable, ex.Property)
 			}
-			val := bh.N.NewLoad(types.I32, v)
-			return t.st.TypeHandler.BuildVar(bh, tf.NewType("int32"), val)
+			if v, ok := t.st.Vars.Search(fmt.Sprintf("%s.%s", x.Value, ex.Property)); ok {
+				return v
+			}
+			errorutils.Abort(errorutils.UnknownVariable, ex.Property)
 		}
 	}
 

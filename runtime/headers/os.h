@@ -23,171 +23,171 @@
 #endif
 
 /** Operation would block */
-const int OS_EAGAIN = EAGAIN;
+const int __public__os_EAGAIN = EAGAIN;
 /** Interrupted system call */
-const int OS_EINTR  = EINTR;
+const int __public__os_EINTR  = EINTR;
 /** Invalid argument */
-const int OS_EINVAL = EINVAL;
+const int __public__os_EINVAL = EINVAL;
 /** Permission denied */
-const int OS_EPERM  = EPERM;
+const int __public__os_EPERM  = EPERM;
 /** No such file or process */
-const int OS_ENOENT = ENOENT;
+const int __public__os_ENOENT = ENOENT;
 /** Out of memory */
-const int OS_ENOMEM = ENOMEM;
+const int __public__os_ENOMEM = ENOMEM;
 
 
-const int OS_WNOHANG   = WNOHANG;
-const int OS_WUNTRACED = WUNTRACED;
-const int OS_WCONTINUED = WCONTINUED;
+const int __public__os_WNOHANG   = WNOHANG;
+const int __public__os_WUNTRACED = WUNTRACED;
+const int __public__os_WCONTINUED = WCONTINUED;
 
-const int OS_SIGINT  = SIGINT;
-const int OS_SIGTERM = SIGTERM;
-const int OS_SIGKILL = SIGKILL;
-const int OS_SIGSEGV = SIGSEGV;
-const int OS_SIGABRT = SIGABRT;
-const int OS_SIGCHLD = SIGCHLD;
-const int OS_SIGPIPE = SIGPIPE;
-const int OS_SIGALRM = SIGALRM;
-const int OS_SIGUSR1 = SIGUSR1;
-const int OS_SIGUSR2 = SIGUSR2;
+const int __public__os_SIGINT  = SIGINT;
+const int __public__os_SIGTERM = SIGTERM;
+const int __public__os_SIGKILL = SIGKILL;
+const int __public__os_SIGSEGV = SIGSEGV;
+const int __public__os_SIGABRT = SIGABRT;
+const int __public__os_SIGCHLD = SIGCHLD;
+const int __public__os_SIGPIPE = SIGPIPE;
+const int __public__os_SIGALRM = SIGALRM;
+const int __public__os_SIGUSR1 = SIGUSR1;
+const int __public__os_SIGUSR2 = SIGUSR2;
 
-const int OS_RLIMIT_CPU    = RLIMIT_CPU;
-const int OS_RLIMIT_FSIZE = RLIMIT_FSIZE;
-const int OS_RLIMIT_DATA  = RLIMIT_DATA;
-const int OS_RLIMIT_STACK = RLIMIT_STACK;
-const int OS_RLIMIT_CORE  = RLIMIT_CORE;
-const int OS_RLIMIT_NOFILE = RLIMIT_NOFILE;
-const int OS_RLIMIT_AS    = RLIMIT_AS;
+const int __public__os_RLIMIT_CPU    = RLIMIT_CPU;
+const int __public__os_RLIMIT_FSIZE = RLIMIT_FSIZE;
+const int __public__os_RLIMIT_DATA  = RLIMIT_DATA;
+const int __public__os_RLIMIT_STACK = RLIMIT_STACK;
+const int __public__os_RLIMIT_CORE  = RLIMIT_CORE;
+const int __public__os_RLIMIT_NOFILE = RLIMIT_NOFILE;
+const int __public__os_RLIMIT_AS    = RLIMIT_AS;
 
 /* Standard file descriptor numbers */
 /** Standard input */
-const int OS_STDIN_FD  = 0;
+const int __public__os_STDIN_FD  = 0;
 /** Standard output */
-const int OS_STDOUT_FD = 1;
+const int __public__os_STDOUT_FD = 1;
 /** Standard error */
-const int OS_STDERR_FD = 2;
+const int __public__os_STDERR_FD = 2;
 
 /*open() flags*/
-const int OS_O_RDONLY   = O_RDONLY;
-const int OS_O_WRONLY   = O_WRONLY;
-const int OS_O_RDWR     = O_RDWR;
-const int OS_O_APPEND   = O_APPEND;
-const int OS_O_CREAT    = O_CREAT;
-const int OS_O_EXCL     = O_EXCL;
-const int OS_O_TRUNC    = O_TRUNC;
-const int OS_O_CLOEXEC  = O_CLOEXEC;
-const int OS_O_NONBLOCK = O_NONBLOCK;
-const int OS_O_SYNC     = O_SYNC;
-const int OS_O_DSYNC    = O_DSYNC;
-const int OS_O_DIRECT   = O_DIRECT;
+const int __public__os_O_RDONLY   = O_RDONLY;
+const int __public__os_O_WRONLY   = O_WRONLY;
+const int __public__os_O_RDWR     = O_RDWR;
+const int __public__os_O_APPEND   = O_APPEND;
+const int __public__os_O_CREAT    = O_CREAT;
+const int __public__os_O_EXCL     = O_EXCL;
+const int __public__os_O_TRUNC    = O_TRUNC;
+const int __public__os_O_CLOEXEC  = O_CLOEXEC;
+const int __public__os_O_NONBLOCK = O_NONBLOCK;
+const int __public__os_O_SYNC     = O_SYNC;
+const int __public__os_O_DSYNC    = O_DSYNC;
+const int __public__os_O_DIRECT   = O_DIRECT;
 
 /*seek constants*/
-const int OS_SEEK_SET = SEEK_SET;
-const int OS_SEEK_CUR = SEEK_CUR;
-const int OS_SEEK_END = SEEK_END;
+const int __public__os_SEEK_SET = SEEK_SET;
+const int __public__os_SEEK_CUR = SEEK_CUR;
+const int __public__os_SEEK_END = SEEK_END;
 
 /*fcntl commands*/
-const int OS_F_DUPFD        = F_DUPFD;
-const int OS_F_DUPFD_CLOEXEC = F_DUPFD_CLOEXEC;
-const int OS_F_GETFD        = F_GETFD;
-const int OS_F_SETFD        = F_SETFD;
-const int OS_F_GETFL        = F_GETFL;
-const int OS_F_SETFL        = F_SETFL;
+const int __public__os_F_DUPFD        = F_DUPFD;
+const int __public__os_F_DUPFD_CLOEXEC = F_DUPFD_CLOEXEC;
+const int __public__os_F_GETFD        = F_GETFD;
+const int __public__os_F_SETFD        = F_SETFD;
+const int __public__os_F_GETFL        = F_GETFL;
+const int __public__os_F_SETFL        = F_SETFL;
 
 /*FD flags*/
-const int OS_FD_CLOEXEC = FD_CLOEXEC;
+const int __public__os_FD_CLOEXEC = FD_CLOEXEC;
 
 /*stat mode bits*/
-const int OS_S_IFREG = S_IFREG;
-const int OS_S_IFDIR = S_IFDIR;
-const int OS_S_IFCHR = S_IFCHR;
-const int OS_S_IFBLK = S_IFBLK;
-const int OS_S_IFIFO = S_IFIFO;
-const int OS_S_IFLNK = S_IFLNK;
-const int OS_S_IFSOCK = S_IFSOCK;
+const int __public__os_S_IFREG = S_IFREG;
+const int __public__os_S_IFDIR = S_IFDIR;
+const int __public__os_S_IFCHR = S_IFCHR;
+const int __public__os_S_IFBLK = S_IFBLK;
+const int __public__os_S_IFIFO = S_IFIFO;
+const int __public__os_S_IFLNK = S_IFLNK;
+const int __public__os_S_IFSOCK = S_IFSOCK;
 
-const int OS_S_IRUSR = S_IRUSR;
-const int OS_S_IWUSR = S_IWUSR;
-const int OS_S_IXUSR = S_IXUSR;
-const int OS_S_IRGRP = S_IRGRP;
-const int OS_S_IWGRP = S_IWGRP;
-const int OS_S_IXGRP = S_IXGRP;
-const int OS_S_IROTH = S_IROTH;
-const int OS_S_IWOTH = S_IWOTH;
-const int OS_S_IXOTH = S_IXOTH;
+const int __public__os_S_IRUSR = S_IRUSR;
+const int __public__os_S_IWUSR = S_IWUSR;
+const int __public__os_S_IXUSR = S_IXUSR;
+const int __public__os_S_IRGRP = S_IRGRP;
+const int __public__os_S_IWGRP = S_IWGRP;
+const int __public__os_S_IXGRP = S_IXGRP;
+const int __public__os_S_IROTH = S_IROTH;
+const int __public__os_S_IWOTH = S_IWOTH;
+const int __public__os_S_IXOTH = S_IXOTH;
 
 /* Errors (FD-relevant subset)*/
-const int OS_EBADF  = EBADF;
-const int OS_EPIPE  = EPIPE;
-const int OS_EIO    = EIO;
-const int OS_ENOSPC = ENOSPC;
+const int __public__os_EBADF  = EBADF;
+const int __public__os_EPIPE  = EPIPE;
+const int __public__os_EIO    = EIO;
+const int __public__os_ENOSPC = ENOSPC;
 
 /*Special directory FDs*/
 /** Current working directory */
-const int OS_AT_FDCWD = AT_FDCWD;
+const int __public__os_AT_FDCWD = AT_FDCWD;
 
 /*unlinkat / renameat flags*/
-const int OS_AT_REMOVEDIR = AT_REMOVEDIR;
-const int OS_AT_SYMLINK_FOLLOW = AT_SYMLINK_FOLLOW;
+const int __public__os_AT_REMOVEDIR = AT_REMOVEDIR;
+const int __public__os_AT_SYMLINK_FOLLOW = AT_SYMLINK_FOLLOW;
 
 /*link / rename flags*/
-const int OS_RENAME_NOREPLACE = 1; // RENAME_NOREPLACE
-const int OS_RENAME_EXCHANGE  = 2; // RENAME_EXCHANGE
-const int OS_RENAME_WHITEOUT  = 4; // RENAME_WHITEOUT
+const int __public__os_RENAME_NOREPLACE = 1; // RENAME_NOREPLACE
+const int __public__os_RENAME_EXCHANGE  = 2; // RENAME_EXCHANGE
+const int __public__os_RENAME_WHITEOUT  = 4; // RENAME_WHITEOUT
 
 /*Access mode flags*/
-const int OS_F_OK = F_OK;
-const int OS_R_OK = R_OK;
-const int OS_W_OK = W_OK;
-const int OS_X_OK = X_OK;
+const int __public__os_F_OK = F_OK;
+const int __public__os_R_OK = R_OK;
+const int __public__os_W_OK = W_OK;
+const int __public__os_X_OK = X_OK;
 
 /*Directory entry types (d_type)*/
-const int OS_DT_UNKNOWN = DT_UNKNOWN;
-const int OS_DT_FIFO    = DT_FIFO;
-const int OS_DT_CHR     = DT_CHR;
-const int OS_DT_DIR     = DT_DIR;
-const int OS_DT_BLK     = DT_BLK;
-const int OS_DT_REG     = DT_REG;
-const int OS_DT_LNK     = DT_LNK;
-const int OS_DT_SOCK    = DT_SOCK;
-const int OS_DT_WHT     = DT_WHT;
+const int __public__os_DT_UNKNOWN = DT_UNKNOWN;
+const int __public__os_DT_FIFO    = DT_FIFO;
+const int __public__os_DT_CHR     = DT_CHR;
+const int __public__os_DT_DIR     = DT_DIR;
+const int __public__os_DT_BLK     = DT_BLK;
+const int __public__os_DT_REG     = DT_REG;
+const int __public__os_DT_LNK     = DT_LNK;
+const int __public__os_DT_SOCK    = DT_SOCK;
+const int __public__os_DT_WHT     = DT_WHT;
 
 
 /*Memory protection flags*/
-const int OS_PROT_NONE  = PROT_NONE;
-const int OS_PROT_READ  = PROT_READ;
-const int OS_PROT_WRITE = PROT_WRITE;
-const int OS_PROT_EXEC  = PROT_EXEC;
+const int __public__os_PROT_NONE  = PROT_NONE;
+const int __public__os_PROT_READ  = PROT_READ;
+const int __public__os_PROT_WRITE = PROT_WRITE;
+const int __public__os_PROT_EXEC  = PROT_EXEC;
 
 /*mmap flags*/
-const int OS_MAP_SHARED    = MAP_SHARED;
-const int OS_MAP_PRIVATE   = MAP_PRIVATE;
-const int OS_MAP_FIXED     = MAP_FIXED;
-const int OS_MAP_ANONYMOUS = MAP_ANONYMOUS;
-const int OS_MAP_STACK     = MAP_STACK;
-const int OS_MAP_NORESERVE = MAP_NORESERVE;
-const int OS_MAP_POPULATE  = MAP_POPULATE;
-const int OS_MAP_GROWSDOWN = MAP_GROWSDOWN;
+const int __public__os_MAP_SHARED    = MAP_SHARED;
+const int __public__os_MAP_PRIVATE   = MAP_PRIVATE;
+const int __public__os_MAP_FIXED     = MAP_FIXED;
+const int __public__os_MAP_ANONYMOUS = MAP_ANONYMOUS;
+const int __public__os_MAP_STACK     = MAP_STACK;
+const int __public__os_MAP_NORESERVE = MAP_NORESERVE;
+const int __public__os_MAP_POPULATE  = MAP_POPULATE;
+const int __public__os_MAP_GROWSDOWN = MAP_GROWSDOWN;
 
 /*madvise advice*/
-const int OS_MADV_NORMAL     = MADV_NORMAL;
-const int OS_MADV_RANDOM     = MADV_RANDOM;
-const int OS_MADV_SEQUENTIAL = MADV_SEQUENTIAL;
-const int OS_MADV_WILLNEED   = MADV_WILLNEED;
-const int OS_MADV_DONTNEED   = MADV_DONTNEED;
-const int OS_MADV_FREE       = MADV_FREE;
-const int OS_MADV_DONTFORK   = MADV_DONTFORK;
-const int OS_MADV_DOFORK     = MADV_DOFORK;
-const int OS_MADV_MERGEABLE  = MADV_MERGEABLE;
-const int OS_MADV_UNMERGEABLE = MADV_UNMERGEABLE;
-const int OS_MADV_HUGEPAGE   = MADV_HUGEPAGE;
-const int OS_MADV_NOHUGEPAGE = MADV_NOHUGEPAGE;
+const int __public__os_MADV_NORMAL     = MADV_NORMAL;
+const int __public__os_MADV_RANDOM     = MADV_RANDOM;
+const int __public__os_MADV_SEQUENTIAL = MADV_SEQUENTIAL;
+const int __public__os_MADV_WILLNEED   = MADV_WILLNEED;
+const int __public__os_MADV_DONTNEED   = MADV_DONTNEED;
+const int __public__os_MADV_FREE       = MADV_FREE;
+const int __public__os_MADV_DONTFORK   = MADV_DONTFORK;
+const int __public__os_MADV_DOFORK     = MADV_DOFORK;
+const int __public__os_MADV_MERGEABLE  = MADV_MERGEABLE;
+const int __public__os_MADV_UNMERGEABLE = MADV_UNMERGEABLE;
+const int __public__os_MADV_HUGEPAGE   = MADV_HUGEPAGE;
+const int __public__os_MADV_NOHUGEPAGE = MADV_NOHUGEPAGE;
 
-const int OS_MCL_CURRENT = MCL_CURRENT;
-const int OS_MCL_FUTURE  = MCL_FUTURE;
+const int __public__os_MCL_CURRENT = MCL_CURRENT;
+const int __public__os_MCL_FUTURE  = MCL_FUTURE;
 
-const int OS_EFAULT = EFAULT;
-const int OS_EACCES = EACCES;
+const int __public__os_EFAULT = EFAULT;
+const int __public__os_EACCES = EACCES;
 
 
 /**

@@ -1,10 +1,13 @@
+using "c/ffi/coo";
+using "builtin/os";
 using "builtin/syncio";
-using "builtin/array";
-using "builtin/types";
-
-using "c/ffi/xy" as xy;
 
 fn start() {
-    say co: struct.Coordinate = xy.create_coordinate(10, 200);
-    xy.print_coordinate(co);
+    say xy: struct.Coordinate = coo.create(10, 200);
+    coo.dump(xy);
+
+    // creating a dir with syscall
+    os.mkdir("/workspaces/x-language/project/hello", os.S_IRUSR);
+
+    syncio.printf(" value of nagaraj: %d \n", coo.nagaraj);
 }

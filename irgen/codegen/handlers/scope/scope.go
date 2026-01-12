@@ -60,6 +60,10 @@ func (t *VarTree) RegisterTypeHolders(block *bc.BlockHolder, name string, s tf.V
 	t.globals[name] = &s
 }
 
+func (t *VarTree) AddGlobal(name string, v *tf.Var) {
+	t.globals[name] = v
+}
+
 // Search looks for a variable name from the innermost scope outwards to globals.
 func (t *VarTree) Search(v string) (tf.Var, bool) {
 	for i := len(t.tree) - 1; i >= 0; i-- {
