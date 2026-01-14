@@ -97,6 +97,15 @@ func parseVarDeclStmt(p *Parser) ast.Statement {
 
 	p.expect(lexer.SEMI_COLON)
 
+	if _, ok := reserved_keywords[symbolName.Value]; ok {
+		errorsx.PanicParserError(
+			"use of reserved keyword",
+			p.currentToken().Src.FilePath,
+			p.currentToken().Src.Line,
+			p.currentToken().Src.Col,
+		)
+	}
+
 	return ast.VariableDeclarationStatement{
 		SourceLoc:     ast.SourceLoc(p.currentToken().Src),
 		Identifier:    symbolName.Value,
@@ -167,6 +176,15 @@ func parseFuncDeclaration(p *Parser) ast.Statement {
 		}
 	}
 	functionParams, returnType, functionBody := parseFnParamsAndBody(p)
+
+	if _, ok := reserved_keywords[functionName]; ok {
+		errorsx.PanicParserError(
+			"use of reserved keyword",
+			p.currentToken().Src.FilePath,
+			p.currentToken().Src.Line,
+			p.currentToken().Src.Col,
+		)
+	}
 
 	return ast.FunctionDefinitionStatement{
 		SourceLoc:  ast.SourceLoc(p.currentToken().Src),

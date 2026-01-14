@@ -327,7 +327,6 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 		t.recursiveTransitiveDeclaration(sub, llvm, declared)
 	}
 
-	fmt.Printf("pkgFullName: %v\n", pkgFullName)
 	for _, st := range packageAST.Body {
 		if stc, ok := st.(ast.ImportStatement); ok && stc.IsBuiltIn() {
 			t.importBasePackages(llvm.st.LibMethods, stc.EndName())
