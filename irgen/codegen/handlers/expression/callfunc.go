@@ -128,6 +128,15 @@ func (t *ExpressionHandler) callNativeMethods(bh *bc.BlockHolder, ex ast.CallExp
 	// @fix: refactor this piece of code
 	// thread() special functions comes from base modules but exception for module_name.func() format
 	// in future i might add many such special funcs, so need to be kept somewhere else.
+
+	// handling explicit type casting
+	if t.st.TypeHandler.Exists(methodName.Value) {
+		v := t.ProcessExpression(bh, ex.Arguments[0])
+		casted := t.st.TypeHandler.ExplicitTypeCast(bh, methodName.Value, v.Load(bh))
+		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(methodName.Value), casted)
+		return v
+	}
+
 	if methodName.Value != c.FUNC_THREAD {
 		errorutils.Abort(errorutils.UnknownMethod, methodName.Value)
 		return nil

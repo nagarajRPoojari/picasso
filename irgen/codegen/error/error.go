@@ -19,6 +19,7 @@ const (
 	BinaryOperationError            = "binary operation failed: %s"
 	PrefixOperationError            = "prefix operation failed: %s"
 	ImplicitTypeCastError           = "failed to implicitly type cast: %s to %s"
+	ExplicitTypeCastError           = "failed to explicitly type cast: %s to %s"
 	MemberExpressionError           = "member expression error: %s"
 	UnknownMethod                   = "unknown method %s"
 	TypeRedeclaration               = "type %s already defined"

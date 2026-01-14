@@ -498,7 +498,11 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		default:
 			errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "string")
 		}
+	case "i16*":
+		return v
 	case "i32*":
+		return v
+	case "i64*":
 		return v
 	case "void":
 		return nil
@@ -528,7 +532,7 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 	return nil
 }
 
-// catchIntToIntDownCast inserts runtime checks for narrowing integer casts
+// catchLossLessIntToIntDownCast inserts runtime checks for narrowing integer casts
 // (downcasts) to detect overflow and raise an error if the value cannot fit
 // in the destination integer type.
 //
@@ -546,7 +550,7 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 // Behavior:
 //   - On overflow, a runtime error is raised, and execution is terminated via `unreachable`.
 //   - On success, the value is truncated (`trunc`) to the destination type.
-func (t *TypeHandler) catchIntToIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+func (t *TypeHandler) catchLossLessIntToIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
 	b := block.N
 
 	// boolean target (i1): non-zero -> true
@@ -578,7 +582,17 @@ func (t *TypeHandler) catchIntToIntDownCast(block *bc.BlockHolder, v value.Value
 	return vTrunc
 }
 
-func (t *TypeHandler) catchIntToUnsignedDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+// catchLossLessIntToUnsignedDownCast performs a runtime-checked conversion from a
+// signed integer to an unsigned integer type.
+//
+// For boolean targets (i1), any nonzero value becomes true. For larger unsigned
+// integers, the value is checked to ensure it lies within 0 .. uintMax[dst].
+// On overflow, a runtime error is raised; otherwise the value is truncated to
+// the destination type.
+//
+// This helper guarantees a lossless signed → unsigned integer conversion and is
+// intended for implicit or safety-checked casts.
+func (t *TypeHandler) catchLossLessIntToUnsignedDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
 
 	b := block.N
 
@@ -616,7 +630,7 @@ func (t *TypeHandler) catchIntToUnsignedDownCast(block *bc.BlockHolder, v value.
 	return vTrunc
 }
 
-// catchFloatToIntDownCast inserts runtime checks for narrowing casts from
+// catchLossLessFloatToIntDownCast inserts runtime checks for narrowing casts from
 // floating-point values to integers, ensuring the value lies within the
 // destination integer's bounds. If an overflow is detected, a runtime
 // error is raised.
@@ -637,7 +651,7 @@ func (t *TypeHandler) catchIntToUnsignedDownCast(block *bc.BlockHolder, v value.
 //     with `unreachable`.
 //   - On success, the float is converted to the destination integer type
 //     using FPToSI.
-func (t *TypeHandler) catchFloatToIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+func (t *TypeHandler) catchLossLessFloatToIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
 	b := block.N
 
 	abort := b.Parent.NewBlock("")
@@ -669,7 +683,16 @@ func (t *TypeHandler) catchFloatToIntDownCast(block *bc.BlockHolder, v value.Val
 	return res
 }
 
-func (t *TypeHandler) catchFloatToUnsignedIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+// catchLossLessFloatToIntDownCast performs a runtime-checked conversion from a
+// floating-point value to a signed integer type.
+//
+// The value is checked to ensure it lies within the destination integer’s
+// representable range. If an overflow or invalid value is detected, a runtime
+// error is raised; otherwise the value is converted using FPToSI.
+//
+// This helper guarantees a lossless float → signed integer conversion and is
+// intended for implicit or safety-checked casts.
+func (t *TypeHandler) catchLossLessFloatToUnsignedIntDownCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
 
 	b := block.N
 
@@ -722,9 +745,9 @@ func (t *TypeHandler) catchFloatToUnsignedIntDownCast(block *bc.BlockHolder, v v
 // Behavior:
 //   - Boolean widening: i1 → larger integer uses ZExt; i1 → i1 returns unchanged.
 //   - Integer upcast: smaller → larger integer uses SExt.
-//   - Integer downcast: larger → smaller integer uses catchIntToIntDownCast
+//   - Integer downcast: larger → smaller integer uses catchLossLessIntToIntDownCast
 //     with overflow checks.
-//   - Float → int: uses catchFloatToIntDownCast with overflow checks.
+//   - Float → int: uses catchLossLessFloatToIntDownCast with overflow checks.
 //   - Float → boolean: compares against 0.0 (non-zero → true).
 //   - If the input type cannot be cast to an integer, the function aborts
 //     with an implicit type cast error.
@@ -743,7 +766,7 @@ func (t *TypeHandler) ImplicitIntCast(block *bc.BlockHolder, v value.Value, dst 
 		}
 
 		if src.BitSize > dst.BitSize {
-			return t.catchIntToIntDownCast(block, v, dst)
+			return t.catchLossLessIntToIntDownCast(block, v, dst)
 		}
 
 		if src.BitSize < dst.BitSize {
@@ -762,7 +785,7 @@ func (t *TypeHandler) ImplicitIntCast(block *bc.BlockHolder, v value.Value, dst 
 			return b.NewFCmp(enum.FPredONE, v, zero)
 		}
 
-		return t.catchFloatToIntDownCast(block, v, dst)
+		return t.catchLossLessFloatToIntDownCast(block, v, dst)
 	}
 
 	errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "int")
@@ -784,7 +807,7 @@ func (t *TypeHandler) ImplicitUnsignedIntCast(block *bc.BlockHolder, v value.Val
 		}
 
 		if src.BitSize > dst.BitSize {
-			return t.catchIntToUnsignedDownCast(block, v, dst)
+			return t.catchLossLessIntToUnsignedDownCast(block, v, dst)
 		}
 
 		if src.BitSize < dst.BitSize {
@@ -803,14 +826,14 @@ func (t *TypeHandler) ImplicitUnsignedIntCast(block *bc.BlockHolder, v value.Val
 			return b.NewFCmp(enum.FPredONE, v, zero)
 		}
 
-		return t.catchFloatToUnsignedIntDownCast(block, v, dst)
+		return t.catchLossLessFloatToUnsignedIntDownCast(block, v, dst)
 	}
 
 	errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "int")
 	return nil
 }
 
-// catchFloatToFloatDowncast inserts runtime checks for floating-point
+// catchLossLessFloatToFloatDowncast inserts runtime checks for floating-point
 // narrowing casts (downcasts) to ensure that the value fits within the
 // destination type's representable range. If an overflow occurs, a runtime
 // error is raised.
@@ -831,7 +854,7 @@ func (t *TypeHandler) ImplicitUnsignedIntCast(block *bc.BlockHolder, v value.Val
 //   - On overflow, a runtime error is raised and execution is terminated
 //     with `unreachable`.
 //   - In the safe path, the value is truncated (FPTrunc) to the destination type.
-func (t *TypeHandler) catchFloatToFloatDowncast(block *bc.BlockHolder, v value.Value, src *types.FloatType, dst *types.FloatType) value.Value {
+func (t *TypeHandler) catchLossLessFloatToFloatDowncast(block *bc.BlockHolder, v value.Value, src *types.FloatType, dst *types.FloatType) value.Value {
 	b := block.N
 
 	// If same type, no cast needed
@@ -874,7 +897,7 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *bc.BlockHolder, v value.V
 	return vTrunc
 }
 
-// catchIntToFloatDowncast inserts runtime checks for casting integers to
+// catchLossLessIntToFloatDowncast inserts runtime checks for casting integers to
 // floating-point types, ensuring the integer value fits within the
 // representable range of the destination float. If the value exceeds the
 // bounds, a runtime error is raised.
@@ -895,7 +918,7 @@ func (t *TypeHandler) catchFloatToFloatDowncast(block *bc.BlockHolder, v value.V
 //     with `unreachable`.
 //   - In the safe path, the integer is converted to the requested float
 //     type (SIToFP).
-func (t *TypeHandler) catchIntToFloatDowncast(block *bc.BlockHolder, v value.Value, dst *types.FloatType) value.Value {
+func (t *TypeHandler) catchLossLessIntToFloatDowncast(block *bc.BlockHolder, v value.Value, dst *types.FloatType) value.Value {
 	b := block.N
 
 	abort := b.Parent.NewBlock("")
@@ -936,16 +959,16 @@ func (t *TypeHandler) catchIntToFloatDowncast(block *bc.BlockHolder, v value.Val
 //	*ir.Block   — the (possibly updated) block reflecting inserted instructions.
 //
 // Behavior:
-//   - Float → float: uses catchFloatToFloatDowncast to handle upcasts and
+//   - Float → float: uses catchLossLessFloatToFloatDowncast to handle upcasts and
 //     downcasts with overflow checks.
 //   - Integer → float: safe conversion with overflow checks.
 //   - For i1, zero/one is promoted and converted to float.
-//   - For larger integers, uses catchIntToFloatDowncast with overflow checks.
+//   - For larger integers, uses catchLossLessIntToFloatDowncast with overflow checks.
 //   - If the input type cannot be cast to a float, the function panics.
 func (t *TypeHandler) ImplicitFloatCast(block *bc.BlockHolder, v value.Value, dst *types.FloatType) value.Value {
 	switch src := v.Type().(type) {
 	case *types.FloatType:
-		return t.catchFloatToFloatDowncast(block, v, src, dst)
+		return t.catchLossLessFloatToFloatDowncast(block, v, src, dst)
 
 	case *types.IntType:
 		// int -> float: special-case i1 -> treat as 0/1
@@ -954,7 +977,7 @@ func (t *TypeHandler) ImplicitFloatCast(block *bc.BlockHolder, v value.Value, ds
 			floatVal := block.N.NewSIToFP(intVal, dst)
 			return floatVal
 		}
-		return t.catchIntToFloatDowncast(block, v, dst)
+		return t.catchLossLessIntToFloatDowncast(block, v, dst)
 
 	default:
 		errorutils.Abort(errorutils.ImplicitTypeCastError, v.Type().String(), "float")
@@ -977,4 +1000,273 @@ func floatRank(k types.FloatKind) int {
 	default:
 		return 0
 	}
+}
+
+// ExplicitTypeCast performs an explicit (unchecked) cast of the given LLVM IR
+// value to a specified target type.
+//
+// Parameters:
+//
+//	bh     — the LLVM IR basic block where casting instructions are inserted.
+//	target — the target type as a string (e.g., "i32", "uint64", "float64", "string").
+//	v      — the LLVM IR value to be cast.
+//
+// Returns:
+//
+//	value.Value — the resulting LLVM IR value after casting, or nil for `void`.
+//
+// Supported casts:
+//   - Booleans: "boolean", "bool", "i1"
+//   - Signed integers:
+//     "int8"/"i8", "int16"/"i16", "int32"/"i32", "int"/"int64"/"i64"
+//   - Unsigned integers:
+//     "uint8", "uint16", "uint32", "uint", "uint64"
+//   - Floating-point types:
+//     "float16"/"half", "float32"/"float", "float64"/"double"
+//   - String / pointers:
+//     "string", "i8*" (only from pointer types; no reinterpret cast)
+//   - Raw pointers:
+//     "i16*", "i32*", "i64*" (returned as-is)
+//   - Void:
+//     "void" (produces nil)
+//   - Array:
+//     "array" (valid only when the source already matches the array structure)
+//
+// Additionally, user-defined types (UDTs) are resolved from the type registry
+// (interfaces and classes) using explicit conversion rules.
+//
+// Notes:
+//   - All numeric casts are explicit and unchecked.
+//   - Precision loss, truncation, overflow, and wraparound are explicitly allowed.
+//   - No runtime validation or safety checks are performed.
+//   - If the target type is invalid or the cast is not permitted, the function
+//     aborts with a type error.
+func (t *TypeHandler) ExplicitTypeCast(bh *bc.BlockHolder, target string, v value.Value) value.Value {
+	switch target {
+	case "boolean", "bool", "i1":
+		return t.ExplicitIntCast(bh, v, types.I1)
+	case "int8", "i8":
+		return t.ExplicitIntCast(bh, v, types.I8)
+	case "uint8":
+		return t.ExplicitUnsignedIntCast(bh, v, types.I8)
+	case "int16", "i16":
+		return t.ExplicitIntCast(bh, v, types.I16)
+	case "uint16":
+		return t.ExplicitUnsignedIntCast(bh, v, types.I16)
+	case "int32", "i32":
+		return t.ExplicitIntCast(bh, v, types.I32)
+	case "uint32":
+		return t.ExplicitUnsignedIntCast(bh, v, types.I32)
+	case "int", "int64", "i64":
+		return t.ExplicitIntCast(bh, v, types.I64)
+	case "uint", "uint64":
+		return t.ExplicitUnsignedIntCast(bh, v, types.I64)
+
+	case "float16", "half":
+		return t.ExplicitFloatCast(bh, v, types.Half)
+	case "float32", "float":
+		return t.ExplicitFloatCast(bh, v, types.Float)
+	case "float64", "double":
+		return t.ExplicitFloatCast(bh, v, types.Double)
+	case "string", "i8*":
+		switch v.Type().(type) {
+		case *types.PointerType:
+			return v
+		default:
+			errorutils.Abort(errorutils.ExplicitTypeCastError, v.Type().String(), "string")
+		}
+	case "i16*":
+		return v
+	case "i32*":
+		return v
+	case "i64*":
+		return v
+	case "void":
+		return nil
+	case "array":
+		if v.Type().Equal(ARRAYSTRUCT) {
+			errorutils.Abort(errorutils.ExplicitTypeCastError, v.Type().String(), target)
+		}
+		return v
+	}
+
+	if k, ok := t.InterfaceUDTS[target]; ok {
+		ret, err := ensureInterfaceType(bh, t, v, k.UDT)
+		if err != nil {
+			panic(err)
+		}
+		return ret
+	}
+
+	if k, ok := t.ClassUDTS[target]; ok {
+		ret, err := ensureClassType(bh, t, v, k.UDT)
+		if err != nil {
+			panic(err)
+		}
+		return ret
+	}
+	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
+	return nil
+}
+
+// ExplicitIntCast casts a value to a target *signed* integer type using
+// explicit (unchecked) conversion semantics.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the value to be cast (integer or floating-point).
+//	dst   — the destination signed integer type.
+//
+// Returns:
+//
+//	value.Value — the resulting LLVM IR value after casting.
+//
+// Behavior:
+//   - Integer → signed integer:
+//   - If source and destination bit widths are identical, the value is returned unchanged.
+//   - If widening, uses SExt (sign-extension).
+//   - If narrowing, uses Trunc (lossy conversion allowed).
+//   - Floating-point → signed integer:
+//   - Uses FPToSI directly.
+//   - No range, overflow, or precision checks are performed.
+//   - This function performs no runtime validation.
+//   - Precision loss, overflow, and wraparound are explicitly permitted.
+//   - If the input type cannot be cast to a signed integer, the function aborts.
+func (t *TypeHandler) ExplicitIntCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+
+	b := block.N
+
+	switch src := v.Type().(type) {
+
+	case *types.IntType:
+		if src.BitSize == dst.BitSize {
+			return v
+		}
+
+		if src.BitSize < dst.BitSize {
+			// sign-extend
+			return b.NewSExt(v, dst)
+		}
+		// truncate (lossy allowed)
+		return b.NewTrunc(v, dst)
+
+	case *types.FloatType:
+		// LLVM: fptosi (lossy allowed)
+		return b.NewFPToSI(v, dst)
+	}
+
+	errorutils.Abort(errorutils.ExplicitTypeCastError, v.Type().String(), "int")
+	return nil
+}
+
+// ExplicitUnsignedIntCast casts a value to a target *unsigned* integer type using
+// explicit (unchecked) conversion semantics.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the value to be cast (integer or floating-point).
+//	dst   — the destination unsigned integer type.
+//
+// Returns:
+//
+//	value.Value — the resulting LLVM IR value after casting.
+//
+// Behavior:
+//   - Integer → unsigned integer:
+//   - If source and destination bit widths are identical, the value is returned unchanged.
+//   - If widening, uses ZExt (zero-extension).
+//   - If narrowing, uses Trunc (lossy conversion allowed).
+//   - Floating-point → unsigned integer:
+//   - Uses FPToUI directly.
+//   - No range, overflow, or precision checks are performed.
+//   - This function performs no runtime validation.
+//   - Precision loss, overflow, and wraparound are explicitly permitted.
+//   - If the input type cannot be cast to an unsigned integer, the function aborts.
+func (t *TypeHandler) ExplicitUnsignedIntCast(block *bc.BlockHolder, v value.Value, dst *types.IntType) value.Value {
+	b := block.N
+	switch src := v.Type().(type) {
+
+	case *types.IntType:
+		if src.BitSize == dst.BitSize {
+			return v
+		}
+
+		if src.BitSize < dst.BitSize {
+			// zero-extend
+			return b.NewZExt(v, dst)
+		}
+
+		// truncate (lossy allowed)
+		return b.NewTrunc(v, dst)
+
+	case *types.FloatType:
+		// LLVM: fptoui (lossy allowed)
+		return b.NewFPToUI(v, dst)
+	}
+
+	errorutils.Abort(
+		errorutils.ExplicitTypeCastError,
+		v.Type().String(),
+		"unsigned int",
+	)
+	return nil
+}
+
+// ExplicitFloatCast casts a value to a target floating-point type using
+// explicit (unchecked) conversion semantics.
+//
+// Parameters:
+//
+//	block — the LLVM IR basic block where instructions are inserted.
+//	v     — the value to be cast (floating-point or integer).
+//	dst   — the destination floating-point type.
+//
+// Returns:
+//
+//	value.Value — the resulting LLVM IR value after casting.
+//
+// Behavior:
+//
+//   - Float → float:
+//   - If source and destination kinds are identical, the value is returned unchanged.
+//   - If widening (e.g. float → double), uses FPExt.
+//   - If narrowing (e.g. double → float), uses FPTrunc (lossy conversion allowed).
+//   - Integer → float:
+//   - Uses SIToFP directly.
+//   - No overflow, precision, or range checks are performed.
+//   - i1 is handled naturally by LLVM as 0/1.
+//   - This function performs no runtime validation
+//   - Precision loss, overflow, and undefined numeric behavior are explicitly permitted.
+//   - If the input type cannot be cast to a float, the function aborts.
+func (t *TypeHandler) ExplicitFloatCast(block *bc.BlockHolder, v value.Value, dst *types.FloatType) value.Value {
+
+	b := block.N
+
+	switch src := v.Type().(type) {
+
+	case *types.FloatType:
+		if src.Kind == dst.Kind {
+			return v
+		}
+
+		// widen
+		if src.Kind < dst.Kind {
+			return b.NewFPExt(v, dst)
+		}
+
+		// narrow (lossy allowed)
+		return b.NewFPTrunc(v, dst)
+
+	case *types.IntType:
+		return b.NewSIToFP(v, dst)
+	}
+
+	errorutils.Abort(
+		errorutils.ExplicitTypeCastError,
+		v.Type().String(),
+		"float",
+	)
+	return nil
 }
