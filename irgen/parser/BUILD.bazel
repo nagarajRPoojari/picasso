@@ -6,6 +6,7 @@ go_library(
         "expr.go",
         "lookup.go",
         "parser.go",
+        "reserved.go",
         "stmt.go",
         "types.go",
         "utils.go",
