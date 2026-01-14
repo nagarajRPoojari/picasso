@@ -1,0 +1,75 @@
+using "builtin/syncio";
+using "builtin/types";
+using "builtin/atomics";
+
+class AtomicAddSubTest {
+
+    fn AtomicAddSubTest() {}
+
+    fn testUnsigned() {
+
+        say x_u8:  atomic uint8;
+        say x_u16: atomic uint16;
+        say x_u32: atomic uint32;
+        say x_u64: atomic uint64;
+
+        atomics.store_uint8(x_u8,   uint8(10));
+        atomics.store_uint16(x_u16, uint16(100));
+        atomics.store_uint32(x_u32, uint32(1000));
+        atomics.store_uint64(x_u64, uint64(10000));
+
+        atomics.add_uint8(x_u8,   uint8(5));
+        atomics.sub_uint8(x_u8,   uint8(3));
+
+        atomics.add_uint16(x_u16, uint16(20));
+        atomics.sub_uint16(x_u16, uint16(10));
+
+        atomics.add_uint32(x_u32, uint32(200));
+        atomics.sub_uint32(x_u32, uint32(50));
+
+        atomics.add_uint64(x_u64, uint64(500));
+        atomics.sub_uint64(x_u64, uint64(100));
+
+        syncio.printf("uint8  = %u\n",  uint8(atomics.load_uint8(x_u8)));
+        syncio.printf("uint16 = %u\n",  uint16(atomics.load_uint16(x_u16)));
+        syncio.printf("uint32 = %u\n",  uint32(atomics.load_uint32(x_u32)));
+        syncio.printf("uint64 = %lu\n", uint64(atomics.load_uint64(x_u64)));
+    }
+
+    fn testSigned() {
+
+        say x_i8:  atomic int8;
+        say x_i16: atomic int16;
+        say x_i32: atomic int32;
+        say x_i64: atomic int64;
+
+        atomics.store_int8(x_i8, int8(120));
+        atomics.store_int16(x_i16, int16(1290));
+        atomics.store_int32(x_i32, int32(1000));
+        atomics.store_int64(x_i64, int64(10000));
+
+        atomics.add_int8(x_i8, int8(10));
+        atomics.sub_int8(x_i8, int8(5));
+
+        atomics.add_int16(x_i16, int16(25));
+        atomics.sub_int16(x_i16, int16(5));
+
+        atomics.add_int32(x_i32, int32(300));
+        atomics.sub_int32(x_i32, int32(100));
+
+        atomics.add_int64(x_i64, int64(700));
+        atomics.sub_int64(x_i64, int64(200));
+
+        syncio.printf("int8   = %d\n",  atomics.load_int8(x_i8));
+        syncio.printf("int16  = %d\n",  atomics.load_int16(x_i16));
+        syncio.printf("int32  = %d\n",  atomics.load_int32(x_i32));
+        syncio.printf("int64  = %ld\n", atomics.load_int64(x_i64));
+    }
+
+}
+
+fn start() {
+    say t: start.AtomicAddSubTest = new start.AtomicAddSubTest();
+    t.testUnsigned();
+    t.testSigned();
+}
