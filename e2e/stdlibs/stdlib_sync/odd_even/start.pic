@@ -1,0 +1,44 @@
+using "builtin/syncio";
+using "builtin/types";
+using "builtin/sync";
+
+class Test {
+
+    fn Test() {}
+
+    fn oddWriter(oddMu: mutex, evenMu: mutex, n: int) {
+        foreach i in 0..n {
+            if (i % 2 != 0) {
+                sync.mutex_lock(oddMu);
+                syncio.printf("[ODD_WRITER] => %d\n", i);
+                sync.mutex_unlock(evenMu);
+            }
+        }
+    }
+
+    fn evenWriter(oddMu: mutex, evenMu: mutex, n: int) {
+        foreach i in 0..n {
+            if (i % 2 == 0) {
+                sync.mutex_lock(evenMu);
+                syncio.printf("[EVEN_WRITER] => %d\n", i);
+                sync.mutex_unlock(oddMu);
+            }
+        }
+    }
+
+    fn testOddEven() {
+        say oddMu: mutex  = sync.mutex_create();
+        say evenMu: mutex = sync.mutex_create();
+
+        // Block odd writer initially
+        sync.mutex_lock(oddMu);
+
+        thread(this.evenWriter, oddMu, evenMu, 100);
+        thread(this.oddWriter, oddMu, evenMu, 100);
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testOddEven();
+}
