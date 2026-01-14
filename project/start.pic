@@ -1,13 +1,84 @@
-using "c/ffi/coo";
-using "builtin/os";
 using "builtin/syncio";
+using "builtin/types";
+using "builtin/atomics";
+
+class AtomicAddSubTest {
+
+    fn AtomicAddSubTest() {}
+
+    fn testLogicalUnsigned() {
+
+        say x_u8:  atomic uint8;
+        say x_u16: atomic uint16;
+        say x_u32: atomic uint32;
+        say x_u64: atomic uint64;
+
+        atomics.store_uint8(x_u8,  uint8(240));        // 11110000
+        atomics.store_uint16(x_u16, uint16(61680));    // 1111000011110000
+        atomics.store_uint32(x_u32, uint32(4294901760));
+        atomics.store_uint64(x_u64, uint64(18446462603027742720));
+
+        atomics.and_uint8(x_u8,  uint8(170));          // 10101010
+        atomics.or_uint8(x_u8,   uint8(15));           // 00001111
+        atomics.xor_uint8(x_u8,  uint8(85));           // 01010101
+
+        atomics.and_uint16(x_u16, uint16(3855));
+        atomics.or_uint16(x_u16,  uint16(61440));
+        atomics.xor_uint16(x_u16, uint16(255));
+
+        atomics.and_uint32(x_u32, uint32(16711935));
+        atomics.or_uint32(x_u32,  uint32(65535));
+        atomics.xor_uint32(x_u32, uint32(2863311530));
+
+        atomics.and_uint64(x_u64, uint64(71777214294589695));
+        atomics.or_uint64(x_u64,  uint64(4294967295));
+        atomics.xor_uint64(x_u64, uint64(12297829382473034410));
+
+        syncio.printf("uint8  = %u\n",  atomics.load_uint8(x_u8));
+        syncio.printf("uint16 = %u\n",  atomics.load_uint16(x_u16));
+        syncio.printf("uint32 = %u\n",  atomics.load_uint32(x_u32));
+        syncio.printf("uint64 = %lu\n", atomics.load_uint64(x_u64));
+    }
+
+
+    fn testLogicalSigned() {
+
+        say x_i8:  atomic int8;
+        say x_i16: atomic int16;
+        say x_i32: atomic int32;
+        say x_i64: atomic int64;
+
+        atomics.store_int8(x_i8,  int8(124));
+        atomics.store_int16(x_i16, int16(32527));
+        atomics.store_int32(x_i32, int32(2147418112));
+        atomics.store_int64(x_i64, int64(9223090566173442048));
+
+        atomics.and_int8(x_i8,  int8(63));
+        atomics.or_int8(x_i8,   int8(129));
+        atomics.xor_int8(x_i8,  int8(85));
+
+        atomics.and_int16(x_i16, int16(3855));
+        atomics.or_int16(x_i16,  int16(28672));
+        atomics.xor_int16(x_i16, int16(255));
+
+        atomics.and_int32(x_i32, int32(16711935));
+        atomics.or_int32(x_i32,  int32(65535));
+        atomics.xor_int32(x_i32, int32(2863311530));
+
+        atomics.and_int64(x_i64, int64(71777214294589695));
+        atomics.or_int64(x_i64,  int64(4294967295));
+        atomics.xor_int64(x_i64, int64(12297829382473034410));
+
+        syncio.printf("int8   = %d\n",  atomics.load_int8(x_i8));
+        syncio.printf("int16  = %d\n",  atomics.load_int16(x_i16));
+        syncio.printf("int32  = %d\n",  atomics.load_int32(x_i32));
+        syncio.printf("int64  = %ld\n", atomics.load_int64(x_i64));
+    }
+
+}
 
 fn start() {
-    say xy: struct.Coordinate = coo.create(10, 200);
-    coo.dump(xy);
-
-    // creating a dir with syscall
-    os.mkdir("/workspaces/x-language/project/hello", os.S_IRUSR);
-
-    syncio.printf(" value of nagaraj: %d \n", coo.nagaraj);
+    say t: start.AtomicAddSubTest = new start.AtomicAddSubTest();
+    t.testLogicalUnsigned();
+    t.testLogicalSigned();
 }
