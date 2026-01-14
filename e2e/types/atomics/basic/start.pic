@@ -1,0 +1,51 @@
+using "builtin/syncio";
+using "builtin/types";
+using "builtin/atomics";
+
+class Test {
+
+    fn Test() {}
+
+    fn testAtomicIntCreation() {
+
+        // signed integers
+        say x_int8:  atomic int8;
+        say x_int16: atomic int16;
+        say x_int32: atomic int32;
+        say x_int64: atomic int64;
+
+        // unsigned integers
+        say x_uint8:  atomic uint8;
+        say x_uint16: atomic uint16;
+        say x_uint32: atomic uint32;
+        say x_uint64: atomic uint64;
+
+        // store values
+        atomics.store_int8(x_int8,   int8(127));
+        atomics.store_int16(x_int16, int16(32000));
+        atomics.store_int32(x_int32, int32(123456));
+        atomics.store_int64(x_int64, int64(987654321));
+
+        atomics.store_uint8(x_uint8,   uint8(200));
+        atomics.store_uint16(x_uint16, uint16(65000));
+        atomics.store_uint32(x_uint32, uint32(400970));
+        atomics.store_uint64(x_uint64, uint64(792373838388));
+
+        // load + print signed
+        syncio.printf("int8   = %d\n",  atomics.load_int8(x_int8));
+        syncio.printf("int16  = %d\n",  atomics.load_int16(x_int16));
+        syncio.printf("int32  = %d\n",  atomics.load_int32(x_int32));
+        syncio.printf("int64  = %ld\n", atomics.load_int64(x_int64));
+
+        // load + print unsigned
+        syncio.printf("uint8  = %u\n",  uint8(atomics.load_uint8(x_uint8)));
+        syncio.printf("uint16 = %u\n",  uint16(atomics.load_uint16(x_uint16)));
+        syncio.printf("uint32 = %u\n",  uint32(atomics.load_uint32(x_uint32)));
+        syncio.printf("uint64 = %lu\n", uint64(atomics.load_uint64(x_uint64)));
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+    t.testAtomicIntCreation();
+}
