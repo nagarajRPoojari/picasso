@@ -33,12 +33,17 @@ func (t *Interface) initArrayTypes(_ *ir.Module) {
 func (t *Interface) initAtomicTypes(_ *ir.Module) {
 	// Boolean
 	t.Types[TYPE_ATOMIC_BOOL] = types.NewStruct(types.I1)
+	t.Types["i1"] = types.NewStruct(types.I1)
 
 	// Exact-width signed integers
 	t.Types[TYPE_ATOMIC_INT8] = types.NewStruct(types.I8)
+	t.Types["i8"] = types.NewStruct(types.I8)
 	t.Types[TYPE_ATOMIC_INT16] = types.NewStruct(types.I16)
+	t.Types["i16"] = types.NewStruct(types.I16)
 	t.Types[TYPE_ATOMIC_INT32] = types.NewStruct(types.I32)
+	t.Types["i32"] = types.NewStruct(types.I32)
 	t.Types[TYPE_ATOMIC_INT64] = types.NewStruct(types.I64)
+	t.Types["i64"] = types.NewStruct(types.I64)
 
 	// Exact-width unsigned integers
 	t.Types[TYPE_ATOMIC_UINT8] = types.NewStruct(types.I8)
