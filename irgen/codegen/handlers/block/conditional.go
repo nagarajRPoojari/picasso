@@ -3,9 +3,9 @@ package block
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/expression"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/expression"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // processIfElseBlock orchestrates the generation of branching control flow in LLVM IR.

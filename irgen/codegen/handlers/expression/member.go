@@ -4,20 +4,20 @@ import (
 	"fmt"
 
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/boolean"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/boolean"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/floats"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/ints"
 )
 
 // ProcessMemberExpression generates LLVM IR to access a specific field of a class instance.
 // It performs a metadata lookup to find the structural offset of the property,
 // calculates the field's memory address, and wraps the resulting pointer into
-// a Niyama-specific type container (Var) based on the field's underlying LLVM type.
+// a Picasso-specific type container (Var) based on the field's underlying LLVM type.
 //
 // Technical Logic:
 //   - Property Mapping: Uses the IdentifierBuilder to resolve the mangled field name

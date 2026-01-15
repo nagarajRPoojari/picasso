@@ -7,7 +7,7 @@ go_library(
         "declarefunc.go",
         "definefunc.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/func",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

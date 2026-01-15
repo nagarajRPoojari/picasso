@@ -5,11 +5,11 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/expression"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/expression"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // processForBlock implements the IR lowering for 'foreach' style range loops.

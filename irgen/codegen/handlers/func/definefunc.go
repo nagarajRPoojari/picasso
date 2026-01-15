@@ -6,13 +6,13 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // DefineFunc generates the concrete LLVM IR body for a class method or constructor.
@@ -87,7 +87,7 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 
 // DefineMainFunc generates the entry point for the executable. Unlike standard
 // class methods, the main function is responsible for bootstrapping the
-// Niyama runtime and initializing global state before executing the user's code.
+// Picasso runtime and initializing global state before executing the user's code.
 //
 // Technical Logic:
 //   - Runtime Bootstrapping: Injects a call to the internal runtime initialization

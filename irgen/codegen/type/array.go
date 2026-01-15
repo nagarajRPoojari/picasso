@@ -7,12 +7,12 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	rterr "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/private/runtime"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
-	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	rterr "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/private/runtime"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/ints"
+	errorsx "github.com/nagarajRPoojari/picasso/irgen/error"
 )
 
 // Array struct describes a 1D runtime Array object.

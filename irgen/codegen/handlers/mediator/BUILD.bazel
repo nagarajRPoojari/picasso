@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "mediator",
     srcs = ["mediator.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/mediator",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/mediator",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen/contract",

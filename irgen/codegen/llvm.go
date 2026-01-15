@@ -5,13 +5,13 @@ import (
 	"os"
 
 	"github.com/llir/llvm/ir"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/mediator"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	rterr "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/private/runtime"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/pipeline"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/mediator"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	rterr "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/private/runtime"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/pipeline"
 )
 
 const (

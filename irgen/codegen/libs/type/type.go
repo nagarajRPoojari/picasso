@@ -4,10 +4,10 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
-	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
+	function "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/func"
+	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/ints"
 )
 
 type TypeHandler struct {

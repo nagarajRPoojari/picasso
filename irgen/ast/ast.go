@@ -1,9 +1,9 @@
 // Package ast declares the types used to represent the Abstract Syntax Tree
-// of the Niyama source code. The AST serves as the intermediate representation
+// of the Picasso source code. The AST serves as the intermediate representation
 // between the Parser and the IR Generator (irgen).
 package ast
 
-import "github.com/nagarajRPoojari/niyama/irgen/utils"
+import "github.com/nagarajRPoojari/picasso/irgen/utils"
 
 type SourceLoc struct {
 	FilePath string

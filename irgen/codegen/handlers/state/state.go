@@ -4,14 +4,14 @@ import (
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/scope"
-	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/scope"
+	function "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/func"
 
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 type PackageEntry struct {

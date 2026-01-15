@@ -1,4 +1,4 @@
-module github.com/nagarajRPoojari/niyama/irgen
+module github.com/nagarajRPoojari/picasso/irgen
 
 go 1.24.5
 

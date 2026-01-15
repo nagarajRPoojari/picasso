@@ -10,7 +10,7 @@ go_library(
         "new.go",
         "return.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/statement",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/statement",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

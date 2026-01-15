@@ -12,7 +12,7 @@ go_library(
         "ui64.go",
         "ui8.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/ints",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen/type/block",

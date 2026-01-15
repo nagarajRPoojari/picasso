@@ -12,7 +12,7 @@ go_library(
         "string.go",
         "symbol.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/expression",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/expression",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/lexer"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/lexer"
 )
 
 type BindingPower int

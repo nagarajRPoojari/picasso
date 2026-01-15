@@ -1,5 +1,5 @@
 cc_binary(
-    name = "niyama",
+    name = "picasso",
     srcs = ["main.c"],
     copts = [
         "-std=c11",

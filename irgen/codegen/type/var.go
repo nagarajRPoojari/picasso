@@ -3,7 +3,7 @@ package typedef
 import (
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // Var represents a container for all native variables in the system.

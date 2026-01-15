@@ -4,13 +4,13 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // ProcessStringLiteral generates LLVM IR for constant string expressions.
-// Unlike simple primitives, strings in Niyama are treated as heap-allocated
+// Unlike simple primitives, strings in Picasso are treated as heap-allocated
 // objects to support mutability and lifetime management beyond the local scope.
 //
 // Technical Logic:
@@ -20,7 +20,7 @@ import (
 //     reserve space in the heap equivalent to the string length plus the terminator.
 //   - Memory Migration: Uses a 'memcpy' operation to copy the read-only data from
 //     the global segment into the newly allocated heap memory.
-//   - Pointer Wrapping: Returns a Niyama string variable container that points
+//   - Pointer Wrapping: Returns a Picasso string variable container that points
 //     to the addressable heap memory.
 func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.StringExpression) tf.Var {
 	formatStr := ex.Value

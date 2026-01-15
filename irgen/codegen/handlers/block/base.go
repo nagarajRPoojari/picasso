@@ -5,8 +5,8 @@
 package block
 
 import (
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 )
 
 // BlockHandler is responsible for orchestrating the generation of IR

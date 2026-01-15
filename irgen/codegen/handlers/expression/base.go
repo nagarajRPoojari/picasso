@@ -10,12 +10,12 @@ import (
 
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/contract"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // ExpressionHandler encapsulates the state required to generate IR
@@ -40,7 +40,7 @@ func NewExpressionHandler(st *state.State, m contract.Mediator) *ExpressionHandl
 // ProcessExpression acts as the central dispatcher for the expression
 // sub-system. It performs a type switch on the AST node to delegate
 // code generation to specialized handlers, returning a tf.Var
-// which abstracts the underlying LLVM value and its Niyama type.
+// which abstracts the underlying LLVM value and its Picasso type.
 //
 // Technical Logic:
 //   - Recursion: Evaluates complex, nested expressions by drilling

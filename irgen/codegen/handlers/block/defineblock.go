@@ -4,10 +4,10 @@ import (
 	"strings"
 
 	"github.com/llir/llvm/ir"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/statement"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/statement"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // ProcessBlock serves as the central recursive dispatcher for transforming a sequence

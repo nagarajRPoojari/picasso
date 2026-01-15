@@ -3,14 +3,14 @@ load("@rules_go//go:def.bzl", "go_binary", "go_library")
 go_binary(
     name = "irgen",
     embed = [":irgen_lib"],
-    importpath = "niyama/irgen",
+    importpath = "picasso/irgen",
     visibility = ["//visibility:public"],
 )
 
 go_library(
     name = "irgen_lib",
     srcs = ["main.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen",
     visibility = ["//visibility:private"],
     deps = ["//irgen/cmd"],
 )

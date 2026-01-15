@@ -6,7 +6,7 @@ go_library(
         "diagnostic.go",
         "errors.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/error",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/error",
     visibility = ["//visibility:public"],
     deps = ["@com_github_fatih_color//:color"],
 )

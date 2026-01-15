@@ -170,13 +170,13 @@ static void generate_ffi_irs(const char *dir, const char *buildDir) {
 /* main */
 int main(int argc, char **argv) {
     if (argc < 2) {
-        fprintf(stderr, "usage: niyama <build|exec> <project-dir>\n");
+        fprintf(stderr, "usage: picasso <build|exec> <project-dir>\n");
         return 1;
     }
 
     if (!strcmp(argv[1], "build")) {
         if (argc != 3) {
-            fprintf(stderr, "niyama build <project root dir>\n");
+            fprintf(stderr, "picasso build <project root dir>\n");
             return 1;
         }
 
@@ -269,7 +269,7 @@ int main(int argc, char **argv) {
 
     if (!strcmp(argv[1], "exec")) {
         if (argc != 3) {
-            fprintf(stderr, "niyama exec <project root dir>\n");
+            fprintf(stderr, "picasso exec <project root dir>\n");
             return 1;
         }
 

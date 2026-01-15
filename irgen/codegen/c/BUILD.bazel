@@ -7,7 +7,7 @@ go_library(
         "funcs.go",
         "types.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/c",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/c",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_llir_llvm//ir",

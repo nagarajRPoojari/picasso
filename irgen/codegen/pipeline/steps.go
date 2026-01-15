@@ -3,14 +3,14 @@ package pipeline
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/class"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	funcs "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func"
-	interfaceh "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/interface"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/class"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	funcs "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/func"
+	interfaceh "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/interface"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 )
 
 func (t *Pipeline) predeclareClasses(sourcePkg state.PackageEntry) {

@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "runtime",
     srcs = ["error.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/private/runtime",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/private/runtime",
     visibility = ["//visibility:public"],
     deps = [
         "@com_github_llir_llvm//ir",

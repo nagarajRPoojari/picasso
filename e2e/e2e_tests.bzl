@@ -1,4 +1,4 @@
-def e2e_tests(name, runner, niyama):
+def e2e_tests(name, runner, picasso):
     test_dirs = native.glob(["**/TEST_DIR"])
     tests = []
 
@@ -21,7 +21,7 @@ def e2e_tests(name, runner, niyama):
             srcs = ["run_single_e2e.sh"],
             args = [
                 "$(rootpath %s)" % runner,
-                "$(rootpath %s)" % niyama,
+                "$(rootpath %s)" % picasso,
                 test_path,
                 "--deps",
                 "$(locations //irgen)",
@@ -31,7 +31,7 @@ def e2e_tests(name, runner, niyama):
             ],
             data = [
                 runner,
-                niyama,
+                picasso,
                 "//irgen",
                 "//:runtime_lib",
                 ":%s" % filegroup_name,

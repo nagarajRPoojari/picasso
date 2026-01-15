@@ -6,7 +6,7 @@ go_library(
         "lexer.go",
         "types.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/lexer",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/lexer",
     visibility = ["//visibility:public"],
     deps = ["//irgen/error"],
 )

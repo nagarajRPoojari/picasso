@@ -1,5 +1,5 @@
 module(
-    name = "niyama",
+    name = "picasso",
     version = "0.1",
 )
 

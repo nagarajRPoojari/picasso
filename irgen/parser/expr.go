@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/lexer"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorsx "github.com/nagarajRPoojari/picasso/irgen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/lexer"
 )
 
 func parseExpr(p *Parser, bp BindingPower) ast.Expression {

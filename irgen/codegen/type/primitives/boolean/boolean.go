@@ -7,9 +7,9 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/utils"
-	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/utils"
+	errorsx "github.com/nagarajRPoojari/picasso/irgen/error"
 )
 
 // Boolean hold single bit of information

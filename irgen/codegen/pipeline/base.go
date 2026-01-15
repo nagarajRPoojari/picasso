@@ -1,9 +1,9 @@
 package pipeline
 
 import (
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 )
 
 type Pipeline struct {

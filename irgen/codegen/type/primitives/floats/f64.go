@@ -6,8 +6,8 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
-	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
+	errorsx "github.com/nagarajRPoojari/picasso/irgen/error"
 )
 
 // Float64 stores 8 byte floating point value

@@ -1,9 +1,9 @@
 package expression
 
 import (
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 )
 
 // processSymbolExpression returns active variable which is in scope.

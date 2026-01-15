@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "state",
     srcs = ["state.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

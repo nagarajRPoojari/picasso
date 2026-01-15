@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "boolean",
     srcs = ["boolean.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/boolean",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/boolean",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen/type/block",

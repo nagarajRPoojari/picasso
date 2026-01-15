@@ -7,14 +7,14 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/c"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/libutils"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/libs/libutils"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // CallFunc orchestrates function and method invocation in the LLVM IR.

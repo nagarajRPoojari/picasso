@@ -8,11 +8,11 @@
 package interfaceh
 
 import (
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 )
 
-// InterfaceHandler manages the transformation of Niyama interface declarations
+// InterfaceHandler manages the transformation of Picasso interface declarations
 // into LLVM-compatible virtual tables. It ensures that method signatures
 // are consistently hashed and indexed, allowing implementing classes to
 // satisfy the interface's structural requirements.

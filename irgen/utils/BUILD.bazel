@@ -3,6 +3,6 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "utils",
     srcs = ["util.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/utils",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/utils",
     visibility = ["//visibility:public"],
 )

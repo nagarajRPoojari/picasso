@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// SymbolType represents a named type in the Niyama type system.
+// SymbolType represents a named type in the Picasso type system.
 // It can represent either a primitive/built-in type (Atomic) or
 // a user-defined type (like a class or interface).
 type SymbolType struct {

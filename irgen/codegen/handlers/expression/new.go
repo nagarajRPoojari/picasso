@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 func buildAliasNameFromMemExp(m ast.Expression) (string, string) {
@@ -24,7 +24,7 @@ func buildAliasNameFromMemExp(m ast.Expression) (string, string) {
 }
 
 // callConstructor executes the class constructor immediately following allocation.
-// In the Niyama object model, constructors are stored as function pointers within
+// In the Picasso object model, constructors are stored as function pointers within
 // the class struct itself. This method retrieves that pointer, prepares the
 // user-provided arguments, and injects the 'this' pointer to initialize the
 // instance's internal state.

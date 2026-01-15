@@ -1,14 +1,14 @@
 package mediator
 
 import (
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/class"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/expression"
-	funcs "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func"
-	interfaceh "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/interface"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/statement"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/class"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/expression"
+	funcs "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/func"
+	interfaceh "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/interface"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/statement"
 )
 
 type Mediator struct {

@@ -3,9 +3,9 @@ package libutils
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
-	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
+	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // @todo: validate params & raise error

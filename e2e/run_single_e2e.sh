@@ -2,7 +2,7 @@
 set -euo pipefail
 
 RUNNER=$(readlink -f "$1")
-NIYAMA=$(readlink -f "$2")
+PICASSO=$(readlink -f "$2")
 TEST_DIR_NAME="$3"
 shift 3
 
@@ -56,4 +56,4 @@ fi
 
 cd "$WORK_DIR"
 echo "--- Ready: $TEST_DIR_NAME ---"
-exec "$RUNNER" "$NIYAMA" "."
+exec "$RUNNER" "$PICASSO" "."

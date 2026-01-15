@@ -6,10 +6,10 @@ import (
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 )
 
 // DeclareFunc registers a method's signature within the LLVM module and the class metadata.
@@ -20,7 +20,7 @@ import (
 // Technical Logic:
 //   - Parameter Mapping: Converts AST parameter definitions into concrete LLVM IR
 //     parameters by resolving types through the TypeHandler.
-//   - This-Injection: Implements the Niyama ABI by adding a final parameter
+//   - This-Injection: Implements the Picasso ABI by adding a final parameter
 //     representing the class UDT, allowing methods to access instance fields.
 //   - Name Mangling: Uses the IdentifierBuilder to generate a unique, fully-qualified
 //     name (e.g., "ClassName.MethodName") to avoid global symbol collisions.

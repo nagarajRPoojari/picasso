@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "io",
     srcs = ["sync.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/io",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/io",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen/handlers/utils",

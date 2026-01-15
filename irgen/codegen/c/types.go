@@ -13,7 +13,7 @@ func (t *Interface) registerTypes(mod *ir.Module) {
 	t.initAtomicTypes(mod)
 }
 
-// initArrayTypes defines the internal representation of the Niyama array.
+// initArrayTypes defines the internal representation of the Picasso array.
 // It creates a struct containing a generic data pointer, a shape descriptor,
 // the flat length, and the dimensional rank. This definition is registered
 // as a named type in the LLVM module for cross-function consistency

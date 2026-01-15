@@ -6,7 +6,7 @@ go_library(
         "base.go",
         "steps.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/pipeline",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/pipeline",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

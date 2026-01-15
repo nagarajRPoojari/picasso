@@ -7,7 +7,7 @@ go_library(
         "declareclass.go",
         "defineclass.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/class",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/class",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

@@ -6,13 +6,13 @@ import (
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/constants"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 )
 
 // DeclareInterface registers a symbolic interface type within the global state

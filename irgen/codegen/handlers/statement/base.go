@@ -1,8 +1,8 @@
 package statement
 
 import (
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/contract"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/contract"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 )
 
 // StatementHandler facilitates the translation of AST statement nodes into

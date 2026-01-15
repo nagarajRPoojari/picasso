@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "array",
     srcs = ["array.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/array",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/array",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen/libs/func",

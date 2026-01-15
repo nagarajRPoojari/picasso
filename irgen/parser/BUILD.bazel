@@ -11,7 +11,7 @@ go_library(
         "types.go",
         "utils.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/parser",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/parser",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

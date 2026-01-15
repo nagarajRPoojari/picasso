@@ -14,6 +14,6 @@ cc_binary(
 
 e2e_tests(
     name = "all_tests",
-    niyama = "//cli:niyama",
+    picasso = "//cli:picasso",
     runner = ":test_runner",
 )

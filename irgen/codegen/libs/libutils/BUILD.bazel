@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "libutils",
     srcs = ["libutils.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/libutils",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/libutils",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen/handlers/utils",

@@ -7,7 +7,7 @@ go_library(
         "f32.go",
         "f64.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/floats",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen/type/block",

@@ -6,7 +6,7 @@ go_library(
         "gen.go",
         "root.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/cmd",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/cmd",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/codegen",

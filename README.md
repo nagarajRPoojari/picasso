@@ -1,4 +1,4 @@
-### niyama: ~~programming language for modern workload~~ programming language for myself
+### picasso: ~~programming language for modern workload~~ programming language for myself
 
 - compiled
 - statically typed

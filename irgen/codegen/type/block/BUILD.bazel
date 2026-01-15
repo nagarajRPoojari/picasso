@@ -3,7 +3,7 @@ load("@rules_go//go:def.bzl", "go_library")
 go_library(
     name = "block",
     srcs = ["block.go"],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block",
     visibility = ["//visibility:public"],
     deps = ["@com_github_llir_llvm//ir"],
 )

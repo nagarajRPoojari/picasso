@@ -7,14 +7,14 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/boolean"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
-	"github.com/nagarajRPoojari/niyama/irgen/lexer"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/boolean"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/floats"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/ints"
+	"github.com/nagarajRPoojari/picasso/irgen/lexer"
 )
 
 type BinaryOperation func(th *tf.TypeHandler, bh *bc.BlockHolder, l, r tf.Var) (tf.Var, error)

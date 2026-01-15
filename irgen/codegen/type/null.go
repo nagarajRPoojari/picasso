@@ -4,7 +4,7 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // NullVar represents a null variable (used for uninitialized or placeholder values).

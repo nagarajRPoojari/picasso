@@ -5,7 +5,7 @@ import (
 	"os"
 	"regexp"
 
-	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
+	errorsx "github.com/nagarajRPoojari/picasso/irgen/error"
 )
 
 const readChunkSize = 4096

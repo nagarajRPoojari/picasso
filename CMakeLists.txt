@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(niyama C)
+project(picasso C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -57,11 +57,11 @@ set_target_properties(runtime PROPERTIES
     ARCHIVE_OUTPUT_DIRECTORY ${BIN_DIR}
 )
 
-add_executable(niyama
+add_executable(picasso
     cli/main.c
 )
 
-target_link_libraries(niyama PRIVATE
+target_link_libraries(picasso PRIVATE
     ${LIBGC_LIB}
     Threads::Threads
     m
@@ -70,20 +70,20 @@ target_link_libraries(niyama PRIVATE
 )
 
 # Add compiler flags for debugging and unwinding
-target_compile_options(niyama PRIVATE
+target_compile_options(picasso PRIVATE
     -g
     -O0
     -rdynamic
     -fno-omit-frame-pointer
 )
 
-add_dependencies(niyama irgen)
+add_dependencies(picasso irgen)
 
-set_target_properties(niyama PROPERTIES
+set_target_properties(picasso PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${BIN_DIR}
 )
 
-install(TARGETS niyama
+install(TARGETS picasso
     RUNTIME DESTINATION bin
 )
 

@@ -1,6 +1,6 @@
 package ast
 
-import "github.com/nagarajRPoojari/niyama/irgen/lexer"
+import "github.com/nagarajRPoojari/picasso/irgen/lexer"
 
 // NumberExpression represents a numeric literal in the source code.
 // It stores all numeric values as float64 to maintain high precision

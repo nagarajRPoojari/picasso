@@ -8,7 +8,7 @@ go_library(
         "llvm.go",
         "utils.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

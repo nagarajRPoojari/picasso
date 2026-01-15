@@ -1,9 +1,9 @@
 package scope
 
 import (
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 // VarTree manages a stack of scopes (tree) and a global symbol table.

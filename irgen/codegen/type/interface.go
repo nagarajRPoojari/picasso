@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/llir/llvm/ir/value"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 type InterfaceH struct {

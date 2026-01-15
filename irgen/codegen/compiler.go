@@ -10,15 +10,15 @@ import (
 
 	"github.com/llir/llvm/asm"
 	"github.com/llir/llvm/ir"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs"
-	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/pipeline"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/tools"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/utils"
-	"github.com/nagarajRPoojari/niyama/irgen/parser"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/libs"
+	function "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/func"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/pipeline"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/tools"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/utils"
+	"github.com/nagarajRPoojari/picasso/irgen/parser"
 )
 
 type generator struct {

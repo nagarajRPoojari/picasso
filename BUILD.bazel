@@ -1,6 +1,6 @@
 load("@gazelle//:def.bzl", "gazelle")
 
-# gazelle:prefix github.com/nagarajRPoojari/niyama
+# gazelle:prefix github.com/nagarajRPoojari/picasso
 gazelle(name = "gazelle")
 
 filegroup(

@@ -3,7 +3,7 @@ package test
 import (
 	"testing"
 
-	"github.com/nagarajRPoojari/niyama/irgen/utils/testutils"
+	"github.com/nagarajRPoojari/picasso/irgen/utils/testutils"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -1,10 +1,10 @@
 package libs
 
 import (
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/array"
-	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/libs/io"
-	types "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/type"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/libs/array"
+	function "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/func"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/libs/io"
+	types "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/type"
 )
 
 type Module interface {

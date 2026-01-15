@@ -2,12 +2,12 @@ package class
 
 import (
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	funcs "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/func"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/identifier"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	tf "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	funcs "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/func"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 )
 
 // DeclareOpaqueClass registers a new User-Defined Type (UDT) within the LLVM module.

@@ -4,13 +4,13 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
 
-	function "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/func"
-	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
+	function "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/func"
+	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/floats"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/ints"
 )
 
 const (

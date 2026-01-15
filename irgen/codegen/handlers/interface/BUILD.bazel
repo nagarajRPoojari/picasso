@@ -7,7 +7,7 @@ go_library(
         "declareinterface.go",
         "defineinterface.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/interface",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/interface",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/ast",

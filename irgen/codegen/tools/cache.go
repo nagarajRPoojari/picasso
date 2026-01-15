@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nagarajRPoojari/niyama/irgen/ast"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/utils"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/utils"
 )
 
 type LastBuildTime struct {

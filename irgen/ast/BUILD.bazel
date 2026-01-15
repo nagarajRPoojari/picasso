@@ -8,7 +8,7 @@ go_library(
         "stmt.go",
         "types.go",
     ],
-    importpath = "github.com/nagarajRPoojari/niyama/irgen/ast",
+    importpath = "github.com/nagarajRPoojari/picasso/irgen/ast",
     visibility = ["//visibility:public"],
     deps = [
         "//irgen/lexer",

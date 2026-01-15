@@ -7,13 +7,13 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
-	errorutils "github.com/nagarajRPoojari/niyama/irgen/codegen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/utils"
-	rterr "github.com/nagarajRPoojari/niyama/irgen/codegen/libs/private/runtime"
-	bc "github.com/nagarajRPoojari/niyama/irgen/codegen/type/block"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/boolean"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/floats"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/type/primitives/ints"
+	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
+	rterr "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/private/runtime"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/boolean"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/floats"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/type/primitives/ints"
 )
 
 type Type struct {

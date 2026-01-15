@@ -6,8 +6,8 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
-	"github.com/nagarajRPoojari/niyama/irgen/codegen/handlers/state"
-	typedef "github.com/nagarajRPoojari/niyama/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 )
 
 func GetTypeString(t types.Type) string {

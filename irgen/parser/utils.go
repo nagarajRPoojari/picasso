@@ -3,8 +3,8 @@ package parser
 import (
 	"fmt"
 
-	errorsx "github.com/nagarajRPoojari/niyama/irgen/error"
-	"github.com/nagarajRPoojari/niyama/irgen/lexer"
+	errorsx "github.com/nagarajRPoojari/picasso/irgen/error"
+	"github.com/nagarajRPoojari/picasso/irgen/lexer"
 )
 
 func (t *Parser) currentToken() lexer.Token {
