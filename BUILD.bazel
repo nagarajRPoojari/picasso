@@ -9,35 +9,95 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
+config_setting(
+    name = "linux",
+    values = {
+        "define": "OS=linux",
+    },
+)
+
+config_setting(
+    name = "macos",
+    values = {
+        "define": "OS=macos",
+    },
+)
+
+config_setting(
+    name = "arm64",
+    values = {
+        "define": "ARCH=arm64",
+    },
+)
+
+config_setting(
+    name = "x86_64",
+    values = {
+        "define": "ARCH=x86_64",
+    },
+)
+
 cc_library(
     name = "runtime_lib",
-    srcs = glob([
-        "runtime/src/*.c",
-        "gc/src/*.c",
-    ]),
-    hdrs = glob([
-        "runtime/headers/*.h",
-        "gc/headers/*.h",
-    ]),
+    srcs = glob(
+        [
+            "runtime/src/*.c",
+            "runtime/src/platform/common/*.c",
+        ],
+        allow_empty = True,
+    ) + select({
+        "//:linux": glob(
+            [
+                "runtime/src/platform/linux/*.c",
+                "runtime/src/platform/arch/*.S",
+            ],
+            allow_empty = True,
+        ),
+        "//:macos": glob(
+            [
+                "runtime/src/platform/darwin/*.c",
+                "runtime/src/platform/arch/*.S",
+            ],
+            allow_empty = True,
+        ),
+    }) + select({
+        "//:arm64": glob(
+            [
+                "runtime/src/platform/arch/arm64/*.S",
+            ],
+            allow_empty = True,
+        ),
+        "//:x86_64": glob(
+            [
+                "runtime/src/platform/arch/x86_64/*.S",
+            ],
+            allow_empty = True,
+        ),
+    }),
+    hdrs = glob(["runtime/headers/**/*.h"]),
     copts = [
+        "-std=c11",
         "-g",
         "-O0",
-        "-std=c11",
-        "-rdynamic",
         "-fno-omit-frame-pointer",
-        "-I/usr/include/aarch64-linux-gnu",
-        "-D_GNU_SOURCE",  # <-- define globally
-        "-D_POSIX_C_SOURCE=200809L",  # <-- define globally
-    ],
+        "-D_GNU_SOURCE",
+        "-D_POSIX_C_SOURCE=200809L",
+    ] + select({
+        "//:linux": ["-DPLATFORM_UCONTEXT=1"],
+        "//:macos": ["-DPLATFORM_ASM_CONTEXT=1"],
+    }),
     includes = [
         "gc/headers",
         "runtime/headers",
     ],
-    linkopts = [
-        "-luring",
-        "-lunwind",
-        "-Wl,--no-as-needed",
-    ],
+    linkopts = select({
+        "//:linux": [
+            "-luring",
+            "-lunwind",
+            "-Wl,--no-as-needed",
+        ],
+        "//:macos": [],
+    }),
     visibility = ["//visibility:public"],
 )
 
@@ -46,49 +106,83 @@ cc_library(
     srcs = glob(
         [
             "runtime/src/*.c",
-            "gc/src/*.c",
+            "runtime/src/platform/common/*.c",
         ],
         exclude = [
             "runtime/src/main.c",
         ],
-    ),
-    hdrs = glob([
-        "runtime/headers/*.h",
-        "gc/headers/*.h",
-    ]),
+        allow_empty = True,
+    ) + select({
+        "//:linux": glob(
+            [
+                "runtime/src/platform/linux/*.c",
+                "runtime/src/platform/arch/*.S",
+            ],
+            allow_empty = True,
+        ),
+        "//:macos": glob(
+            [
+                "runtime/src/platform/darwin/*.c",
+                "runtime/src/platform/arch/*.S",
+            ],
+            allow_empty = True,
+        ),
+    }) + select({
+        "//:arm64": glob(
+            [
+                "runtime/src/platform/arch/arm64/*.S",
+            ],
+            allow_empty = True,
+        ),
+        "//:x86_64": glob(
+            [
+                "runtime/src/platform/arch/x86_64/*.S",
+            ],
+            allow_empty = True,
+        ),
+    }),
+    hdrs = glob(["runtime/headers/**/*.h"]),
     copts = [
+        "-std=c11",
         "-g",
         "-O0",
-        "-std=c11",
         "-fno-omit-frame-pointer",
-        "-I/usr/include/aarch64-linux-gnu",
         "-D_GNU_SOURCE",
         "-D_POSIX_C_SOURCE=200809L",
-    ],
+    ] + select({
+        "//:linux": ["-DPLATFORM_UCONTEXT=1"],
+        "//:macos": ["-DPLATFORM_ASM_CONTEXT=1"],
+    }),
     includes = [
         "gc/headers",
         "runtime/headers",
     ],
-    linkopts = [
-        "-luring",
-        "-lunwind",
-        "-Wl,--no-as-needed",
-    ],
+    linkopts = select({
+        "//:linux": [
+            "-luring",
+            "-lunwind",
+            "-Wl,--no-as-needed",
+        ],
+        "//:macos": [],
+    }),
     visibility = ["//visibility:public"],
-    alwayslink = True,
 )
 
 cc_library(
     name = "system_libs",
-    linkopts = [
-        "-lffi",
-        "-lunwind",
-        "-lunwind-aarch64",
-        "-luring",
-        "-lpthread",
-        "-lm",
-        "-rdynamic",
-        "-Wl,--no-as-needed",
-    ],
+    linkopts = select({
+        "//:linux": [
+            "-lffi",               # Fixes ffi_prep_cif, ffi_call, etc.
+            "-luring",             # For io_uring
+            "-lunwind",            # Generic unwind logic
+            "-lunwind-aarch64",    # Fixes _Uaarch64_init_local, _Uaarch64_step, etc.
+            "-Wl,--no-as-needed",  # Ensures these aren't optimized away
+        ],
+        "//:macos": [
+            "-lffi",
+            # macOS uses an integrated unwinder in libSystem, 
+            # so -lunwind-arch is typically not needed here.
+        ],
+    }),
     visibility = ["//visibility:public"],
 )
