@@ -13,6 +13,7 @@
 #include <stdarg.h>
 
 #include "scheduler.h"
+#include "platform/context.h"
 #include "diskio.h"
 #include "queue.h"
 #include "task.h"
@@ -45,7 +46,10 @@ void task_resume(task_t *t, kernel_thread_t* kt);
  * @param this Arbitary arg to be passed to func.
  * @return Always returns NULL after task exits.
  */
-void task_trampoline(task_t *t, task_payload_t *payload) {
+void task_trampoline(uintptr_t _t, uintptr_t _p) {
+    task_t* t = (task_t*)_t;
+    task_payload_t* payload = (task_payload_t*)_p;
+
     void *retval;
 
     // Dynamically invoke the function with the prepared registers
@@ -67,10 +71,10 @@ void task_trampoline(task_t *t, task_payload_t *payload) {
  * @brief Signal handler for SIGSEGV that grows task stacks dynamically.
  */
 void more_stack(int sig, siginfo_t *si, void *unused) {
-    ucontext_t *ctx = (ucontext_t *)unused;
+    platform_ctx_t *ctx = (platform_ctx_t *)unused;
 
     uintptr_t old_stack_base = (uintptr_t)current_task->stack;                  
-    uintptr_t sp = (uintptr_t)ctx->uc_mcontext.sp;
+    uintptr_t sp = platform_ctx_get_stack_pointer(ctx);
 
     if (sp < old_stack_base) {
         sp = old_stack_base;   // clamp to prevent underflow
@@ -215,7 +219,7 @@ void init_timer_signal_handler(void *arg) {
 
 task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
     task_t *t = allocate(__global__arena__, sizeof(task_t));
-    
+    platform_ctx_init(&t->ctx);
     
     if (!t) { 
         perror("calloc"); 
@@ -244,14 +248,7 @@ task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
     // usable stack starts just above guard page
     t->stack = (char*)mapped + PAGE_SIZE;
 
-    // initialize ucontext
-    getcontext(&t->ctx);
-    t->ctx.uc_stack.ss_sp = t->stack;
-    t->ctx.uc_stack.ss_size = t->stack_size;
-    t->ctx.uc_link = &(kt->sched_ctx);
-
-    // make trampoline
-    makecontext(&t->ctx, (void(*)(void))task_trampoline, 2, t, payload);
+    platform_ctx_make(&t->ctx, task_trampoline, (uintptr_t)t, (uintptr_t)payload, t->stack, t->stack_size, &(kt->sched_ctx));
 
     gc_register_root(t);
     return t;
@@ -264,7 +261,7 @@ task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
  */
 void task_yield(kernel_thread_t* kt) {
     if (!kt->current) return;
-    swapcontext(&kt->current->ctx, &kt->sched_ctx);
+    platform_ctx_switch(&kt->current->ctx, &kt->sched_ctx);
 }
 
 /**
@@ -306,7 +303,7 @@ void self_yield() {
 void task_resume(task_t *t, kernel_thread_t* kt) {
     kt->current = t;
     current_task = t;
-    swapcontext(&kt->sched_ctx, &t->ctx);
+    platform_ctx_switch(&kt->sched_ctx, &t->ctx);
     kt->current = NULL;
     current_task = NULL;
 }
@@ -335,7 +332,7 @@ void* scheduler_run(void* arg) {
             
             t = safe_q_pop_wait(&kt->ready_q);
             if(!t) {
-                return;
+                return NULL;
             }
             kt->current = t;
 
@@ -356,7 +353,7 @@ void* scheduler_run(void* arg) {
                     for(int i=0; i<SCHEDULER_THREAD_POOL_SIZE; i++) {
                         safe_q_push(&kernel_thread_map[i]->ready_q, NULL);
                     }
-                    return;
+                    return NULL;
                 }
             }
             atomic_fetch_sub(&gc_state.total_threads, 1);

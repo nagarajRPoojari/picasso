@@ -1,6 +1,6 @@
 #ifndef SIGERR_H
 #define SIGERR_H
-
+#include "platform.h"
 /**
  * @brief raises runtime error
  * 

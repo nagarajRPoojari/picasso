@@ -1,6 +1,7 @@
 #ifndef NETIO_H
 #define NETIO_H
 
+#include "platform.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/types.h> 

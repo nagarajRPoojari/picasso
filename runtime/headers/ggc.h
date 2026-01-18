@@ -1,6 +1,7 @@
 #ifndef GGC_H
 #define GGC_H
 
+#include "platform.h"
 /**
  * @brief Initialize the runtime and garbage collector.
  * 

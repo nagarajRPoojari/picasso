@@ -74,6 +74,8 @@ void* writer(__public__mutex_t* mu) {
 
     atomic_fetch_add(&completed, 1);
     __public__sync_mutex_unlock(mu);
+
+    return NULL;
 }
 
 void test_mutex_concurrent_readers_writers(void) {

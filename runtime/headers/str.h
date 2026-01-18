@@ -1,6 +1,6 @@
 #ifndef STR_H
 #define STR_H
-
+#include "platform.h"
 char* __public__strings_format(const char* fmt, ...);
 
 int __public__strings_length(const char* str);

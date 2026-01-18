@@ -45,7 +45,7 @@ typedef struct {
 /* Generic thread writer for integer types */
 void* thread_add_int(void* arg) {
     thread_arg_t* t = (thread_arg_t*)arg;
-    _Atomic int* p = (_Atomic int*)t->ptr;
+    _Atomic int64_t* p = (_Atomic int64_t*)t->ptr;
     for (int i = 0; i < ITERATIONS; i++) {
         __public__atomics_add_int(p, 1);
     }
@@ -54,7 +54,7 @@ void* thread_add_int(void* arg) {
 
 void* thread_sub_int(void* arg) {
     thread_arg_t* t = (thread_arg_t*)arg;
-    _Atomic int* p = (_Atomic int*)t->ptr;
+    _Atomic int64_t* p = (_Atomic int64_t*)t->ptr;
     for (int i = 0; i < ITERATIONS; i++) {
         __public__atomics_sub_int(p, 1);
     }
@@ -93,9 +93,9 @@ void test_atomic_int32_basic(void) {
     _Atomic int32_t i = 0;
     __public__atomics_store_int32(&i, 1000);
     TEST_ASSERT_EQUAL_INT(1000, __public__atomics_load_int32(&i));
-    __public__atomics_add_int(&i, 50);
+    __public__atomics_add_int32(&i, 50);
     TEST_ASSERT_EQUAL_INT(1050, __public__atomics_load_int32(&i));
-    __public__atomics_sub_int(&i, 25);
+    __public__atomics_sub_int32(&i, 25);
     TEST_ASSERT_EQUAL_INT(1025, __public__atomics_load_int32(&i));
 }
 
@@ -125,7 +125,7 @@ void test_atomic_double_basic(void) {
 void test_atomic_ptr_basic(void) {
     int x = 42;
     int y = 100;
-    _Atomic void* p = NULL;
+    _Atomic uintptr_t p = 0;
     __public__atomics_store_ptr(&p, &x);
     TEST_ASSERT_EQUAL_PTR(&x, __public__atomics_load_ptr(&p));
     __public__atomics_store_ptr(&p, &y);

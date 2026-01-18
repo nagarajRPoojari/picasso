@@ -67,31 +67,6 @@ static void crash_handler(int sig, siginfo_t *info, void *ucontext) {
 }
 
 
-static void *sigstack_mem = NULL;
-
-static void setup_altstack(void) {
-    size_t size = SIGSTKSZ * 2;
-
-    sigstack_mem = mmap(NULL, size,
-                        PROT_READ | PROT_WRITE,
-                        MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK,
-                        -1, 0);
-    if (sigstack_mem == MAP_FAILED) {
-        perror("mmap sigaltstack");
-        _exit(1);
-    }
-
-    stack_t ss;
-    ss.ss_sp = sigstack_mem;
-    ss.ss_size = size;
-    ss.ss_flags = 0;
-
-    if (sigaltstack(&ss, NULL) != 0) {
-        perror("sigaltstack");
-        _exit(1);
-    }
-}
-
 /**
  * @brief raises runtime error
  * 

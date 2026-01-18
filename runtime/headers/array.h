@@ -1,5 +1,7 @@
 #ifndef ARRAY_H
 #define ARRAY_H
+
+#include "platform.h"
 #include <stdint.h> 
 
 /**
@@ -7,7 +9,7 @@
  */
 
 typedef struct {
-    int8_t* data;
+    char* data;
     int64_t* shape; 
     int64_t length; 
     int64_t rank;  

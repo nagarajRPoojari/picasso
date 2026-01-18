@@ -1,3 +1,4 @@
+#include "platform.h"
 #include <stdio.h>
 #include <stdatomic.h>
 #include <unistd.h>
@@ -5,6 +6,7 @@
 #include <stddef.h>
 #include <assert.h>
 
+#include "platform/context.h"
 #include "queue.h"
 #include "alloc.h"
 #include "gc.h"
@@ -133,25 +135,25 @@ static void gc_mark_mem_region(char *start, char *end) {
 }
 
 /* Scan saved registers from ucontext (AArch64) */
-static void gc_mark_registers(ucontext_t *ctx) {
+static void gc_mark_registers(platform_ctx_t *ctx) {
     // X0-X30
     for (int i = 0; i < 31; ++i) {
-        uintptr_t val = (uintptr_t)ctx->uc_mcontext.regs[i];
+        uintptr_t val = platform_ctx_get_reg(ctx, i);
         if (val == 0) continue;
         try_mark_pointer(val);
     }
 
     // SP, PC
-    try_mark_pointer((uintptr_t)ctx->uc_mcontext.sp);
-    try_mark_pointer((uintptr_t)ctx->uc_mcontext.pc);
+    try_mark_pointer(platform_ctx_get_stack_pointer(ctx));
+    try_mark_pointer(platform_ctx_get_pc(ctx));
 }
 
-static void gc_mark_task(ucontext_t *ctx) {
+static void gc_mark_task(platform_ctx_t* ctx) {
     // stack
-    char *stack_bottom = (char*)ctx->uc_stack.ss_sp;             // lowest address
-    char *stack_top    = stack_bottom + ctx->uc_stack.ss_size;   // highest address
+    char *stack_bottom = (char*)platform_ctx_get_stack_base(ctx);             // lowest address
+    char *stack_top    = stack_bottom + platform_ctx_get_stack_size(ctx);   // highest address
 
-    char *sp = (char*)ctx->uc_mcontext.sp;                       // current SP
+    char *sp = (char*)platform_ctx_get_stack_pointer(ctx);                       // current SP
 
     if (sp < stack_bottom || sp > stack_top) {
         perror(" wrong stack \n");
@@ -223,11 +225,13 @@ static void gc_collect() {
     gc_resume_world();
 }
 
-static void gc_run() {
+static void* gc_run(void*) {
     while (1) {
         gc_collect();
         usleep(GC_TIMEPERIOD);
     }
+
+    return NULL;
 }
 
 void gc_init() {
@@ -244,7 +248,7 @@ void gc_start() {
     pthread_mutex_init(&gc_state.lock, 0);
     pthread_cond_init(&gc_state.cv_mutators_stopped, 0);
     pthread_cond_init(&gc_state.cv_world_resumed, 0);
-    pthread_cond_init(&gc_state.add_lock, 0);
+    pthread_mutex_init(&gc_state.add_lock, 0);
     
     pthread_t t;
     pthread_create(&t, NULL, gc_run, NULL);

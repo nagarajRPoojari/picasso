@@ -27,7 +27,7 @@ void tearDown(void) {
 }
 
 /* Helper: check that data is zero-initialized */
-static int is_zeroed(int8_t* data, size_t size) {
+static int is_zeroed(char* data, size_t size) {
     for (size_t i = 0; i < size; i++) {
         if (data[i] != 0) return 0;
     }

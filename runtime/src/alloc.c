@@ -1,3 +1,4 @@
+#include "platform.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <assert.h>
@@ -102,20 +103,20 @@ static inline free_chunk_t* prev_chunk(free_chunk_t* fc) {
     );
 }
 
-static void __dump__chunk(free_chunk_t *c) {
-    printf("CHUNK chunk @ %p\n", (void*)c);
-    printf("  prev_size     = %zu\n", c->prev_size);
-    printf("  size          = %zu\n", get_size(c));
-    printf("  size(raw)          = %zu\n", c->size);
-    printf("  flags         = [inuse=%d mmapped=%d prev_inuse=%d]\n",
-             is_curr_inuse(c),
-             is_mmap_alloced(c),
-             is_prev_inuse(c));
-    printf("  fd            = %p\n", (void*)c->fd);
-    printf("  bk            = %p\n", (void*)c->bk);
-    printf("  next_sizeptr  = %p\n", (void*)c->next_sizeptr);
-    printf("  prev_sizeptr  = %p\n", (void*)c->prev_sizeptr);
-}
+// static void __dump__chunk(free_chunk_t *c) {
+//     printf("CHUNK chunk @ %p\n", (void*)c);
+//     printf("  prev_size     = %zu\n", c->prev_size);
+//     printf("  size          = %zu\n", get_size(c));
+//     printf("  size(raw)          = %zu\n", c->size);
+//     printf("  flags         = [inuse=%d mmapped=%d prev_inuse=%d]\n",
+//              is_curr_inuse(c),
+//              is_mmap_alloced(c),
+//              is_prev_inuse(c));
+//     printf("  fd            = %p\n", (void*)c->fd);
+//     printf("  bk            = %p\n", (void*)c->bk);
+//     printf("  next_sizeptr  = %p\n", (void*)c->next_sizeptr);
+//     printf("  prev_sizeptr  = %p\n", (void*)c->prev_sizeptr);
+// }
 
 
 static inline void set_fdbk_to(free_chunk_t* fc, free_chunk_t* v) {

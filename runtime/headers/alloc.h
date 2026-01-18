@@ -1,6 +1,7 @@
 #ifndef ALLOC_H
 #define ALLOC_H
 
+#include "platform.h"
 #include <stdint.h>
 #include <unistd.h>
 #include <pthread.h>

@@ -38,7 +38,7 @@ __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
     __public__array_t* arr = (__public__array_t*)allocate(__test__global__arena__, total_size);
 
     
-    arr->data = (int8_t*)(arr + 1); 
+    arr->data = (char*)(arr + 1); 
     
     if (rank > 0) {
         arr->shape = (int64_t*)(arr->data + data_size);
