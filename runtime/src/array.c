@@ -22,7 +22,7 @@ __public__array_t* __public__alloc_array(int count, int elem_size, int rank) {
     __public__array_t* arr = (__public__array_t*)allocate(__arena__, total_size);
 
     
-    arr->data = (int8_t*)(arr + 1); 
+    arr->data = (char*)(arr + 1); 
     
     if (rank > 0) {
         arr->shape = (int64_t*)(arr->data + data_size);
@@ -52,14 +52,14 @@ void __public__debug_array_info(__public__array_t* arr) {
     printf("     Base Address (a.Ptr): %p\n", (void*)arr);
     printf("     data (Offset 0):      %p\n", arr->data);
     printf("     shape (Offset 8):     %p\n", arr->shape);
-    printf("     length (Offset 16):   %lld\n", arr->length);
-    printf("     rank (Offset 24):     %lld\n", arr->rank);
+    printf("     length (Offset 16):   %ld\n", arr->length);
+    printf("     rank (Offset 24):     %ld\n", arr->rank);
     
     // Print shape elements if rank > 0
     if (arr->rank > 0 && arr->shape != NULL) {
         printf("     Shape Dims: [");
         for (int i = 0; i < arr->rank; i++) {
-            printf("%lld", arr->shape[i]);
+            printf("%ld", arr->shape[i]);
             if (i < arr->rank - 1) {
                 printf(", ");
             }

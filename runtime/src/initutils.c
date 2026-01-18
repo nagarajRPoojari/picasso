@@ -1,5 +1,7 @@
 #include "platform.h"
 #include <liburing.h>
+#include <string.h>
+#include "platform/context.h"
 #include "start.h"
 #include "array.h"
 #include "ggc.h"
@@ -175,6 +177,7 @@ int init_scheduler() {
     kernel_thread_map = allocate(__global__arena__, SCHEDULER_THREAD_POOL_SIZE * sizeof(kernel_thread_t*));
     for (int i=0;i<SCHEDULER_THREAD_POOL_SIZE;i++) {
         kernel_thread_map[i] = allocate(__global__arena__, 1 * sizeof(kernel_thread_t));
+        platform_ctx_init(&kernel_thread_map[i]->sched_ctx);
         kernel_thread_map[i]->id = i;
         kernel_thread_map[i]->current = NULL;
         safe_q_init(&kernel_thread_map[i]->ready_q, SCHEDULER_LOCAL_QUEUE_SIZE);

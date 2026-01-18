@@ -1,6 +1,7 @@
 #ifndef SYNC_H
 #define SYNC_H
 
+#include "platform.h"
 #include <stdalign.h>
 
 #include "stdatomic.h"

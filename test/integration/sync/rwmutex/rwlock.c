@@ -78,6 +78,8 @@ void* writer(__public__rwmutex_t* mu) {
 
     atomic_fetch_add(&completed, 1);
     __public__sync_rwmutex_rwunlock(mu);
+
+    return NULL;
 }
 
 void test_rwmutex_concurrent_readers_writers(void) {

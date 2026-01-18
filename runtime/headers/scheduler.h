@@ -1,11 +1,12 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
+#include "platform.h"
 #include <signal.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <ucontext.h>
+#include "platform/context.h"
 
 #include "task.h"
 #include "queue.h"
@@ -50,7 +51,7 @@
  */
 typedef struct kernel_thread {
     int id;                  /** Unique ID assigned to this scheduler thread. */
-    ucontext_t sched_ctx;    /** Scheduler context for switching between tasks. */
+    platform_ctx_t sched_ctx;    /** Scheduler context for switching between tasks. */
     task_t *current;         /** Pointer to the currently running task (if any). */
     safe_queue_t ready_q;    /** Queue of ready tasks waiting to be scheduled. */
     unsafe_queue_t wait_q;  /** Queue of tasks which are waiting for IO */
@@ -91,7 +92,7 @@ void task_destroy(task_t *t);
  * @param t Pointer to the current task.
  * @return Always returns NULL after task exits.
  */
-void task_trampoline(task_t *t, task_payload_t *payload);
+void task_trampoline(uintptr_t _t, uintptr_t _p);
 
 
 /**

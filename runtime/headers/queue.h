@@ -1,6 +1,6 @@
 #ifndef QUEUE_H 
 #define QUEUE_H
-
+#include "platform.h"
 #include <pthread.h>
 #include "task.h"
 

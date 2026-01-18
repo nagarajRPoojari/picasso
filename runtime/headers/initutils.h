@@ -1,6 +1,7 @@
 #ifndef INITUTILS_H
 #define INITUTILS_H
 
+#include "platform.h"
 
 #include <ucontext.h>
 #include <fcntl.h>

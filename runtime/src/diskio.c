@@ -339,7 +339,7 @@ __public__array_t* __public__ascan(int n) {
  * @return Number of bytes successfully written on success, or -1 on error.
  */
 ssize_t __public__asyncio_printf(const char* fmt, ...) {
-    if (!fmt) return NULL;
+    if (!fmt) return 0;
 
     va_list ap;
     va_start(ap, fmt);
@@ -349,10 +349,10 @@ ssize_t __public__asyncio_printf(const char* fmt, ...) {
     int len = vsnprintf(tmp, sizeof(tmp), fmt, ap);
     va_end(ap);
 
-    if (len < 0) return NULL;
+    if (len < 0) return 0;
 
     char* buf = allocate(__arena__, len + 1);
-    if (!buf) return NULL;
+    if (!buf) return 0;
 
     va_start(ap, fmt);
     vsnprintf(buf, len + 1, fmt, ap);
@@ -374,7 +374,7 @@ ssize_t __public__asyncio_printf(const char* fmt, ...) {
 
     /* task resumes here after write completion */
     if (t->io.done_n < 0)
-        return NULL;
+        return 0;
 
     return t->io.done_n;
 }
@@ -671,7 +671,7 @@ char*  __public__syncio_fopen(const char* filename, const char* mode) {
         perror("fopen failed");
         return NULL;
     }
-    return (uintptr_t)f;
+    return f;
 }
 
 int64_t __public__syncio_fclose(FILE* f) {

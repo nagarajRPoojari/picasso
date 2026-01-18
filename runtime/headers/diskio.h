@@ -1,6 +1,7 @@
 #ifndef DISKIO_H
 #define DISKIO_H
 
+#include "platform.h"
 #include "stdio.h"
 
 #include "queue.h"

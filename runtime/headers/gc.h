@@ -1,6 +1,7 @@
 #ifndef GC_H
 #define GC_H
 
+#include "platform.h"
 #include <pthread.h>
 #include <stdatomic.h>
 #include <ucontext.h>

@@ -1,3 +1,4 @@
+#include "platform.h"
 #include "crypto.h"
 #include <stdio.h>
 #include <unistd.h>

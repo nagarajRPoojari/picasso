@@ -306,8 +306,8 @@ ssize_t __public__net_dial(const char *addr, uint16_t port) {
         .op       = IO_CONNECT,
         .io_done  = 0,
         .io_err   = 0,
-        .addr     = sa,
-        .addrlen  = sizeof(*sa),
+        .addr     = (struct sockaddr*)sa,
+        .addrlen  = (socklen_t*)sizeof(*sa),
     };
 
     int epfd = netio_epoll_id;
@@ -348,8 +348,6 @@ ssize_t __public__net_dial(const char *addr, uint16_t port) {
  * @return Never returns.
  */
 void *netio_worker(void *arg) {
-    int id = (int)(intptr_t)arg;
-
     /* prevent SIGPIPE from killing process */
     signal(SIGPIPE, SIG_IGN);
 

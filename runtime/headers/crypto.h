@@ -1,6 +1,7 @@
 #ifndef CRYPTO_H
 #define CRYPTO_H
 
+#include "platform.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>

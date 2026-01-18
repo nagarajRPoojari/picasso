@@ -1,6 +1,7 @@
 #ifndef OS_H
 #define OS_H
 
+#include "platform.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <unistd.h>

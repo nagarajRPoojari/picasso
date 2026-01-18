@@ -1,7 +1,8 @@
 #ifndef TASK_H
 #define TASK_H
 
-#include <ucontext.h>
+#include "platform.h"
+
 #include <signal.h>
 #include <ffi.h>
 #include <stdarg.h>
@@ -13,6 +14,8 @@
 #include <pthread.h>      
 #include <stdint.h>        
 #include <sys/types.h> 
+
+#include "platform/context.h"
 
 /* Size of per-task I/O buffer (bytes) */
 #define TASK_IO_BUFFER 256
@@ -93,7 +96,7 @@ typedef struct task {
     int id;
 
     /* CPU context used for saving/restoring execution state */
-    ucontext_t ctx;
+    platform_ctx_t ctx;
 
     /* Size of the private stack (usable bytes, excluding guard page) */
     size_t stack_size;
