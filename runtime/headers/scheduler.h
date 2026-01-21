@@ -22,7 +22,7 @@
  * Number of scheduler threads (kernel threads) in the pool.
  * Each thread manages its own local ready queue and executes tasks.
  */
-#define SCHEDULER_THREAD_POOL_SIZE 4
+#define SCHEDULER_THREAD_POOL_SIZE 1
 
 /**
  * Maximum number of tasks in a scheduler thread's local queue.

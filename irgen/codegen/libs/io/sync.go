@@ -33,25 +33,33 @@ func (t *SyncIO) ListAllFuncs() map[string]function.Func {
 }
 
 func (t *SyncIO) sprintf(f *ir.Func, typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
-	castedArgs := []value.Value{args[0].Load(bh)}
+	castedArgs := []value.Value{args[0].Load(bh)} // The Format String
+
 	for _, arg := range args[1:] {
+		val := arg.Load(bh)
+		if _, ok := val.Type().(*types.PointerType); ok {
+			castedArgs = append(castedArgs, bh.N.NewBitCast(val, types.I8Ptr))
+			continue
+		}
 		switch arg.(type) {
 		case *ints.Int8, *ints.Int16, *ints.Int32:
-			res := typeHandler.ImplicitIntCast(bh, arg.Load(bh), types.I32)
+			res := typeHandler.ImplicitIntCast(bh, val, types.I32)
 			castedArgs = append(castedArgs, res)
 		case *ints.Int64:
-			castedArgs = append(castedArgs, arg.Load(bh))
+			castedArgs = append(castedArgs, val)
 		case *ints.UInt8, *ints.UInt16:
-			res := typeHandler.ImplicitUnsignedIntCast(bh, arg.Load(bh), types.I32)
+			res := typeHandler.ImplicitUnsignedIntCast(bh, val, types.I32)
 			castedArgs = append(castedArgs, res)
-		case *ints.UInt32, *ints.UInt64:
-			res := typeHandler.ImplicitUnsignedIntCast(bh, arg.Load(bh), types.I64)
+		case *ints.UInt32:
+			res := typeHandler.ImplicitUnsignedIntCast(bh, val, types.I64)
 			castedArgs = append(castedArgs, res)
+		case *ints.UInt64:
+			castedArgs = append(castedArgs, val)
 		case *floats.Float16, *floats.Float32, *floats.Float64:
-			res := typeHandler.ImplicitFloatCast(bh, arg.Load(bh), types.Double)
+			res := typeHandler.ImplicitFloatCast(bh, val, types.Double)
 			castedArgs = append(castedArgs, res)
 		default:
-			castedArgs = append(castedArgs, arg.Load(bh))
+			castedArgs = append(castedArgs, val)
 		}
 	}
 	result := bh.N.NewCall(f, castedArgs...)

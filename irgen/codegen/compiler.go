@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -188,6 +189,13 @@ func (t *generator) buildFFIPackage(pkg state.PackageEntry) {
 	t.ffiModules[pkg.Name] = mod
 }
 
+func normalizeOpaquePointers(ir []byte) []byte {
+	// Replace standalone 'ptr' with 'i8*'
+	// This matches llir/llvm expectations
+	re := regexp.MustCompile(`\bptr\b`)
+	return re.ReplaceAll(ir, []byte("i8*"))
+}
+
 func (t *generator) buildStdLib(pkg state.PackageEntry) {
 	split := strings.Split(pkg.Name, ".")
 	modName := split[len(split)-1]
@@ -211,7 +219,8 @@ func (t *generator) buildStdLib(pkg state.PackageEntry) {
 	}
 
 	// Parse LLVM IR
-	mod, err := asm.ParseBytes(path, input)
+	data := normalizeOpaquePointers(input)
+	mod, err := asm.ParseBytes(path, data)
 	if err != nil {
 		panic(err)
 	}

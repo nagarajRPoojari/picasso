@@ -10,7 +10,6 @@
 #include <sys/socket.h>    
 #include <netinet/in.h>   
 #include <arpa/inet.h>      
-#include <sys/epoll.h>     
 #include <pthread.h>      
 #include <stdint.h>        
 #include <sys/types.h> 

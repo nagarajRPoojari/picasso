@@ -4,7 +4,6 @@
 #include "platform.h"
 #include <pthread.h>
 #include <stdatomic.h>
-#include <ucontext.h>
 #include "scheduler.h" // external: runtime
 
 

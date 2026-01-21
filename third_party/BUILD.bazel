@@ -1,0 +1,8 @@
+# third_party/libffi.BUILD
+cc_library(
+    name = "libffi",
+    hdrs = glob(["include/**/*.h"]),
+    includes = ["include"],
+    linkopts = ["-lffi"],
+    visibility = ["//visibility:public"],
+)

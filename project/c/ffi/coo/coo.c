@@ -1,7 +1,7 @@
 #include "coo.h"
-#include "stdint.h"
-#include "stdlib.h"
-#include "stdio.h"
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 
 Coordinate* __public__coo_create(int64_t x, int64_t y) {
     Coordinate* c = (Coordinate*)malloc(sizeof(Coordinate));

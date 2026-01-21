@@ -1,8 +1,10 @@
+load("@rules_cc//cc:defs.bzl", "cc_binary")
+
 cc_binary(
     name = "picasso",
     srcs = select({
-        "//:linux": ["cli_linux.c"],
-        "//:macos": ["cli_darwin.c"],
+        "@platforms//os:linux": ["cli_linux.c"],
+        "@platforms//os:macos": ["cli_darwin.c"],
     }),
     copts = [
         "-std=c11",
@@ -10,33 +12,33 @@ cc_binary(
         "-O0",
         "-fno-omit-frame-pointer",
     ],
+    local_defines = [
+        'IRGEN_BIN=\\"irgen/irgen_/irgen\\"',
+        'RUNTIME_LIB_PATH=\\"libruntime_lib.a\\"',
+    ] + select({
+        "@platforms//os:macos": ["_DARWIN_C_SOURCE"],
+        "//conditions:default": [],
+    }),
     data = [
-        "//irgen",
-        "//libs:ffi_libs",
         "//:runtime_headers",
         "//:runtime_lib",
+        "//irgen",
     ],
     linkopts = [
         "-lm",
         "-lpthread",
     ] + select({
-        "//:linux": [
+        "@platforms//os:linux": [
             "-lffi",
             "-luring",
             "-lunwind",
             "-rdynamic",
         ],
-        "//:macos": [
+        "@platforms//os:macos": [
+            "-L/opt/homebrew/opt/libffi/lib",
             "-lffi",
         ],
     }),
-    local_defines = [
-        # The triple backslash ensures the quotes reach the C compiler
-        'IRGEN_BIN=\\"irgen/irgen_/irgen\\"',
-        'RUNTIME_LIB_PATH=\\"libruntime_lib.a\\"',
-    ],
+    deps = ["//:runtime_lib"],
     visibility = ["//visibility:public"],
-    deps = [
-        "//:runtime_lib",
-    ],
 )

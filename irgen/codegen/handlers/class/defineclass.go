@@ -121,7 +121,7 @@ func (t *ClassHandler) defineMethod(i int, aliasClsName string, clsMeta *typedef
 		args = append(args, t.st.TypeHandler.GetLLVMType(p.Type.Get()))
 	}
 
-	// args = append(args, clsMeta.UDT)
+	args = append(args, clsMeta.UDT)
 	funcType := types.NewFunc(retType, args...)
 	*fieldTypes = append(*fieldTypes, types.NewPointer(funcType))
 

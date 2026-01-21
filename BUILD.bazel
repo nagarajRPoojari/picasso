@@ -1,14 +1,27 @@
 load("@gazelle//:def.bzl", "gazelle")
+load("@rules_cc//cc:defs.bzl", "cc_library")
 
 # gazelle:prefix github.com/nagarajRPoojari/picasso
 gazelle(name = "gazelle")
+
+platform(
+    name = "linux_aarch64",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:aarch64",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 filegroup(
     name = "runtime_headers",
     srcs = glob([
         "runtime/headers/*.h",
-        "runtime/headers/platform/*.h"
-        ]),
+        "runtime/headers/platform/*.h",
+    ]) + select({
+        ":linux": ["runtime/headers/platform/linux"],
+        ":macos": ["runtime/headers/platform/darwin"],
+    }),
     visibility = ["//visibility:public"],
 )
 
@@ -34,10 +47,6 @@ config_setting(
 
 cc_library(
     name = "runtime_lib",
-    defines = select({
-        "//:linux": ["PLATFORM_UCONTEXT=1"],
-        "//:macos": ["PLATFORM_ASM_CONTEXT=1"],
-    }),
     srcs = glob(
         [
             "runtime/src/*.c",
@@ -48,14 +57,12 @@ cc_library(
         "//:linux": glob(
             [
                 "runtime/src/platform/linux/*.c",
-                "runtime/src/platform/arch/*.S",
             ],
             allow_empty = True,
         ),
         "//:macos": glob(
             [
                 "runtime/src/platform/darwin/*.c",
-                "runtime/src/platform/arch/*.S",
             ],
             allow_empty = True,
         ),
@@ -81,49 +88,61 @@ cc_library(
         "-fno-omit-frame-pointer",
         "-D_GNU_SOURCE",
         "-D_POSIX_C_SOURCE=200809L",
-    ],
+    ] + select({
+        ":macos": [
+            "-D_DARWIN_C_SOURCE",
+        ],
+        "//conditions:default": [],
+    }),
+    defines = select({
+        "//:linux": ["PLATFORM_UCONTEXT=1"],
+        "//:macos": ["PLATFORM_ASM_CONTEXT=1"],
+    }),
     includes = [
         "runtime/headers",
         "runtime/headers/platform",
-    ],
+    ] + select({
+        ":linux": ["runtime/headers/platform/linux"],
+        ":macos": ["runtime/headers/platform/darwin"],
+    }),
     linkopts = select({
         "//:linux": [
             "-luring",
             "-lunwind",
             "-Wl,--no-as-needed",
         ],
-        "//:macos": [],
+        "//:macos": ["-lffi"],
     }),
     visibility = ["//visibility:public"],
+    deps = select({
+        "//:macos": ["@libffi_macos//:libffi"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
     name = "runtime_lib_test",
-    defines = select({
-        "//:linux": ["PLATFORM_UCONTEXT=1"],
-        "//:macos": ["PLATFORM_ASM_CONTEXT=1"],
-    }),
     srcs = glob(
         [
             "runtime/src/*.c",
             "runtime/src/platform/common/*.c",
         ],
+        allow_empty = True,
         exclude = [
             "runtime/src/main.c",
         ],
-        allow_empty = True,
     ) + select({
         "//:linux": glob(
             [
                 "runtime/src/platform/linux/*.c",
-                "runtime/src/platform/arch/*.S",
+                "runtime/src/platform/arch/**/*.S",
             ],
             allow_empty = True,
         ),
         "//:macos": glob(
             [
                 "runtime/src/platform/darwin/*.c",
-                "runtime/src/platform/arch/*.S",
+                "runtime/src/platform/arch/**/*.S",
             ],
             allow_empty = True,
         ),
@@ -150,35 +169,44 @@ cc_library(
         "-D_GNU_SOURCE",
         "-D_POSIX_C_SOURCE=200809L",
     ],
+    defines = select({
+        "//:linux": ["PLATFORM_UCONTEXT=1"],
+        "//:macos": ["PLATFORM_ASM_CONTEXT=1"],
+    }),
     includes = [
         "runtime/headers",
         "runtime/headers/platform",
-    ],
+    ] + select({
+        ":linux": ["runtime/headers/platform/linux"],
+        ":macos": ["runtime/headers/platform/darwin"],
+    }),
     linkopts = select({
         "//:linux": [
             "-luring",
             "-lunwind",
             "-Wl,--no-as-needed",
         ],
-        "//:macos": [],
+        "//:macos": ["-lffi"],
     }),
     visibility = ["//visibility:public"],
+    deps = select({
+        "//:macos": ["@libffi_macos//:libffi"],
+        "//conditions:default": [],
+    }),
 )
 
 cc_library(
     name = "system_libs",
     linkopts = select({
         "//:linux": [
-            "-lffi",               # Fixes ffi_prep_cif, ffi_call, etc.
-            "-luring",             # For io_uring
-            "-lunwind",            # Generic unwind logic
-            "-lunwind-aarch64",    # Fixes _Uaarch64_init_local, _Uaarch64_step, etc.
-            "-Wl,--no-as-needed",  # Ensures these aren't optimized away
+            "-lffi",
+            "-luring",
+            "-lunwind",
+            "-lunwind-aarch64",
+            "-Wl,--no-as-needed",
         ],
         "//:macos": [
             "-lffi",
-            # macOS uses an integrated unwinder in libSystem, 
-            # so -lunwind-arch is typically not needed here.
         ],
     }),
     visibility = ["//visibility:public"],
