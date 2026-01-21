@@ -12,8 +12,9 @@
 
 
 #elif defined(__APPLE__)
-#include <sys/ucontext.h>
-#include <signal.h>
+#define _DARWIN_C_SOURCE
+// #include <sys/ucontext.h>
+// #include <signal.h>
 #else
 #error Unsupported platform
 #endif

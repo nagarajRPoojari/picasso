@@ -67,10 +67,15 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
         char stub[PATH_MAX];
         if (snprintf(stub, sizeof(stub), "%s/ffi_stub.c", tuDir) >= (int)sizeof(stub))
             die("stub path too long");
-
+            
         if (access(stub, R_OK) != 0) {
-            fprintf(stderr, "warning: %s missing ffi_stub.c, skipping\n", tuDir);
-            continue;
+            if (snprintf(stub, sizeof(stub), "%s/ffi_stub_linux.c", tuDir) >= (int)sizeof(stub))
+                die("stub path too long");
+
+            if(access(stub, R_OK) != 0)  {
+                fprintf(stderr, "warning: %s missing ffi_stub.c, skipping\n", tuDir);
+                continue;
+            }
         }
 
         char outLL[PATH_MAX];
@@ -113,6 +118,7 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
         while ((cent = readdir(cd)) != NULL) {
             if (!strstr(cent->d_name, ".c")) continue;
             if (!strcmp(cent->d_name, "ffi_stub.c")) continue;
+            if (!strcmp(cent->d_name, "ffi_stub_linux.c")) continue;
 
             char cfile[PATH_MAX];
             if (snprintf(cfile, sizeof(cfile), "%s/%s", tuDir, cent->d_name) >= (int)sizeof(cfile))

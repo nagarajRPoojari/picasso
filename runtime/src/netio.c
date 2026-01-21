@@ -12,7 +12,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/epoll.h>
+#include "netpoll.h"
 
 #include <pthread.h>
 #include <stdint.h>
@@ -26,72 +26,18 @@
 #include "queue.h"
 
 extern __thread task_t *current_task;
-extern int netio_epoll_id;
+extern netpoll_t* netpoller;
 extern __thread arena_t* __arena__;
-/**
- * @brief Add a file descriptor to an epoll instance.
- *
- * Registers the file descriptor with the given epoll instance using
- * EPOLLONESHOT and associates the provided task pointer with the event.
- *
- * @param epfd Epoll instance file descriptor.
- * @param fd File descriptor to add.
- * @param t Task associated with this epoll entry.
- * @param events Epoll events to monitor (e.g., EPOLLIN, EPOLLOUT).
- *
- * @return 0 on success, -1 on failure (errno set).
- */
-static inline int ep_add(int epfd, int fd, task_t *t, uint32_t events) {
-    struct epoll_event ev = {
-        .events = events | EPOLLONESHOT,
-        .data.ptr = t,
-    };
-    return epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev);
-}
-
-/**
- * @brief Modify an existing epoll registration.
- *
- * Updates the event mask for a previously registered file descriptor and
- * re-arms it as EPOLLONESHOT, keeping the associated task pointer.
- *
- * @param epfd Epoll instance file descriptor.
- * @param fd File descriptor to modify.
- * @param t Task associated with this epoll entry.
- * @param events New epoll events to monitor.
- *
- * @return 0 on success, -1 on failure (errno set).
- */
-static inline int ep_mod(int epfd, int fd, task_t *t, uint32_t events) {
-    struct epoll_event ev = {
-        .events = events | EPOLLONESHOT,
-        .data.ptr = t,
-    };
-    return epoll_ctl(epfd, EPOLL_CTL_MOD, fd, &ev);
-}
-
-/**
- * @brief Remove a file descriptor from an epoll instance.
- *
- * Unregisters the file descriptor from the epoll instance. Any pending
- * events for the descriptor are discarded.
- *
- * @param epfd Epoll instance file descriptor.
- * @param fd File descriptor to remove.
- */
-static inline void ep_del(int epfd, int fd) {
-    epoll_ctl(epfd, EPOLL_CTL_DEL, fd, NULL);
-}
 
 /**
  * @brief Asynchronously accept a new connection on a listening socket.
  *
- * Registers the listening file descriptor with epoll for read events and
+ * Registers the listening file descriptor with netpoll for read events and
  * suspends the current task until an incoming connection is ready to be
  * accepted. The task is resumed by the scheduler once the accept operation
  * completes or fails.
  *
- * This function integrates with the task scheduler and epoll using
+ * This function integrates with the task scheduler and netpoll using
  * EPOLLONESHOT semantics. It may yield execution and resume later.
  *
  * @param listen_fd Listening socket file descriptor.
@@ -109,11 +55,10 @@ ssize_t __public__net_accept(int64_t listen_fd) {
         .io_err = 0,
     };
 
-    int epfd = netio_epoll_id;
-    if (ep_add(epfd, listen_fd, t, EPOLLIN) < 0) {
+    if (netpoll_add(netpoller, listen_fd, NETPOLL_IN | NETPOLL_ONESHOT, t) < 0) {
         if (errno != EEXIST)
             return -1;
-        ep_mod(epfd, listen_fd, t, EPOLLIN);
+        netpoll_mod(netpoller, listen_fd, NETPOLL_IN | NETPOLL_ONESHOT, t);
     }
 
     unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
@@ -126,12 +71,12 @@ ssize_t __public__net_accept(int64_t listen_fd) {
 /**
  * @brief Asynchronously read data from a file descriptor.
  *
- * Registers the file descriptor with epoll for read readiness and suspends
+ * Registers the file descriptor with netpoll for read readiness and suspends
  * the current task until data is available or an error occurs. The read may
  * complete partially; the actual number of bytes read is returned when the
  * task resumes.
  *
- * This function cooperates with the scheduler and epoll using EPOLLONESHOT
+ * This function cooperates with the scheduler and netpoll using EPOLLONESHOT
  * semantics and may yield execution until the I/O operation completes.
  *
  * @param fd File descriptor to read from.
@@ -154,11 +99,10 @@ ssize_t __public__net_read(int64_t fd, __public__array_t *buf, size_t len) {
         .io_err = 0,
     };
 
-    int epfd = netio_epoll_id;
-    if (ep_add(epfd, fd, t, EPOLLIN) < 0) {
+    if (netpoll_add(netpoller, fd, NETPOLL_IN | NETPOLL_ONESHOT, t) < 0) {
         if (errno != EEXIST)
             return -1;
-        ep_mod(epfd, fd, t, EPOLLIN);
+        netpoll_mod(netpoller, fd, NETPOLL_IN | NETPOLL_ONESHOT, t);
     }
 
     unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
@@ -171,12 +115,12 @@ ssize_t __public__net_read(int64_t fd, __public__array_t *buf, size_t len) {
 /**
  * @brief Asynchronously write data to a file descriptor.
  *
- * Registers the file descriptor with epoll for write readiness and suspends
+ * Registers the file descriptor with netpoll for write readiness and suspends
  * the current task until the descriptor becomes writable or an error occurs.
  * The write may complete partially; the actual number of bytes written is
  * returned when the task resumes.
  *
- * This function integrates with the scheduler and epoll using EPOLLONESHOT
+ * This function integrates with the scheduler and netpoll using EPOLLONESHOT
  * semantics and may yield execution until the I/O operation completes.
  *
  * @param fd File descriptor to write to.
@@ -199,11 +143,10 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) {
         .io_err = 0,
     };
 
-    int epfd = netio_epoll_id;
-    if (ep_add(epfd, fd, t, EPOLLOUT) < 0) {
+    if (netpoll_add(netpoller, fd, NETPOLL_OUT | NETPOLL_ONESHOT, t) < 0) {
         if (errno != EEXIST)
             return -1;
-        ep_mod(epfd, fd, t, EPOLLOUT);
+        netpoll_mod(netpoller, fd, NETPOLL_OUT | NETPOLL_ONESHOT, t);
     }
 
     unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
@@ -231,7 +174,13 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) {
  *         (with errno set accordingly).
  */
 ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog) {
-    int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd != -1) {
+        // Set Non-blocking
+        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+        // Set Close-on-exec
+        fcntl(fd, F_SETFD, FD_CLOEXEC);
+    }
     if (fd < 0)
         return -1;
 
@@ -261,7 +210,13 @@ ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog) {
 }
 
 ssize_t __public__net_dial(const char *addr, uint16_t port) {
-    int fd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd != -1) {
+        // Set Non-blocking
+        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+        // Set Close-on-exec
+        fcntl(fd, F_SETFD, FD_CLOEXEC);
+    }
     if (fd < 0)
         return -1;
 
@@ -310,14 +265,13 @@ ssize_t __public__net_dial(const char *addr, uint16_t port) {
         .addrlen  = (socklen_t*)sizeof(*sa),
     };
 
-    int epfd = netio_epoll_id;
-    if (ep_add(epfd, fd, t, EPOLLOUT) < 0) {
+    if (netpoll_add(netpoller, fd, NETPOLL_OUT | NETPOLL_ONESHOT, t) < 0) {
         if (errno != EEXIST){
             release(__arena__, sa);
             close(fd);
             return -1;
         }
-        ep_mod(epfd, fd, t, EPOLLOUT);
+        netpoll_mod(netpoller, fd, NETPOLL_OUT | NETPOLL_ONESHOT, t);
     }
 
     unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
@@ -334,7 +288,7 @@ ssize_t __public__net_dial(const char *addr, uint16_t port) {
 /**
  * @brief Network I/O worker thread event loop.
  *
- * Runs an epoll-based event loop that drives asynchronous network I/O for
+ * Runs an netpoll-based event loop that drives asynchronous network I/O for
  * tasks. The worker waits for I/O readiness events, performs the requested
  * operation (accept, read, or write), and reschedules tasks back onto their
  * originating scheduler’s ready queue upon completion.
@@ -351,23 +305,17 @@ void *netio_worker(void *arg) {
     /* prevent SIGPIPE from killing process */
     signal(SIGPIPE, SIG_IGN);
 
-    int epfd = epoll_create1(EPOLL_CLOEXEC);
-    if (epfd < 0) {
-        perror("epoll_create1");
-        abort();
-    }
-
-    netio_epoll_id = epfd;
-
-    struct epoll_event events[128];
+    netpoll_t* npoll = netpoll_create();
+    netpoller = npoll;
+    netpoll_event_t events[128];
 
     for (;;) {
-        int n = epoll_wait(epfd, events, 128, -1);
+        int n = netpoll_wait(npoll, events, 128, -1);
         if (n < 0)
             continue;
 
         for (int i = 0; i < n; i++) {
-            task_t *t = events[i].data.ptr;
+            task_t *t = (task_t*)events[i].ud;
             t->io.io_err = 0;
 
             switch (t->io.op) {
@@ -379,11 +327,11 @@ void *netio_worker(void *arg) {
                 if (getsockopt(t->io.fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0) {
                     t->io.io_err = errno;
                     t->io.done_n = -1;
-                    ep_del(epfd, t->io.fd);
+                    netpoll_del(npoll, t->io.fd);
                 } else if (err != 0) {
                     t->io.io_err = err;
                     t->io.done_n = -1;
-                    ep_del(epfd, t->io.fd);
+                    netpoll_del(npoll, t->io.fd);
                 } else {
                     /* Connected successfully */
                     t->io.done_n = t->io.fd;
@@ -396,16 +344,26 @@ void *netio_worker(void *arg) {
 
 
             case IO_ACCEPT: {
-                int cfd = accept4(
-                    t->io.fd,
-                    t->io.addr,
-                    t->io.addrlen,
-                    SOCK_NONBLOCK | SOCK_CLOEXEC
-                );
+                // int cfd = accept4(
+                //     t->io.fd,
+                //     t->io.addr,
+                //     t->io.addrlen,
+                //     SOCK_NONBLOCK | SOCK_CLOEXEC
+                // );
+
+                int cfd = accept(t->io.fd, t->io.addr, t->io.addrlen);
+                if (cfd >= 0) {
+                    // 1. Set SOCK_NONBLOCK equivalent (O_NONBLOCK)
+                    int flags = fcntl(cfd, F_GETFL, 0);
+                    fcntl(cfd, F_SETFL, flags | O_NONBLOCK);
+
+                    // 2. Set SOCK_CLOEXEC equivalent (FD_CLOEXEC)
+                    fcntl(cfd, F_SETFD, FD_CLOEXEC);
+                }
 
                 if (cfd < 0) {
                     if (errno == EAGAIN) {
-                        ep_mod(epfd, t->io.fd, t, EPOLLIN);
+                        netpoll_mod(npoll, t->io.fd, NETPOLL_IN | NETPOLL_ONESHOT, t);
                         break;
                     }
                     t->io.io_err = errno;
@@ -433,15 +391,15 @@ void *netio_worker(void *arg) {
                 } else if (r == 0) {
                     /* Peer performed orderly shutdown (TCP FIN) */
                     t->io.done_n = t->io.offset;
-                    ep_del(epfd, t->io.fd);
+                    netpoll_del(npoll, t->io.fd);
                 } else {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        ep_mod(epfd, t->io.fd, t, EPOLLIN);
+                        netpoll_mod(npoll, t->io.fd, NETPOLL_IN | NETPOLL_ONESHOT, t);
                         break;
                     }
                     t->io.io_err = errno;
                     t->io.done_n = -1;
-                    ep_del(epfd, t->io.fd);
+                    netpoll_del(npoll, t->io.fd);
                 }
 
                 assert(t->io.req_n >= t->io.done_n);
@@ -461,17 +419,17 @@ void *netio_worker(void *arg) {
 
                 if (w < 0) {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        ep_mod(epfd, t->io.fd, t, EPOLLOUT);
+                        netpoll_mod(npoll, t->io.fd, NETPOLL_OUT | NETPOLL_ONESHOT, t);
                         break;
                     }
                     t->io.io_err = errno;
                     t->io.done_n = -1;
-                    ep_del(epfd, t->io.fd);
+                    netpoll_del(npoll, t->io.fd);
                 } else {
                     t->io.offset += w;
                     t->io.done_n = t->io.offset;
                     if (t->io.offset < t->io.req_n) {
-                        ep_mod(epfd, t->io.fd, t, EPOLLOUT);
+                        netpoll_mod(npoll, t->io.fd, NETPOLL_OUT | NETPOLL_ONESHOT, t);
                         break;
                     }
                 }
@@ -483,4 +441,5 @@ void *netio_worker(void *arg) {
             }
         }
     }
+    netpoll_destroy(npoll);
 }

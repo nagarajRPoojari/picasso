@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/epoll.h>
 #include <sys/mman.h>
 #include <semaphore.h>
 #include <stdatomic.h>
@@ -182,39 +181,39 @@ void force_preempt(int sig, siginfo_t *si, void *uc) {
  * @param arg Pointer to the scheduler thread ID (int*).
  */
 void init_timer_signal_handler(void *arg) {
-    struct sigaction sa;
-    sa.sa_flags = SA_SIGINFO; 
-    sa.sa_sigaction = force_preempt; 
+    // struct sigaction sa;
+    // sa.sa_flags = SA_SIGINFO; 
+    // sa.sa_sigaction = force_preempt; 
     
-    sigemptyset(&sa.sa_mask); 
+    // sigemptyset(&sa.sa_mask); 
     
-    if (sigaction(SIGRTMIN, &sa, NULL) == -1) {
-        perror("sigaction failed");
-    }
+    // if (sigaction(SIGRTMIN, &sa, NULL) == -1) {
+    //     perror("sigaction failed");
+    // }
 
-    timer_t tid;
-    struct sigevent sev;
-    struct itimerspec its;
+    // timer_t tid;
+    // struct sigevent sev;
+    // struct itimerspec its;
 
-    sev.sigev_notify = SIGEV_SIGNAL;
-    sev.sigev_signo = SIGRTMIN; 
-    sev.sigev_value.sival_ptr = arg; 
+    // sev.sigev_notify = SIGEV_SIGNAL;
+    // sev.sigev_signo = SIGRTMIN; 
+    // sev.sigev_value.sival_ptr = arg; 
 
 
-    if (timer_create(CLOCK_REALTIME, &sev, &tid) == -1) {
-        perror("timer_create");
-        pthread_exit(NULL);
-    }
+    // if (timer_create(CLOCK_REALTIME, &sev, &tid) == -1) {
+    //     perror("timer_create");
+    //     pthread_exit(NULL);
+    // }
 
-    its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = 50000000;
-    its.it_interval.tv_sec = 0;
-    its.it_interval.tv_nsec = 50000000;
+    // its.it_value.tv_sec = 0;
+    // its.it_value.tv_nsec = 50000000;
+    // its.it_interval.tv_sec = 0;
+    // its.it_interval.tv_nsec = 50000000;
 
-    if (timer_settime(tid, 0, &its, NULL) == -1) {
-        perror("timer_settime");
-        pthread_exit(NULL);
-    }
+    // if (timer_settime(tid, 0, &its, NULL) == -1) {
+    //     perror("timer_settime");
+    //     pthread_exit(NULL);
+    // }
 }
 
 task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
@@ -324,8 +323,10 @@ void* scheduler_run(void* arg) {
 
     // init_stack_signal_handler();
     init_timer_signal_handler(arg);
-    init_error_handlers();
 
+    #if defined(__linux__)
+        init_error_handlers();
+    #endif
     while (1) {
         task_t *t;
         while (1) {

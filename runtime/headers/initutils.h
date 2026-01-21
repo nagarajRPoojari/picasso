@@ -3,7 +3,6 @@
 
 #include "platform.h"
 
-#include <ucontext.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -11,9 +10,8 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
-#include <sys/epoll.h>
 #include <signal.h>
-#include <liburing.h>
+// #include <liburing.h>
 #include <string.h> 
 
 

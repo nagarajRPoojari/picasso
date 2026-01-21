@@ -4,15 +4,27 @@
 #include "platform.h"
 #include <stdint.h>
 #include <stddef.h>
-#if defined(PLATFORM_UCONTEXT)
+#if defined(__linux__)
     #include <ucontext.h>
 #endif
 
+#if defined(__APPLE__)
+    typedef struct registers_t {
+        // x19-28
+        uint64_t regs[12];
+        uintptr_t sp;
+    } registers_t;
+#endif
+
+
 typedef struct platform_ctx {
-#if defined(PLATFORM_UCONTEXT)
+#if defined(__linux__)
     ucontext_t *uc;          // ucontext_t*
-#else
-    uintptr_t sp;      // saved stack pointer (asm)
+#elif defined(__APPLE__)
+    registers_t reg;
+    void* stack;
+    size_t stack_size;
+    struct platform_ctx* back_link;
 #endif
 } platform_ctx_t;
 

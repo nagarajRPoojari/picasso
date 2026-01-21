@@ -67,12 +67,16 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
         char stub[PATH_MAX];
         if (snprintf(stub, sizeof(stub), "%s/ffi_stub.c", tuDir) >= (int)sizeof(stub))
             die("stub path too long");
-
+            
         if (access(stub, R_OK) != 0) {
-            fprintf(stderr, "warning: %s missing ffi_stub.c, skipping\n", tuDir);
-            continue;
-        }
+            if (snprintf(stub, sizeof(stub), "%s/ffi_stub_darwin.c", tuDir) >= (int)sizeof(stub))
+                die("stub path too long");
 
+            if(access(stub, R_OK) != 0)  {
+                fprintf(stderr, "warning: %s missing ffi_stub.c, skipping\n", tuDir);
+                continue;
+            }
+        }
         char outLL[PATH_MAX];
         if (snprintf(outLL, sizeof(outLL), "%s/%s.ll", tmpDir, ent->d_name) >= (int)sizeof(outLL))
             die("outLL path too long");
@@ -81,27 +85,31 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
         char *clang_ll[20];
         int i = 0;
 
-        clang_ll[i++] = "clang";
+        clang_ll[i++] = "/opt/homebrew/opt/llvm@14/bin/clang";
         clang_ll[i++] = "-S";
         clang_ll[i++] = "-emit-llvm";
-        clang_ll[i++] = "-g0";
+        clang_ll[i++] = "-g"; 
 
-        /* runtime headers first */
         if (runtimeIncDir) {
             clang_ll[i++] = "-I";
             clang_ll[i++] = (char *)runtimeIncDir;
         }
 
-        /* TU-local headers */
         clang_ll[i++] = "-I";
         clang_ll[i++] = (char *)tuDir;
 
+        clang_ll[i++] = "-I";
+        clang_ll[i++] = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi";
+
         clang_ll[i++] = (char *)stub;
+
         clang_ll[i++] = "-o";
         clang_ll[i++] = outLL;
+
         clang_ll[i++] = NULL;
 
         run_cmd(clang_ll);
+
 
         if (!gen_objects) continue;
 
@@ -113,6 +121,7 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
         while ((cent = readdir(cd)) != NULL) {
             if (!strstr(cent->d_name, ".c")) continue;
             if (!strcmp(cent->d_name, "ffi_stub.c")) continue;
+            if (!strcmp(cent->d_name, "ffi_stub_darwin.c")) continue;
 
             char cfile[PATH_MAX];
             if (snprintf(cfile, sizeof(cfile), "%s/%s", tuDir, cent->d_name) >= (int)sizeof(cfile))
@@ -220,7 +229,7 @@ int main(int argc, char **argv) {
             "sh", "-c",
             "set -e; for f in \"$1\"/*.ll; do "
             "b=$(basename \"$f\" .ll); "
-            "llvm-as-16 \"$f\" -o \"$1/$b.bc\"; "
+            "llvm-as \"$f\" -o \"$1/$b.bc\"; "
             "done",
             "sh",
             buildDir,
@@ -229,11 +238,12 @@ int main(int argc, char **argv) {
         run_cmd(ll_to_bc);
 
         /* .bc → .o */
+        /* .bc → .o using clang for proper Mach-O */
         char *bc_to_o[] = {
             "sh", "-c",
             "set -e; for f in \"$1\"/*.bc; do "
             "b=$(basename \"$f\" .bc); "
-            "llc-16 -filetype=obj \"$f\" -o \"$1/$b.o\"; "
+            "/opt/homebrew/opt/llvm@16/bin/clang -target arm64-apple-darwin -c \"$f\" -o \"$1/$b.o\"; "
             "done",
             "sh",
             buildDir,
@@ -245,24 +255,23 @@ int main(int argc, char **argv) {
         char *link[] = {
             "sh", "-c",
             "set -e; "
-            "OBJS=\"$1\"/*.o; "
+            "OBJS=$1/*.o; "
             "FFI_OBJS=\"\"; "
             "if [ -d \"$1/tmp/ffi-obj\" ] && ls \"$1/tmp/ffi-obj\"/*.o >/dev/null 2>&1; then "
-            "  FFI_OBJS=\"$1/tmp/ffi-obj\"/*.o; "
+            "  FFI_OBJS=$1/tmp/ffi-obj/*.o; "
             "fi; "
             "cc $OBJS $FFI_OBJS "
+            "-isysroot $(xcrun --sdk macosx --show-sdk-path) "
             RUNTIME_LIB_PATH
-            " -o \"$1/a.out\" "
-            "-rdynamic "
-            "-L/usr/lib/aarch64-linux-gnu -L/usr/lib "
-            "-lffi -luring -lunwind -lunwind-aarch64 "
-            "-lpthread -lm",
+            " -o $1/a.out "
+            " -rdynamic "
+            " -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi "
+            " -lffi -lpthread -lm",
             "sh",
             buildDir,
             NULL
         };
         run_cmd(link);
-
 
         return 0;
     }

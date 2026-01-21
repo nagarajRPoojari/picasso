@@ -1,7 +1,8 @@
 #include "platform.h"
-#include <liburing.h>
+// #include <liburing.h>
 #include <string.h>
 #include "platform/context.h"
+#include "platform/netpoll.h"
 #include "start.h"
 #include "array.h"
 #include "ggc.h"
@@ -23,7 +24,7 @@ kernel_thread_t **kernel_thread_map;
 struct io_uring **diskio_ring_map = NULL;
 
 /* single netpoller file descriptor */
-int netio_epoll_id = -1;
+netpoll_t* netpoller;
 
 /* global arena for runtime memory allocation.
    this must be used by c runtime itself, not for language.
@@ -114,52 +115,52 @@ void thread(void* (*fn)(), int nargs, ...) {
  * @return 0 on success, 1 on failure.
  */
 int init_io() {
-    diskio_ring_map = allocate(__global__arena__, DISKIO_THREAD_POOL_SIZE * sizeof(struct io_uring*));
-    if (!diskio_ring_map) {
-        perror("calloc diskio_ring_map");
-        exit(1);
-    }
+    // diskio_ring_map = allocate(__global__arena__, DISKIO_THREAD_POOL_SIZE * sizeof(struct io_uring*));
+    // if (!diskio_ring_map) {
+    //     perror("calloc diskio_ring_map");
+    //     exit(1);
+    // }
 
-    pthread_t diskio_threads[DISKIO_THREAD_POOL_SIZE];
-    pthread_t netio_threads[NETIO_THREAD_POOL_SIZE];
+    // pthread_t diskio_threads[DISKIO_THREAD_POOL_SIZE];
+    // pthread_t netio_threads[NETIO_THREAD_POOL_SIZE];
     
-    for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
-        diskio_ring_map[i] = allocate(__global__arena__, 1 * sizeof(struct io_uring));
-        if (!diskio_ring_map[i]) {
-            perror("calloc ring");
-            exit(1);
-        }
-    }
+    // for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
+    //     diskio_ring_map[i] = allocate(__global__arena__, 1 * sizeof(struct io_uring));
+    //     if (!diskio_ring_map[i]) {
+    //         perror("calloc ring");
+    //         exit(1);
+    //     }
+    // }
 
-    for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
-        struct io_uring *ring = allocate(__global__arena__, sizeof(*ring));
-        if (!ring) abort();
+    // for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
+    //     struct io_uring *ring = allocate(__global__arena__, sizeof(*ring));
+    //     if (!ring) abort();
 
-        int ret = io_uring_queue_init(DISKIO_QUEUE_DEPTH, ring, 0);
-        if (ret < 0) {
-            char buf[128];
-            int n = snprintf(buf, sizeof(buf), "io_uring_queue_init failed: %d\n", ret);
-            write(2, buf, n);
-            abort();
-        }
+    //     int ret = io_uring_queue_init(DISKIO_QUEUE_DEPTH, ring, 0);
+    //     if (ret < 0) {
+    //         char buf[128];
+    //         int n = snprintf(buf, sizeof(buf), "io_uring_queue_init failed: %d\n", ret);
+    //         write(2, buf, n);
+    //         abort();
+    //     }
 
-        diskio_ring_map[i] = ring; // now safe
+    //     diskio_ring_map[i] = ring; // now safe
         
-        int rc = pthread_create(&diskio_threads[i], NULL, diskio_worker, (void*)(intptr_t)i);
-        if (rc != 0) {
-            fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
-            exit(1);
-        }
-    }
+    //     int rc = pthread_create(&diskio_threads[i], NULL, diskio_worker, (void*)(intptr_t)i);
+    //     if (rc != 0) {
+    //         fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
+    //         exit(1);
+    //     }
+    // }
 
-    for (int i = 0; i < NETIO_THREAD_POOL_SIZE; i++) {
-        int rc = pthread_create(&netio_threads[i], NULL, netio_worker, (void*)(intptr_t)i);
-        if (rc != 0) {
-            fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
-            exit(1);
-        }
-    }
-    return 0;
+    // for (int i = 0; i < NETIO_THREAD_POOL_SIZE; i++) {
+    //     int rc = pthread_create(&netio_threads[i], NULL, netio_worker, (void*)(intptr_t)i);
+    //     if (rc != 0) {
+    //         fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
+    //         exit(1);
+    //     }
+    // }
+    // return 0;
 }
 
 /**
