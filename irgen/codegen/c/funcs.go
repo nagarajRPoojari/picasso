@@ -29,7 +29,9 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	)
 	t.Funcs[FUNC_THREAD] = mod.NewFunc(FUNC_THREAD, types.Void,
 		ir.NewParam("", types.NewPointer(fnType)),
+		ir.NewParam("", types.I32),
 	)
+	t.Funcs[FUNC_THREAD].Sig.Variadic = true
 
 	// @self_yield
 	t.Funcs[FUNC_SELF_YIELD] = mod.NewFunc(FUNC_SELF_YIELD, types.Void)
