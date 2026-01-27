@@ -1,17 +1,5 @@
-common --enable_bzlmod
+build --repo_env=BAZEL_USE_LLVM=0
 
-# 1. Platform configuration (Force Linux ARM64)
-build --platforms=//:linux_aarch64
-build --host_platform=//:linux_aarch64
-
-# 2. CGO and Go Settings
-build --@rules_go//go/config:pure=false
-
-# 3. TOOLCHAIN FIXES (CRITICAL)
-# Remove the "strict_action_env" if you had it, or explicitly add the PATH
-build --action_env=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-build --action_env=CC=/usr/bin/gcc
-build --action_env=CXX=/usr/bin/g++
-
-# 4. Allow Bazel to use the local C++ toolchain for your custom platform
-build --apple_generate_dsym=false
+build --features=-supports_start_end_lib
+build --features=-supports_dynamic_linker
+build --features=-use_lld
