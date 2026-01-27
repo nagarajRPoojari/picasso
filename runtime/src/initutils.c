@@ -1,5 +1,4 @@
 #include "platform.h"
-// #include <liburing.h>
 #include <string.h>
 #include "platform/context.h"
 #include "platform/netpoll.h"
@@ -21,7 +20,9 @@
 kernel_thread_t **kernel_thread_map;
 
 /* diskio_ring_map holds map of diskio_worker id to its io_uring ring instance */
+#if defined(__linux__)
 struct io_uring **diskio_ring_map = NULL;
+#endif
 
 /* single netpoller file descriptor */
 netpoll_t* netpoller;
@@ -50,7 +51,7 @@ pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
  * @param fn   Function pointer for the task to execute.
  * @param this Argument to pass to the task function.
  */
-void thread(void* (*fn)(), int nargs, ...) {
+void thread(void (*fn)(), int nargs, ...) {
     task_payload_t *payload = allocate(__global__arena__, sizeof(task_payload_t));
 
     payload->fn = fn;
@@ -63,28 +64,34 @@ void thread(void* (*fn)(), int nargs, ...) {
     va_list ap;
     va_start(ap, nargs);
     for (int i = 0; i < nargs; i++) {
-        // We treat every argument as a pointer-sized chunk (uintptr_t)
+        // All args are pointers
         payload->arg_types[i] = &ffi_type_pointer;
-        
-        void* val = allocate(__global__arena__, sizeof(void*));
-        *(void**)val = va_arg(ap, void*);
+
+        void **val = allocate(__global__arena__, sizeof(void*));
+        *val = va_arg(ap, void*);
+
         payload->arg_values[i] = val;
     }
     va_end(ap);
 
-    // Initialize the Call Interface (CIF)
-    if (ffi_prep_cif(&payload->cif, FFI_DEFAULT_ABI, nargs, 
-                     &ffi_type_pointer, payload->arg_types) != FFI_OK) {
-        fprintf(stderr, "FFI Prep failed\n");
-        exit(1);
+    // Return type = void
+    if (ffi_prep_cif(
+            &payload->cif,
+            FFI_DEFAULT_ABI,
+            nargs,
+            &ffi_type_void,
+            payload->arg_types
+        ) != FFI_OK) {
+        fprintf(stderr, "ffi_prep_cif failed\n");
+        abort();
     }
 
-    int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
-    task_t *t1 = task_create(fn, payload, kernel_thread_map[kernel_thread_id]);
-    
-    t1->id = rand();
+    int kid = rand() % SCHEDULER_THREAD_POOL_SIZE;
+    task_t *t = task_create(fn, payload, kernel_thread_map[kid]);
+
+    t->id = rand();
     atomic_fetch_add(&task_count, 1);
-    safe_q_push(&(kernel_thread_map[kernel_thread_id]->ready_q), t1);
+    safe_q_push(&kernel_thread_map[kid]->ready_q, t);
 }
 
 /**
@@ -115,52 +122,53 @@ void thread(void* (*fn)(), int nargs, ...) {
  * @return 0 on success, 1 on failure.
  */
 int init_io() {
-    // diskio_ring_map = allocate(__global__arena__, DISKIO_THREAD_POOL_SIZE * sizeof(struct io_uring*));
-    // if (!diskio_ring_map) {
-    //     perror("calloc diskio_ring_map");
-    //     exit(1);
-    // }
+#if defined(__linux__)
+    diskio_ring_map = allocate(__global__arena__, DISKIO_THREAD_POOL_SIZE * sizeof(struct io_uring*));
+    if (!diskio_ring_map) {
+        perror("calloc diskio_ring_map");
+        exit(1);
+    }
 
-    // pthread_t diskio_threads[DISKIO_THREAD_POOL_SIZE];
-    // pthread_t netio_threads[NETIO_THREAD_POOL_SIZE];
+    pthread_t diskio_threads[DISKIO_THREAD_POOL_SIZE];
     
-    // for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
-    //     diskio_ring_map[i] = allocate(__global__arena__, 1 * sizeof(struct io_uring));
-    //     if (!diskio_ring_map[i]) {
-    //         perror("calloc ring");
-    //         exit(1);
-    //     }
-    // }
+    for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
+        diskio_ring_map[i] = allocate(__global__arena__, 1 * sizeof(struct io_uring));
+        if (!diskio_ring_map[i]) {
+            perror("calloc ring");
+            exit(1);
+        }
+    }
 
-    // for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
-    //     struct io_uring *ring = allocate(__global__arena__, sizeof(*ring));
-    //     if (!ring) abort();
+    for (int i = 0; i < DISKIO_THREAD_POOL_SIZE; i++) {
+        struct io_uring *ring = allocate(__global__arena__, sizeof(*ring));
+        if (!ring) abort();
 
-    //     int ret = io_uring_queue_init(DISKIO_QUEUE_DEPTH, ring, 0);
-    //     if (ret < 0) {
-    //         char buf[128];
-    //         int n = snprintf(buf, sizeof(buf), "io_uring_queue_init failed: %d\n", ret);
-    //         write(2, buf, n);
-    //         abort();
-    //     }
+        int ret = io_uring_queue_init(DISKIO_QUEUE_DEPTH, ring, 0);
+        if (ret < 0) {
+            char buf[128];
+            int n = snprintf(buf, sizeof(buf), "io_uring_queue_init failed: %d\n", ret);
+            write(2, buf, n);
+            abort();
+        }
 
-    //     diskio_ring_map[i] = ring; // now safe
+        diskio_ring_map[i] = ring; // now safe
         
-    //     int rc = pthread_create(&diskio_threads[i], NULL, diskio_worker, (void*)(intptr_t)i);
-    //     if (rc != 0) {
-    //         fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
-    //         exit(1);
-    //     }
-    // }
-
-    // for (int i = 0; i < NETIO_THREAD_POOL_SIZE; i++) {
-    //     int rc = pthread_create(&netio_threads[i], NULL, netio_worker, (void*)(intptr_t)i);
-    //     if (rc != 0) {
-    //         fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
-    //         exit(1);
-    //     }
-    // }
-    // return 0;
+        int rc = pthread_create(&diskio_threads[i], NULL, diskio_worker, (void*)(intptr_t)i);
+        if (rc != 0) {
+            fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
+            exit(1);
+        }
+    }
+#endif
+    pthread_t netio_threads[NETIO_THREAD_POOL_SIZE];
+    for (int i = 0; i < NETIO_THREAD_POOL_SIZE; i++) {
+        int rc = pthread_create(&netio_threads[i], NULL, netio_worker, (void*)(intptr_t)i);
+        if (rc != 0) {
+            fprintf(stderr, "pthread_create(%d) failed: %s\n", i, strerror(rc));
+            exit(1);
+        }
+    }
+    return 0;
 }
 
 /**

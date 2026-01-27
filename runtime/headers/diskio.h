@@ -24,6 +24,7 @@
 /** @deprecated: io_uring submission done when req hits this threshold */
 #define SUBMIT_THRESHOLD (256/2)
 
+#if defined(__linux__)
 extern struct io_uring **diskio_ring_map;
 
 /**
@@ -202,7 +203,7 @@ ssize_t __public__asyncio_fread(char* f, __public__array_t* buf, int n, int offs
  * @return Number of bytes successfully written on success, or -1 on error.
  */
 ssize_t __public__asyncio_fwrite(char* f, __public__array_t* buf, int n, int offset);
-
+#endif
 /**
  * @brief Synchronously read up to n bytes from STDIN.
  *

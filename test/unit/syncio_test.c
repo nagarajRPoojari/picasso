@@ -154,8 +154,7 @@ void test__public__sprintf(void) {
 }
 
 void test__public__sfread(void) {
-    FILE* file = fopen("test/data/test__public__sfread.txt", "r+");
-
+    FILE* file = fopen("test/data/test__public__sfread.txt", "r");
     __public__array_t* buf = mock_alloc_array(1024, sizeof(size_t), 1);
     ssize_t r = __public__syncio_fread((char*)file, buf, 1024, 0);
     
@@ -164,13 +163,23 @@ void test__public__sfread(void) {
 }
 
 void test__public__sfwrite(void) {
-    FILE* file = fopen("test/data/test__public__swrite.txt", "w");
-    
+    const char *tmpdir = getenv("TEST_TMPDIR");
+    assert(tmpdir != NULL);
+
+    char path[512];
+    snprintf(path, sizeof(path), "%s/test__public__swrite.txt", tmpdir);
+
+    FILE *file = fopen(path, "w+");
+    TEST_ASSERT_NOT_NULL(file);
+
     __public__array_t* buf = mock_alloc_array(10, sizeof(size_t), 1);
-    for(int i=0; i<10; i++) buf->data[i] = 'a' + i%26;
+    for (int i = 0; i < 10; i++)
+        buf->data[i] = 'a' + (i % 26);
+
     ssize_t r = __public__syncio_fwrite((char*)file, buf, 10, 0);
-    
     TEST_ASSERT_EQUAL(10, r);
+
+    fclose(file);
 }
 
 int main(void) {

@@ -57,7 +57,7 @@ static atomic_int completed;
 #define MESSAGE "hello\n"
 #define MESSAGE_LEN 6
 
-static void* __public__afread_thread_func(void* arg, int fd) {
+static void __public__afread_thread_func(void* arg, int fd) {
     (void)arg;
 
     int buf_size = 10;
@@ -76,10 +76,9 @@ static void* __public__afread_thread_func(void* arg, int fd) {
     close(fd);
 
     atomic_fetch_add(&completed, 1);
-    return NULL;
 }
 
-void* __test_netio_read_basic(void* arg, int count, int lld) {
+void __test_netio_read_basic(void* arg, int count, int lld) {
     (void)arg;
 
     for (int i = 0; i < count; i++) {
@@ -91,7 +90,6 @@ void* __test_netio_read_basic(void* arg, int count, int lld) {
         thread(__public__afread_thread_func, 2, NULL, fd);
     }
 
-    return NULL;
 }
 
 int connect_to(const char *ip, int port) {
@@ -116,7 +114,7 @@ int connect_to(const char *ip, int port) {
     return fd;
 }
 
-void* simulate_client(void* arg, int count, char* addr, int port) {
+void simulate_client(void* arg, int count, char* addr, int port) {
     (void)arg;
     for (int i = 0; i < count; i++) {
 
@@ -130,7 +128,6 @@ void* simulate_client(void* arg, int count, char* addr, int port) {
         close(fd);
     }
 
-    return NULL;
 }
 
 void test_netio_read_basic(void) {

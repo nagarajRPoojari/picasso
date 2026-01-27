@@ -22,7 +22,7 @@
  * Number of scheduler threads (kernel threads) in the pool.
  * Each thread manages its own local ready queue and executes tasks.
  */
-#define SCHEDULER_THREAD_POOL_SIZE 1
+#define SCHEDULER_THREAD_POOL_SIZE 4
 
 /**
  * Maximum number of tasks in a scheduler thread's local queue.
@@ -77,7 +77,7 @@ extern kernel_thread_t **kernel_thread_map;
  * @param kt   Pointer to the owning kernel thread (scheduler worker).
  * @return Pointer to the created task structure.
  */
-task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt);
+task_t* task_create(void (*fn)(), void* payload, kernel_thread_t* kt);
 
 /**
  * @brief Clean up a task and release its resources.
