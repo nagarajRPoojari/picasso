@@ -8,7 +8,6 @@
 #include <sys/mman.h>
 #include <semaphore.h>
 #include <stdatomic.h>
-#include <ffi.h>
 #include <stdarg.h>
 
 #include "scheduler.h"
@@ -52,7 +51,7 @@ void task_trampoline(uintptr_t _t, uintptr_t _p) {
     void *retval;
 
     // Dynamically invoke the function with the prepared registers
-    ffi_call(&payload->cif, FFI_FN(payload->fn), &retval, payload->arg_values);
+    ffi_call(&payload->cif, FFI_FN(payload->fn), NULL, payload->arg_values);
 
     t->state = TASK_FINISHED;
 
@@ -172,6 +171,38 @@ void force_preempt(int sig, siginfo_t *si, void *uc) {
     preempt[tid] = 1;
 }
 
+#if defined(__APPLE__)
+
+#include <dispatch/dispatch.h>
+#include <signal.h>
+#include <string.h>
+
+void init_timer_signal_handler(void *arg) {
+    dispatch_queue_t q =
+        dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0);
+
+    dispatch_source_t timer =
+        dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, q);
+
+    dispatch_source_set_timer(
+        timer,
+        dispatch_time(DISPATCH_TIME_NOW, 0),
+        50 * NSEC_PER_MSEC,   // 50 ms
+        1 * NSEC_PER_MSEC
+    );
+
+    dispatch_source_set_event_handler(timer, ^{
+        siginfo_t si;
+        memset(&si, 0, sizeof(siginfo_t));
+
+        si.si_value.sival_ptr = arg;  
+        force_preempt(SIGUSR1, &si, NULL);
+    });
+
+    dispatch_resume(timer);
+}
+#endif
+
 /**
  * @brief Initialize per-thread timer signal handler.
  * 
@@ -180,43 +211,45 @@ void force_preempt(int sig, siginfo_t *si, void *uc) {
  * 
  * @param arg Pointer to the scheduler thread ID (int*).
  */
+#if defined(__linux__)
 void init_timer_signal_handler(void *arg) {
-    // struct sigaction sa;
-    // sa.sa_flags = SA_SIGINFO; 
-    // sa.sa_sigaction = force_preempt; 
+    struct sigaction sa;
+    sa.sa_flags = SA_SIGINFO; 
+    sa.sa_sigaction = force_preempt; 
     
-    // sigemptyset(&sa.sa_mask); 
+    sigemptyset(&sa.sa_mask); 
     
-    // if (sigaction(SIGRTMIN, &sa, NULL) == -1) {
-    //     perror("sigaction failed");
-    // }
+    if (sigaction(SIGRTMIN, &sa, NULL) == -1) {
+        perror("sigaction failed");
+    }
 
-    // timer_t tid;
-    // struct sigevent sev;
-    // struct itimerspec its;
+    timer_t tid;
+    struct sigevent sev;
+    struct itimerspec its;
 
-    // sev.sigev_notify = SIGEV_SIGNAL;
-    // sev.sigev_signo = SIGRTMIN; 
-    // sev.sigev_value.sival_ptr = arg; 
+    sev.sigev_notify = SIGEV_SIGNAL;
+    sev.sigev_signo = SIGRTMIN; 
+    sev.sigev_value.sival_ptr = arg; 
 
 
-    // if (timer_create(CLOCK_REALTIME, &sev, &tid) == -1) {
-    //     perror("timer_create");
-    //     pthread_exit(NULL);
-    // }
+    if (timer_create(CLOCK_REALTIME, &sev, &tid) == -1) {
+        perror("timer_create");
+        pthread_exit(NULL);
+    }
 
-    // its.it_value.tv_sec = 0;
-    // its.it_value.tv_nsec = 50000000;
-    // its.it_interval.tv_sec = 0;
-    // its.it_interval.tv_nsec = 50000000;
+    its.it_value.tv_sec = 0;
+    its.it_value.tv_nsec = 50000000;
+    its.it_interval.tv_sec = 0;
+    its.it_interval.tv_nsec = 50000000;
 
-    // if (timer_settime(tid, 0, &its, NULL) == -1) {
-    //     perror("timer_settime");
-    //     pthread_exit(NULL);
-    // }
+    if (timer_settime(tid, 0, &its, NULL) == -1) {
+        perror("timer_settime");
+        pthread_exit(NULL);
+    }
 }
+#endif
 
-task_t* task_create(void* (*fn)(), void* payload, kernel_thread_t* kt) {
+task_t* task_create(void (*fn)(), void* payload, kernel_thread_t* kt) {
     task_t *t = allocate(__global__arena__, sizeof(task_t));
     platform_ctx_init(&t->ctx);
     
@@ -324,9 +357,7 @@ void* scheduler_run(void* arg) {
     // init_stack_signal_handler();
     init_timer_signal_handler(arg);
 
-    #if defined(__linux__)
-        init_error_handlers();
-    #endif
+    init_error_handlers();
     while (1) {
         task_t *t;
         while (1) {

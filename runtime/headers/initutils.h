@@ -11,7 +11,6 @@
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
-// #include <liburing.h>
 #include <string.h> 
 
 
@@ -33,8 +32,9 @@
 extern kernel_thread_t **kernel_thread_map;
 
 /* diskio_ring_map holds map of diskio_worker id to its io_uring ring instance */
+#if defined(__linux__)
 extern struct io_uring **diskio_ring_map;
-
+#endif
 /* single netpoller file descriptor */
 extern int netio_epoll_id;
 
@@ -60,7 +60,7 @@ extern pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
  * @param fn   Function pointer for the task to execute.
  * @param this Argument to pass to the task function.
  */
-void thread(void* (*fn)(), int nargs, ...);
+void thread(void (*fn)(), int nargs, ...);
 
 /**
  * @brief Create and schedule a main task on a random scheduler thread.

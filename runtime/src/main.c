@@ -21,7 +21,7 @@ int main(void) {
     init_scheduler();
 
     gc_init();
-    thread((void* (*)())start, 0);
+    thread((void (*)())start, 0);
 
     gc_start();
     wait_for_schedulers();

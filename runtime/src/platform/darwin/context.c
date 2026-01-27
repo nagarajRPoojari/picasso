@@ -23,9 +23,7 @@ int platform_ctx_init(platform_ctx_t *ctx) {
     return 0;
 }
 
-int platform_ctx_make(platform_ctx_t *ctx, void (*entry)(uintptr_t, uintptr_t), 
-                      uintptr_t a, uintptr_t b, void *stack, size_t stack_size, 
-                      platform_ctx_t* back_link) {
+int platform_ctx_make(platform_ctx_t *ctx, void (*entry)(uintptr_t, uintptr_t),  uintptr_t a, uintptr_t b, void *stack, size_t stack_size, platform_ctx_t* back_link) {
     if (!ctx || !stack) return -1;
     
     uintptr_t top = (uintptr_t)stack + stack_size;

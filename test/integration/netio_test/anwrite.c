@@ -55,7 +55,7 @@ __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
 // Atomic counter to track completed writes
 static atomic_int completed;
 
-static void* writer_thread(void* arg, int fd) {
+static void writer_thread(void* arg, int fd) {
     (void)arg;
 
     __public__array_t* buf = mock_alloc_array(MESSAGE_LEN, sizeof(char), 1);
@@ -71,10 +71,9 @@ static void* writer_thread(void* arg, int fd) {
 
     close(fd);
     atomic_fetch_add(&completed, 1);
-    return NULL;
 }
 
-static void* server_thread(void* arg, int count, int listen_fd) {
+static void server_thread(void* arg, int count, int listen_fd) {
     (void)arg;
     for (int i = 0; i < count; i++) {
         self_yield();
@@ -85,7 +84,6 @@ static void* server_thread(void* arg, int count, int listen_fd) {
             atomic_fetch_add(&completed, 1);
         }
     }
-    return NULL;
 }
 
 typedef struct { int count; int port; const char* addr; } client_args_t;

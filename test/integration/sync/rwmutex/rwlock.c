@@ -48,7 +48,7 @@ __public__rwmutex_t* mocked_rwmutex_create() {
     return mux;
 }
 
-void* reader(__public__rwmutex_t* mu) {
+void reader(__public__rwmutex_t* mu) {
     __public__sync_rwmutex_rlock(mu);
     atomic_fetch_add(&readers_in, 1);
     
@@ -60,10 +60,9 @@ void* reader(__public__rwmutex_t* mu) {
     
     atomic_fetch_add(&completed, 1);
     __public__sync_rwmutex_runlock(mu);
-    return NULL;
 }
 
-void* writer(__public__rwmutex_t* mu) {
+void writer(__public__rwmutex_t* mu) {
     __public__sync_rwmutex_rwlock(mu);
     atomic_fetch_add(&writers_in, 1);
 
@@ -78,8 +77,6 @@ void* writer(__public__rwmutex_t* mu) {
 
     atomic_fetch_add(&completed, 1);
     __public__sync_rwmutex_rwunlock(mu);
-
-    return NULL;
 }
 
 void test_rwmutex_concurrent_readers_writers(void) {

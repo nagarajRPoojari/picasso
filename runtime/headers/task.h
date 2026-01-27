@@ -4,7 +4,6 @@
 #include "platform.h"
 
 #include <signal.h>
-#include <ffi.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/socket.h>    
@@ -60,7 +59,7 @@ typedef struct {
 } io_metadata_t;
 
 typedef struct {
-    void* (*fn)();
+    void (*fn)();
     int nargs;
     ffi_cif cif;
     ffi_type **arg_types;
@@ -104,7 +103,7 @@ typedef struct task {
     int sched_id;
 
     /* Function to execute when task is scheduled */
-    void* (*fn)(void *);
+    void (*fn)(void *);
 
     /* Pointer to the task's private stack (after guard page) */
     char *stack;

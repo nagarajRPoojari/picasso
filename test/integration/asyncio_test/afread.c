@@ -48,7 +48,7 @@ __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
 
 static atomic_int completed;
 
-static void submit_task(void*(*fn)(void*), int count, int timeout_sec) {
+static void submit_task(void(*fn)(), int count, int timeout_sec) {
     atomic_store(&completed, 0);
 
     for (int i = 0; i < count; i++) {
@@ -70,7 +70,7 @@ static void submit_task(void*(*fn)(void*), int count, int timeout_sec) {
     TEST_ASSERT_EQUAL_INT(count, atomic_load(&completed));
 }
 
-static void* __public__afread_thread_func(void* arg) {
+static void __public__afread_thread_func(void* arg) {
     (void)arg;
 
     FILE* file = fopen("test/data/test__public__sfread.txt", "r+");
@@ -84,7 +84,6 @@ static void* __public__afread_thread_func(void* arg) {
     TEST_ASSERT_EQUAL_STRING("Synchronously read n bytes from a file at a given offset.", buf->data);
 
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
-    return NULL;
 }
 
 void test__public__afread(void) {

@@ -28,9 +28,9 @@ void tearDown(void) {
 static atomic_int completed;
 static atomic_int tasks_n;
 
-void* test_func(void* arg);
+void test_func(void* arg);
 
-void* test_func(void* arg) {
+void test_func(void* arg) {
     (void)arg;
 
     if(atomic_load(&tasks_n) > 0) {
@@ -39,7 +39,6 @@ void* test_func(void* arg) {
     }
 
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
-    return NULL;
 }
 
 void test_scheduler_executes_tasks(void) {

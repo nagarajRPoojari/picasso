@@ -14,6 +14,7 @@
 #include "initutils.h"
 
 extern arena_t* __global__arena__;
+extern __thread arena_t* __arena__;
 
 void setUp(void) {}
 void tearDown(void) {
@@ -40,7 +41,7 @@ static void restore_stdout(int saved_stdout, int write_end) {
 
 static atomic_int completed;
 
-static void submit_task(void*(*fn)(void*), int count, int timeout_sec) {
+static void submit_task(void(*fn)(), int count, int timeout_sec) {
     atomic_store(&completed, 0);
 
     for (int i = 0; i < count; i++) {
@@ -62,7 +63,7 @@ static void submit_task(void*(*fn)(void*), int count, int timeout_sec) {
     TEST_ASSERT_EQUAL_INT(count, atomic_load(&completed));
 }
 
-static void* __public__aprintf_thread_func(void* arg) {
+static void __public__aprintf_thread_func(void* arg) {
     (void)arg;
 
     int saved_stdout, write_end;
@@ -83,7 +84,6 @@ static void* __public__aprintf_thread_func(void* arg) {
     TEST_ASSERT_EQUAL_STRING("hello 42 world", buf);
 
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
-    return NULL;
 }
 
 void test__public__aprintf(void) {
@@ -94,6 +94,7 @@ int main(void) {
     srand(time(NULL));
 
     __global__arena__ = gc_create_global_arena();
+    __arena__ = gc_create_global_arena();
     gc_init();
 
     init_io();

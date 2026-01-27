@@ -67,7 +67,7 @@ static void restore_stdin(int saved_stdin) {
 
 static atomic_int completed;
 
-static void submit_task(void*(*fn)(void*), int count, int timeout_sec) {
+static void submit_task(void(*fn)(), int count, int timeout_sec) {
     atomic_store(&completed, 0);
 
     for (int i = 0; i < count; i++) {
@@ -89,7 +89,7 @@ static void submit_task(void*(*fn)(void*), int count, int timeout_sec) {
     TEST_ASSERT_EQUAL_INT(count, atomic_load(&completed));
 }
 
-static void* __public__ascan_thread_func(void* arg) {
+static void __public__ascan_thread_func(void* arg) {
     (void)arg;
 
     int saved_stdin;
@@ -105,7 +105,6 @@ static void* __public__ascan_thread_func(void* arg) {
     TEST_ASSERT_EQUAL_STRING("dummy input", buf->data);
 
     atomic_fetch_add_explicit(&completed, 1, memory_order_release);
-    return NULL;
 }
 
 void test__public__ascan(void) {
