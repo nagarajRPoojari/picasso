@@ -4,6 +4,8 @@ using "builtin/syncio";
 class Test {
     fn Test() {}
 
+    say x: string;
+
     fn testIntToUInt() {
         // int8(-1) can to stored as uint8(255) but int64(-1) can't be stored 
         // because it's 2 complement can't be interpreted within uint8's boundary 

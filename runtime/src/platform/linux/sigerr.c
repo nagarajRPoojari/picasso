@@ -20,6 +20,7 @@ static void print_stacktrace_internal(void) {
 
     write_str("===== STACK TRACE =====\n");
 
+    int i = 0;
     while (unw_step(&cursor) > 0) {
         unw_word_t ip;
         char name[256];
@@ -29,7 +30,7 @@ static void print_stacktrace_internal(void) {
         if (unw_get_proc_name(&cursor, name, sizeof(name), NULL) == 0) {
             char buf[512];
             int n = snprintf(buf, sizeof(buf),
-                             "%p %s\n", (void *)ip, name);
+                             "\t#%d %p %s\n",i++, (void *)ip, name);
             if (n > 0) write(STDERR_FILENO, buf, (size_t)n);
         }
     }
