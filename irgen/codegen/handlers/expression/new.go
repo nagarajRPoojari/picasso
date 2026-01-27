@@ -178,7 +178,7 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 			}
 		}
 		instance.UpdateField(bh, t.st.TypeHandler, index, v.Load(bh), fieldType)
-		t.st.Vars.AddNewVar(exp.Identifier, v)
+		// t.st.Vars.AddNewVar(exp.Identifier, v)
 	}
 
 	t.callConstructor(bh, instance, ex.Instantiation)
