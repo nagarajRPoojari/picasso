@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -99,7 +98,7 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
         clang_ll[i++] = (char *)tuDir;
 
         clang_ll[i++] = "-I";
-        clang_ll[i++] = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi";
+        clang_ll[i++] = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi/*.h";
 
         clang_ll[i++] = (char *)stub;
 
