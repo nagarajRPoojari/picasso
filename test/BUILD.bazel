@@ -3,12 +3,25 @@ load("@rules_cc//cc:cc_test.bzl", "cc_test")
 package(default_visibility = ["//visibility:private"])
 
 COMMON_COPTS = [
+    "-std=c11",
     "-g",
     "-O0",
     "-fno-omit-frame-pointer",
-    "-D_GNU_SOURCE",
-    "-D_POSIX_C_SOURCE=200809L",
-]
+    # "-Wl,-force_load,$(locations //:runtime_lib_test)",
+] + select({
+    "//:linux": [
+        "-D_GNU_SOURCE",
+        "-D_POSIX_C_SOURCE=200809L",
+    ],
+    "//:macos": [
+        "-D_DARWIN_C_SOURCE",
+    ],
+})
+
+LINUX_ONLY = select({
+    "@platforms//os:linux": [],
+    "//conditions:default": ["@platforms//:incompatible"],
+})
 
 COMMON_DEPS = [
     "//test/unity:unity",
@@ -34,6 +47,7 @@ cc_test(
     copts = COMMON_COPTS,
     data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
+    target_compatible_with = LINUX_ONLY,
     deps = COMMON_DEPS,
 )
 
@@ -43,6 +57,7 @@ cc_test(
     copts = COMMON_COPTS,
     data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
+    target_compatible_with = LINUX_ONLY,
     deps = COMMON_DEPS,
 )
 
@@ -52,6 +67,7 @@ cc_test(
     copts = COMMON_COPTS,
     data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
+    target_compatible_with = LINUX_ONLY,
     deps = COMMON_DEPS,
 )
 
@@ -61,6 +77,7 @@ cc_test(
     copts = COMMON_COPTS,
     data = glob(["data/*"]),
     linkopts = COMMON_LINKOPTS,
+    target_compatible_with = LINUX_ONLY,
     deps = COMMON_DEPS,
 )
 
