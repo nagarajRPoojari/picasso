@@ -1,5 +1,3 @@
-load("@rules_shell//shell:sh_test.bzl", "sh_test")
-
 def e2e_tests(name, runner, picasso):
     test_dirs = native.glob(["**/TEST_DIR"])
     tests = []
@@ -7,7 +5,7 @@ def e2e_tests(name, runner, picasso):
     for marker in test_dirs:
         test_dir = marker[:-len("/TEST_DIR")]
         test_name = test_dir.replace("/", ".")
-        test_path = test_dir.split("/")[-1]
+        test_path =  test_dir.split("/")[-1]
         filegroup_name = test_name + "_files"
 
         native.filegroup(
@@ -18,7 +16,7 @@ def e2e_tests(name, runner, picasso):
 
         target_name = test_name + ".test"
 
-        sh_test(
+        native.sh_test(
             name = target_name,
             srcs = ["run_single_e2e.sh"],
             args = [

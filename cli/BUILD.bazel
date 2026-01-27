@@ -12,17 +12,11 @@ cc_binary(
         "-O0",
         "-fno-omit-frame-pointer",
     ],
-    local_defines = [
-        'IRGEN_BIN=\\"irgen/irgen_/irgen\\"',
-        'RUNTIME_LIB_PATH=\\"libruntime_lib.a\\"',
-    ] + select({
-        "@platforms//os:macos": ["_DARWIN_C_SOURCE"],
-        "//conditions:default": [],
-    }),
     data = [
         "//:runtime_headers",
         "//:runtime_lib",
         "//irgen",
+        "//libs:ffi_libs",
     ],
     linkopts = [
         "-lm",
@@ -39,6 +33,13 @@ cc_binary(
             "-lffi",
         ],
     }),
-    deps = ["//:runtime_lib"],
+    local_defines = [
+        'IRGEN_BIN=\\"irgen/irgen_/irgen\\"',
+        'RUNTIME_LIB_PATH=\\"libruntime_lib.a\\"',
+    ] + select({
+        "@platforms//os:macos": ["_DARWIN_C_SOURCE"],
+        "//conditions:default": [],
+    }),
     visibility = ["//visibility:public"],
+    deps = ["//:runtime_lib"],
 )
