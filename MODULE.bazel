@@ -1,36 +1,17 @@
 module(
     name = "picasso",
-    version = "0.1",
+    version = "0.1.0",
 )
 
-bazel_dep(name = "platforms", version = "1.0.0")
-bazel_dep(name = "rules_cc", version = "0.2.14")
-bazel_dep(name = "rules_shell", version = "0.6.1")
-
-bazel_dep(name = "rules_go", version = "0.51.0")
+bazel_dep(name = "rules_go", version = "0.50.1")
 bazel_dep(name = "gazelle", version = "0.40.0")
+bazel_dep(name = "rules_cc", version = "0.2.14")
+bazel_dep(name = "platforms", version = "1.0.0")
 
-go_sdk = use_extension(
-    "@rules_go//go:extensions.bzl",
-    "go_sdk",
-)
-# Force the Linux ARM64 version of Go
-go_sdk.download(
-    version = "1.23.6",
-    goos = "linux",
-    goarch = "arm64",
-)
+go_sdk = use_extension("@rules_go//go:extensions.bzl", "go_sdk")
+go_sdk.host()
 
-go_toolchains = use_extension(
-    "@rules_go//go:extensions.bzl",
-    "go_register_toolchains",
-)
-go_toolchains.register()
-
-go_deps = use_extension(
-    "@gazelle//:extensions.bzl",
-    "go_deps",
-)
+go_deps = use_extension("@gazelle//:extensions.bzl", "go_deps")
 go_deps.from_file(go_mod = "//irgen:go.mod")
 
 use_repo(
@@ -41,20 +22,22 @@ use_repo(
     "com_github_stretchr_testify",
 )
 
-local_repository = use_repo_rule(
-    "@bazel_tools//tools/build_defs/repo:local.bzl",
-    "new_local_repository",
+http_archive = use_repo_rule(
+    "@bazel_tools//tools/build_defs/repo:http.bzl",
+    "http_archive",
 )
 
-local_repository(
+http_archive(
+    name = "libffi_macos",
+    urls = ["https://github.com/libffi/libffi/releases/download/v3.4.4/libffi-3.4.4.tar.gz"],
+    strip_prefix = "libffi-3.4.4",
+    build_file_content = """
+cc_library(
     name = "libffi",
-    path = "/usr",
-    build_file = "//:ffi.BUILD",
+    hdrs = glob(["include/**/*.h"]),
+    includes = ["include"],
+    linkopts = ["-lffi"],
+    visibility = ["//visibility:public"],
 )
-
-# Add this to the bottom of MODULE.bazel
-cc_configure = use_extension("@bazel_tools//tools/cpp:extensions.bzl", "cc_configure_extension")
-use_repo(cc_configure, "local_config_cc")
-
-# Now register it
-register_toolchains("@local_config_cc//:all")
+""",
+)

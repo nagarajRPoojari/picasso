@@ -1,5 +1,6 @@
 load("@gazelle//:def.bzl", "gazelle")
 load("@rules_cc//cc:defs.bzl", "cc_library")
+load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
 # gazelle:prefix github.com/nagarajRPoojari/picasso
 gazelle(name = "gazelle")
@@ -10,6 +11,16 @@ platform(
         "@platforms//os:linux",
         "@platforms//cpu:aarch64",
     ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "libffi_macos",
+    includes = [
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi/*.h",
+    ],
+    linkopts = ["-lffi"],
+    textual_hdrs = [],
     visibility = ["//visibility:public"],
 )
 
@@ -63,6 +74,7 @@ cc_library(
         "//:macos": glob(
             [
                 "runtime/src/platform/darwin/*.c",
+                "runtime/src/platform/darwin/*.S",
             ],
             allow_empty = True,
         ),
@@ -86,13 +98,14 @@ cc_library(
         "-g",
         "-O0",
         "-fno-omit-frame-pointer",
-        "-D_GNU_SOURCE",
-        "-D_POSIX_C_SOURCE=200809L",
     ] + select({
-        ":macos": [
+        "//:linux": [
+            "-D_GNU_SOURCE",
+            "-D_POSIX_C_SOURCE=200809L",
+        ],
+        "//:macos": [
             "-D_DARWIN_C_SOURCE",
         ],
-        "//conditions:default": [],
     }),
     defines = select({
         "//:linux": ["PLATFORM_UCONTEXT=1"],
@@ -111,11 +124,11 @@ cc_library(
             "-lunwind",
             "-Wl,--no-as-needed",
         ],
-        "//:macos": ["-lffi"],
+        "//:macos": ["-lffi", "-Wl,-ld_classic"],
     }),
     visibility = ["//visibility:public"],
     deps = select({
-        "//:macos": ["@libffi_macos//:libffi"],
+        "//:macos": [":libffi_macos"],
         "//conditions:default": [],
     }),
 )
@@ -135,14 +148,13 @@ cc_library(
         "//:linux": glob(
             [
                 "runtime/src/platform/linux/*.c",
-                "runtime/src/platform/arch/**/*.S",
             ],
             allow_empty = True,
         ),
         "//:macos": glob(
             [
                 "runtime/src/platform/darwin/*.c",
-                "runtime/src/platform/arch/**/*.S",
+                "runtime/src/platform/darwin/*.S",
             ],
             allow_empty = True,
         ),
@@ -166,9 +178,15 @@ cc_library(
         "-g",
         "-O0",
         "-fno-omit-frame-pointer",
-        "-D_GNU_SOURCE",
-        "-D_POSIX_C_SOURCE=200809L",
-    ],
+    ] + select({
+        "//:linux": [
+            "-D_GNU_SOURCE",
+            "-D_POSIX_C_SOURCE=200809L",
+        ],
+        "//:macos": [
+            "-D_DARWIN_C_SOURCE",
+        ],
+    }),
     defines = select({
         "//:linux": ["PLATFORM_UCONTEXT=1"],
         "//:macos": ["PLATFORM_ASM_CONTEXT=1"],
@@ -186,13 +204,14 @@ cc_library(
             "-lunwind",
             "-Wl,--no-as-needed",
         ],
-        "//:macos": ["-lffi"],
+        "//:macos": ["-lffi", "-Wl,-ld_classic"],
     }),
     visibility = ["//visibility:public"],
     deps = select({
-        "//:macos": ["@libffi_macos//:libffi"],
+        "//:macos": [":libffi_macos"],
         "//conditions:default": [],
     }),
+    alwayslink = 1,
 )
 
 cc_library(
@@ -209,5 +228,21 @@ cc_library(
             "-lffi",
         ],
     }),
+    visibility = ["//visibility:public"],
+)
+
+go_library(
+    name = "picasso_lib",
+    srcs = [
+        "hello.s",
+        "temp_go.go",
+    ],
+    importpath = "github.com/nagarajRPoojari/picasso",
+    visibility = ["//visibility:private"],
+)
+
+go_binary(
+    name = "picasso",
+    embed = [":picasso_lib"],
     visibility = ["//visibility:public"],
 )
