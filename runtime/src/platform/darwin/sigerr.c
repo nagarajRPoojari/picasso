@@ -46,14 +46,14 @@ static void print_stacktrace_internal(void) {
         name[0] = '\0';
         if (unw_get_proc_name(&cursor, name, sizeof(name), &offset) == 0) {
             char buf[512];
-            int n = snprintf(buf, sizeof(buf), "#%d  0x%016lx in %s + 0x%lx\n", 
+            int n = snprintf(buf, sizeof(buf), "\t#%d  0x%016lx in %s + 0x%lx\n", 
                            frame, (unsigned long)ip, name, (unsigned long)offset);
             if (n > 0 && n < (int)sizeof(buf)) {
                 write(STDERR_FILENO, buf, (size_t)n);
             }
         } else {
             char buf[512];
-            int n = snprintf(buf, sizeof(buf), "#%d  0x%016lx in <unknown>\n", 
+            int n = snprintf(buf, sizeof(buf), "\t#%d  0x%016lx in <unknown>\n", 
                            frame, (unsigned long)ip);
             if (n > 0 && n < (int)sizeof(buf)) {
                 write(STDERR_FILENO, buf, (size_t)n);
@@ -137,7 +137,6 @@ void __public__runtime_error(const char *msg) {
     handling_crash = 1;
     
     if (msg) {
-        write(STDERR_FILENO, "\n===== RUNTIME ERROR =====\n", 27);
         write(STDERR_FILENO, msg, strlen(msg));
         write(STDERR_FILENO, "\n", 1);
     }
