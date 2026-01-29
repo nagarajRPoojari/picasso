@@ -142,7 +142,7 @@ func copyGlobalDecls(_ *state.State, globals map[string]*ir.Global, dst, src *ir
 			Align:       g.Align,
 			Section:     g.Section,
 			Comdat:      g.Comdat,
-			Metadata:    g.Metadata,
+			// Metadata:    g.Metadata,
 		}
 
 		dst.Globals = append(dst.Globals, decl)

@@ -7,7 +7,12 @@
 #include <time.h>
 #include <sys/time.h>
 #include <sys/syscall.h>
-
+#include <sys/attr.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <dirent.h>
+#include <string.h>
+#include <unistd.h>
 
 int __public__os_errno(void) {
     return errno;
@@ -114,6 +119,14 @@ int __public__os_fstat(int fd, struct stat *st) {
     return fstat(fd, st);
 }
 
+#ifndef RENAME_EXCL
+#define RENAME_EXCL 0x00000001
+#endif
+
+#ifndef RENAME_SWAP
+#define RENAME_SWAP 0x00000002
+#endif
+
 /*
  * Linux renameat2() compatibility shim.
  * macOS provides renameatx_np().
@@ -136,8 +149,29 @@ int __public__os_renameat2(const char *oldpath,
  * WARNING: layout is struct dirent (NOT linux_dirent64).
  */
 int __public__os_getdents64(int fd, void *buf, size_t size) {
-    long basep = 0;
-    return (int)getdirentries(fd, (char *)buf, (int)size, &basep);
+    DIR *dir;
+    struct dirent *entry;
+    char *ptr = buf;
+    size_t remaining = size;
+
+    // Convert fd to DIR* (fdopendir duplicates fd, so we need to close it)
+    dir = fdopendir(fd);
+    if (!dir) return -1;
+
+    while ((entry = readdir(dir)) != NULL) {
+        size_t reclen = entry->d_reclen;
+
+        if (reclen > remaining)
+            break;
+
+        memcpy(ptr, entry, reclen);
+        ptr += reclen;
+        remaining -= reclen;
+    }
+
+    closedir(dir);
+
+    return (int)(size - remaining);  // bytes written
 }
 
 void *__public__os_mmap(void *addr,

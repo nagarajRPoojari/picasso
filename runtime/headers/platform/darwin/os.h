@@ -202,7 +202,7 @@ int __public__os_getppid(void);
  *
  * @return Thread ID.
  */
-int __public__os_gettid(void);
+uint64_t __public__os_gettid(void);
 
 /**
  * @brief Terminate the current process.
@@ -456,7 +456,7 @@ int __public__os_fcntl(int fd, int cmd, long arg);
  *
  * @return Mapped address or MAP_FAILED.
  */
-void *__public__os_mmap(void *addr, size_t len, int prot, int flags, int fd, size_t off);
+void *__public__os_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off) ;
 
 /**
  * @brief Unmap memory.
