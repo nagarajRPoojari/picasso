@@ -98,6 +98,9 @@ static void crash_handler(int sig, siginfo_t *si, void *ctx) {
     _exit(128 + sig);
 }
 
+/**
+ * @brief Install fatal signal handlers
+ */
 void init_error_handlers(void) {
     /* Create pipe for deferred handling */
     if (pipe(crash_pipe) != 0) {
@@ -130,6 +133,10 @@ void init_error_handlers(void) {
     }
 }
 
+/**
+ * @brief Raise a runtime error and print stack trace
+ * @param msg Error message to display
+ */
 void __public__runtime_error(const char *msg) {
     if (handling_crash) {
         _exit(1);

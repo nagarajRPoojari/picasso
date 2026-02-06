@@ -17,12 +17,28 @@ void task_completed_callback(platform_ctx_t* current, platform_ctx_t* parent) {
     while(1) {}
 }
 
+/**
+ * @brief Initialize a platform context
+ * @param ctx Pointer to the platform context to initialize
+ * @return 0 on success, non-zero on failure
+ */
 int platform_ctx_init(platform_ctx_t *ctx) {
     if (!ctx) return -1;
     memset(ctx, 0, sizeof(platform_ctx_t));
     return 0;
 }
 
+/**
+ * @brief Create a new platform context with the given entry point and stack
+ * @param ctx Pointer to the platform context to create
+ * @param entry Entry point function to execute in the new context
+ * @param a First argument to pass to the entry function
+ * @param b Second argument to pass to the entry function
+ * @param stack Pointer to the stack memory
+ * @param stack_size Size of the stack in bytes
+ * @param back_link Pointer to the context to return to when entry function returns
+ * @return 0 on success, non-zero on failure
+ */
 int platform_ctx_make(platform_ctx_t *ctx, void (*entry)(uintptr_t, uintptr_t),  uintptr_t a, uintptr_t b, void *stack, size_t stack_size, platform_ctx_t* back_link) {
     if (!ctx || !stack) return -1;
     
@@ -52,26 +68,56 @@ int platform_ctx_make(platform_ctx_t *ctx, void (*entry)(uintptr_t, uintptr_t), 
     return 0;
 }
 
+/**
+ * @brief Destroy a platform context and free associated resources
+ * @param ctx Pointer to the platform context to destroy
+ */
 void platform_ctx_destroy(platform_ctx_t* ctx) {
     if (ctx) memset(ctx, 0, sizeof(platform_ctx_t));
 }
 
+/**
+ * @brief Get the base address of the context's stack
+ * @param ctx Pointer to the platform context
+ * @return Base address of the stack
+ */
 uintptr_t platform_ctx_get_stack_base(platform_ctx_t* ctx) {
     return (uintptr_t)ctx->stack;
 }
 
+/**
+ * @brief Get the current stack pointer of the context
+ * @param ctx Pointer to the platform context
+ * @return Current stack pointer value
+ */
 uintptr_t platform_ctx_get_stack_pointer(platform_ctx_t* ctx) {
     return (uintptr_t)ctx->reg.sp;
 }
 
+/**
+ * @brief Get the program counter (instruction pointer) of the context
+ * @param ctx Pointer to the platform context
+ * @return Program counter value
+ */
 uintptr_t platform_ctx_get_pc(platform_ctx_t* ctx) {
     return (uintptr_t)ctx->reg.regs[11];
 }
 
+/**
+ * @brief Get the size of the context's stack
+ * @param ctx Pointer to the platform context
+ * @return Stack size in bytes
+ */
 int64_t platform_ctx_get_stack_size(platform_ctx_t* ctx) {
     return (int64_t)ctx->stack_size;
 }
 
+/**
+ * @brief Get the value of a specific register from the context
+ * @param ctx Pointer to the platform context
+ * @param i Register index
+ * @return Value of the specified register
+ */
 uint64_t platform_ctx_get_reg(platform_ctx_t *ctx, int i) {
     if (i >= 19 && i <= 30) return ctx->reg.regs[i - 19];
     if (i == 31) return (uint64_t)ctx->reg.sp;

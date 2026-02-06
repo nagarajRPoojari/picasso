@@ -44,7 +44,9 @@ static void crash_handler(int sig, siginfo_t *si, void *ctx) {
     _exit(128 + sig);
 }
 
-
+/**
+ * @brief Install fatal signal handlers
+ */
 void init_error_handlers(void) {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
@@ -57,6 +59,10 @@ void init_error_handlers(void) {
     }
 }
 
+/**
+ * @brief Raise a runtime error and print stack trace
+ * @param msg Error message to display
+ */
 void __public__runtime_error(const char *msg) {
     if (msg) {
         write(STDERR_FILENO, msg, strlen(msg));

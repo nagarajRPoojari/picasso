@@ -26,24 +26,40 @@ safe_gcqueue_t* roots;
 /* forward declarations */
 static void gc_mark_mem_region(char *start, char *end);
 
+/**
+ * @brief Create the global arena for garbage collection.
+ * @return Pointer to the created global arena.
+ */
 arena_t* gc_create_global_arena() {
     arena_t* ar = arena_create();
     global_arena = ar;
     return ar;
 }
 
+/**
+ * @brief Register a task as a GC root.
+ * @param t Task to register as root.
+ */
 void gc_register_root(task_t* t) {
     assert(roots != NULL);
     assert(t != NULL);
     safe_gcq_push(roots, t);
 }
 
+/**
+ * @brief Unregister a task as a GC root.
+ * @param t Task to unregister as root.
+ */
 void gc_unregister_root(task_t* t) {
     assert(roots != NULL);
     assert(t != NULL);
     safe_gcq_remove(roots, t);
 }
 
+/**
+ * @brief Create a new arena for garbage collection.
+ * @return Pointer to the created arena.
+ */
 arena_t* gc_create_arena() {
     if(arenas_count + 1 > MAX_ARENAS) {
         perror("failed to create new arena: arena count reached max\n");
@@ -234,11 +250,17 @@ static void* gc_run(void*) {
     return NULL;
 }
 
+/**
+ * @brief Initialize the garbage collector.
+ */
 void gc_init() {
     roots = (safe_gcqueue_t*)malloc(sizeof(safe_gcqueue_t));
     safe_gcq_init(roots, INT32_MAX);
 }
 
+/**
+ * @brief Start the garbage collector.
+ */
 void gc_start() {
     assert(roots != NULL);
 
@@ -254,6 +276,9 @@ void gc_start() {
     pthread_create(&t, NULL, gc_run, NULL);
 }
 
+/**
+ * @brief Stop all mutator threads for garbage collection.
+ */
 void gc_stop_the_world() {
     pthread_mutex_lock(&gc_state.lock);
     atomic_store(&gc_state.world_stopped, 1);
@@ -266,7 +291,9 @@ void gc_stop_the_world() {
     pthread_mutex_lock(&gc_state.add_lock);
 }
 
-
+/**
+ * @brief Resume all mutator threads after garbage collection.
+ */
 void gc_resume_world() {
     pthread_mutex_lock(&gc_state.lock);
 

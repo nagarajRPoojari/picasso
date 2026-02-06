@@ -289,8 +289,50 @@ ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offse
  */
 ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offset);
 
+/**
+ * @brief Synchronously open a file.
+ *
+ * Opens the specified file with the given mode using fopen().
+ *
+ * @param filename Path to the file to open.
+ * @param mode     File access mode (e.g., "r", "w", "a", "rb", "wb").
+ *
+ * @return Pointer to the opened FILE on success, or NULL on error.
+ */
 char* __public__syncio_fopen(const char* filename, const char* mode);
+
+/**
+ * @brief Synchronously close a file.
+ *
+ * Closes the specified FILE pointer using fclose().
+ *
+ * @param f FILE pointer to close.
+ *
+ * @return 0 on success, or -1 on error.
+ */
 int64_t __public__syncio_fclose(FILE* f);
+
+/**
+ * @brief Synchronously seek to a position in a file.
+ *
+ * Sets the file position indicator for the specified FILE pointer using fseek().
+ *
+ * @param f      FILE pointer to seek in.
+ * @param offset Number of bytes to offset from whence.
+ * @param whence Position to offset from (SEEK_SET, SEEK_CUR, or SEEK_END).
+ *
+ * @return 0 on success, or -1 on error.
+ */
 int64_t __public__syncio_fseek(FILE* f, int64_t offset, int whence);
+
+/**
+ * @brief Synchronously flush a file's output buffer.
+ *
+ * Flushes any buffered output data for the specified FILE pointer using fflush().
+ *
+ * @param f FILE pointer to flush.
+ *
+ * @return 0 on success, or -1 on error.
+ */
 int64_t __public__syncio_fflush(FILE* f);
 #endif

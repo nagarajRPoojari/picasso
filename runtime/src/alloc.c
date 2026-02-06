@@ -556,7 +556,12 @@ void* _allocate(arena_t* ar, size_t requested_size) {
     return (void*)((char*)victim + HEADER_SIZE);
 }
 
-
+/**
+ * @brief Allocate memory from the arena
+ * @param ar Pointer to the arena
+ * @param requested_size Size of memory to allocate in bytes
+ * @return Pointer to the allocated memory
+ */
 void* allocate(arena_t* ar, size_t requested_size) {
     assert(ar != NULL);
     pthread_mutex_lock(&ar->mu);
@@ -642,6 +647,11 @@ void _release(arena_t* ar, void* ptr) {
     if(merged_chunk) insert_into_unsortedbin(ar, merged_chunk);
 }
 
+/**
+ * @brief Release allocated memory back to the arena
+ * @param ar Pointer to the arena
+ * @param ptr Pointer to the memory to release
+ */
 void release(arena_t* ar, void* ptr) {
     assert(ar != NULL);
 
@@ -650,6 +660,10 @@ void release(arena_t* ar, void* ptr) {
     pthread_mutex_unlock(&ar->mu);
 }
 
+/**
+ * @brief Create a new arena allocator
+ * @return Pointer to the newly created arena
+ */
 arena_t* arena_create(void) {
     size_t needed = sizeof(arena_t) + (SMALLBINS_COUNT * sizeof(free_chunk_t)) + 
                     (LARGEBINS_COUNT * sizeof(free_chunk_t)) + sizeof(free_chunk_t);

@@ -9,6 +9,10 @@
 
 extern __thread arena_t* __arena__;
 
+/**
+ * @brief Create a new read-write mutex
+ * @return Pointer to the created read-write mutex
+ */
 __public__rwmutex_t* __public__sync_rwmutex_create() {
     assert(__arena__ != NULL);
     __public__rwmutex_t* mux = (__public__rwmutex_t*)allocate(__arena__, sizeof(__public__rwmutex_t));
@@ -21,6 +25,10 @@ __public__rwmutex_t* __public__sync_rwmutex_create() {
     return mux;
 }
 
+/**
+ * @brief Acquire a read lock on the read-write mutex
+ * @param mux Pointer to the read-write mutex
+ */
 void __public__sync_rwmutex_rlock(__public__rwmutex_t* mux) {
     int64_t old;
 
@@ -28,12 +36,9 @@ void __public__sync_rwmutex_rlock(__public__rwmutex_t* mux) {
         old = atomic_load_explicit(&mux->state, memory_order_seq_cst);
 
         if (old & WRITER_BIT) {
-            // Atomic enqueue + sleep
             pthread_mutex_lock(&mux->lock);
-            // Recheck to avoid race
             if (atomic_load_explicit(&mux->state, memory_order_seq_cst) & WRITER_BIT) {
                 safe_q_push(&mux->readers, current_task);
-                // Mark task as "sleeping" here implicitly
                 pthread_mutex_unlock(&mux->lock);
                 task_yield(kernel_thread_map[current_task->sched_id]);
                 continue;
@@ -53,6 +58,10 @@ void __public__sync_rwmutex_rlock(__public__rwmutex_t* mux) {
     }
 }
 
+/**
+ * @brief Release a read lock on the read-write mutex
+ * @param mux Pointer to the read-write mutex
+ */
 void __public__sync_rwmutex_runlock(__public__rwmutex_t* mux) {
     int64_t prev = atomic_fetch_sub_explicit(
         &mux->state,
@@ -71,6 +80,10 @@ void __public__sync_rwmutex_runlock(__public__rwmutex_t* mux) {
     }
 }
 
+/**
+ * @brief Acquire a write lock on the read-write mutex
+ * @param mux Pointer to the read-write mutex
+ */
 void __public__sync_rwmutex_rwlock(__public__rwmutex_t* mux) {
     int64_t old;
 
@@ -108,6 +121,10 @@ void __public__sync_rwmutex_rwlock(__public__rwmutex_t* mux) {
     }
 }
 
+/**
+ * @brief Release a write lock on the read-write mutex
+ * @param mux Pointer to the read-write mutex
+ */
 void __public__sync_rwmutex_rwunlock(__public__rwmutex_t* mux) {
     pthread_mutex_lock(&mux->lock);
     
@@ -130,6 +147,10 @@ void __public__sync_rwmutex_rwunlock(__public__rwmutex_t* mux) {
     pthread_mutex_unlock(&mux->lock);
 }
 
+/**
+ * @brief Create a new mutex
+ * @return Pointer to the created mutex
+ */
 __public__mutex_t* __public__sync_mutex_create() {
     __public__mutex_t* mux = (__public__mutex_t*)allocate(__arena__, sizeof(__public__mutex_t));
     pthread_mutex_init(&mux->lock, NULL);
@@ -138,6 +159,10 @@ __public__mutex_t* __public__sync_mutex_create() {
     return mux;
 }
 
+/**
+ * @brief Acquire a lock on the mutex
+ * @param mtx Pointer to the mutex
+ */
 void __public__sync_mutex_lock(__public__mutex_t* mtx) {
     int64_t expected = 0;
 
@@ -171,6 +196,10 @@ void __public__sync_mutex_lock(__public__mutex_t* mtx) {
     }
 }
 
+/**
+ * @brief Release a lock on the mutex
+ * @param mtx Pointer to the mutex
+ */
 void __public__sync_mutex_unlock(__public__mutex_t* mtx) {
     pthread_mutex_lock(&mtx->lock);
 

@@ -26,7 +26,10 @@ static netpoll_eventflag_t from_epoll_events(uint32_t ev){
     return e;
 }
 
-
+/**
+ * @brief Create a new network poller instance
+ * @return Pointer to the created netpoll_t structure, or NULL on failure
+ */
 netpoll_t* netpoll_create(void) {
     netpoll_t* p = calloc(1, sizeof(*p));
     if (!p)
@@ -41,6 +44,10 @@ netpoll_t* netpoll_create(void) {
     return p;
 }
 
+/**
+ * @brief Destroy a network poller instance and free its resources
+ * @param p Pointer to the netpoll_t structure to destroy
+ */
 void netpoll_destroy(netpoll_t* p) {
     if (!p) return;
 
@@ -106,6 +113,14 @@ int netpoll_del(netpoll_t* p, int fd){
     return epoll_ctl(p->epfd, EPOLL_CTL_DEL, fd, NULL);
 }
 
+/**
+ * @brief Wait for events on monitored file descriptors
+ * @param p Pointer to the netpoll_t structure
+ * @param events Array to store triggered events
+ * @param max_events Maximum number of events to return
+ * @param timeout_ms Timeout in milliseconds (-1 for infinite)
+ * @return Number of events triggered, or -1 on error
+ */
 int netpoll_wait( netpoll_t* p, netpoll_event_t* events, int max_events, int timeout_ms) {
     struct epoll_event evs[128];
 
