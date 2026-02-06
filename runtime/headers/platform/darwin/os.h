@@ -427,26 +427,26 @@ int __public__os_munmap(void *addr, size_t len);
  * @param pgid Process group ID.
  * @return 0 on success, -1 on error.
  */
-int __public__os_setpgid(int pid, int pgid) { return setpgid(pid, pgid); }
+int __public__os_setpgid(int pid, int pgid);
 
 /**
  * @brief Get process group ID.
  * @param pid Process ID.
  * @return Process group ID or -1 on error.
  */
-int __public__os_getpgid(int pid) { return getpgid(pid); }
+int __public__os_getpgid(int pid);
 
 /**
  * @brief Get process group ID of calling process.
  * @return Process group ID.
  */
-int __public__os_getpgrp(void) { return getpgrp(); }
+int __public__os_getpgrp(void);
 
 /**
  * @brief Create a new session.
  * @return Session ID or -1 on error.
  */
-int __public__os_setsid(void) { return setsid(); }
+int __public__os_setsid(void);
 
 /**
  * @brief Get resource limits.
@@ -454,9 +454,7 @@ int __public__os_setsid(void) { return setsid(); }
  * @param rlim     Output rlimit structure.
  * @return 0 on success, -1 on error.
  */
-int __public__os_getrlimit(int resource, void *rlim) {
-    return getrlimit(resource, (struct rlimit *)rlim);
-}
+int __public__os_getrlimit(int resource, void *rlim);
 
 /**
  * @brief Set resource limits.
@@ -464,9 +462,7 @@ int __public__os_getrlimit(int resource, void *rlim) {
  * @param rlim     Input rlimit structure.
  * @return 0 on success, -1 on error.
  */
-int __public__os_setrlimit(int resource, const void *rlim) {
-    return setrlimit(resource, (const struct rlimit *)rlim);
-}
+int __public__os_setrlimit(int resource, const void *rlim);
 
 /**
  * @brief Create a directory.
@@ -474,21 +470,21 @@ int __public__os_setrlimit(int resource, const void *rlim) {
  * @param mode Permissions.
  * @return 0 on success, -1 on error.
  */
-int __public__os_mkdir(const char *path, int mode) { return mkdir(path, mode); }
+int __public__os_mkdir(const char *path, int mode);
 
 /**
  * @brief Remove a directory.
  * @param path Directory path.
  * @return 0 on success, -1 on error.
  */
-int __public__os_rmdir(const char *path) { return rmdir(path); }
+int __public__os_rmdir(const char *path);
 
 /**
  * @brief Delete a file.
  * @param path File path.
  * @return 0 on success, -1 on error.
  */
-int __public__os_unlink(const char *path) { return unlink(path); }
+int __public__os_unlink(const char *path);
 
 /**
  * @brief Rename a file or directory.

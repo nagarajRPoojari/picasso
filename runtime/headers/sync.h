@@ -12,6 +12,14 @@
 #define WRITER_BIT   1
 #define READER_INC   2
 
+typedef struct __public__rwmutex {
+    _Atomic int64_t state;
+    pthread_mutex_t lock;      // per-mutex lock to protect enqueue + sleep
+    safe_queue_t readers;
+    safe_queue_t writers;
+}__public__rwmutex_t;
+
+
 /**
  * @brief Create a new read-write mutex
  * @return Pointer to the created read-write mutex
