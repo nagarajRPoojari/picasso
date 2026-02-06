@@ -6,9 +6,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdint.h>
+
 /**
+ * @todo: remove this crypto module
  * @brief returns hash of given data
- * 
  * @param data data, e.g, struct pointer, string
  * @param len length of datatype
  */

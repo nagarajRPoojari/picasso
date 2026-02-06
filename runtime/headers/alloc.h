@@ -66,7 +66,8 @@ typedef struct alloced_heap {
     char* end;
 } alloced_heap_t;
 
-typedef struct arena {    /* stores non-sentinal nodes in singly linked list */
+typedef struct arena {   
+    /* stores non-sentinal nodes in singly linked list */
     free_chunk_t* fastbins[FASTBINS_COUNT];  
 
     /* remaining heap memory */
@@ -93,8 +94,25 @@ typedef struct arena {    /* stores non-sentinal nodes in singly linked list */
 } arena_t;
 
 
+/**
+ * @brief Create a new arena allocator
+ * @return Pointer to the newly created arena
+ */
 arena_t* arena_create(void);
+
+/**
+ * @brief Release allocated memory back to the arena
+ * @param ar Pointer to the arena
+ * @param ptr Pointer to the memory to release
+ */
 void release(arena_t* ar, void* ptr);
+
+/**
+ * @brief Allocate memory from the arena
+ * @param ar Pointer to the arena
+ * @param requested_size Size of memory to allocate in bytes
+ * @return Pointer to the allocated memory
+ */
 void* allocate(arena_t* ar, size_t requested_size);
 
 // utils

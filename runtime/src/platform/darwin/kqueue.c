@@ -39,7 +39,10 @@ static uint16_t to_kqueue_flags(netpoll_eventflag_t events){
     return flags;
 }
 
-
+/**
+ * @brief Create a new network poller instance
+ * @return Pointer to the created netpoll_t structure, or NULL on failure
+ */
 netpoll_t* netpoll_create(void){
     netpoll_t* p = calloc(1, sizeof(*p));
     if (!p)
@@ -54,6 +57,10 @@ netpoll_t* netpoll_create(void){
     return p;
 }
 
+/**
+ * @brief Destroy a network poller instance and free its resources
+ * @param p Pointer to the netpoll_t structure to destroy
+ */
 void netpoll_destroy(netpoll_t* p){
     if (!p) return;
 
@@ -61,7 +68,14 @@ void netpoll_destroy(netpoll_t* p){
     free(p);
 }
 
-
+/**
+ * @brief Add a file descriptor to the network poller
+ * @param p Pointer to the netpoll_t structure
+ * @param fd File descriptor to add
+ * @param events Event flags to monitor
+ * @param ud User data associated with this file descriptor
+ * @return 0 on success, non-zero on failure
+ */
 int netpoll_add( netpoll_t* p, int fd, netpoll_eventflag_t events, netpoll_ud_t ud) {
     uint16_t flags = to_kqueue_flags(events);
 
@@ -78,12 +92,26 @@ int netpoll_add( netpoll_t* p, int fd, netpoll_eventflag_t events, netpoll_ud_t 
     return 0;
 }
 
+/**
+ * @brief Modify the events monitored for a file descriptor
+ * @param p Pointer to the netpoll_t structure
+ * @param fd File descriptor to modify
+ * @param events New event flags to monitor
+ * @param ud New user data associated with this file descriptor
+ * @return 0 on success, non-zero on failure
+ */
 int netpoll_mod( netpoll_t* p, int fd, netpoll_eventflag_t events, netpoll_ud_t ud) {
     /* kqueue has no real MOD -> delete + add */
     netpoll_del(p, fd);
     return netpoll_add(p, fd, events, ud);
 }
 
+/**
+ * @brief Remove a file descriptor from the network poller
+ * @param p Pointer to the netpoll_t structure
+ * @param fd File descriptor to remove
+ * @return 0 on success, non-zero on failure
+ */
 int netpoll_del(netpoll_t* p, int fd){
     struct kevent kev[2];
     int n = 0;
@@ -95,6 +123,14 @@ int netpoll_del(netpoll_t* p, int fd){
     return 0;
 }
 
+/**
+ * @brief Wait for events on monitored file descriptors
+ * @param p Pointer to the netpoll_t structure
+ * @param events Array to store triggered events
+ * @param max_events Maximum number of events to return
+ * @param timeout_ms Timeout in milliseconds (-1 for infinite)
+ * @return Number of events triggered, or -1 on error
+ */
 int netpoll_wait( netpoll_t* p, netpoll_event_t* out, int max_events, int timeout_ms) {
     struct kevent kev[128];
 

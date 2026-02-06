@@ -6,14 +6,14 @@
 #include <stddef.h>
 #include <stdio.h>
 
+extern __thread arena_t* __arena__;
+
 /**
  * @brief allocate block of memory for array through GC_MALLOC 
  *
  * @param count length of array
  * @param elem_size size of each element
  */
-extern __thread arena_t* __arena__;
-
 __public__array_t* __public__alloc_array(int count, int elem_size, int rank) {
     size_t data_size = (size_t)count * elem_size;
     size_t shape_size = (size_t)rank * sizeof(int64_t);

@@ -209,6 +209,22 @@ ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog) {
     return fd;
 }
 
+/**
+ * @brief Connect to a remote TCP server.
+ *
+ * Creates a non-blocking IPv4 TCP socket and initiates a connection to the
+ * specified address and port.
+ *
+ * The socket is created with SOCK_NONBLOCK and SOCK_CLOEXEC. The connection
+ * is performed asynchronously and may complete immediately or require waiting
+ * for writability.
+ *
+ * @param addr IPv4 address to connect to (e.g., "127.0.0.1").
+ * @param port TCP port number (host byte order).
+ *
+ * @return Connected socket file descriptor on success, or -1 on error
+ *         (with errno set accordingly).
+ */
 ssize_t __public__net_dial(const char *addr, uint16_t port) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd != -1) {

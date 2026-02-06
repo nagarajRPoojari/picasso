@@ -193,83 +193,69 @@ const int __public__os_EACCES = EACCES;
 
 /**
  * @brief Get the current thread-local errno value.
- *
  * @return Current errno.
  */
 int __public__os_errno(void);
 /**
  * @brief Get current process ID.
- *
  * @return Process ID.
  */
 int __public__os_getpid(void);
 
 /**
  * @brief Get parent process ID.
- *
  * @return Parent process ID.
  */
 int __public__os_getppid(void);
 
 /**
  * @brief Get calling thread ID.
- *
  * @return Thread ID.
  */
 int __public__os_gettid(void);
 
 /**
  * @brief Terminate the current process immediately.
- *
  * @param code Exit status.
  */
 void __public__os_exit(int code);
 
 /**
  * @brief Create a new process.
- *
  * @return 0 in child, child PID in parent, or -1 on error.
  */
 int __public__os_fork(void);
 
 /**
  * @brief Wait for process state change.
- *
  * @param pid     Process ID to wait for.
  * @param status  Pointer to store exit status.
  * @param options wait options.
- *
  * @return PID of child or -1 on error.
  */
 int __public__os_waitpid(int pid, int *status, int options);
 
 /**
  * @brief Send a signal to a process.
- *
  * @param pid Target process ID.
  * @param sig Signal number.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_kill(int pid, int sig);
 
 /**
  * @brief Execute a program with explicit environment.
- *
  * @param path Path to executable.
  * @param argv Argument vector.
  * @param envp Environment vector.
- *
  * @return -1 on error (does not return on success).
  */
 int __public__os_execve(const char *path, char *const argv[], char *const envp[]);
 
 /**
  * @brief Execute a program using current environment.
- *
  * @param file Executable file.
  * @param argv Argument vector.
- *
  * @return -1 on error (does not return on success).
  */
 int __public__os_execvp(const char *file, char *const argv[]);
@@ -278,53 +264,44 @@ extern char **environ;
 
 /**
  * @brief Get pointer to environment array.
- *
  * @return Pointer to environment vector.
  */
 char **__public__os_environ(void);
+
 /**
  * @brief Get environment variable value.
- *
  * @param key Environment variable name.
- *
  * @return Value string or NULL if not found.
  */
 const char *__public__os_getenv(const char *key);
 
 /**
  * @brief Set an environment variable.
- *
  * @param key        Variable name.
  * @param value      Variable value.
  * @param overwrite Whether to overwrite existing value.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_setenv(const char *key, const char *value, int overwrite);
+
 /**
  * @brief Remove an environment variable.
- *
  * @param key Variable name.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_unsetenv(const char *key);
 
 /**
  * @brief Get current working directory.
- *
  * @param buf  Buffer to store path.
  * @param size Buffer size.
- *
  * @return Length of path or -1 on error.
  */
 int __public__os_getcwd(char *buf, size_t size);
 
 /**
  * @brief Change current working directory.
- *
  * @param path New working directory.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_chdir(const char *path);
@@ -381,7 +358,6 @@ int __public__os_setsid(void);
 
 /**
  * @brief Get resource limit.
- *
  * @param resource Resource type.
  * @param rlim     Pointer to rlimit struct.
  */
@@ -389,7 +365,6 @@ int __public__os_getrlimit(int resource, void *rlim);
 
 /**
  * @brief Set resource limit.
- *
  * @param resource Resource type.
  * @param rlim     Pointer to rlimit struct.
  */
@@ -397,222 +372,179 @@ int __public__os_setrlimit(int resource, const void *rlim);
 
 /**
  * @brief Install a signal handler.
- *
  * @param sig     Signal number.
  * @param handler Signal handler function.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_signal_install(int sig, void (*handler)(int));
 
 /**
  * @brief Open a file.
- *
  * @param path  File path.
  * @param flags Open flags (OS_O_*).
  * @param mode  File mode (for create).
- *
  * @return File descriptor or -1 on error.
  */
 int __public__os_open(const char *path, int flags, int mode);
 
 /**
  * @brief Close a file descriptor.
- *
  * @param fd File descriptor.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_close(int fd);
 
 /**
  * @brief Read from a file descriptor.
- *
  * @param fd  File descriptor.
  * @param buf Buffer to fill.
  * @param n   Number of bytes.
- *
  * @return Bytes read, 0 on EOF, or -1 on error.
  */
 ssize_t __public__os_read(int fd, void *buf, size_t n);
 
 /**
  * @brief Write to a file descriptor.
- *
  * @param fd  File descriptor.
  * @param buf Data buffer.
  * @param n   Number of bytes.
- *
  * @return Bytes written or -1 on error.
  */
 ssize_t __public__os_write(int fd, const void *buf, size_t n);
 
 /**
  * @brief Reposition file offset.
- *
  * @param fd     File descriptor.
  * @param offset Offset.
  * @param whence OS_SEEK_*.
- *
  * @return New offset or -1 on error.
  */
 off_t __public__os_lseek(int fd, off_t offset, int whence);
 
 /**
  * @brief Get file status.
- *
  * @param fd File descriptor.
  * @param st Pointer to struct stat.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_fstat(int fd, struct stat *st);
+
 /**
  * @brief Duplicate a file descriptor.
- *
  * @param fd File descriptor.
- *
  * @return New file descriptor or -1 on error.
  */
 int __public__os_dup(int fd);
 
 /**
  * @brief Duplicate a file descriptor to a specific value.
- *
  * @param oldfd Existing FD.
  * @param newfd Target FD.
- *
  * @return New FD or -1 on error.
  */
 int __public__os_dup2(int oldfd, int newfd);
 
 /**
  * @brief Control file descriptor behavior.
- *
  * @param fd  File descriptor.
  * @param cmd Command (OS_F_*).
  * @param arg Command-specific argument.
- *
  * @return Result or -1 on error.
  */
 int __public__os_fcntl(int fd, int cmd, long arg);
 
 /**
  * @brief Create a directory.
- *
  * @param path Directory path.
  * @param mode Permission bits.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_mkdir(const char *path, int mode);
 
 /**
  * @brief Remove an empty directory.
- *
  * @param path Directory path.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_rmdir(const char *path);
 
 /**
  * @brief Remove a file.
- *
  * @param path File path.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_unlink(const char *path);
 
 /**
  * @brief Rename a filesystem object.
- *
  * @param oldpath Source path.
  * @param newpath Destination path.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_rename(const char *oldpath, const char *newpath);
 
 /**
  * @brief Rename with flags.
- *
  * @param oldpath Source path.
  * @param newpath Destination path.
  * @param flags   OS_RENAME_* flags.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_renameat2(const char *oldpath, const char *newpath, int flags);
 
 /**
  * @brief Create a hard link.
- *
  * @param oldpath Existing file.
  * @param newpath New link path.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_link(const char *oldpath, const char *newpath);
 
 /**
  * @brief Create a symbolic link.
- *
  * @param target Target path.
  * @param linkpath Symlink path.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_symlink(const char *target, const char *linkpath);
 
 /**
  * @brief Read a symbolic link.
- *
  * @param path Symlink path.
  * @param buf  Buffer to receive target.
  * @param size Buffer size.
- *
  * @return Number of bytes written or -1 on error.
  */
 ssize_t __public__os_readlink(const char *path, char *buf, size_t size);
 
 /**
  * @brief Get file metadata (follow symlinks).
- *
  * @param path File path.
  * @param st   Stat buffer.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_stat(const char *path, struct stat *st);
 
 /**
  * @brief Get file metadata (do not follow symlinks).
- *
  * @param path File path.
  * @param st   Stat buffer.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_lstat(const char *path, struct stat *st);
 
 /**
  * @brief Check access permissions.
- *
  * @param path File path.
  * @param mode OS_*_OK flags.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_access(const char *path, int mode);
 
 /**
  * @brief Read directory entries.
- *
  * This is a low-level primitive. The runtime must parse
  * linux_dirent64 structures manually.
- *
  * @param fd   Directory file descriptor.
  * @param buf  Buffer for entries.
  * @param size Buffer size.
@@ -623,14 +555,12 @@ int __public__os_getdents64(int fd, void *buf, size_t size);
 
 /**
  * @brief Map virtual memory.
- *
  * @param addr  Requested address (or NULL).
  * @param len   Length in bytes.
  * @param prot  Protection flags (OS_PROT_*).
  * @param flags Mapping flags (OS_MAP_*).
  * @param fd    File descriptor or -1.
  * @param off   File offset.
- *
  * @return Pointer to mapped memory or MAP_FAILED.
  */
 void *__public__os_mmap(void *addr, size_t len, int prot,
@@ -638,74 +568,61 @@ void *__public__os_mmap(void *addr, size_t len, int prot,
 
 /**
  * @brief Unmap virtual memory.
- *
  * @param addr Mapped address.
  * @param len  Length in bytes.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_munmap(void *addr, size_t len);
 
 /**
  * @brief Change memory protection.
- *
  * @param addr Mapped address.
  * @param len  Length in bytes.
  * @param prot New protection flags.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_mprotect(void *addr, size_t len, int prot);
 
 /**
  * @brief Advise kernel about memory usage.
- *
  * @param addr   Address range.
  * @param len    Length in bytes.
  * @param advice OS_MADV_*.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_madvise(void *addr, size_t len, int advice);
+
 /**
  * @brief Lock memory into RAM.
- *
  * @param addr Address range.
  * @param len  Length in bytes.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_mlock(void *addr, size_t len);
 
 /**
  * @brief Unlock memory.
- *
  * @param addr Address range.
  * @param len  Length in bytes.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_munlock(void *addr, size_t len);
 
 /**
  * @brief Control future/current memory locking.
- *
  * @param flags OS_MCL_* flags.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_mlockall(int flags);
 
 /**
  * @brief Unlock all locked memory.
- *
  * @return 0 on success or -1 on error.
  */
 int __public__os_munlockall(void);
 
 /**
  * @brief Get system page size.
- *
  * @return Page size in bytes.
  */
 size_t __public__os_page_size(void);
@@ -714,9 +631,7 @@ size_t __public__os_page_size(void);
 
 /**
  * @brief Wait on a futex word.
- *
  * The calling thread sleeps if *uaddr == val.
- *
  * @param uaddr Pointer to futex word.
  * @param val Expected value.
  * @param timeout Optional timeout (NULL for infinite wait).
@@ -726,7 +641,6 @@ int __public__os_futex_wait(int *uaddr, int val, const struct timespec *timeout)
 
 /**
  * @brief Wake up threads waiting on a futex word.
- *
  * @param uaddr Pointer to futex word.
  * @param count Maximum number of waiters to wake.
  * @return Number of woken threads or -1 on error.
@@ -735,9 +649,7 @@ int __public__os_futex_wake(int *uaddr, int count);
 
 /**
  * @brief Wait on a futex word with bitmask.
- *
  * The calling thread sleeps if (*uaddr & mask) == val.
- *
  * @param uaddr Pointer to futex word.
  * @param val Expected value.
  * @param timeout Optional timeout.
@@ -748,7 +660,6 @@ int __public__os_futex_wait_bitset(int *uaddr,int val,const struct timespec *tim
 
 /**
  * @brief Wake threads waiting on a futex word using a bitmask.
- *
  * @param uaddr Pointer to futex word.
  * @param count Maximum number of waiters to wake.
  * @param mask Bitmask.
@@ -758,9 +669,7 @@ int __public__os_futex_wake_bitset(int *uaddr, int count, int mask);
 
 /**
  * @brief Requeue waiters from one futex to another.
- *
  * Wakes up to wake_count waiters and requeues the rest to uaddr2.
- *
  * @param uaddr Source futex.
  * @param wake_count Number of waiters to wake.
  * @param requeue_count Number of waiters to requeue.
@@ -771,7 +680,6 @@ int __public__os_futex_requeue( int *uaddr, int wake_count, int requeue_count, i
 
 /**
  * @brief Wake one waiter and requeue remaining waiters.
- *
  * @param uaddr Source futex.
  * @param uaddr2 Target futex.
  * @param wake_count Number of waiters to wake.
@@ -783,7 +691,6 @@ int __public__os_futex_cmp_requeue( int *uaddr, int *uaddr2, int wake_count, int
 
 /**
  * @brief Wake a single waiter (optimized common case).
- *
  * @param uaddr Pointer to futex word.
  * @return Number of woken threads or -1 on error.
  */
@@ -791,7 +698,6 @@ int __public__os_futex_wake_one(int *uaddr);
 
 /**
  * @brief Wake all waiters.
- *
  * @param uaddr Pointer to futex word.
  * @return Number of woken threads or -1 on error.
  */

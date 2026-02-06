@@ -176,249 +176,203 @@ const int __public__os_MADV_FREE       = MADV_FREE;
 /* Function Prototypes */
 /**
  * @brief Get current errno value.
- *
  * @return errno.
  */
 int __public__os_errno(void);
 
 /**
  * @brief Get current process ID.
- *
  * @return PID.
  */
 int __public__os_getpid(void);
 
 /**
  * @brief Get parent process ID.
- *
  * @return Parent PID.
  */
 int __public__os_getppid(void);
 
 /**
  * @brief Get current thread ID.
- *
  * @note macOS implementation uses pthread_threadid_np().
- *
  * @return Thread ID.
  */
 uint64_t __public__os_gettid(void);
 
 /**
  * @brief Terminate the current process.
- *
  * @param code Exit status.
  */
 void __public__os_exit(int code);
 
 /**
  * @brief Create a child process.
- *
  * @return 0 in child, child PID in parent, -1 on error.
  */
 int __public__os_fork(void);
 
 /**
  * @brief Wait for a child process.
- *
  * @param pid     Process ID.
  * @param status  Exit status.
  * @param options Wait options.
- *
  * @return PID or -1 on error.
  */
 int __public__os_waitpid(int pid, int *status, int options);
 
 /**
  * @brief Send a signal to a process.
- *
  * @param pid Process ID.
  * @param sig Signal number.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_kill(int pid, int sig);
 
 /**
  * @brief Execute a program.
- *
  * @param path Executable path.
  * @param argv Argument vector.
  * @param envp Environment.
- *
  * @return -1 on error.
  */
 int __public__os_execve(const char *path, char *const argv[], char *const envp[]);
 
 /**
  * @brief Execute a program using PATH lookup.
- *
  * @param file Executable name.
  * @param argv Argument vector.
- *
  * @return -1 on error.
  */
 int __public__os_execvp(const char *file, char *const argv[]);
 
 /**
  * @brief Get environment variable array.
- *
  * @return Environment pointer.
  */
 char **__public__os_environ(void);
 
 /**
  * @brief Get environment variable value.
- *
  * @param key Variable name.
- *
  * @return Value or NULL.
  */
 const char *__public__os_getenv(const char *key);
 
 /**
  * @brief Set environment variable.
- *
  * @param key       Variable name.
  * @param value     Value.
  * @param overwrite Overwrite if exists.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_setenv(const char *key, const char *value, int overwrite);
 
 /**
  * @brief Remove environment variable.
- *
  * @param key Variable name.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_unsetenv(const char *key);
 
 /**
  * @brief Get current working directory.
- *
  * @param buf  Output buffer.
  * @param size Buffer size.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_getcwd(char *buf, size_t size);
 
 /**
  * @brief Change working directory.
- *
  * @param path Directory path.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_chdir(const char *path);
 
 /**
  * @brief Get user ID.
- *
  * @return UID.
  */
 int __public__os_getuid(void);
 
 /**
  * @brief Get effective user ID.
- *
  * @return Effective UID.
  */
 int __public__os_geteuid(void);
 
 /**
  * @brief Get group ID.
- *
  * @return GID.
  */
 int __public__os_getgid(void);
 
 /**
  * @brief Get effective group ID.
- *
  * @return Effective GID.
  */
 int __public__os_getegid(void);
 
 /**
  * @brief Set user ID.
- *
  * @param uid User ID.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_setuid(int uid);
 
 /**
  * @brief Set group ID.
- *
  * @param gid Group ID.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_setgid(int gid);
 
 /**
  * @brief Open a file.
- *
  * @param path  File path.
  * @param flags Open flags.
  * @param mode  File mode.
- *
  * @return File descriptor or -1.
  */
 int __public__os_open(const char *path, int flags, int mode);
 
 /**
  * @brief Close a file descriptor.
- *
  * @param fd File descriptor.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_close(int fd);
 
 /**
  * @brief Read from a file descriptor.
- *
  * @param fd  File descriptor.
  * @param buf Buffer.
  * @param n   Bytes to read.
- *
  * @return Bytes read or -1.
  */
 ssize_t __public__os_read(int fd, void *buf, size_t n);
 
 /**
  * @brief Write to a file descriptor.
- *
  * @param fd  File descriptor.
  * @param buf Buffer.
  * @param n   Bytes to write.
- *
  * @return Bytes written or -1.
  */
 ssize_t __public__os_write(int fd, const void *buf, size_t n);
 
 /**
  * @brief Reposition file offset.
- *
  * @param fd     File descriptor.
  * @param offset Offset.
  * @param whence Seek mode.
- *
  * @return New offset or -1.
  */
 off_t __public__os_lseek(int fd, off_t offset, int whence);
 
 /**
  * @brief Duplicate a file descriptor.
- *
  * @param fd File descriptor.
- *
  * @return New FD or -1.
  */
 int __public__os_dup(int fd);
@@ -460,12 +414,137 @@ void *__public__os_mmap(void *addr, size_t len, int prot, int flags, int fd, off
 
 /**
  * @brief Unmap memory.
- *
  * @param addr Address.
  * @param len  Length.
- *
  * @return 0 on success, -1 on error.
  */
 int __public__os_munmap(void *addr, size_t len);
+
+
+/**
+ * @brief Set process group ID.
+ * @param pid  Process ID.
+ * @param pgid Process group ID.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_setpgid(int pid, int pgid) { return setpgid(pid, pgid); }
+
+/**
+ * @brief Get process group ID.
+ * @param pid Process ID.
+ * @return Process group ID or -1 on error.
+ */
+int __public__os_getpgid(int pid) { return getpgid(pid); }
+
+/**
+ * @brief Get process group ID of calling process.
+ * @return Process group ID.
+ */
+int __public__os_getpgrp(void) { return getpgrp(); }
+
+/**
+ * @brief Create a new session.
+ * @return Session ID or -1 on error.
+ */
+int __public__os_setsid(void) { return setsid(); }
+
+/**
+ * @brief Get resource limits.
+ * @param resource Resource type.
+ * @param rlim     Output rlimit structure.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_getrlimit(int resource, void *rlim) {
+    return getrlimit(resource, (struct rlimit *)rlim);
+}
+
+/**
+ * @brief Set resource limits.
+ * @param resource Resource type.
+ * @param rlim     Input rlimit structure.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_setrlimit(int resource, const void *rlim) {
+    return setrlimit(resource, (const struct rlimit *)rlim);
+}
+
+/**
+ * @brief Create a directory.
+ * @param path Directory path.
+ * @param mode Permissions.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_mkdir(const char *path, int mode) { return mkdir(path, mode); }
+
+/**
+ * @brief Remove a directory.
+ * @param path Directory path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_rmdir(const char *path) { return rmdir(path); }
+
+/**
+ * @brief Delete a file.
+ * @param path File path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_unlink(const char *path) { return unlink(path); }
+
+/**
+ * @brief Rename a file or directory.
+ * @param oldpath Old path.
+ * @param newpath New path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_rename(const char *oldpath, const char *newpath);
+
+/**
+ * @brief Create a hard link.
+ * @param oldpath Existing path.
+ * @param newpath Link path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_link(const char *oldpath, const char *newpath) ;
+
+/**
+ * @brief Create a symbolic link.
+ * @param target   Target path.
+ * @param linkpath Link path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_symlink(const char *target, const char *linkpath);
+
+/**
+ * @brief Read symbolic link contents.
+ * @param path Symbolic link path.
+ * @param buf  Output buffer.
+ * @param size Buffer size.
+ * @return Bytes read or -1 on error.
+ */
+ssize_t __public__os_readlink(const char *path, char *buf, size_t size) ;
+
+/**
+ * @brief Get file status.
+ * @param path File path.
+ * @param st   Output stat structure.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_stat(const char *path, struct stat *st);
+
+/**
+ * @brief Get file status (don't follow symlinks).
+ * @param path File path.
+ * @param st   Output stat structure.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_lstat(const char *path, struct stat *st);
+
+/**
+ * @brief Check file accessibility.
+ * @param path File path.
+ * @param mode Access mode.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_access(const char *path, int mode);
 
 #endif
