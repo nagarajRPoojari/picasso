@@ -6,29 +6,37 @@ import (
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
 	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 	errorsx "github.com/nagarajRPoojari/picasso/irgen/error"
 )
 
-// String hold i8**, pointer to a global string pointer
+var STRINGSTRUCT = types.NewStruct(
+	types.NewPointer(types.I8), // data
+	types.I64,                  // rank
+)
+
+func init() {
+	STRINGSTRUCT.SetName(constants.STRING)
+}
+
 type String struct {
-	NativeType *types.PointerType // i8*
+	NativeType *types.PointerType // types.NewPointer(STRINGSTRUCT)
 	Value      value.Value        // slot (alloca of i8*)
-	GoVal      string             // optional Go-side constant
+	Size       int
+	GoVal      string // optional Go-side constant
 }
 
 // IMP: init must be i8*, pointer to a global string constant
 func NewString(block *bc.BlockHolder, init value.Value) *String {
-	slot := block.V.NewAlloca(types.I8Ptr)
-	block.N.NewStore(init, slot)
-
 	var s string
 	if c, ok := init.(*constant.CharArray); ok {
 		s = constantToGoString(c)
 	}
+
 	return &String{
-		NativeType: types.I8Ptr,
-		Value:      slot,
+		NativeType: types.NewPointer(STRINGSTRUCT),
+		Value:      init,
 		GoVal:      s,
 	}
 }
@@ -47,7 +55,7 @@ func (s *String) Update(block *bc.BlockHolder, v value.Value) {
 
 // return i8*
 func (s *String) Load(block *bc.BlockHolder) value.Value {
-	return block.N.NewLoad(types.I8Ptr, s.Value)
+	return s.Value
 }
 
 func (s *String) Constant() constant.Constant {

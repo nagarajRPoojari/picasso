@@ -42,7 +42,10 @@ const (
 	FUNC_ARRAY_ALLOC  = "__public__alloc_array"
 	ALIAS_ARRAY_ALLOC = "alloc_array"
 
+	FUNC_STRING_ALLOC = "__public__strings_alloc"
+
 	TYPE_ARRAY   = "array"
+	TYPE_STRING  = "string"
 	TYPE_RWMUTEX = "rwmutex"
 	TYPE_MUTEX   = "mutex"
 

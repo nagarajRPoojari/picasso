@@ -11,6 +11,7 @@
 #include "alloc.h"
 #include "gc.h"
 #include "ggc.h"
+#include "str.h"
 #include "initutils.h"
 
 extern arena_t* __global__arena__;
@@ -20,6 +21,16 @@ void setUp(void) {}
 void tearDown(void) {
     /* @todo: graceful termination */
 }
+
+__public__string_t* strings_alloc(const char* fmt, size_t size) {
+    __public__string_t* s = allocate(__arena__, sizeof(__public__string_t));
+    s->data = allocate(__arena__, size);
+    memcpy(s->data, fmt, size);
+    s->size = size;
+
+    return s;
+}
+
 
 static int redirect_stdout_pipe(int *saved_stdout, int *write_end) {
     int pipefd[2];
@@ -70,7 +81,8 @@ static void __public__aprintf_thread_func(void* arg) {
     int readfd = redirect_stdout_pipe(&saved_stdout, &write_end);
 
     self_yield();
-    ssize_t ret = __public__asyncio_printf("hello %d %s", 42, "world");
+    strings_alloc("hello %d %s", 11);
+    ssize_t ret = __public__asyncio_printf(strings_alloc("hello %d %s", 11), 42, strings_alloc("world", 5));
 
     restore_stdout(saved_stdout, write_end);
 

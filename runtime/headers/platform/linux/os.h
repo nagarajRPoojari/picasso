@@ -2,6 +2,7 @@
 #define OS_H
 
 #include "platform.h"
+#include "str.h"
 #include <stdint.h>
 #include <stddef.h>
 #include <unistd.h>
@@ -250,7 +251,7 @@ int __public__os_kill(int pid, int sig);
  * @param envp Environment vector.
  * @return -1 on error (does not return on success).
  */
-int __public__os_execve(const char *path, char *const argv[], char *const envp[]);
+int __public__os_execve(__public__string_t *path, char *const argv[], char *const envp[]);
 
 /**
  * @brief Execute a program using current environment.
@@ -258,7 +259,7 @@ int __public__os_execve(const char *path, char *const argv[], char *const envp[]
  * @param argv Argument vector.
  * @return -1 on error (does not return on success).
  */
-int __public__os_execvp(const char *file, char *const argv[]);
+int __public__os_execvp(__public__string_t *file, char *const argv[]);
 
 extern char **environ;
 
@@ -273,7 +274,7 @@ char **__public__os_environ(void);
  * @param key Environment variable name.
  * @return Value string or NULL if not found.
  */
-const char *__public__os_getenv(const char *key);
+const char *__public__os_getenv(__public__string_t *key);
 
 /**
  * @brief Set an environment variable.
@@ -282,14 +283,14 @@ const char *__public__os_getenv(const char *key);
  * @param overwrite Whether to overwrite existing value.
  * @return 0 on success or -1 on error.
  */
-int __public__os_setenv(const char *key, const char *value, int overwrite);
+int __public__os_setenv(__public__string_t *key, __public__string_t *value, int overwrite);
 
 /**
  * @brief Remove an environment variable.
  * @param key Variable name.
  * @return 0 on success or -1 on error.
  */
-int __public__os_unsetenv(const char *key);
+int __public__os_unsetenv(__public__string_t *key);
 
 /**
  * @brief Get current working directory.
@@ -305,10 +306,10 @@ int __public__os_getcwd(char *buf, size_t size);
  * @param mode access mode.
  * @return 0 on success, -1 on error.
  */
-int __public__os_chmod(const char *path, int64_t mode);
+int __public__os_chmod(__public__string_t *path, int64_t mode);
 
 /**
- * @brief Chown changes the numeric uid and gid of the named file. 
+ * @brief Chown changes the numeric uid and gid of the named file.
  * If the file is a symbolic link, it changes the uid and gid of the link's target.
  * A uid or gid of -1 means to not change that value.
  * @param name Directory/File path.
@@ -316,14 +317,14 @@ int __public__os_chmod(const char *path, int64_t mode);
  * @param gid uid.
  * @return 0 on success, -1 on error.
  */
-int __public__os_chown(const char *name, int64_t uid, int64_t gid);
+int __public__os_chown(__public__string_t *name, int64_t uid, int64_t gid);
 
 /**
  * @brief Change current working directory.
  * @param path New working directory.
  * @return 0 on success or -1 on error.
  */
-int __public__os_chdir(const char *path);
+int __public__os_chdir(__public__string_t *path);
 
 /**
  * @brief Get real user ID.
@@ -404,7 +405,7 @@ int __public__os_signal_install(int sig, void (*handler)(int));
  * @param mode  File mode (for create).
  * @return File descriptor or -1 on error.
  */
-int __public__os_open(const char *path, int flags, int mode);
+int __public__os_open(__public__string_t *path, int flags, int mode);
 
 /**
  * @brief Close a file descriptor.
@@ -478,21 +479,21 @@ int __public__os_fcntl(int fd, int cmd, long arg);
  * @param mode Permission bits.
  * @return 0 on success or -1 on error.
  */
-int __public__os_mkdir(const char *path, int mode);
+int __public__os_mkdir(__public__string_t *path, int mode);
 
 /**
  * @brief Remove an empty directory.
  * @param path Directory path.
  * @return 0 on success or -1 on error.
  */
-int __public__os_rmdir(const char *path);
+int __public__os_rmdir(__public__string_t *path);
 
 /**
  * @brief Remove a file.
  * @param path File path.
  * @return 0 on success or -1 on error.
  */
-int __public__os_unlink(const char *path);
+int __public__os_unlink(__public__string_t *path);
 
 /**
  * @brief Rename a filesystem object.
@@ -500,7 +501,7 @@ int __public__os_unlink(const char *path);
  * @param newpath Destination path.
  * @return 0 on success or -1 on error.
  */
-int __public__os_rename(const char *oldpath, const char *newpath);
+int __public__os_rename(__public__string_t *oldpath, __public__string_t *newpath);
 
 /**
  * @brief Rename with flags.
@@ -509,7 +510,7 @@ int __public__os_rename(const char *oldpath, const char *newpath);
  * @param flags   OS_RENAME_* flags.
  * @return 0 on success or -1 on error.
  */
-int __public__os_renameat2(const char *oldpath, const char *newpath, int flags);
+int __public__os_renameat2(__public__string_t *oldpath, __public__string_t *newpath, int flags);
 
 /**
  * @brief Create a hard link.
@@ -517,7 +518,7 @@ int __public__os_renameat2(const char *oldpath, const char *newpath, int flags);
  * @param newpath New link path.
  * @return 0 on success or -1 on error.
  */
-int __public__os_link(const char *oldpath, const char *newpath);
+int __public__os_link(__public__string_t *oldpath, __public__string_t *newpath);
 
 /**
  * @brief Create a symbolic link.
@@ -525,7 +526,7 @@ int __public__os_link(const char *oldpath, const char *newpath);
  * @param linkpath Symlink path.
  * @return 0 on success or -1 on error.
  */
-int __public__os_symlink(const char *target, const char *linkpath);
+int __public__os_symlink(__public__string_t *target, __public__string_t *linkpath);
 
 /**
  * @brief Read a symbolic link.
@@ -534,7 +535,7 @@ int __public__os_symlink(const char *target, const char *linkpath);
  * @param size Buffer size.
  * @return Number of bytes written or -1 on error.
  */
-ssize_t __public__os_readlink(const char *path, char *buf, size_t size);
+ssize_t __public__os_readlink(__public__string_t *path, char *buf, size_t size);
 
 /**
  * @brief Get file metadata (follow symlinks).
@@ -542,7 +543,7 @@ ssize_t __public__os_readlink(const char *path, char *buf, size_t size);
  * @param st   Stat buffer.
  * @return 0 on success or -1 on error.
  */
-int __public__os_stat(const char *path, struct stat *st);
+int __public__os_stat(__public__string_t *path, struct stat *st);
 
 /**
  * @brief Get file metadata (do not follow symlinks).
@@ -550,7 +551,7 @@ int __public__os_stat(const char *path, struct stat *st);
  * @param st   Stat buffer.
  * @return 0 on success or -1 on error.
  */
-int __public__os_lstat(const char *path, struct stat *st);
+int __public__os_lstat(__public__string_t *path, struct stat *st);
 
 /**
  * @brief Check access permissions.
@@ -558,7 +559,7 @@ int __public__os_lstat(const char *path, struct stat *st);
  * @param mode OS_*_OK flags.
  * @return 0 on success or -1 on error.
  */
-int __public__os_access(const char *path, int mode);
+int __public__os_access(__public__string_t *path, int mode);
 
 /**
  * @brief Read directory entries.

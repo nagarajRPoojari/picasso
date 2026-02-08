@@ -173,7 +173,7 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) {
  * @return Listening socket file descriptor on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog) {
+ssize_t __public__net_listen(__public__string_t *addr, uint16_t port, int backlog) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd != -1) {
         // Set Non-blocking
@@ -192,9 +192,10 @@ ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog) {
     sa.sin_family = AF_INET;
     sa.sin_port = htons(port);
 
-    if (!addr || strcmp(addr, "0.0.0.0") == 0)
+    // @todo: fix strcmp(addr->data, "0.0.0.0") 
+    if (!addr || !addr->data || strcmp(addr->data, "0.0.0.0") == 0)
         sa.sin_addr.s_addr = INADDR_ANY;
-    else if (inet_pton(AF_INET, addr, &sa.sin_addr) != 1) {
+    else if (inet_pton(AF_INET, addr->data, &sa.sin_addr) != 1) {
         close(fd);
         errno = EINVAL;
         return -1;
@@ -225,7 +226,7 @@ ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog) {
  * @return Connected socket file descriptor on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_dial(const char *addr, uint16_t port) {
+ssize_t __public__net_dial(__public__string_t *addr, uint16_t port) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd != -1) {
         // Set Non-blocking
@@ -247,7 +248,7 @@ ssize_t __public__net_dial(const char *addr, uint16_t port) {
     sa->sin_family = AF_INET;
     sa->sin_port = htons(port);
 
-    if (inet_pton(AF_INET, addr, &sa->sin_addr) != 1) {
+    if (inet_pton(AF_INET, addr->data, &sa->sin_addr) != 1) {
         release(__arena__, sa);
         close(fd);
         errno = EINVAL;

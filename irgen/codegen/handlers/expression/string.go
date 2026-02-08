@@ -5,6 +5,7 @@ import (
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/picasso/irgen/ast"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
 	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
@@ -25,7 +26,7 @@ import (
 func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.StringExpression) tf.Var {
 	formatStr := ex.Value
 
-	strConst := constant.NewCharArrayFromString(formatStr + "\x00")
+	strConst := constant.NewCharArrayFromString(formatStr)
 	global := t.st.Module.NewGlobalDef("", strConst)
 
 	// string vars are heap allocated & stored as pointer to global constants.
@@ -37,5 +38,7 @@ func (t *ExpressionHandler) ProcessStringLiteral(bh *bc.BlockHolder, ex ast.Stri
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 0),
 	)
-	return tf.NewString(bh, gep)
+	allocFn := c.Instance.Funcs[c.FUNC_STRING_ALLOC]
+	s := bh.N.NewCall(allocFn, gep, constant.NewInt(types.I64, int64(len(formatStr))))
+	return tf.NewString(bh, s)
 }

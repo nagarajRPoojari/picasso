@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include "array.h"
+#include "str.h"
 #include "diskio.h"
 #include "queue.h"
 #include "task.h"
@@ -336,24 +337,94 @@ __public__array_t* __public__ascan(int n) {
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__asyncio_printf(const char* fmt, ...) {
-    if (!fmt) return 0;
+ssize_t __public__asyncio_printf(__public__string_t* fmt, ...) {
+    if (!fmt || !fmt->data)
+        return 0;
 
     va_list ap;
     va_start(ap, fmt);
 
-    /* estimate needed buffer size */
-    char tmp[1];
-    int len = vsnprintf(tmp, sizeof(tmp), fmt, ap);
-    va_end(ap);
+    char *out = NULL;
+    size_t cap = 0, len = 0;
 
-    if (len < 0) return 0;
+    for (size_t i = 0; i < (size_t)fmt->size; i++) {
+        char c = fmt->data[i];
 
-    char* buf = allocate(__arena__, len + 1);
-    if (!buf) return 0;
+        if (c != '%') {
+            buf_append(&out, &cap, &len, &c, 1);
+            continue;
+        }
 
-    va_start(ap, fmt);
-    vsnprintf(buf, len + 1, fmt, ap);
+        if (++i >= (size_t)fmt->size)
+            break;
+
+        char spec = fmt->data[i];
+
+        switch (spec) {
+        case '%':
+            buf_append(&out, &cap, &len, "%", 1);
+            break;
+
+        case 's': {
+            __public__string_t *s = va_arg(ap, __public__string_t*);
+            if (s && s->data && s->size)
+                buf_append(&out, &cap, &len, s->data, (size_t)s->size);
+            break;
+        }
+
+        case 'd': {
+            char tmp[32];
+            size_t n = i64_to_dec((int64_t)va_arg(ap, int), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'u': {
+            char tmp[32];
+            size_t n = u64_to_dec((uint64_t)va_arg(ap, unsigned int), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'l': {
+            if (i + 1 < fmt->size && fmt->data[i + 1] == 'u') {
+                i++;
+                char tmp[32];
+                size_t n = u64_to_dec(
+                    (uint64_t)va_arg(ap, unsigned long), tmp);
+                buf_append(&out, &cap, &len, tmp, n);
+            } else {
+                if(i + 1 < fmt->size && fmt->data[i + 1] == 'd') i++;
+                char tmp[32];
+                size_t n = i64_to_dec(
+                    (int64_t)va_arg(ap, long), tmp);
+                buf_append(&out, &cap, &len, tmp, n);
+            }
+            break;
+        }
+
+        case 'p': {
+            char tmp[32];
+            size_t n = ptr_to_hex(va_arg(ap, void*), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'f': {
+            char tmp[64];
+            size_t n = f64_to_dec(va_arg(ap, double), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        default:
+            /* unknown specifier → emit literally */
+            buf_append(&out, &cap, &len, "%", 1);
+            buf_append(&out, &cap, &len, &spec, 1);
+            break;
+        }
+    }
+
     va_end(ap);
 
     task_t *t = current_task;
@@ -361,7 +432,7 @@ ssize_t __public__asyncio_printf(const char* fmt, ...) {
     /* setup task for stdout write */
     t->io = (io_metadata_t){
         .fd = STDOUT_FILENO,
-        .buf = buf,
+        .buf = out,
         .req_n = len,
         .done_n = 0,
         .io_err = 0,
@@ -540,32 +611,100 @@ __public__array_t* __public__syncio_scan(int n) {
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__syncio_printf(const char *fmt, ...) {
-    if (!fmt)
-        return -1;
+ssize_t __public__syncio_printf(__public__string_t* fmt, ...) {
+    if (!fmt || !fmt->data)
+        return 0;
 
     va_list ap;
     va_start(ap, fmt);
 
-    /* get required length (excluding NUL) */
-    int len = vsnprintf(NULL, 0, fmt, ap);
+    char *out = NULL;
+    size_t cap = 0, len = 0;
+
+    for (size_t i = 0; i < (size_t)fmt->size; i++) {
+        char c = fmt->data[i];
+
+        if (c != '%') {
+            buf_append(&out, &cap, &len, &c, 1);
+            continue;
+        }
+
+        if (++i >= (size_t)fmt->size)
+            break;
+
+        char spec = fmt->data[i];
+
+        switch (spec) {
+        case '%':
+            buf_append(&out, &cap, &len, "%", 1);
+            break;
+
+        case 's': {
+            __public__string_t *s = va_arg(ap, __public__string_t*);
+            if (s && s->data && s->size)
+                buf_append(&out, &cap, &len, s->data, (size_t)s->size);
+            break;
+        }
+
+        case 'd': {
+            char tmp[32];
+            size_t n = i64_to_dec((int64_t)va_arg(ap, int), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'u': {
+            char tmp[32];
+            size_t n = u64_to_dec((uint64_t)va_arg(ap, unsigned int), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'l': {
+            if (i + 1 < fmt->size && fmt->data[i + 1] == 'u') {
+                i++;
+                char tmp[32];
+                size_t n = u64_to_dec(
+                    (uint64_t)va_arg(ap, unsigned long), tmp);
+                buf_append(&out, &cap, &len, tmp, n);
+            } else {
+                if(i + 1 < fmt->size && fmt->data[i + 1] == 'd') i++;
+                char tmp[32];
+                size_t n = i64_to_dec(
+                    (int64_t)va_arg(ap, long), tmp);
+                buf_append(&out, &cap, &len, tmp, n);
+            }
+            break;
+        }
+
+        case 'p': {
+            char tmp[32];
+            size_t n = ptr_to_hex(va_arg(ap, void*), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'f': {
+            char tmp[64];
+            size_t n = f64_to_dec(va_arg(ap, double), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        default:
+            /* unknown specifier → emit literally */
+            buf_append(&out, &cap, &len, "%", 1);
+            buf_append(&out, &cap, &len, &spec, 1);
+            break;
+        }
+    }
+
     va_end(ap);
 
-    if (len < 0)
-        return -1;
-
-    char *buf = allocate(__arena__, (size_t)len + 1);
-    if (!buf)
-        return -1;
-
-    va_start(ap, fmt);
-    vsnprintf(buf, (size_t)len + 1, fmt, ap);
-    va_end(ap);
-
-    /* write all bytes */
+    /* write raw bytes */
     size_t total = 0;
     while (total < (size_t)len) {
-        ssize_t w = write(STDOUT_FILENO, buf + total, (size_t)len - total);
+        ssize_t w = write(STDOUT_FILENO, out + total, (size_t)len - total);
         if (w < 0) {
             if (errno == EINTR)
                 continue;
@@ -673,8 +812,8 @@ ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offs
  *
  * @return Pointer to the opened FILE on success, or NULL on error.
  */
-char*  __public__syncio_fopen(const char* filename, const char* mode) {
-    FILE* f = fopen(filename, mode);
+char* __public__syncio_fopen(__public__string_t* filename, __public__string_t* mode) {
+    FILE* f = fopen(filename->data, mode->data);
     if (!f) {
         perror("fopen failed");
         return NULL;

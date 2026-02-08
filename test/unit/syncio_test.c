@@ -27,6 +27,15 @@ void tearDown(void) {
     __test__global__arena__ = NULL;
 }
 
+__public__string_t* strings_alloc(const char* fmt, size_t size) {
+    __public__string_t* s = allocate(__test__global__arena__, sizeof(__public__string_t));
+    s->data = allocate(__test__global__arena__, size);
+    memcpy(s->data, fmt, size);
+    s->size = size;
+
+    return s;
+}
+
 
 __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
     size_t data_size = (size_t)count * elem_size;
@@ -138,7 +147,7 @@ void test__public__sprintf(void) {
     int readfd = redirect_stdout_pipe(&saved_stdout);
 
     /* call function */
-    ssize_t ret = __public__syncio_printf("hello %d %s", 42, "world");
+    ssize_t ret = __public__syncio_printf(strings_alloc("hello %d %s", 11), 42, strings_alloc("world", 5));
 
     /* restore stdout */
     restore_stout(saved_stdout);

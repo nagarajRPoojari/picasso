@@ -24,6 +24,11 @@ func (t *Interface) initArrayTypes(_ *ir.Module) {
 		types.I64,                   // length
 		types.I64,                   // rank
 	)
+
+	t.Types[TYPE_STRING] = types.NewStruct(
+		types.NewPointer(types.I8), // data
+		types.I64,                  // size
+	)
 }
 
 // initAtomicTypes wraps fundamental scalar types in LLVM structures to
