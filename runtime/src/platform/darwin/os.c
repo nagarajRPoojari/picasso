@@ -147,6 +147,104 @@ int __public__os_unsetenv(const char *key) {
 
 
 /**
+ * @brief Get current working directory.
+ * @param buf  Output buffer.
+ * @param size Buffer size.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_getcwd(char *buf, size_t size) {
+    return getcwd(buf, size) ? 0 : -1;
+}
+
+/**
+ * @brief Change working directory.
+ * @param path Directory path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_chdir(const char *path) { return chdir(path); }
+
+/**
+ * @brief Get user ID.
+ * @return UID.
+ */
+int __public__os_getuid(void)  { return getuid();  }
+/**
+ * @brief Get effective user ID.
+ * @return Effective UID.
+ */
+int __public__os_geteuid(void) { return geteuid(); }
+/**
+ * @brief Get group ID.
+ * @return GID.
+ */
+int __public__os_getgid(void)  { return getgid();  }
+/**
+ * @brief Get effective group ID.
+ * @return Effective GID.
+ */
+int __public__os_getegid(void) { return getegid(); }
+
+/**
+ * @brief Set user ID.
+ * @param uid User ID.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_setuid(int uid) { return setuid(uid); }
+/**
+ * @brief Set group ID.
+ * @param gid Group ID.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_setgid(int gid) { return setgid(gid); }
+
+/**
+ * @brief Set process group ID.
+ * @param pid  Process ID.
+ * @param pgid Process group ID.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_setpgid(int pid, int pgid) { return setpgid(pid, pgid); }
+
+/**
+ * @brief Get process group ID.
+ * @param pid Process ID.
+ * @return Process group ID or -1 on error.
+ */
+int __public__os_getpgid(int pid) { return getpgid(pid); }
+
+/**
+ * @brief Get process group ID of calling process.
+ * @return Process group ID.
+ */
+int __public__os_getpgrp(void) { return getpgrp(); }
+
+/**
+ * @brief Create a new session.
+ * @return Session ID or -1 on error.
+ */
+int __public__os_setsid(void) { return setsid(); }
+
+/**
+ * @brief Get resource limits.
+ * @param resource Resource type.
+ * @param rlim     Output rlimit structure.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_getrlimit(int resource, void *rlim) {
+    return getrlimit(resource, (struct rlimit *)rlim);
+}
+
+/**
+ * @brief Set resource limits.
+ * @param resource Resource type.
+ * @param rlim     Input rlimit structure.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_setrlimit(int resource, const void *rlim) {
+    return setrlimit(resource, (const struct rlimit *)rlim);
+}
+
+/**
  * @brief Open a file.
  * @param path  File path.
  * @param flags Open flags.
@@ -210,6 +308,16 @@ off_t __public__os_lseek(int fd, off_t offset, int whence) {
 }
 
 /**
+ * @brief Get file status.
+ * @param fd File descriptor.
+ * @param st Pointer to struct stat.
+ * @return 0 on success or -1 on error.
+ */
+int __public__os_fstat(int fd, struct stat *st) {
+    return fstat(fd, st);
+}
+
+/**
  * @brief Duplicate a file descriptor.
  * @param fd File descriptor.
  * @return New FD or -1.
@@ -243,10 +351,6 @@ int __public__os_fcntl(int fd, int cmd, long arg) {
     return fcntl(fd, cmd, arg);
 }
 
-int __public__os_fstat(int fd, struct stat *st) {
-    return fstat(fd, st);
-}
-
 #ifndef RENAME_EXCL
 #define RENAME_EXCL 0x00000001
 #endif
@@ -254,6 +358,39 @@ int __public__os_fstat(int fd, struct stat *st) {
 #ifndef RENAME_SWAP
 #define RENAME_SWAP 0x00000002
 #endif
+
+
+/**
+ * @brief Create a directory.
+ * @param path Directory path.
+ * @param mode Permissions.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_mkdir(const char *path, int mode) { return mkdir(path, mode); }
+
+/**
+ * @brief Remove a directory.
+ * @param path Directory path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_rmdir(const char *path) { return rmdir(path); }
+
+/**
+ * @brief Delete a file.
+ * @param path File path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_unlink(const char *path) { return unlink(path); }
+
+/**
+ * @brief Rename a file or directory.
+ * @param oldpath Old path.
+ * @param newpath New path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_rename(const char *oldpath, const char *newpath) {
+    return rename(oldpath, newpath);
+}
 
 /*
  * Linux renameat2() compatibility shim.
@@ -270,6 +407,57 @@ int __public__os_renameat2(const char *oldpath,
     return renameatx_np(AT_FDCWD, oldpath,
                         AT_FDCWD, newpath,
                         native);
+}
+
+/**
+ * @brief Create a hard link.
+ * @param oldpath Existing path.
+ * @param newpath Link path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_link(const char *oldpath, const char *newpath) {
+    return link(oldpath, newpath);
+}
+
+/**
+ * @brief Create a symbolic link.
+ * @param target   Target path.
+ * @param linkpath Link path.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_symlink(const char *target, const char *linkpath) {
+    return symlink(target, linkpath);
+}
+
+/**
+ * @brief Read symbolic link contents.
+ * @param path Symbolic link path.
+ * @param buf  Output buffer.
+ * @param size Buffer size.
+ * @return Bytes read or -1 on error.
+ */
+ssize_t __public__os_readlink(const char *path, char *buf, size_t size) {
+    return readlink(path, buf, size);
+}
+
+/**
+ * @brief Get file status.
+ * @param path File path.
+ * @param st   Output stat structure.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_stat(const char *path, struct stat *st) {
+    return stat(path, st);
+}
+
+/**
+ * @brief Get file status (don't follow symlinks).
+ * @param path File path.
+ * @param st   Output stat structure.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_lstat(const char *path, struct stat *st) {
+    return lstat(path, st);
 }
 
 /*
@@ -396,187 +584,6 @@ int __public__os_signal_install(int sig, void (*handler)(int)) {
 
     sigemptyset(&sa.sa_mask);
     return sigaction(sig, &sa, NULL);
-}
-
-/**
- * @brief Get current working directory.
- * @param buf  Output buffer.
- * @param size Buffer size.
- * @return 0 on success, -1 on error.
- */
-int __public__os_getcwd(char *buf, size_t size) {
-    return getcwd(buf, size) ? 0 : -1;
-}
-
-/**
- * @brief Change working directory.
- * @param path Directory path.
- * @return 0 on success, -1 on error.
- */
-int __public__os_chdir(const char *path) { return chdir(path); }
-
-/**
- * @brief Get user ID.
- * @return UID.
- */
-int __public__os_getuid(void)  { return getuid();  }
-/**
- * @brief Get effective user ID.
- * @return Effective UID.
- */
-int __public__os_geteuid(void) { return geteuid(); }
-/**
- * @brief Get group ID.
- * @return GID.
- */
-int __public__os_getgid(void)  { return getgid();  }
-/**
- * @brief Get effective group ID.
- * @return Effective GID.
- */
-int __public__os_getegid(void) { return getegid(); }
-
-/**
- * @brief Set user ID.
- * @param uid User ID.
- * @return 0 on success, -1 on error.
- */
-int __public__os_setuid(int uid) { return setuid(uid); }
-/**
- * @brief Set group ID.
- * @param gid Group ID.
- * @return 0 on success, -1 on error.
- */
-int __public__os_setgid(int gid) { return setgid(gid); }
-
-/**
- * @brief Set process group ID.
- * @param pid  Process ID.
- * @param pgid Process group ID.
- * @return 0 on success, -1 on error.
- */
-int __public__os_setpgid(int pid, int pgid) { return setpgid(pid, pgid); }
-
-/**
- * @brief Get process group ID.
- * @param pid Process ID.
- * @return Process group ID or -1 on error.
- */
-int __public__os_getpgid(int pid) { return getpgid(pid); }
-
-/**
- * @brief Get process group ID of calling process.
- * @return Process group ID.
- */
-int __public__os_getpgrp(void) { return getpgrp(); }
-
-/**
- * @brief Create a new session.
- * @return Session ID or -1 on error.
- */
-int __public__os_setsid(void) { return setsid(); }
-
-/**
- * @brief Get resource limits.
- * @param resource Resource type.
- * @param rlim     Output rlimit structure.
- * @return 0 on success, -1 on error.
- */
-int __public__os_getrlimit(int resource, void *rlim) {
-    return getrlimit(resource, (struct rlimit *)rlim);
-}
-
-/**
- * @brief Set resource limits.
- * @param resource Resource type.
- * @param rlim     Input rlimit structure.
- * @return 0 on success, -1 on error.
- */
-int __public__os_setrlimit(int resource, const void *rlim) {
-    return setrlimit(resource, (const struct rlimit *)rlim);
-}
-
-/**
- * @brief Create a directory.
- * @param path Directory path.
- * @param mode Permissions.
- * @return 0 on success, -1 on error.
- */
-int __public__os_mkdir(const char *path, int mode) { return mkdir(path, mode); }
-
-/**
- * @brief Remove a directory.
- * @param path Directory path.
- * @return 0 on success, -1 on error.
- */
-int __public__os_rmdir(const char *path) { return rmdir(path); }
-
-/**
- * @brief Delete a file.
- * @param path File path.
- * @return 0 on success, -1 on error.
- */
-int __public__os_unlink(const char *path) { return unlink(path); }
-
-/**
- * @brief Rename a file or directory.
- * @param oldpath Old path.
- * @param newpath New path.
- * @return 0 on success, -1 on error.
- */
-int __public__os_rename(const char *oldpath, const char *newpath) {
-    return rename(oldpath, newpath);
-}
-
-/**
- * @brief Create a hard link.
- * @param oldpath Existing path.
- * @param newpath Link path.
- * @return 0 on success, -1 on error.
- */
-int __public__os_link(const char *oldpath, const char *newpath) {
-    return link(oldpath, newpath);
-}
-
-/**
- * @brief Create a symbolic link.
- * @param target   Target path.
- * @param linkpath Link path.
- * @return 0 on success, -1 on error.
- */
-int __public__os_symlink(const char *target, const char *linkpath) {
-    return symlink(target, linkpath);
-}
-
-/**
- * @brief Read symbolic link contents.
- * @param path Symbolic link path.
- * @param buf  Output buffer.
- * @param size Buffer size.
- * @return Bytes read or -1 on error.
- */
-ssize_t __public__os_readlink(const char *path, char *buf, size_t size) {
-    return readlink(path, buf, size);
-}
-
-/**
- * @brief Get file status.
- * @param path File path.
- * @param st   Output stat structure.
- * @return 0 on success, -1 on error.
- */
-int __public__os_stat(const char *path, struct stat *st) {
-    return stat(path, st);
-}
-
-/**
- * @brief Get file status (don't follow symlinks).
- * @param path File path.
- * @param st   Output stat structure.
- * @return 0 on success, -1 on error.
- */
-int __public__os_lstat(const char *path, struct stat *st) {
-    return lstat(path, st);
 }
 
 /**
