@@ -2,18 +2,96 @@ package funcs
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/picasso/irgen/ast"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
 	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/block"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/expression"
 	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
+
+func (t *FuncHandler) DefineConstructor(className string, instance *tf.Class, bh *bc.BlockHolder, fn *ast.FunctionDefinitionStatement, avoid map[string]struct{}) *tf.Class {
+	aliasClsName := className
+
+	if _, ok := t.st.Interfaces[aliasClsName]; ok {
+		errorutils.Abort(errorutils.InterfaceInstantiationError, aliasClsName)
+	}
+
+	classMeta := t.st.Classes[aliasClsName]
+	if classMeta == nil {
+		errorutils.Abort(errorutils.UnknownClass, aliasClsName)
+	}
+
+	clsNameSplit := strings.Split(aliasClsName, ".")
+	moduleName := strings.Join(clsNameSplit[:len(clsNameSplit)-1], ".")
+
+	if classMeta.Internal && moduleName != t.st.ModuleName {
+		errorutils.Abort(errorutils.ClassNotAccessible, aliasClsName)
+	}
+
+	// tf.NewClass allocates memory for class instance in heap internally.
+	// & holds heap pointer in a stack slot.
+	structType := classMeta.StructType()
+	meta := t.st.Classes[aliasClsName]
+
+	for name, index := range meta.FieldIndexMap {
+		// if field is not found in meta.VarAST indicating func type, update instance
+		// to point to the function. future function calls on that instance will directly
+		// refer to this pointed function.
+		exp, ok := meta.VarAST[name]
+		if !ok {
+			f := t.st.Classes[aliasClsName].Methods[name]
+			fieldType := t.st.Classes[aliasClsName].StructType().Fields[index]
+			instance.UpdateField(bh, t.st.TypeHandler, index, f, fieldType)
+			continue
+		}
+
+		// handling initialized & uninitialized variables.
+		fieldType := structType.Fields[index]
+		var v tf.Var
+		if exp.AssignedValue == nil {
+			// @todo: this need to be verified
+			var init value.Value
+
+			// atomic data types are special class types & are not expected to be initialized with
+			// new keyword. e.g, say x: atomic int; should do the instantiaion job though it is just
+			// a declaration. therefore instantiate with NewClass.
+			if exp.ExplicitType.IsAtomic() {
+				meta := t.st.Classes[exp.ExplicitType.Get()]
+				v = tf.NewClass(bh, exp.ExplicitType.Get(), meta.UDT)
+			} else {
+
+				// remaining vars without assignedvalues holds its corresponding zero values.
+				// @todo: list zero values for all data types somewehere in docs to look at.
+				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), init)
+			}
+		} else {
+			v = t.m.GetExpressionHandler().(*expression.ExpressionHandler).ProcessExpression(bh, exp.AssignedValue)
+
+			// data types other than array, like primitives, object types are typecasted implicitly
+			// before assignment.
+			if v.NativeTypeString() != constants.ARRAY {
+				casted := t.st.TypeHandler.ImplicitTypeCast(bh, exp.ExplicitType.Get(), v.Load(bh))
+				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get()), casted)
+			} else {
+				// no need to cast array type, but do a base type check.
+				t.st.TypeHandler.ImplicitTypeCast(bh, exp.ExplicitType.Get(), v.Load(bh))
+			}
+		}
+		instance.UpdateField(bh, t.st.TypeHandler, index, v.Load(bh), fieldType)
+		// t.st.Vars.AddNewVar(exp.Identifier, v)
+	}
+
+	return instance
+}
 
 // DefineFunc generates the concrete LLVM IR body for a class method or constructor.
 // It initializes the function's entry blocks, populates the local symbol table with
@@ -47,16 +125,16 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 		return
 	}
 
-	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock("")}, f.NewBlock(""))
-
-	if className == fn.Name {
+	clsAliasNameSplit := strings.Split(className, ".")
+	clsAliasName := clsAliasNameSplit[len(clsAliasNameSplit)-1]
+	var instance value.Value
+	if clsAliasName == fn.Name {
 		// constructor: init Types
 		// @todo: basic checks about constructor
-		if fn.ReturnType != nil {
-			errorutils.Abort(errorutils.InvalidConstructorSignature, fn.Name)
-		}
 		// t.initTypes(bh, className)
 	}
+	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock("")}, f.NewBlock(""))
+	old := bh.N
 
 	for i, p := range f.Params {
 		if i < len(fn.Parameters) {
@@ -73,13 +151,21 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 				UDT:  clsMeta.UDT.(*types.PointerType),
 			}
 			cls.Update(bh, p)
+			if clsAliasName == fn.Name {
+				t.DefineConstructor(className, cls, bh, fn, avoid)
+				instance = cls.Load(bh)
+			}
 			t.st.Vars.AddNewVar(p.LocalName, cls)
 		}
 	}
 
-	old := bh.N
 	t.m.GetBlockHandler().(*block.BlockHandler).ProcessBlock(f, bh, fn.Body)
 	bh.V.NewBr(old)
+	if clsAliasName == fn.Name {
+		bh.N.NewRet(instance)
+		return
+	}
+
 	if fn.ReturnType == nil {
 		bh.N.NewRet(nil)
 	}
