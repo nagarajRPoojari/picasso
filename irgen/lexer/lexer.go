@@ -104,6 +104,12 @@ func newLexer(path string, reader *bufio.Reader) *lexer {
 			{regexp.MustCompile(`\|\|`), defaultHandler(OR, "||")},
 			{regexp.MustCompile(`&&`), defaultHandler(AND, "&&")},
 
+			// bitwise op should be checked after logical op
+			{regexp.MustCompile(`\|`), defaultHandler(BITWISE_OR, "|")},
+			{regexp.MustCompile(`&`), defaultHandler(BITWISE_AND, "&")},
+			{regexp.MustCompile(`\^`), defaultHandler(BITWISE_XOR, "^")},
+			{regexp.MustCompile(`\~`), defaultHandler(BITWISE_NOT, "~")},
+
 			{regexp.MustCompile(`\.\.`), defaultHandler(DOT_DOT, "..")},
 			{regexp.MustCompile(`\.`), defaultHandler(DOT, ".")},
 

@@ -22,6 +22,7 @@ type BinaryOperation func(th *tf.TypeHandler, bh *bc.BlockHolder, l, r tf.Var) (
 var arithmatic map[lexer.TokenKind]BinaryOperation
 var comparision map[lexer.TokenKind]BinaryOperation
 var logical map[lexer.TokenKind]BinaryOperation
+var bitwise map[lexer.TokenKind]BinaryOperation
 
 type ArithKind int
 
@@ -191,6 +192,12 @@ func (t *ExpressionHandler) ProcessBinaryExpression(bh *bc.BlockHolder, ex ast.B
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
 		return res
+	} else if op, ok := bitwise[ex.Operator.Kind]; ok {
+		res, err := op(t.st.TypeHandler, bh, left, right)
+		if err != nil {
+			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
+		}
+		return res
 	}
 
 	errorutils.Abort(errorutils.InvalidBinaryExpressionOperator, ex.Operator.Value)
@@ -203,6 +210,7 @@ func initOpLookUpTables() {
 	arithmatic = make(map[lexer.TokenKind]BinaryOperation)
 	comparision = make(map[lexer.TokenKind]BinaryOperation)
 	logical = make(map[lexer.TokenKind]BinaryOperation)
+	bitwise = make(map[lexer.TokenKind]BinaryOperation)
 
 	arithmatic[lexer.PLUS] = add
 	arithmatic[lexer.DASH] = sub
@@ -219,6 +227,10 @@ func initOpLookUpTables() {
 
 	logical[lexer.AND] = logicalAnd
 	logical[lexer.OR] = logicalOr
+
+	bitwise[lexer.BITWISE_AND] = bitwiseAND
+	bitwise[lexer.BITWISE_OR] = bitwiseOR
+	bitwise[lexer.BITWISE_XOR] = bitwiseXOR
 }
 
 func add(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
@@ -544,6 +556,12 @@ func (t *ExpressionHandler) ProcessPrefixExpression(bh *bc.BlockHolder, ex ast.P
 			errorutils.Abort(errorutils.PrefixOperationError, err.Error())
 		}
 		return res
+	case "~":
+		res, err := bitwiseNOT(t.st.TypeHandler, bh, operand)
+		if err != nil {
+			errorutils.Abort(errorutils.PrefixOperationError, err.Error())
+		}
+		return res
 	}
 
 	panic(fmt.Sprintf("invalid prefix operation: %s", ex.Operator.Value))
@@ -574,4 +592,120 @@ func not(th *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (tf.Var, error) {
 	}
 	one := constant.NewInt(types.I1, 1)
 	return buildBooleanFromValue(bh, bh.N.NewXor(vb, one)), nil
+}
+
+func bitwiseOR(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return nil, fmt.Errorf("bitwise or not allowed on float types")
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewOr(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewOr(lf, rf)), nil
+
+	case KindPointer:
+		return nil, fmt.Errorf("bitwise or not allowed on pointer types")
+	}
+
+	return nil, fmt.Errorf("unsupported bitwise or operands")
+}
+
+func bitwiseXOR(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return nil, fmt.Errorf("bitwise or not allowed on float types")
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewXor(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewXor(lf, rf)), nil
+
+	case KindPointer:
+		return nil, fmt.Errorf("bitwise xor not allowed on pointer types")
+	}
+
+	return nil, fmt.Errorf("unsupported bitwise xor operands")
+}
+
+func bitwiseAND(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+
+	switch k {
+	case KindFloat:
+		return nil, fmt.Errorf("bitwise and not allowed on float types")
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewAnd(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewAnd(lf, rf)), nil
+
+	case KindPointer:
+		return nil, fmt.Errorf("bitwise and not allowed on pointer types")
+	}
+
+	return nil, fmt.Errorf("unsupported bitwise and operands")
+}
+
+func toInt64(_ *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (value.Value, error) {
+	val := v.Load(bh)
+	i64 := types.I64
+
+	switch t := val.Type().(type) {
+
+	case *types.IntType:
+		// Extend or truncate to i64
+		if t.BitSize < 64 {
+			return bh.N.NewSExt(val, i64), nil
+		}
+		if t.BitSize > 64 {
+			return bh.N.NewTrunc(val, i64), nil
+		}
+		return val, nil
+
+	case *types.FloatType:
+		// float -> int64
+		return bh.N.NewFPToSI(val, i64), nil
+
+	case *types.PointerType:
+		// pointer -> int64
+		return bh.N.NewPtrToInt(val, i64), nil
+	default:
+		return nil, fmt.Errorf("cannot convert %T to int64", t)
+	}
+}
+
+// @todo: test this
+func bitwiseNOT(th *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (tf.Var, error) {
+	iv, err := toInt64(th, bh, v)
+	if err != nil {
+		return nil, err
+	}
+
+	allOnes := constant.NewInt(types.I64, -1)
+	notv := bh.N.NewXor(iv, allOnes)
+
+	return buildUnsignedInt64FromValue(bh, notv), nil
 }
