@@ -94,8 +94,8 @@ int __public__os_kill(int pid, int sig) {
  * @param envp Environment.
  * @return -1 on error.
  */
-int __public__os_execve(const char *path, char *const argv[], char *const envp[]) {
-    return execve(path, argv, envp);
+int __public__os_execve(__public__string_t *path, char *const argv[], char *const envp[]) {
+    return execve(path->data, argv, envp);
 }
 
 /**
@@ -104,8 +104,8 @@ int __public__os_execve(const char *path, char *const argv[], char *const envp[]
  * @param argv Argument vector.
  * @return -1 on error.
  */
-int __public__os_execvp(const char *file, char *const argv[]) {
-    return execvp(file, argv);
+int __public__os_execvp(__public__string_t *file, char *const argv[]) {
+    return execvp(file->data, argv);
 }
 
 /**
@@ -121,8 +121,8 @@ char **__public__os_environ(void) {
  * @param key Variable name.
  * @return Value or NULL.
  */
-const char *__public__os_getenv(const char *key) {
-    return getenv(key);
+const char *__public__os_getenv(__public__string_t *key) {
+    return getenv(key->data);
 }
 
 /**
@@ -132,8 +132,8 @@ const char *__public__os_getenv(const char *key) {
  * @param overwrite Overwrite if exists.
  * @return 0 on success, -1 on error.
  */
-int __public__os_setenv(const char *key, const char *value, int overwrite) {
-    return setenv(key, value, overwrite);
+int __public__os_setenv(__public__string_t *key, __public__string_t *value, int overwrite) {
+    return setenv(key->data, value->data, overwrite);
 }
 
 /**
@@ -141,8 +141,8 @@ int __public__os_setenv(const char *key, const char *value, int overwrite) {
  * @param key Variable name.
  * @return 0 on success, -1 on error.
  */
-int __public__os_unsetenv(const char *key) {
-    return unsetenv(key);
+int __public__os_unsetenv(__public__string_t *key) {
+    return unsetenv(key->data);
 }
 
 
@@ -162,12 +162,12 @@ int __public__os_getcwd(char *buf, size_t size) {
  * @param mode access mode.
  * @return 0 on success, -1 on error.
  */
-int __public__os_chmod(const char *path, int64_t mode) {
-    return chmod(path, mode);
+int __public__os_chmod(__public__string_t *path, int64_t mode) {
+    return fchmodat(AT_FDCWD, path->data, mode, 0);
 }
 
 /**
- * @brief Chown changes the numeric uid and gid of the named file. 
+ * @brief Chown changes the numeric uid and gid of the named file.
  * If the file is a symbolic link, it changes the uid and gid of the link's target.
  * A uid or gid of -1 means to not change that value.
  * @param name Directory/File path.
@@ -175,8 +175,8 @@ int __public__os_chmod(const char *path, int64_t mode) {
  * @param gid uid.
  * @return 0 on success, -1 on error.
  */
-int __public__os_chown(const char *name, int64_t uid, int64_t gid) {
-    return chown(name, uid, gid);
+int __public__os_chown(__public__string_t *name, int64_t uid, int64_t gid) {
+    return fchownat(AT_FDCWD, name->data, uid, gid, 0);
 }
 
 /**
@@ -184,7 +184,9 @@ int __public__os_chown(const char *name, int64_t uid, int64_t gid) {
  * @param path Directory path.
  * @return 0 on success, -1 on error.
  */
-int __public__os_chdir(const char *path) { return chdir(path); }
+int __public__os_chdir(__public__string_t *path) {
+    return chdir(path->data);
+}
 
 /**
  * @brief Get user ID.
@@ -274,8 +276,8 @@ int __public__os_setrlimit(int resource, const void *rlim) {
  * @param mode  File mode.
  * @return File descriptor or -1.
  */
-int __public__os_open(const char *path, int flags, int mode) {
-    int fd = open(path, flags, mode);
+int __public__os_open(__public__string_t *path, int flags, int mode) {
+    int fd = open(path->data, flags, mode);
 
     /*
      * macOS has no O_DIRECT.
@@ -389,21 +391,27 @@ int __public__os_fcntl(int fd, int cmd, long arg) {
  * @param mode Permissions.
  * @return 0 on success, -1 on error.
  */
-int __public__os_mkdir(const char *path, int mode) { return mkdir(path, mode); }
+int __public__os_mkdir(__public__string_t *path, int mode) {
+    return mkdirat(AT_FDCWD, path->data, mode);
+}
 
 /**
  * @brief Remove a directory.
  * @param path Directory path.
  * @return 0 on success, -1 on error.
  */
-int __public__os_rmdir(const char *path) { return rmdir(path); }
+int __public__os_rmdir(__public__string_t *path) {
+    return unlinkat(AT_FDCWD, path->data, AT_REMOVEDIR);
+}
 
 /**
  * @brief Delete a file.
  * @param path File path.
  * @return 0 on success, -1 on error.
  */
-int __public__os_unlink(const char *path) { return unlink(path); }
+int __public__os_unlink(__public__string_t *path) {
+    return unlinkat(AT_FDCWD, path->data, 0);
+}
 
 /**
  * @brief Rename a file or directory.
@@ -411,24 +419,23 @@ int __public__os_unlink(const char *path) { return unlink(path); }
  * @param newpath New path.
  * @return 0 on success, -1 on error.
  */
-int __public__os_rename(const char *oldpath, const char *newpath) {
-    return rename(oldpath, newpath);
+int __public__os_rename(__public__string_t *oldpath, __public__string_t *newpath) {
+    return renameat(AT_FDCWD, oldpath->data, AT_FDCWD, newpath->data);
 }
 
 /*
  * Linux renameat2() compatibility shim.
  * macOS provides renameatx_np().
  */
-int __public__os_renameat2(const char *oldpath,
-                           const char *newpath,
+int __public__os_renameat2(__public__string_t *oldpath,
+                           __public__string_t *newpath,
                            int flags) {
     unsigned int native = 0;
-
     if (flags & __public__os_RENAME_NOREPLACE) native |= RENAME_EXCL;
     if (flags & __public__os_RENAME_EXCHANGE)  native |= RENAME_SWAP;
 
-    return renameatx_np(AT_FDCWD, oldpath,
-                        AT_FDCWD, newpath,
+    return renameatx_np(AT_FDCWD, oldpath->data,
+                        AT_FDCWD, newpath->data,
                         native);
 }
 
@@ -438,8 +445,8 @@ int __public__os_renameat2(const char *oldpath,
  * @param newpath Link path.
  * @return 0 on success, -1 on error.
  */
-int __public__os_link(const char *oldpath, const char *newpath) {
-    return link(oldpath, newpath);
+int __public__os_link(__public__string_t *oldpath, __public__string_t *newpath) {
+    return linkat(AT_FDCWD, oldpath->data, AT_FDCWD, newpath->data, 0);
 }
 
 /**
@@ -448,8 +455,8 @@ int __public__os_link(const char *oldpath, const char *newpath) {
  * @param linkpath Link path.
  * @return 0 on success, -1 on error.
  */
-int __public__os_symlink(const char *target, const char *linkpath) {
-    return symlink(target, linkpath);
+int __public__os_symlink(__public__string_t *target, __public__string_t *linkpath) {
+    return symlinkat(target->data, AT_FDCWD, linkpath->data);
 }
 
 /**
@@ -459,8 +466,8 @@ int __public__os_symlink(const char *target, const char *linkpath) {
  * @param size Buffer size.
  * @return Bytes read or -1 on error.
  */
-ssize_t __public__os_readlink(const char *path, char *buf, size_t size) {
-    return readlink(path, buf, size);
+ssize_t __public__os_readlink(__public__string_t *path, char *buf, size_t size) {
+    return readlinkat(AT_FDCWD, path->data, buf, size);
 }
 
 /**
@@ -469,8 +476,8 @@ ssize_t __public__os_readlink(const char *path, char *buf, size_t size) {
  * @param st   Output stat structure.
  * @return 0 on success, -1 on error.
  */
-int __public__os_stat(const char *path, struct stat *st) {
-    return stat(path, st);
+int __public__os_stat(__public__string_t *path, struct stat *st) {
+    return fstatat(AT_FDCWD, path->data, st, 0);
 }
 
 /**
@@ -479,8 +486,8 @@ int __public__os_stat(const char *path, struct stat *st) {
  * @param st   Output stat structure.
  * @return 0 on success, -1 on error.
  */
-int __public__os_lstat(const char *path, struct stat *st) {
-    return lstat(path, st);
+int __public__os_lstat(__public__string_t *path, struct stat *st) {
+    return fstatat(AT_FDCWD, path->data, st, AT_SYMLINK_NOFOLLOW);
 }
 
 /*
@@ -615,6 +622,6 @@ int __public__os_signal_install(int sig, void (*handler)(int)) {
  * @param mode Access mode.
  * @return 0 on success, -1 on error.
  */
-int __public__os_access(const char *path, int mode) {
-    return access(path, mode);
+int __public__os_access(__public__string_t *path, int mode) {
+    return access(path->data, mode);
 }

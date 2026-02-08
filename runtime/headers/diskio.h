@@ -5,6 +5,7 @@
 #include "stdio.h"
 
 #include "queue.h"
+#include "str.h"
 #include "task.h"
 #include "array.h"
 
@@ -241,7 +242,7 @@ __public__array_t* __public__syncio_scan(int n);
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__syncio_printf(const char *fmt, ...) ;
+ssize_t __public__syncio_printf(__public__string_t* fmt, ...);
 
 /**
  * @brief Synchronously read up to n bytes from a file at a given offset.
@@ -299,7 +300,7 @@ ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offs
  *
  * @return Pointer to the opened FILE on success, or NULL on error.
  */
-char* __public__syncio_fopen(const char* filename, const char* mode);
+char* __public__syncio_fopen(__public__string_t* filename, __public__string_t* mode);
 
 /**
  * @brief Synchronously close a file.

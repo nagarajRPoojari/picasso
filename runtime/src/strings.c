@@ -11,48 +11,235 @@
 
 extern __thread arena_t* __arena__;
 
+
+__public__string_t* __public__strings_alloc(const char* fmt, size_t size) {
+    __public__string_t* s = allocate(__arena__, sizeof(__public__string_t));
+    s->data = allocate(__arena__, size + 1);
+    s->data[size] = '\0'; // only to provide backward compatibility with c code
+    memcpy(s->data, fmt, size);
+    s->size = size;
+
+    return s;
+}
+
+
+void buf_append(char **buf, size_t *cap, size_t *len, const char *src, size_t n) {
+    if (*len + n > *cap) {
+        size_t newcap = (*cap == 0) ? 64 : *cap * 2;
+        while (newcap < *len + n)
+            newcap *= 2;
+
+        char *nb = allocate(__arena__, newcap);
+        if (*buf)
+            memcpy(nb, *buf, *len);
+        *buf = nb;
+        *cap = newcap;
+    }
+    memcpy(*buf + *len, src, n);
+    *len += n;
+}
+
+size_t u64_to_dec(uint64_t v, char tmp[32]) {
+    size_t i = 0;
+    do {
+        tmp[i++] = '0' + (v % 10);
+        v /= 10;
+    } while (v);
+
+    for (size_t j = 0; j < i / 2; j++) {
+        char c = tmp[j];
+        tmp[j] = tmp[i - 1 - j];
+        tmp[i - 1 - j] = c;
+    }
+    return i;
+}
+
+size_t i64_to_dec(int64_t v, char tmp[32]) {
+    size_t i = 0;
+    uint64_t x;
+
+    if (v < 0) {
+        tmp[i++] = '-';
+        x = (uint64_t)(-v);
+    } else {
+        x = (uint64_t)v;
+    }
+
+    size_t n = u64_to_dec(x, tmp + i);
+    return i + n;
+}
+
+size_t ptr_to_hex(const void *p, char tmp[32]) {
+    uintptr_t v = (uintptr_t)p;
+    static const char hex[] = "0123456789abcdef";
+
+    tmp[0] = '0';
+    tmp[1] = 'x';
+
+    size_t i = 2;
+    int started = 0;
+
+    for (int shift = (int)(sizeof(uintptr_t) * 8 - 4); shift >= 0; shift -= 4) {
+        char d = hex[(v >> shift) & 0xF];
+        if (d != '0' || started || shift == 0) {
+            started = 1;
+            tmp[i++] = d;
+        }
+    }
+    return i;
+}
+
+size_t f64_to_dec(double v, char tmp[64]) {
+    size_t i = 0;
+
+    if (v < 0) {
+        tmp[i++] = '-';
+        v = -v;
+    }
+
+    /* integer part */
+    uint64_t ip = (uint64_t)v;
+    double frac = v - (double)ip;
+
+    char ibuf[32];
+    size_t ilen = u64_to_dec(ip, ibuf);
+    memcpy(tmp + i, ibuf, ilen);
+    i += ilen;
+
+    tmp[i++] = '.';
+
+    /* fractional part: fixed 6 digits */
+    for (int k = 0; k < 6; k++) {
+        frac *= 10.0;
+        int d = (int)frac;
+        tmp[i++] = '0' + d;
+        frac -= d;
+    }
+
+    return i;
+}
+
 /**
  * @brief Format a string with variable arguments
  * @param fmt Format string
  * @param ... Variable arguments to format
  * @return Pointer to the formatted string
  */
-char* __public__strings_format(const char* fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-
-    va_list args_copy;
-    va_copy(args_copy, args);
-
-    // First pass: compute length
-    int len = vsnprintf(NULL, 0, fmt, args_copy);
-    va_end(args_copy);
-
-    if (len < 0) {
-        va_end(args);
+__public__string_t* __public__strings_format(__public__string_t* fmt, ...) {
+    if (!fmt || !fmt->data)
         return NULL;
+
+    va_list ap;
+    va_start(ap, fmt);
+
+    char *out = NULL;
+    size_t cap = 0, len = 0;
+
+    for (size_t i = 0; i < (size_t)fmt->size; i++) {
+        char c = fmt->data[i];
+
+        if (c != '%') {
+            buf_append(&out, &cap, &len, &c, 1);
+            continue;
+        }
+
+        if (++i >= (size_t)fmt->size)
+            break;
+
+        char spec = fmt->data[i];
+
+        switch (spec) {
+        case '%':
+            buf_append(&out, &cap, &len, "%", 1);
+            break;
+
+        case 's': {
+            __public__string_t *s = va_arg(ap, __public__string_t*);
+            if (s && s->data && s->size)
+                buf_append(&out, &cap, &len, s->data, (size_t)s->size);
+            break;
+        }
+
+        case 'd': {
+            char tmp[32];
+            size_t n = i64_to_dec((int64_t)va_arg(ap, int), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'u': {
+            char tmp[32];
+            size_t n = u64_to_dec((uint64_t)va_arg(ap, unsigned int), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'l': {
+            if (i + 1 < fmt->size && fmt->data[i + 1] == 'u') {
+                i++;
+                char tmp[32];
+                size_t n = u64_to_dec(
+                    (uint64_t)va_arg(ap, unsigned long), tmp);
+                buf_append(&out, &cap, &len, tmp, n);
+            } else {
+                char tmp[32];
+                size_t n = i64_to_dec(
+                    (int64_t)va_arg(ap, long), tmp);
+                buf_append(&out, &cap, &len, tmp, n);
+            }
+            break;
+        }
+
+        case 'p': {
+            char tmp[32];
+            size_t n = ptr_to_hex(va_arg(ap, void*), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        case 'f': {
+            char tmp[64];
+            size_t n = f64_to_dec(va_arg(ap, double), tmp);
+            buf_append(&out, &cap, &len, tmp, n);
+            break;
+        }
+
+        default:
+            /* unknown specifier → emit literally */
+            buf_append(&out, &cap, &len, "%", 1);
+            buf_append(&out, &cap, &len, &spec, 1);
+            break;
+        }
     }
 
-    char* buf = allocate(__arena__, len + 1);
-    if (!buf) {
-        va_end(args);
-        return NULL;
-    }
+    va_end(ap);
 
-    // Second pass: actual formatting
-    vsnprintf(buf, len + 1, fmt, args);
-    va_end(args);
+    __public__string_t *res =
+        allocate(__arena__, sizeof(*res));
 
-    return buf;
+    res->data = out;
+    res->size = (int64_t)len;
+    return res;
 }
+
 
 /**
  * @brief Get the length of a string
  * @param str String to measure
  * @return Length of the string
  */
-int __public__strings_length(const char* str) {
-    return strlen(str);
+int __public__strings_length(__public__string_t* str) {
+    return str->size;
+}
+
+/**
+ * @brief Get the ith byte of a string
+ * @param str String to measure
+ * @return Length of the string
+ */
+uint8_t __public__strings_get(__public__string_t* str, int i) {
+    // unsafe, need to do bound check
+    return str->data[i];
 }
 
 /**
@@ -61,6 +248,17 @@ int __public__strings_length(const char* str) {
  * @param str2 Second string to compare
  * @return 0 if equal, negative if str1 < str2, positive if str1 > str2
  */
-int __public__strings_compare(const char* str1, const char* str2) {
-    return strcmp(str1, str2);
+int __public__strings_compare(__public__string_t* str1, __public__string_t* str2) {
+    if (str1 == NULL || str2 == NULL) return (str1 == str2) ? 0 : (str1 ? 1 : -1);
+
+    int64_t min = (str1->size < str2->size) ? str1->size : str2->size;
+
+    for (int64_t i = 0; i < min; i++) {
+        unsigned char c1 = (unsigned char)str1->data[i];
+        unsigned char c2 = (unsigned char)str2->data[i];
+        if (c1 != c2)
+            return c1 - c2;
+    }
+
+    return (int)(str1->size - str2->size);
 }

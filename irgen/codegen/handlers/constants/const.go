@@ -6,4 +6,5 @@ const (
 	THIS    = "this"
 	BUILTIN = "builtin"
 	ARRAY   = "array"
+	STRING  = "string"
 )

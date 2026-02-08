@@ -30,6 +30,15 @@ void tearDown(void) {
     /* @todo: graceful termination */
 }
 
+__public__string_t* strings_alloc(const char* fmt, size_t size) {
+    __public__string_t* s = allocate(__test__global__arena__, sizeof(__public__string_t));
+    s->data = allocate(__test__global__arena__, size);
+    memcpy(s->data, fmt, size);
+    s->size = size;
+
+    return s;
+}
+
 __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
     size_t data_size = (size_t)count * elem_size;
     size_t shape_size = (size_t)rank * sizeof(int64_t);
@@ -139,7 +148,7 @@ void test_netio_read_basic(void) {
     char* addr = "127.0.0.1";
     int port = 8000;
 
-    int lld = __public__net_listen(addr, port, 4096);
+    int lld = __public__net_listen(strings_alloc(addr, 9), port, 4096);
     TEST_ASSERT(lld >= 0);
 
     thread(__test_netio_read_basic, 3, NULL, count, lld);

@@ -324,7 +324,7 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		return &floats.Float64{NativeType: types.Double, Value: ptr, GoVal: 0}
 	case STRING, "i8*":
 		if init == nil {
-			init = constant.NewNull(types.I8Ptr)
+			init = constant.NewNull(types.NewPointer(STRINGSTRUCT))
 		}
 		return NewString(bh, init)
 	case NULL, VOID:
@@ -416,7 +416,12 @@ func (t *TypeHandler) GetLLVMType(_type string) types.Type {
 	case FLOAT64, DOUBLE:
 		return types.Double
 	case STRING:
-		return types.I8Ptr
+		s := types.NewStruct(
+			types.NewPointer(types.I8), // data
+			types.I64,                  // size
+		)
+		s.SetName("string")
+		return types.NewPointer(s)
 	case ARRAY:
 		s := types.NewStruct(
 			types.I64,                   // length

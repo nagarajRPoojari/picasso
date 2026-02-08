@@ -28,6 +28,15 @@ void setUp(void) {
 }
 void tearDown(void) { }
 
+__public__string_t* strings_alloc(const char* fmt, size_t size) {
+    __public__string_t* s = allocate(__test__global__arena__, sizeof(__public__string_t));
+    s->data = allocate(__test__global__arena__, size);
+    memcpy(s->data, fmt, size);
+    s->size = size;
+
+    return s;
+}
+
 __public__array_t* mock_alloc_array(int count, int elem_size, int rank) {
     size_t data_size = (size_t)count * elem_size;
     size_t shape_size = (size_t)rank * sizeof(int64_t);
@@ -138,7 +147,7 @@ void test_netio_write_basic(void) {
     const char* addr = "127.0.0.1";
     int port = 8002;
 
-    int listen_fd = __public__net_listen(addr, port, 4096);
+    int listen_fd = __public__net_listen(strings_alloc(addr, 9), port, 4096);
     TEST_ASSERT_MESSAGE(listen_fd >= 0, "Failed to listen");
 
     // Start server thread inside runtime scheduler

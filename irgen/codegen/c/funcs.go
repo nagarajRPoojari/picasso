@@ -45,6 +45,9 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	// @array_alloc
 	t.Funcs[FUNC_ARRAY_ALLOC] = mod.NewFunc(FUNC_ARRAY_ALLOC, types.NewPointer(t.Types[TYPE_ARRAY]), ir.NewParam("", types.I32), ir.NewParam("", types.I32), ir.NewParam("", types.I32))
 
+	// @string_alloc
+	t.Funcs[FUNC_STRING_ALLOC] = mod.NewFunc(FUNC_STRING_ALLOC, types.NewPointer(t.Types[TYPE_STRING]), ir.NewParam("", types.I32))
+
 	t.Funcs[__UTILS__FUNC_DEBUG_ARRAY_INFO] = mod.NewFunc(
 		__UTILS__FUNC_DEBUG_ARRAY_INFO,
 		types.Void, ir.NewParam("", types.NewPointer(t.Types[TYPE_ARRAY])),

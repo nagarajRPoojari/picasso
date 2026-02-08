@@ -4,6 +4,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
 	function "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/func"
 	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
@@ -47,7 +48,7 @@ func (t *TypeHandler) Size(_ *ir.Func, typeHandler *typedef.TypeHandler, module 
 func (t *TypeHandler) TypeOf(_ *ir.Func, typeHandler *typedef.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	typ := args[0].NativeTypeString()
 
-	strConst := constant.NewCharArrayFromString(typ + "\x00")
+	strConst := constant.NewCharArrayFromString(typ)
 	global := module.NewGlobalDef("", strConst)
 
 	gep := bh.N.NewGetElementPtr(
@@ -57,5 +58,7 @@ func (t *TypeHandler) TypeOf(_ *ir.Func, typeHandler *typedef.TypeHandler, modul
 		constant.NewInt(types.I32, 0),
 	)
 
-	return typedef.NewString(bh, gep)
+	allocFn := c.Instance.Funcs[c.FUNC_STRING_ALLOC]
+	s := bh.N.NewCall(allocFn, gep, constant.NewInt(types.I64, int64(len(typ))))
+	return typedef.NewString(bh, s)
 }

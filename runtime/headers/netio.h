@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <sys/types.h> 
 
+#include "str.h"
 #include "array.h"
 
 /** Number of I/O worker threads in the pool, must be kept equal to number of scheduler threads */
@@ -107,7 +108,7 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) ;
  * @return Listening socket file descriptor on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog);
+ssize_t __public__net_listen(__public__string_t *addr, uint16_t port, int backlog);
 
 
 /**
@@ -126,5 +127,5 @@ ssize_t __public__net_listen(const char *addr, uint16_t port, int backlog);
  * @return Connected socket file descriptor on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_dial(const char *addr, uint16_t port);
+ssize_t __public__net_dial(__public__string_t *addr, uint16_t port);
 #endif
