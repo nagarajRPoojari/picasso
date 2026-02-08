@@ -1,1 +1,1 @@
-value of y: 890.819214, type:float32
+value of y: 890.819213, type:float32
