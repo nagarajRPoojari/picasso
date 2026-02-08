@@ -55,7 +55,7 @@ func (t *BuildCache) buildTree(it *ImportTree, visitStack map[string]struct{}, p
 }
 
 func (t *BuildCache) pkgNameFromPath(root, path string) string {
-	rel, err := filepath.Rel(root, path)
+	rel, err := relpath(root, path)
 	if err != nil {
 		return ""
 	}
@@ -68,7 +68,7 @@ func (t *BuildCache) pkgNameFromPath(root, path string) string {
 func (t *BuildCache) findModifiedPkgs(lastBuild time.Time) (map[string]struct{}, error) {
 	modified := make(map[string]struct{})
 
-	err := filepath.WalkDir(t.projectRootDir, func(path string, d fs.DirEntry, err error) error {
+	err := walk(t.projectRootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -165,4 +165,62 @@ func (t *BuildCache) CheckBuildCache() (map[string]struct{}, error) {
 	dirty := t.propagateModified(modified, reverse)
 
 	return dirty, nil
+}
+
+func walk(root string, fn fs.WalkDirFunc) error {
+	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// If it's a symlink
+		if d.Type()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return nil
+			}
+
+			// Make target absolute if needed
+			if !filepath.IsAbs(target) {
+				target = filepath.Join(filepath.Dir(path), target)
+			}
+
+			info, err := os.Stat(target)
+			if err == nil && info.IsDir() {
+				// Walk the symlink target
+				return walk(target, fn)
+			}
+		}
+
+		return fn(path, d, err)
+	})
+}
+
+func isRootOf(a, b string) (bool, error) {
+	aAbs, err := filepath.Abs(a)
+	if err != nil {
+		return false, err
+	}
+	bAbs, err := filepath.Abs(b)
+	if err != nil {
+		return false, err
+	}
+
+	aClean := filepath.Clean(aAbs)
+	bClean := filepath.Clean(bAbs)
+
+	rel, err := filepath.Rel(aClean, bClean)
+	if err != nil {
+		return false, err
+	}
+
+	// If rel starts with "..", b is outside a
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)), nil
+}
+
+func relpath(root string, path string) (string, error) {
+	if ok, _ := isRootOf(root, path); ok {
+		return filepath.Rel(root, path)
+	}
+	return filepath.Rel(os.Getenv("PICASSO_INCLUDE"), path)
 }
