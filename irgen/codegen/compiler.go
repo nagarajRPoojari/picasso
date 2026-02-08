@@ -365,16 +365,79 @@ func (t *generator) compile(tree ast.BlockStatement, llvm *LLVM) {
 	llvm.ParseAST(tree)
 }
 
+func isRootOf(a, b string) (bool, error) {
+	aAbs, err := filepath.Abs(a)
+	if err != nil {
+		return false, err
+	}
+	bAbs, err := filepath.Abs(b)
+	if err != nil {
+		return false, err
+	}
+
+	aClean := filepath.Clean(aAbs)
+	bClean := filepath.Clean(bAbs)
+
+	rel, err := filepath.Rel(aClean, bClean)
+	if err != nil {
+		return false, err
+	}
+
+	// If rel starts with "..", b is outside a
+	return rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)), nil
+}
+
+func rel(root string, path string) (string, error) {
+	if ok, _ := isRootOf(root, path); ok {
+		return filepath.Rel(root, path)
+	}
+	return filepath.Rel(os.Getenv("PICASSO_INCLUDE"), path)
+}
+
+func walk(root string, fn fs.WalkDirFunc) error {
+	return filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// If it's a symlink
+		if d.Type()&os.ModeSymlink != 0 {
+			target, err := os.Readlink(path)
+			if err != nil {
+				return nil
+			}
+
+			// Make target absolute if needed
+			if !filepath.IsAbs(target) {
+				target = filepath.Join(filepath.Dir(path), target)
+			}
+
+			info, err := os.Stat(target)
+			if err == nil && info.IsDir() {
+				// Walk the symlink target
+				return walk(target, fn)
+			}
+		}
+
+		return fn(path, d, err)
+	})
+}
+
 // LoadPackages loads package with their AST by going through project.ini file
 // Packages will be named will modified by replacing '/' with '.' resulting
 // in something like os.io instead of os/io.
 func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]struct{}) {
 	rootDir := projectDir
 
+	err := os.Symlink(filepath.Join(os.Getenv("PICASSO_INCLUDE"), "picasso"), filepath.Join(rootDir, "picasso"))
+	if err != nil {
+		// i can assume its linked already so, move on.
+	}
+
 	modifiedPkgAST := make(map[string]ast.BlockStatement)
 	allPkgImports := make(map[string]ast.BlockStatement)
 
-	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+	err = walk(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -390,7 +453,7 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 		tree := parser.ParseImports(path)
 
 		// relative path from root
-		rel, err := filepath.Rel(rootDir, path)
+		rel, err := rel(rootDir, path)
 		if err != nil {
 			return err
 		}
@@ -414,7 +477,7 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 
 	allPkgs := make(map[string]struct{})
 
-	err = filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+	err = walk(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -427,7 +490,7 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 			return nil
 		}
 		// relative path from root
-		rel, err := filepath.Rel(rootDir, path)
+		rel, err := rel(rootDir, path)
 		if err != nil {
 			return err
 		}
@@ -439,7 +502,6 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 		pkgName := strings.ReplaceAll(filepath.ToSlash(rel), string(os.PathSeparator), ".")
 
 		allPkgs[pkgName] = struct{}{}
-
 		// ignore unmodified packages
 		if _, ok := modifiedPkgs[pkgName]; !ok {
 			return nil
