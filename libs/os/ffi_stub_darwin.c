@@ -20,6 +20,8 @@ void* __ffi_force[] = {
     (void*)__public__os_setenv,
     (void*)__public__os_unsetenv,
     (void*)__public__os_getcwd,
+    (void*)__public__os_chmod,
+    (void*)__public__os_chown,
     (void*)__public__os_chdir,
     (void*)__public__os_getuid,
     (void*)__public__os_geteuid,

@@ -157,6 +157,29 @@ int __public__os_getcwd(char *buf, size_t size) {
 }
 
 /**
+ * @brief Change mode of given path.
+ * @param path Directory/File path.
+ * @param mode access mode.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_chmod(const char *path, int64_t mode) {
+    return chmod(path, mode);
+}
+
+/**
+ * @brief Chown changes the numeric uid and gid of the named file. 
+ * If the file is a symbolic link, it changes the uid and gid of the link's target.
+ * A uid or gid of -1 means to not change that value.
+ * @param name Directory/File path.
+ * @param uid uid.
+ * @param gid uid.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_chown(const char *name, int64_t uid, int64_t gid) {
+    return chown(name, uid, gid);
+}
+
+/**
  * @brief Change working directory.
  * @param path Directory path.
  * @return 0 on success, -1 on error.

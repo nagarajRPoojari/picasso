@@ -38,6 +38,8 @@ void* __ffi_force[] = {
     /* Directory & Path Management */
     (void*)__public__os_getcwd,
     (void*)__public__os_chdir,
+    (void*)__public__os_chmod,
+    (void*)__public__os_chown,
     (void*)__public__os_mkdir,
     (void*)__public__os_rmdir,
     (void*)__public__os_unlink,
