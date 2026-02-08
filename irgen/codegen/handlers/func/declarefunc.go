@@ -56,6 +56,9 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 	if _, ok := t.st.Classes[aliasClsName].Methods[aliasFuncName]; !ok {
 		f, ok := t.st.GlobalFuncList[fqFuncName]
 		if !ok {
+			if cls == st.Name {
+				retType = udt
+			}
 			f = t.st.Module.NewFunc(fqFuncName, retType, params...)
 			t.st.GlobalFuncList[fqFuncName] = f
 		}
