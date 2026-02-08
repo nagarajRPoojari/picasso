@@ -89,6 +89,11 @@ const (
 	INTERNAL
 
 	NUM_TOKENS
+
+	BITWISE_OR
+	BITWISE_XOR
+	BITWISE_NOT
+	BITWISE_AND
 )
 
 var reserved_keywords map[string]TokenKind = map[string]TokenKind{
@@ -198,6 +203,14 @@ func TokenKindString(kind TokenKind) string {
 		return "or"
 	case AND:
 		return "and"
+	case BITWISE_OR:
+		return "bitwise_or"
+	case BITWISE_XOR:
+		return "bitwise_xor"
+	case BITWISE_AND:
+		return "bitwise_and"
+	case BITWISE_NOT:
+		return "bitwise_not"
 	case DOT:
 		return "dot"
 	case DOT_DOT:

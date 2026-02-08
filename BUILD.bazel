@@ -1,6 +1,5 @@
 load("@gazelle//:def.bzl", "gazelle")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_go//go:def.bzl", "go_binary", "go_library")
 
 # gazelle:prefix github.com/nagarajRPoojari/picasso
 gazelle(name = "gazelle")
@@ -124,7 +123,10 @@ cc_library(
             "-lunwind",
             "-Wl,--no-as-needed",
         ],
-        "//:macos": ["-lffi", "-Wl,-ld_classic"],
+        "//:macos": [
+            "-lffi",
+            "-Wl,-ld_classic",
+        ],
     }),
     visibility = ["//visibility:public"],
     deps = select({
@@ -204,7 +206,10 @@ cc_library(
             "-lunwind",
             "-Wl,--no-as-needed",
         ],
-        "//:macos": ["-lffi", "-Wl,-ld_classic"],
+        "//:macos": [
+            "-lffi",
+            "-Wl,-ld_classic",
+        ],
     }),
     visibility = ["//visibility:public"],
     deps = select({
@@ -228,21 +233,5 @@ cc_library(
             "-lffi",
         ],
     }),
-    visibility = ["//visibility:public"],
-)
-
-go_library(
-    name = "picasso_lib",
-    srcs = [
-        "hello.s",
-        "temp_go.go",
-    ],
-    importpath = "github.com/nagarajRPoojari/picasso",
-    visibility = ["//visibility:private"],
-)
-
-go_binary(
-    name = "picasso",
-    embed = [":picasso_lib"],
     visibility = ["//visibility:public"],
 )

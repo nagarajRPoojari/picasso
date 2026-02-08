@@ -62,6 +62,10 @@ func BuildTokensTable() {
 	led(lexer.OR, logical, parseBinaryExpr)
 	led(lexer.DOT_DOT, logical, parseRangeExpr)
 
+	led(lexer.BITWISE_AND, logical, parseBinaryExpr)
+	led(lexer.BITWISE_OR, logical, parseBinaryExpr)
+	led(lexer.BITWISE_XOR, logical, parseBinaryExpr)
+
 	// Relational
 	led(lexer.LESS, relational, parseBinaryExpr)
 	led(lexer.LESS_EQUALS, relational, parseBinaryExpr)
@@ -86,6 +90,7 @@ func BuildTokensTable() {
 	nud(lexer.TYPEOF, parsePrefixExpr)
 	nud(lexer.DASH, parsePrefixExpr)
 	nud(lexer.NOT, parsePrefixExpr)
+	nud(lexer.BITWISE_NOT, parsePrefixExpr)
 	nud(lexer.OPEN_BRACKET, parseArrayLiteralExpr)
 
 	// Member / Computed // Call
