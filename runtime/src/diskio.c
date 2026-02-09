@@ -350,7 +350,7 @@ ssize_t __public__asyncio_printf(__public__string_t* fmt, ...) {
     for (size_t i = 0; i < (size_t)fmt->size; i++) {
         char c = fmt->data[i];
 
-        if (c != '%') {
+        if (c != PERCENT) {
             buf_append(&out, &cap, &len, &c, 1);
             continue;
         }
@@ -361,40 +361,40 @@ ssize_t __public__asyncio_printf(__public__string_t* fmt, ...) {
         char spec = fmt->data[i];
 
         switch (spec) {
-        case '%':
+        case PERCENT:
             buf_append(&out, &cap, &len, "%", 1);
             break;
 
-        case 's': {
+        case STRING: {
             __public__string_t *s = va_arg(ap, __public__string_t*);
             if (s && s->data && s->size)
                 buf_append(&out, &cap, &len, s->data, (size_t)s->size);
             break;
         }
 
-        case 'd': {
+        case SIGNED_INT: {
             char tmp[32];
             size_t n = i64_to_dec((int64_t)va_arg(ap, int), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'u': {
+        case UNSIGNED_INT: {
             char tmp[32];
             size_t n = u64_to_dec((uint64_t)va_arg(ap, unsigned int), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'l': {
-            if (i + 1 < fmt->size && fmt->data[i + 1] == 'u') {
+        case LONG: {
+            if (i + 1 < fmt->size && fmt->data[i + 1] == UNSIGNED_INT) {
                 i++;
                 char tmp[32];
                 size_t n = u64_to_dec(
                     (uint64_t)va_arg(ap, unsigned long), tmp);
                 buf_append(&out, &cap, &len, tmp, n);
             } else {
-                if(i + 1 < fmt->size && fmt->data[i + 1] == 'd') i++;
+                if(i + 1 < fmt->size && fmt->data[i + 1] == SIGNED_INT) i++;
                 char tmp[32];
                 size_t n = i64_to_dec(
                     (int64_t)va_arg(ap, long), tmp);
@@ -403,14 +403,14 @@ ssize_t __public__asyncio_printf(__public__string_t* fmt, ...) {
             break;
         }
 
-        case 'p': {
+        case POINTER: {
             char tmp[32];
             size_t n = ptr_to_hex(va_arg(ap, void*), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'f': {
+        case FLOAT: {
             char tmp[64];
             size_t n = f64_to_dec(va_arg(ap, double), tmp);
             buf_append(&out, &cap, &len, tmp, n);
@@ -624,7 +624,7 @@ ssize_t __public__syncio_printf(__public__string_t* fmt, ...) {
     for (size_t i = 0; i < (size_t)fmt->size; i++) {
         char c = fmt->data[i];
 
-        if (c != '%') {
+        if (c != PERCENT) {
             buf_append(&out, &cap, &len, &c, 1);
             continue;
         }
@@ -635,40 +635,40 @@ ssize_t __public__syncio_printf(__public__string_t* fmt, ...) {
         char spec = fmt->data[i];
 
         switch (spec) {
-        case '%':
+        case PERCENT:
             buf_append(&out, &cap, &len, "%", 1);
             break;
 
-        case 's': {
+        case STRING: {
             __public__string_t *s = va_arg(ap, __public__string_t*);
             if (s && s->data && s->size)
                 buf_append(&out, &cap, &len, s->data, (size_t)s->size);
             break;
         }
 
-        case 'd': {
+        case SIGNED_INT: {
             char tmp[32];
             size_t n = i64_to_dec((int64_t)va_arg(ap, int), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'u': {
+        case UNSIGNED_INT: {
             char tmp[32];
             size_t n = u64_to_dec((uint64_t)va_arg(ap, unsigned int), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'l': {
-            if (i + 1 < fmt->size && fmt->data[i + 1] == 'u') {
+        case LONG: {
+            if (i + 1 < fmt->size && fmt->data[i + 1] == UNSIGNED_INT) {
                 i++;
                 char tmp[32];
                 size_t n = u64_to_dec(
                     (uint64_t)va_arg(ap, unsigned long), tmp);
                 buf_append(&out, &cap, &len, tmp, n);
             } else {
-                if(i + 1 < fmt->size && fmt->data[i + 1] == 'd') i++;
+                if(i + 1 < fmt->size && fmt->data[i + 1] == SIGNED_INT) i++;
                 char tmp[32];
                 size_t n = i64_to_dec(
                     (int64_t)va_arg(ap, long), tmp);
@@ -677,14 +677,14 @@ ssize_t __public__syncio_printf(__public__string_t* fmt, ...) {
             break;
         }
 
-        case 'p': {
+        case POINTER: {
             char tmp[32];
             size_t n = ptr_to_hex(va_arg(ap, void*), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'f': {
+        case FLOAT: {
             char tmp[64];
             size_t n = f64_to_dec(va_arg(ap, double), tmp);
             buf_append(&out, &cap, &len, tmp, n);
