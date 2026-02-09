@@ -1,0 +1,30 @@
+using "builtin/strings";
+using "builtin/array";
+using "builtin/syncio";
+
+class StringBuilder {
+    say internal s: string;
+    fn StringBuilder(s: string) {
+        this.s = s;
+    }
+
+    fn set(s: string) {
+        this.s = s;
+    }
+
+    fn getByte(i: int):uint8 {
+        return strings.get(this.s, i);
+    }
+
+    fn loadFromBuffer(buf: []uint8) {
+        this.s = strings.alloc_from_arr(buf);
+    }
+
+    fn print() {
+        syncio.printf("%s \n", this.s);
+    }
+
+    fn get(): string {
+        return this.s;
+    }
+}

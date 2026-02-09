@@ -17,12 +17,27 @@ extern __thread arena_t* __arena__;
  * @param size Number of bytes
  * @return Pointer to the allocated string
  */
-__public__string_t* __public__strings_alloc(const char* fmt, size_t size) {
+__public__string_t* __public__strings_alloc_from_raw(const char* fmt, size_t size) { 
     __public__string_t* s = allocate(__arena__, sizeof(__public__string_t));
     s->data = allocate(__arena__, size + 1);
     s->data[size] = '\0'; // only to provide backward compatibility with c code
     memcpy(s->data, fmt, size);
     s->size = size;
+    return s;
+}
+
+/**
+ * @brief Allocate memory in heap for given string
+ * @param fmt Format string
+ * @param size Number of bytes
+ * @return Pointer to the allocated string
+ */
+__public__string_t* __public__strings_alloc_from_arr(__public__array_t* fmt) {
+    __public__string_t* s = allocate(__arena__, sizeof(__public__string_t));
+    s->data = allocate(__arena__, fmt->length + 1);
+    s->data[fmt->length] = '\0'; // only to provide backward compatibility with c code
+    memcpy(s->data, fmt->data, fmt->length);
+    s->size = fmt->length;
 
     return s;
 }

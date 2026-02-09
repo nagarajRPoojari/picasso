@@ -1,22 +1,47 @@
-using "builtin/array";
 using "builtin/syncio";
+using "builtin/array";
+using "builtin/strings";
+
+using "picasso/os";
+using "picasso/strings";
 
 class Test {
     fn Test() {}
 
-    say x: string;
+    fn testFileOpen() {
+        // say f: string = syncio.fopen("./data.txt", "w+");
+        // say n: int = 100;
+        
+        // say write_buf: []uint8 = array.create(uint8, n);
+        // foreach i in 0..array.len(write_buf) {
+        //     write_buf[i] = i;
+        // }
+        // say wrote:int = syncio.fwrite(f, write_buf, 6, 0);
 
-    fn testIntToUInt() {
-        // int8(-1) can to stored as uint8(255) but int64(-1) can't be stored 
-        // because it's 2 complement can't be interpreted within uint8's boundary 
-        // so below shouldn't work.
-        say y: int64 = -1;
-        say x: uint8 = y; 
-        syncio.printf("value of x: %u\n", x);
+        // say read_buf: []uint8 = array.create(uint8, n);
+
+        // // reading only `wrote` number of bytes
+        // syncio.fread(f, read_buf, wrote, 0);
+
+        // foreach i in 0..array.len(write_buf) {
+        //     syncio.printf("wrote[%d]=%d, read[%d]=%d\n", i, write_buf[i], i, read_buf[i]);
+        // }
+
+        // syncio.fclose(f);
     }
 }
 
 fn start() {
     say t: start.Test = new start.Test();
-    t.testIntToUInt();
+    t.testFileOpen();
+
+    // say x: string = "hello😭";
+
+
+    // syncio.printf("length of x: %d , %s\n", strings.length(x), x);
+
+
+    say fs: os.FileSystem = new os.FileSystem();
+
+    syncio.printf(">>> %d \n ", fs.mkdirTemp("/tmp/myapp-XXXXXX", 493));
 }
