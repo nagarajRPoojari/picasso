@@ -11,7 +11,12 @@
 
 extern __thread arena_t* __arena__;
 
-
+/**
+ * @brief Allocate memory in heap for given string
+ * @param fmt Format string
+ * @param size Number of bytes
+ * @return Pointer to the allocated string
+ */
 __public__string_t* __public__strings_alloc(const char* fmt, size_t size) {
     __public__string_t* s = allocate(__arena__, sizeof(__public__string_t));
     s->data = allocate(__arena__, size + 1);
@@ -22,7 +27,14 @@ __public__string_t* __public__strings_alloc(const char* fmt, size_t size) {
     return s;
 }
 
-
+/**
+ * @brief Append charcater to given heap buffer
+ * @param buf buffer
+ * @param cap size to scale buffer
+ * @param len current size of buffer
+ * @param src charcter/string to be appended
+ * @param n size of src
+ */
 void buf_append(char **buf, size_t *cap, size_t *len, const char *src, size_t n) {
     if (*len + n > *cap) {
         size_t newcap = (*cap == 0) ? 64 : *cap * 2;
@@ -39,6 +51,12 @@ void buf_append(char **buf, size_t *cap, size_t *len, const char *src, size_t n)
     *len += n;
 }
 
+/**
+ * @brief Format given unsigned int to string
+ * @param v u64
+ * @param tmp buffer to hold output formated string
+ * @return length of formated string
+ */
 size_t u64_to_dec(uint64_t v, char tmp[32]) {
     size_t i = 0;
     do {
@@ -54,6 +72,12 @@ size_t u64_to_dec(uint64_t v, char tmp[32]) {
     return i;
 }
 
+/**
+ * @brief Format given signed int to string
+ * @param v int64
+ * @param tmp buffer to hold output formated string
+ * @return length of formated string
+ */
 size_t i64_to_dec(int64_t v, char tmp[32]) {
     size_t i = 0;
     uint64_t x;
@@ -69,6 +93,12 @@ size_t i64_to_dec(int64_t v, char tmp[32]) {
     return i + n;
 }
 
+/**
+ * @brief Format given pointer to hex string
+ * @param p pointer
+ * @param tmp buffer to hold output formated string
+ * @return length of formated string
+ */
 size_t ptr_to_hex(const void *p, char tmp[32]) {
     uintptr_t v = (uintptr_t)p;
     static const char hex[] = "0123456789abcdef";
@@ -89,6 +119,12 @@ size_t ptr_to_hex(const void *p, char tmp[32]) {
     return i;
 }
 
+/**
+ * @brief Format given float to string
+ * @param v double/float
+ * @param tmp buffer to hold output formated string
+ * @return length of formated string
+ */
 size_t f64_to_dec(double v, char tmp[64]) {
     size_t i = 0;
 
@@ -138,7 +174,7 @@ __public__string_t* __public__strings_format(__public__string_t* fmt, ...) {
     for (size_t i = 0; i < (size_t)fmt->size; i++) {
         char c = fmt->data[i];
 
-        if (c != '%') {
+        if (c != PERCENT) {
             buf_append(&out, &cap, &len, &c, 1);
             continue;
         }
@@ -149,33 +185,33 @@ __public__string_t* __public__strings_format(__public__string_t* fmt, ...) {
         char spec = fmt->data[i];
 
         switch (spec) {
-        case '%':
+        case PERCENT:
             buf_append(&out, &cap, &len, "%", 1);
             break;
 
-        case 's': {
+        case STRING: {
             __public__string_t *s = va_arg(ap, __public__string_t*);
             if (s && s->data && s->size)
                 buf_append(&out, &cap, &len, s->data, (size_t)s->size);
             break;
         }
 
-        case 'd': {
+        case SIGNED_INT: {
             char tmp[32];
             size_t n = i64_to_dec((int64_t)va_arg(ap, int), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'u': {
+        case UNSIGNED_INT: {
             char tmp[32];
             size_t n = u64_to_dec((uint64_t)va_arg(ap, unsigned int), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'l': {
-            if (i + 1 < fmt->size && fmt->data[i + 1] == 'u') {
+        case LONG: {
+            if (i + 1 < fmt->size && fmt->data[i + 1] == UNSIGNED_INT) {
                 i++;
                 char tmp[32];
                 size_t n = u64_to_dec(
@@ -190,14 +226,14 @@ __public__string_t* __public__strings_format(__public__string_t* fmt, ...) {
             break;
         }
 
-        case 'p': {
+        case POINTER: {
             char tmp[32];
             size_t n = ptr_to_hex(va_arg(ap, void*), tmp);
             buf_append(&out, &cap, &len, tmp, n);
             break;
         }
 
-        case 'f': {
+        case FLOAT: {
             char tmp[64];
             size_t n = f64_to_dec(va_arg(ap, double), tmp);
             buf_append(&out, &cap, &len, tmp, n);
@@ -214,8 +250,7 @@ __public__string_t* __public__strings_format(__public__string_t* fmt, ...) {
 
     va_end(ap);
 
-    __public__string_t *res =
-        allocate(__arena__, sizeof(*res));
+    __public__string_t *res = allocate(__arena__, sizeof(*res));
 
     res->data = out;
     res->size = (int64_t)len;
