@@ -29,6 +29,13 @@ typedef struct {
 __public__string_t* __public__strings_alloc_from_raw(const char* fmt, size_t size);
 
 /**
+ * @brief Get pointer to byte stream
+ * @param fmt Format string
+ * @return array of byte stream
+ */
+__public__array_t* __public__strings_get_bytes(__public__string_t* fmt);
+
+/**
  * @brief Allocate memory in heap for given string
  * @param fmt Format string
  * @param size Number of bytes

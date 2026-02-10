@@ -27,6 +27,23 @@ __public__string_t* __public__strings_alloc_from_raw(const char* fmt, size_t siz
 }
 
 /**
+ * @brief Get pointer to byte stream
+ * @param fmt Format string
+ * @return array of byte stream
+ */
+__public__array_t* __public__strings_get_bytes(__public__string_t* fmt) {
+    __public__array_t* arr = (__public__array_t*)allocate(__arena__, fmt->size);
+    arr->data = fmt->data;
+        
+    size_t count = (size_t)fmt->size;
+    arr->shape = (int64_t*)(arr->data + (count * sizeof(char)));
+    
+    arr->length = count;
+    arr->rank = 1;
+    return arr;
+}
+
+/**
  * @brief Allocate memory in heap for given string
  * @param fmt Format string
  * @param size Number of bytes

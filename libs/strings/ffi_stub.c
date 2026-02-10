@@ -6,6 +6,7 @@ void* __ffi_force[] = {
     (void*)__public__strings_length,
     (void*)__public__strings_alloc_from_arr,
     (void*)__public__strings_alloc_from_raw,
+    (void*)__public__strings_get_bytes,
     (void*)__public__strings_get,
     (void*)__public__strings_compare,
 };

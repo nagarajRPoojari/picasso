@@ -42,7 +42,6 @@ class FileSystem {
     fn chdir(dir: string) {
         os.chdir(dir);
     }
-
     fn getpwd(): string {
         say buf: []uint8 = array.create(uint8, 256);
         os.getcwd(buf, 256);

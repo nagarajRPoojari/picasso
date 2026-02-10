@@ -8,7 +8,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-
+#include <netinet/tcp.h>  
+#include <netdb.h>         // addrinfo, getaddrinfo, AI_PASSIVE
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -173,36 +174,129 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) {
  * @return Listening socket file descriptor on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_listen(__public__string_t *addr, uint16_t port, int backlog) {
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd != -1) {
-        // Set Non-blocking
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
-        // Set Close-on-exec
-        fcntl(fd, F_SETFD, FD_CLOEXEC);
+ssize_t __public__net_listen(
+    __public__string_t *addr,
+    uint16_t port,
+    int backlog,
+    int close_on_exec,
+    int reuse_addr,
+    int reuse_port,
+    int tcp_nodelay,
+    int tcp_defer_accept,
+    int tcp_fastopen,
+    int keepalive,
+    int rcvbuf,
+    int sndbuf,
+    int ipv6_only
+) {
+    char host[128] = {0};
+
+    if (addr && addr->data && addr->size) {
+        size_t n = addr->size < sizeof(host) - 1 ? addr->size : sizeof(host) - 1;
+        memcpy(host, addr->data, n);
+    } else {
+        strcpy(host, "0.0.0.0");
     }
+
+    char port_str[16];
+    snprintf(port_str, sizeof(port_str), "%u", port);
+
+    struct addrinfo hints = {0}, *res = NULL;
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags    = AI_PASSIVE;
+
+    if (getaddrinfo(host, port_str, &hints, &res) != 0)
+        return -1;
+
+    int fd = -1;
+
+    for (struct addrinfo *ai = res; ai; ai = ai->ai_next) {
+        fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+        if (fd < 0)
+            continue;
+
+        int f = fcntl(fd, F_GETFL, 0);
+        if (f < 0 || fcntl(fd, F_SETFL, f | O_NONBLOCK) < 0)
+            goto fail;
+
+        if (close_on_exec) {
+            int f = fcntl(fd, F_GETFD, 0);
+            if (f < 0 || fcntl(fd, F_SETFD, f | FD_CLOEXEC) < 0)
+                goto fail;
+        }
+
+        if (reuse_addr) {
+            int yes = 1;
+            setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+        }
+
+#ifdef SO_REUSEPORT
+        if (reuse_port) {
+            int yes = 1;
+            setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(yes));
+        }
+#endif
+
+        if (rcvbuf > 0)
+            setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf));
+
+        if (sndbuf > 0)
+            setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &sndbuf, sizeof(sndbuf));
+
+        if (keepalive) {
+            int yes = 1;
+            setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &yes, sizeof(yes));
+        }
+
+        if (ai->ai_family == AF_INET6 && ipv6_only) {
+#ifdef IPV6_V6ONLY
+            int yes = 1;
+            setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof(yes));
+#endif
+        }
+
+        if (bind(fd, ai->ai_addr, ai->ai_addrlen) == 0)
+            break;
+
+    fail:
+        close(fd);
+        fd = -1;
+    }
+
+    freeaddrinfo(res);
+
     if (fd < 0)
         return -1;
 
-    int yes = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-    setsockopt(fd, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(yes));
-
-    struct sockaddr_in sa = {0};
-    sa.sin_family = AF_INET;
-    sa.sin_port = htons(port);
-
-    // @todo: fix strcmp(addr->data, "0.0.0.0") 
-    if (!addr || !addr->data || strcmp(addr->data, "0.0.0.0") == 0)
-        sa.sin_addr.s_addr = INADDR_ANY;
-    else if (inet_pton(AF_INET, addr->data, &sa.sin_addr) != 1) {
-        close(fd);
-        errno = EINVAL;
-        return -1;
+    /* TCP options AFTER bind, BEFORE listen */
+    if (tcp_nodelay) {
+        int yes = 1;
+        setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &yes, sizeof(yes));
     }
 
-    if (bind(fd, (struct sockaddr *)&sa, sizeof(sa)) < 0 ||
-        listen(fd, backlog) < 0) {
+/* supported only in linux ig*/
+#ifdef TCP_DEFER_ACCEPT
+if (tcp_defer_accept > 0) {
+    setsockopt(fd, IPPROTO_TCP,
+        TCP_DEFER_ACCEPT,
+        &tcp_defer_accept,
+        sizeof(tcp_defer_accept));
+    }
+#endif
+    
+/* supported only in linux ig*/
+#ifdef TCP_FASTOPEN
+    if (tcp_fastopen > 0) {
+        setsockopt(fd, IPPROTO_TCP,
+                   TCP_FASTOPEN,
+                   &tcp_fastopen,
+                   sizeof(tcp_fastopen));
+    }
+#endif
+
+    int bl = backlog > 0 ? backlog : SOMAXCONN;
+    if (listen(fd, bl) < 0) {
         close(fd);
         return -1;
     }
@@ -227,79 +321,98 @@ ssize_t __public__net_listen(__public__string_t *addr, uint16_t port, int backlo
  *         (with errno set accordingly).
  */
 ssize_t __public__net_dial(__public__string_t *addr, uint16_t port) {
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd != -1) {
-        // Set Non-blocking
-        fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
-        // Set Close-on-exec
-        fcntl(fd, F_SETFD, FD_CLOEXEC);
-    }
-    if (fd < 0)
+    int fd = -1;
+    struct addrinfo hints = {0}, *res = NULL, *ai;
+
+    char port_str[16];
+    snprintf(port_str, sizeof(port_str), "%u", port);
+
+    hints.ai_family   = AF_UNSPEC;      // IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo(addr->data, port_str, &hints, &res) != 0)
         return -1;
 
-    struct sockaddr_in *sa = allocate(__arena__, sizeof(*sa));
-    if (!sa) {
-        close(fd);
-        errno = ENOMEM;
-        return -1;
-    }
+    for (ai = res; ai; ai = ai->ai_next) {
+        fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+        if (fd < 0)
+            continue;
 
-    memset(sa, 0, sizeof(*sa));
-    sa->sin_family = AF_INET;
-    sa->sin_port = htons(port);
+        /* non-blocking */
+        int flags = fcntl(fd, F_GETFL, 0);
+        if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+            goto fail;
 
-    if (inet_pton(AF_INET, addr->data, &sa->sin_addr) != 1) {
-        release(__arena__, sa);
-        close(fd);
-        errno = EINVAL;
-        return -1;
-    }
+        /* close-on-exec */
+        if (fcntl(fd, F_SETFD, FD_CLOEXEC) < 0)
+            goto fail;
 
-    int r = connect(fd, (struct sockaddr *)sa, sizeof(*sa));
-    if (r == 0) {
-        /* connected immediately */
-        release(__arena__, sa);
-        return fd;
-    }
-
-    if (errno != EINPROGRESS) {
-        release(__arena__, sa);
-        close(fd);
-        return -1;
-    }
-
-    task_t *t = current_task;
-
-    t->io = (io_metadata_t){
-        .fd       = fd,
-        .buf      = NULL,
-        .req_n    = 0,
-        .offset   = 0,
-        .op       = IO_CONNECT,
-        .io_done  = 0,
-        .io_err   = 0,
-        .addr     = (struct sockaddr*)sa,
-        .addrlen  = (socklen_t*)sizeof(*sa),
-    };
-
-    if (netpoll_add(netpoller, fd, NETPOLL_OUT | NETPOLL_ONESHOT, t) < 0) {
-        if (errno != EEXIST){
-            release(__arena__, sa);
-            close(fd);
-            return -1;
+        int r = connect(fd, ai->ai_addr, ai->ai_addrlen);
+        if (r == 0) {
+            /* connected immediately */
+            freeaddrinfo(res);
+            return fd;
         }
-        netpoll_mod(netpoller, fd, NETPOLL_OUT | NETPOLL_ONESHOT, t);
+
+        if (errno != EINPROGRESS)
+            goto fail;
+
+        /* async connect */
+        task_t *t = current_task;
+
+        struct sockaddr *sa = allocate(__arena__, ai->ai_addrlen);
+        socklen_t *salen = allocate(__arena__, sizeof(socklen_t));
+
+        if (!sa || !salen) {
+            errno = ENOMEM;
+            goto fail;
+        }
+
+        memcpy(sa, ai->ai_addr, ai->ai_addrlen);
+        *salen = ai->ai_addrlen;
+
+        t->io = (io_metadata_t){
+            .fd       = fd,
+            .buf      = NULL,
+            .req_n    = 0,
+            .offset   = 0,
+            .op       = IO_CONNECT,
+            .io_done  = 0,
+            .io_err   = 0,
+            .addr     = sa,
+            .addrlen  = salen,
+        };
+
+        if (netpoll_add(netpoller, fd,
+                        NETPOLL_OUT | NETPOLL_ONESHOT, t) < 0) {
+            if (errno != EEXIST)
+                goto fail;
+            netpoll_mod(netpoller, fd,
+                        NETPOLL_OUT | NETPOLL_ONESHOT, t);
+        }
+
+        unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
+        task_yield(kernel_thread_map[t->sched_id]);
+
+        /* connect completion check */
+        int err = 0;
+        socklen_t len = sizeof(err);
+        if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &err, &len) < 0 || err != 0) {
+            errno = err ? err : errno;
+            goto fail;
+        }
+
+        freeaddrinfo(res);
+        return fd;
+
+    fail:
+        if (fd >= 0) close(fd);
+        fd = -1;
     }
 
-    unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
-    task_yield(kernel_thread_map[t->sched_id]);
-
-    errno = t->io.io_err;
-    ssize_t ret = t->io.done_n;
-
-    return ret;
+    freeaddrinfo(res);
+    return -1;
 }
-
 
 
 /**

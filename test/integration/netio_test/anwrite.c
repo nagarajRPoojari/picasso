@@ -147,7 +147,8 @@ void test_netio_write_basic(void) {
     const char* addr = "127.0.0.1";
     int port = 8002;
 
-    int listen_fd = __public__net_listen(strings_alloc(addr, 9), port, 4096);
+    int listen_fd = __public__net_listen(strings_alloc(addr, 9), port, 
+        4096, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0);
     TEST_ASSERT_MESSAGE(listen_fd >= 0, "Failed to listen");
 
     // Start server thread inside runtime scheduler
