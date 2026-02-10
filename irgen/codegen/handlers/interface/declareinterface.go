@@ -33,9 +33,9 @@ import (
 func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
 
 	ifName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(ifs.Name)
-	aliasName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
+	fqName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
 
-	if _, ok := t.st.Classes[aliasName]; ok {
+	if _, ok := t.st.Classes[fqName]; ok {
 		errorutils.Abort(errorutils.TypeRedeclaration, ifName)
 	}
 
@@ -46,17 +46,17 @@ func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatemen
 
 	// interface is treated just like a class but instantiation is prevented
 	mc := tf.NewMetaClass(types.NewPointer(udt), "")
-	t.st.Classes[aliasName] = mc
+	t.st.Classes[fqName] = mc
 
 	mi := tf.NewMetaInterface()
 	mi.UDT = types.NewPointer(udt)
 
-	t.st.Interfaces[aliasName] = mi
+	t.st.Interfaces[fqName] = mi
 
 	// register current interface type with TypeHandler. this allows current interface
 	// to be identified as a valid type in future while building vars & type
 	// conversions.
-	t.st.TypeHandler.RegisterInterface(aliasName, mi)
+	t.st.TypeHandler.RegisterInterface(fqName, mi)
 }
 
 // DeclareClassFuncs populates the interface with its defined method signatures.
@@ -74,7 +74,7 @@ func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatemen
 //   - Global Symbol Management: Registers methods in the GlobalFuncList to
 //     prevent duplicate linkage symbols and enable cross-module accessibility
 func (t *InterfaceHandler) DeclareClassFuncs(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
-	aliasName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
+	fqName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
 	for _, stI := range ifs.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
@@ -85,7 +85,7 @@ func (t *InterfaceHandler) DeclareClassFuncs(ifs ast.InterfaceDeclarationStateme
 
 			params := make([]*ir.Param, 0)
 			for _, p := range st.Parameters {
-				params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(p.Type.Get())))
+				params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(p.Type.Get()))))
 			}
 
 			// at the end pass `this` parameter representing current object
@@ -97,7 +97,7 @@ func (t *InterfaceHandler) DeclareClassFuncs(ifs ast.InterfaceDeclarationStateme
 
 			var retType types.Type
 			if st.ReturnType != nil {
-				retType = t.st.TypeHandler.GetLLVMType(st.ReturnType.Get())
+				retType = t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ReturnType.Get()))
 			} else {
 				retType = t.st.TypeHandler.GetLLVMType("")
 			}
@@ -112,7 +112,7 @@ func (t *InterfaceHandler) DeclareClassFuncs(ifs ast.InterfaceDeclarationStateme
 
 					// store method signature to validate implementation in
 					// implementor classes
-					t.st.Interfaces[aliasName].Methods[st.Name] = tf.MethodSig{
+					t.st.Interfaces[fqName].Methods[st.Name] = tf.MethodSig{
 						Hash:     utils.HashFuncSig(st.Parameters, st.ReturnType),
 						Name:     st.Name,
 						FuncType: f,

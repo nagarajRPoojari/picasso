@@ -280,7 +280,7 @@ func (t *ExpressionHandler) callClassMethod(bh *bc.BlockHolder, ex ast.CallExpre
 		v := t.ProcessExpression(bh, argExp)
 		raw := v.Load(bh)
 		expected := classMeta.MethodArgs[methodFqName][i]
-		raw = t.st.TypeHandler.ImplicitTypeCast(bh, expected.Get(), raw)
+		raw = t.st.TypeHandler.ImplicitTypeCast(bh, t.st.ResolveAlias(expected.Get()), raw)
 		args = append(args, raw)
 	}
 
@@ -299,7 +299,7 @@ func (t *ExpressionHandler) callClassMethod(bh *bc.BlockHolder, ex ast.CallExpre
 
 	// @todo: not tested
 	tp := classMeta.Returns[methodFqName]
-	return t.st.TypeHandler.BuildVar(bh, tf.NewType(tp.Get(), tp.GetUnderlyingType()), ret)
+	return t.st.TypeHandler.BuildVar(bh, tf.NewType(t.st.ResolveAlias(tp.Get()), t.st.ResolveAlias(tp.GetUnderlyingType())), ret)
 
 }
 

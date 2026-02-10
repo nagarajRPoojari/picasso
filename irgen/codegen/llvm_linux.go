@@ -6,6 +6,7 @@ package generator
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/llir/llvm/ir"
 	"github.com/nagarajRPoojari/picasso/irgen/ast"
@@ -24,9 +25,10 @@ const (
 
 // LLVM parses abstract syntax tree to generate llvm IR
 type LLVM struct {
-	st         *state.State
-	ModuleName string
-	m          contract.Mediator
+	st              *state.State
+	ModuleName      string
+	ModuleAliasName string
+	m               contract.Mediator
 }
 
 func NewLLVM(pkgName string, outputDir string) *LLVM {
@@ -40,8 +42,8 @@ func NewLLVM(pkgName string, outputDir string) *LLVM {
 
 	st := state.NewCompileState(outputDir, pkgName, module)
 	m := mediator.InitMediator(st)
-
-	return &LLVM{st: st, m: m, ModuleName: pkgName}
+	aliasSplit := strings.Split(pkgName, ".")
+	return &LLVM{st: st, m: m, ModuleName: pkgName, ModuleAliasName: aliasSplit[len(aliasSplit)-1]}
 }
 
 func (t *LLVM) GetModule() *ir.Module {
@@ -62,5 +64,5 @@ func (t *LLVM) Dump(outputDir string, file string) {
 }
 
 func (t *LLVM) ParseAST(tree ast.BlockStatement) {
-	pipeline.NewPipeline(t.st, t.m, tree).Run(state.PackageEntry{Name: t.ModuleName, Alias: t.ModuleName})
+	pipeline.NewPipeline(t.st, t.m, tree).Run(state.PackageEntry{Name: t.ModuleName, Alias: t.ModuleAliasName})
 }

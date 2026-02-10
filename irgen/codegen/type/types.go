@@ -368,6 +368,10 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		return c
 	}
 
+	fmt.Printf("_type: %v\n", _type)
+	fmt.Printf("t.ClassUDTS: %v\n", t.ClassUDTS)
+
+	panic("where")
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidNativeType, _type)
 	return nil
 }
@@ -443,6 +447,10 @@ func (t *TypeHandler) GetLLVMType(_type string) types.Type {
 		return k.UDT
 	}
 
+	fmt.Printf("_type: %v\n", _type)
+	fmt.Printf("t.ClassUDTS: %v\n", t.ClassUDTS)
+
+	panic("ehllo")
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidLLVMType, _type)
 	return nil
 }
@@ -533,6 +541,10 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		}
 		return ret
 	}
+	fmt.Printf("target: %v\n", target)
+	fmt.Printf("t.ClassUDTS: %v\n", t.ClassUDTS)
+
+	panic("bro")
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
 	return nil
 }
@@ -1110,6 +1122,10 @@ func (t *TypeHandler) ExplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		}
 		return ret
 	}
+
+	panic("vbroi")
+	fmt.Printf("target: %v\n", target)
+	fmt.Printf("t.ClassUDTS: %v\n", t.ClassUDTS)
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
 	return nil
 }

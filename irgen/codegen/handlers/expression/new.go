@@ -44,30 +44,33 @@ func (t *ExpressionHandler) callConstructor(bh *bc.BlockHolder, cls *tf.Class, e
 	aliasClsName, methodName := buildAliasNameFromMemExp(ex.Method)
 	aliasConstructorName := fmt.Sprintf("%s.%s", aliasClsName, methodName)
 
-	meta := t.st.Classes[aliasClsName]
-	fnVal := t.st.Classes[aliasClsName].Methods[aliasConstructorName]
-	args := t.buildConstructorArgs(bh, aliasConstructorName, meta, cls, ex)
+	fqClsName := t.st.ResolveAlias(aliasClsName)
+	fqConstructorName := t.st.ResolveAlias(aliasConstructorName)
+
+	meta := t.st.Classes[fqClsName]
+	fnVal := t.st.Classes[fqClsName].Methods[fqConstructorName]
+	args := t.buildConstructorArgs(bh, fqConstructorName, meta, cls, ex)
 
 	// Call the function pointer
 	return bh.N.NewCall(fnVal, args...)
 }
 
 // utility function to build constructor args
-func (t *ExpressionHandler) buildConstructorArgs(bh *bc.BlockHolder, aliasConstructorName string, meta *tf.MetaClass, cls *tf.Class, ex ast.CallExpression) []value.Value {
+func (t *ExpressionHandler) buildConstructorArgs(bh *bc.BlockHolder, fqConstructorName string, meta *tf.MetaClass, cls *tf.Class, ex ast.CallExpression) []value.Value {
 	args := make([]value.Value, 0, len(ex.Arguments)+1)
 	for i, argExp := range ex.Arguments {
 		v := t.ProcessExpression(bh, argExp)
 		if v == nil {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("nil arg %d for %s", i, aliasConstructorName))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("nil arg %d for %s", i, fqConstructorName))
 		}
 		raw := v.Load(bh)
 		if raw == nil {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("loaded nil arg %d for %s", i, aliasConstructorName))
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("loaded nil arg %d for %s", i, fqConstructorName))
 		}
 
 		// Implicit type cast if needed
-		expected := meta.MethodArgs[aliasConstructorName][i]
-		raw = t.st.TypeHandler.ImplicitTypeCast(bh, expected.Get(), raw)
+		expected := meta.MethodArgs[fqConstructorName][i]
+		raw = t.st.TypeHandler.ImplicitTypeCast(bh, t.st.ResolveAlias(expected.Get()), raw)
 		if raw == nil {
 			errorutils.Abort(errorutils.InternalError, errorutils.InternalInstantiationError, fmt.Sprintf("ImplicitTypeCast returned nil for arg %d -> %s", i, expected.Get()))
 		}
@@ -100,29 +103,30 @@ func (t *ExpressionHandler) ProcessNewExpression(bh *bc.BlockHolder, ex ast.NewE
 	defer t.st.Vars.RemoveFunc()
 
 	aliasClsName, _ := buildAliasNameFromMemExp(ex.Instantiation.Method)
+	fqClsName := t.st.ResolveAlias(aliasClsName)
 
-	if _, ok := t.st.Interfaces[aliasClsName]; ok {
-		errorutils.Abort(errorutils.InterfaceInstantiationError, aliasClsName)
+	if _, ok := t.st.Interfaces[fqClsName]; ok {
+		errorutils.Abort(errorutils.InterfaceInstantiationError, fqClsName)
 	}
 
-	classMeta := t.st.Classes[aliasClsName]
+	classMeta := t.st.Classes[fqClsName]
 	if classMeta == nil {
-		errorutils.Abort(errorutils.UnknownClass, aliasClsName)
+		errorutils.Abort(errorutils.UnknownClass, fqClsName)
 	}
 
-	clsNameSplit := strings.Split(aliasClsName, ".")
+	clsNameSplit := strings.Split(fqClsName, ".")
 	moduleName := strings.Join(clsNameSplit[:len(clsNameSplit)-1], ".")
 
 	if classMeta.Internal && moduleName != t.st.ModuleName {
-		errorutils.Abort(errorutils.ClassNotAccessible, aliasClsName)
+		errorutils.Abort(errorutils.ClassNotAccessible, fqClsName)
 	}
 
 	// tf.NewClass allocates memory for class instance in heap internally.
 	// & holds heap pointer in a stack slot.
-	instance := tf.NewClass(bh, aliasClsName, classMeta.UDT)
+	instance := tf.NewClass(bh, fqClsName, classMeta.UDT)
 	p := t.callConstructor(bh, instance, ex.Instantiation)
 	cls := &tf.Class{
-		Name: aliasClsName,
+		Name: fqClsName,
 		UDT:  classMeta.UDT.(*types.PointerType),
 	}
 

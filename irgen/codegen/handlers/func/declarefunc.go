@@ -28,32 +28,30 @@ import (
 //     and stores the resulting function symbol for the definition pass.
 func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement, sourcePkg state.PackageEntry) {
 	fqClsName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(cls)
-	aliasClsName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(cls)
 
 	params := make([]*ir.Param, 0)
 	argsTypes := make([]ast.Type, 0)
 	for _, p := range st.Parameters {
 		argsTypes = append(argsTypes, p.Type)
-		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(p.Type.Get())))
+		params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(p.Type.Get()))))
 	}
 
 	// at the end pass `this` parameter representing current object
-	udt := t.st.Classes[aliasClsName].UDT
+	udt := t.st.Classes[fqClsName].UDT
 	params = append(params, ir.NewParam(constants.THIS, udt))
 
 	fqFuncName := fmt.Sprintf("%s.%s", fqClsName, st.Name)
-	aliasFuncName := fmt.Sprintf("%s.%s", aliasClsName, st.Name)
 
 	var retType types.Type
 	if st.ReturnType != nil {
-		retType = t.st.TypeHandler.GetLLVMType(st.ReturnType.Get())
+		retType = t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ReturnType.Get()))
 	} else {
 		retType = t.st.TypeHandler.GetLLVMType("")
 	}
 
 	// store current functions so that later during class instantiation instance
 	// can be made pointing to the functions.
-	if _, ok := t.st.Classes[aliasClsName].Methods[aliasFuncName]; !ok {
+	if _, ok := t.st.Classes[fqClsName].Methods[fqFuncName]; !ok {
 		f, ok := t.st.GlobalFuncList[fqFuncName]
 		if !ok {
 			if cls == st.Name {
@@ -62,11 +60,11 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 			f = t.st.Module.NewFunc(fqFuncName, retType, params...)
 			t.st.GlobalFuncList[fqFuncName] = f
 		}
-		t.st.Classes[aliasClsName].Methods[aliasFuncName] = f
-		t.st.Classes[aliasClsName].Returns[aliasFuncName] = st.ReturnType
+		t.st.Classes[fqClsName].Methods[fqFuncName] = f
+		t.st.Classes[fqClsName].Returns[fqFuncName] = st.ReturnType
 	}
 
-	if _, ok := t.st.Classes[aliasClsName].MethodArgs[aliasFuncName]; !ok {
-		t.st.Classes[aliasClsName].MethodArgs[aliasFuncName] = argsTypes
+	if _, ok := t.st.Classes[fqClsName].MethodArgs[fqFuncName]; !ok {
+		t.st.Classes[fqClsName].MethodArgs[fqFuncName] = argsTypes
 	}
 }
