@@ -2,6 +2,7 @@
 #define STR_H
 #include "platform.h"
 #include <stdint.h>
+#include "array.h"
 
 /* format modifiers */
 #define PERCENT       '%'
@@ -25,7 +26,23 @@ typedef struct {
  * @param size Number of bytes
  * @return Pointer to the formatted string
  */
-__public__string_t* __public__strings_alloc(const char* fmt, size_t size);
+__public__string_t* __public__strings_alloc_from_raw(const char* fmt, size_t size);
+
+/**
+ * @brief Get pointer to byte stream
+ * @param fmt Format string
+ * @return array of byte stream
+ */
+__public__array_t* __public__strings_get_bytes(__public__string_t* fmt);
+
+/**
+ * @brief Allocate memory in heap for given string
+ * @param fmt Format string
+ * @param size Number of bytes
+ * @return Pointer to the formatted string
+ */
+__public__string_t* __public__strings_alloc_from_arr(__public__array_t* fmt);
+
 
 /**
  * @brief Format a string with variable arguments

@@ -1,22 +1,88 @@
-using "builtin/array";
 using "builtin/syncio";
+using "builtin/net";
+using "builtin/array";
+
+class Server {
+    say addr: string;
+    say port: int16;
+    say listenFd: int;
+
+    fn Server(addr: string, port: int16) {
+        this.addr = addr;
+        this.port = port;
+    }
+
+    fn listen() {
+        say fd: int = net.listen(this.addr, this.port, 
+            4096, 
+            1, 1, 1, 0, 0, 0, 0, 0, 0, 0    
+        );
+        if(fd < 0){
+            syncio.printf("failed to start listening at %s:%d \n", this.addr, this.port);
+        }else {
+            this.listenFd = fd;
+            syncio.printf("started listening at %s:%d \n", this.addr, this.port);
+        }
+    }
+
+    fn accept(): int {
+        return net.accept(this.listenFd);
+    }
+
+}
 
 class Test {
-    fn Test() {}
+    fn Test() {
 
-    say x: string;
-
-    fn testIntToUInt() {
-        // int8(-1) can to stored as uint8(255) but int64(-1) can't be stored 
-        // because it's 2 complement can't be interpreted within uint8's boundary 
-        // so below shouldn't work.
-        say y: int64 = -1;
-        say x: uint8 = y; 
-        syncio.printf("value of x: %u\n", x);
     }
+
+    fn handle(x: int) {
+        say buf_size:int = 256;
+        say buf:[]uint8 = array.create(uint8, buf_size);
+
+        say n: int = net.read(x, buf, buf_size-1);
+        if(n<=0) {
+            syncio.printf("======= err: read: %d =======\n", n);
+        }else {
+            foreach i in 0..n {
+                syncio.printf("%d ", buf[i]);
+            } 
+            syncio.printf("\n");
+
+            net.write(x, buf, n);
+        }
+    }
+
+    fn testServer() {
+        say s: start.Server = new start.Server("127.0.0.1", 8000);
+        s.listen();
+
+        foreach i in 0..1 {
+            say fd: int = s.accept();
+            thread(this.handle, fd);
+        }
+    }
+
+    fn simulateClient() {
+        say fd: int = net.dial("127.0.0.1", 8000);
+        syncio.printf("dial: %d\n", fd);
+        say buf_size:int = 256;
+        say buf:[]uint8 = array.create(uint8, buf_size);
+
+        foreach i in 0..array.len(buf) {
+            buf[i] = i;
+        }
+
+        net.write(fd, buf, buf_size);
+    }
+    
 }
 
 fn start() {
     say t: start.Test = new start.Test();
-    t.testIntToUInt();
+
+    thread(t.testServer);
+    foreach i in 0..1 {
+        thread(t.simulateClient);
+    }
 }

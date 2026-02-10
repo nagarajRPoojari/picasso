@@ -108,7 +108,21 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) ;
  * @return Listening socket file descriptor on success, or -1 on error
  *         (with errno set accordingly).
  */
-ssize_t __public__net_listen(__public__string_t *addr, uint16_t port, int backlog);
+ssize_t __public__net_listen(
+    __public__string_t *addr,
+    uint16_t port,
+    int backlog,
+    int close_on_exec,
+    int reuse_addr,
+    int reuse_port,
+    int tcp_nodelay,
+    int tcp_defer_accept,
+    int tcp_fastopen,
+    int keepalive,
+    int rcvbuf,
+    int sndbuf,
+    int ipv6_only
+);
 
 
 /**

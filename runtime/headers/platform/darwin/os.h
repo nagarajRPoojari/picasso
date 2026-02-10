@@ -29,18 +29,44 @@
 #endif
 
 /* Error codes - Generally consistent with POSIX */
-const int __public__os_EAGAIN = EAGAIN;
-const int __public__os_EINTR  = EINTR;
-const int __public__os_EINVAL = EINVAL;
-const int __public__os_EPERM  = EPERM;
-const int __public__os_ENOENT = ENOENT;
-const int __public__os_ENOMEM = ENOMEM;
 const int __public__os_EFAULT = EFAULT;
-const int __public__os_EACCES = EACCES;
 
 const int __public__os_WNOHANG    = WNOHANG;
 const int __public__os_WUNTRACED  = WUNTRACED;
 const int __public__os_WCONTINUED = WCONTINUED;
+
+/* Generic / control */
+const int __public__os_EPERM   = EPERM;
+const int __public__os_EINVAL  = EINVAL;
+const int __public__os_EAGAIN  = EAGAIN;
+const int __public__os_EINTR   = EINTR;
+const int __public__os_EIO     = EIO;
+
+/* File / directory */
+const int __public__os_ENOENT      = ENOENT;
+const int __public__os_EEXIST      = EEXIST;
+const int __public__os_ENOTDIR     = ENOTDIR;
+const int __public__os_EISDIR      = EISDIR;
+const int __public__os_ENOTEMPTY   = ENOTEMPTY;
+const int __public__os_ENAMETOOLONG = ENAMETOOLONG;
+const int __public__os_EBADF  = EBADF;
+const int __public__os_EPIPE  = EPIPE;
+
+/* Permissions */
+const int __public__os_EACCES  = EACCES;
+const int __public__os_EROFS   = EROFS;
+
+/* Resources */
+const int __public__os_ENOMEM = ENOMEM;
+const int __public__os_ENOSPC = ENOSPC;
+const int __public__os_EMFILE = EMFILE;
+const int __public__os_ENFILE = ENFILE;
+const int __public__os_EBUSY  = EBUSY;
+
+/* Links / filesystem */
+const int __public__os_ELOOP  = ELOOP;
+const int __public__os_EXDEV  = EXDEV;
+
 
 /* Signals */
 const int __public__os_SIGINT  = SIGINT;
@@ -117,11 +143,6 @@ const int __public__os_S_IROTH = S_IROTH;
 const int __public__os_S_IWOTH = S_IWOTH;
 const int __public__os_S_IXOTH = S_IXOTH;
 
-/* Errors (FD-relevant subset) */
-const int __public__os_EBADF  = EBADF;
-const int __public__os_EPIPE  = EPIPE;
-const int __public__os_EIO    = EIO;
-const int __public__os_ENOSPC = ENOSPC;
 
 /* Special directory FDs */
 #ifndef AT_FDCWD
@@ -491,6 +512,14 @@ int __public__os_setrlimit(int resource, const void *rlim);
  * @return 0 on success, -1 on error.
  */
 int __public__os_mkdir(__public__string_t *path, int mode);
+
+/**
+ * @brief Create a temporary directory.
+ * @param path Directory template (must end with XXXXXX).
+ * @param mode Permissions.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_mkdir_temp(__public__string_t *path, int mode);
 
 /**
  * @brief Remove a directory.

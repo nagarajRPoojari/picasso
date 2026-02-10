@@ -88,7 +88,7 @@ func (t *StatementHandler) processClassFieldAssignment(bh *bc.BlockHolder, expHa
 
 	rhs := expHandler.ProcessExpression(bh, st.AssignedValue)
 
-	typeName := classMeta.VarAST[fqName].ExplicitType.Get()
+	typeName := t.st.ResolveAlias(classMeta.VarAST[fqName].ExplicitType.Get())
 
 	// similar to above logic, avoid casting & new var creation logic for array types
 	if typeName != constants.ARRAY {

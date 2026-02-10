@@ -396,6 +396,21 @@ int __public__os_mkdir(__public__string_t *path, int mode) {
 }
 
 /**
+ * @brief Create a temporary directory.
+ * @param path Directory template (must end with XXXXXX).
+ * @param mode Permissions.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_mkdir_temp(__public__string_t *path, int mode) {
+    char *dir = mkdtemp(path->data);
+    if (!dir) return -1;
+
+    // mkdtemp creates dir with 0700, fix permissions
+    if (chmod(dir, mode) != 0) return -1;
+    printf("dir: %s \n", dir);
+    return 0;
+}
+/**
  * @brief Remove a directory.
  * @param path Directory path.
  * @return 0 on success, -1 on error.

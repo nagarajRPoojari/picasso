@@ -13,7 +13,10 @@ class Server {
     }
 
     fn listen() {
-        say fd: int = net.listen(this.addr, this.port, 4096);
+        say fd: int = net.listen(this.addr, this.port, 
+            4096, 
+            1, 1, 1, 0, 0, 0, 0, 0, 0, 0    
+        );
         if(fd < 0){
             syncio.printf("failed to start listening at %s:%d \n", this.addr, this.port);
         }else {

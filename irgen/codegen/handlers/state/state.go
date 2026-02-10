@@ -1,6 +1,8 @@
 package state
 
 import (
+	"strings"
+
 	"github.com/llir/llvm/ir/types"
 
 	"github.com/llir/llvm/ir"
@@ -98,6 +100,9 @@ type State struct {
 
 	// imports
 	Imports map[string]PackageEntry
+
+	// alias to concrete module name map
+	AliasMap map[string]string
 }
 
 type FFIDeclarations struct {
@@ -123,8 +128,28 @@ func NewCompileState(outputDir string, pkgName string, module *ir.Module) *State
 		Classes:           make(map[string]*tf.MetaClass),
 		Interfaces:        make(map[string]*tf.MetaInterface),
 		IdentifierBuilder: identifier.NewIdentifierBuilder(pkgName),
+		AliasMap:          make(map[string]string),
 		LibMethods:        make(map[string]function.Func),
 		CI:                c.Instance,
 		Imports:           make(map[string]PackageEntry),
 	}
+}
+
+func (t *State) ResolveAlias(aliasField string) string {
+	aliasFieldSplits := strings.Split(aliasField, ".")
+	if len(aliasFieldSplits) <= 1 {
+		return aliasField
+	}
+
+	aliasModuleName := aliasFieldSplits[0]
+	fqModuleName, ok := t.AliasMap[aliasModuleName]
+
+	if !ok {
+		return aliasField
+	}
+
+	varSplitList := []string{fqModuleName}
+	varSplitList = append(varSplitList, aliasFieldSplits[1:]...)
+
+	return strings.Join(varSplitList, ".")
 }

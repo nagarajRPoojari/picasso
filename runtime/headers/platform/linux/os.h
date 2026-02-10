@@ -482,6 +482,14 @@ int __public__os_fcntl(int fd, int cmd, long arg);
 int __public__os_mkdir(__public__string_t *path, int mode);
 
 /**
+ * @brief Create a temporary directory.
+ * @param path Directory template (must end with XXXXXX).
+ * @param mode Permissions.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_mkdir_temp(__public__string_t *path, int mode);
+
+/**
  * @brief Remove an empty directory.
  * @param path Directory path.
  * @return 0 on success or -1 on error.

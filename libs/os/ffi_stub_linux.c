@@ -41,6 +41,7 @@ void* __ffi_force[] = {
     (void*)__public__os_chmod,
     (void*)__public__os_chown,
     (void*)__public__os_mkdir,
+    (void*)__public__os_mkdir_temp,
     (void*)__public__os_rmdir,
     (void*)__public__os_unlink,
     (void*)__public__os_rename,

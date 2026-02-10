@@ -23,9 +23,8 @@ import (
 func (t *ClassHandler) DeclareOpaqueClass(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
 
 	clsName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(cls.Name)
-	aliasName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(cls.Name)
 
-	if _, ok := t.st.Classes[aliasName]; ok {
+	if _, ok := t.st.Classes[clsName]; ok {
 		errorutils.Abort(errorutils.TypeRedeclaration, clsName)
 	}
 
@@ -35,20 +34,23 @@ func (t *ClassHandler) DeclareOpaqueClass(cls ast.ClassDeclarationStatement, sou
 		t.st.GlobalTypeList[clsName] = t.st.Module.NewTypeDef(clsName, udt)
 	}
 	mc := tf.NewMetaClass(types.NewPointer(udt), cls.Implements)
-	t.st.Classes[aliasName] = mc
+	t.st.Classes[clsName] = mc
 
 	// assumed that all interfaces are defined first
 	if cls.Implements != "" {
 		errorutils.Assert(t.st.Interfaces != nil, "interfaces USTs are expected to be initialized before class UDT")
-		t.st.Interfaces[cls.Implements].ImplementedBy = append(t.st.Interfaces[cls.Implements].ImplementedBy, aliasName)
+		t.st.Interfaces[cls.Implements].ImplementedBy = append(t.st.Interfaces[cls.Implements].ImplementedBy, clsName)
 	}
 
 	// register current class type with TypeHandler. this allows current class
 	// to be identified as a valid type in future while building vars & type
 	// conversions.
-	t.st.TypeHandler.RegisterClass(aliasName, mc)
+	t.st.TypeHandler.RegisterClass(clsName, mc)
 
-	t.st.Classes[aliasName].Internal = cls.IsInternal
+	// not the right place though
+	t.st.AliasMap[sourcePkg.Alias] = sourcePkg.Name
+
+	t.st.Classes[clsName].Internal = cls.IsInternal
 }
 
 // DeclareClassFuncs orchestrates the declaration of all member functions

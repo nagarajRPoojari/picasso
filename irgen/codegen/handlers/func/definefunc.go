@@ -18,29 +18,28 @@ import (
 	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
-func (t *FuncHandler) DefineConstructor(className string, instance *tf.Class, bh *bc.BlockHolder, fn *ast.FunctionDefinitionStatement, avoid map[string]struct{}) *tf.Class {
-	aliasClsName := className
+func (t *FuncHandler) DefineConstructor(fqClsName string, instance *tf.Class, bh *bc.BlockHolder, fn *ast.FunctionDefinitionStatement, avoid map[string]struct{}) *tf.Class {
 
-	if _, ok := t.st.Interfaces[aliasClsName]; ok {
-		errorutils.Abort(errorutils.InterfaceInstantiationError, aliasClsName)
+	if _, ok := t.st.Interfaces[fqClsName]; ok {
+		errorutils.Abort(errorutils.InterfaceInstantiationError, fqClsName)
 	}
 
-	classMeta := t.st.Classes[aliasClsName]
+	classMeta := t.st.Classes[fqClsName]
 	if classMeta == nil {
-		errorutils.Abort(errorutils.UnknownClass, aliasClsName)
+		errorutils.Abort(errorutils.UnknownClass, fqClsName)
 	}
 
-	clsNameSplit := strings.Split(aliasClsName, ".")
+	clsNameSplit := strings.Split(fqClsName, ".")
 	moduleName := strings.Join(clsNameSplit[:len(clsNameSplit)-1], ".")
 
 	if classMeta.Internal && moduleName != t.st.ModuleName {
-		errorutils.Abort(errorutils.ClassNotAccessible, aliasClsName)
+		errorutils.Abort(errorutils.ClassNotAccessible, fqClsName)
 	}
 
 	// tf.NewClass allocates memory for class instance in heap internally.
 	// & holds heap pointer in a stack slot.
 	structType := classMeta.StructType()
-	meta := t.st.Classes[aliasClsName]
+	meta := t.st.Classes[fqClsName]
 
 	for name, index := range meta.FieldIndexMap {
 		// if field is not found in meta.VarAST indicating func type, update instance
@@ -48,8 +47,8 @@ func (t *FuncHandler) DefineConstructor(className string, instance *tf.Class, bh
 		// refer to this pointed function.
 		exp, ok := meta.VarAST[name]
 		if !ok {
-			f := t.st.Classes[aliasClsName].Methods[name]
-			fieldType := t.st.Classes[aliasClsName].StructType().Fields[index]
+			f := t.st.Classes[fqClsName].Methods[name]
+			fieldType := t.st.Classes[fqClsName].StructType().Fields[index]
 			instance.UpdateField(bh, t.st.TypeHandler, index, f, fieldType)
 			continue
 		}
@@ -57,6 +56,9 @@ func (t *FuncHandler) DefineConstructor(className string, instance *tf.Class, bh
 		// handling initialized & uninitialized variables.
 		fieldType := structType.Fields[index]
 		var v tf.Var
+
+		tp := t.st.ResolveAlias(exp.ExplicitType.Get())
+		utp := t.st.ResolveAlias(exp.ExplicitType.GetUnderlyingType())
 		if exp.AssignedValue == nil {
 			// @todo: this need to be verified
 			var init value.Value
@@ -65,13 +67,13 @@ func (t *FuncHandler) DefineConstructor(className string, instance *tf.Class, bh
 			// new keyword. e.g, say x: atomic int; should do the instantiaion job though it is just
 			// a declaration. therefore instantiate with NewClass.
 			if exp.ExplicitType.IsAtomic() {
-				meta := t.st.Classes[exp.ExplicitType.Get()]
-				v = tf.NewClass(bh, exp.ExplicitType.Get(), meta.UDT)
+				meta := t.st.Classes[tp]
+				v = tf.NewClass(bh, tp, meta.UDT)
 			} else {
 
 				// remaining vars without assignedvalues holds its corresponding zero values.
 				// @todo: list zero values for all data types somewehere in docs to look at.
-				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get(), exp.ExplicitType.GetUnderlyingType()), init)
+				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(tp, utp), init)
 			}
 		} else {
 			v = t.m.GetExpressionHandler().(*expression.ExpressionHandler).ProcessExpression(bh, exp.AssignedValue)
@@ -79,11 +81,11 @@ func (t *FuncHandler) DefineConstructor(className string, instance *tf.Class, bh
 			// data types other than array, like primitives, object types are typecasted implicitly
 			// before assignment.
 			if v.NativeTypeString() != constants.ARRAY {
-				casted := t.st.TypeHandler.ImplicitTypeCast(bh, exp.ExplicitType.Get(), v.Load(bh))
-				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(exp.ExplicitType.Get()), casted)
+				casted := t.st.TypeHandler.ImplicitTypeCast(bh, tp, v.Load(bh))
+				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(tp), casted)
 			} else {
 				// no need to cast array type, but do a base type check.
-				t.st.TypeHandler.ImplicitTypeCast(bh, exp.ExplicitType.Get(), v.Load(bh))
+				t.st.TypeHandler.ImplicitTypeCast(bh, tp, v.Load(bh))
 			}
 		}
 		instance.UpdateField(bh, t.st.TypeHandler, index, v.Load(bh), fieldType)
@@ -109,29 +111,27 @@ func (t *FuncHandler) DefineConstructor(className string, instance *tf.Class, bh
 //     in the symbol table. It distinguishes between standard user-defined parameters
 //     and the implicit 'this' pointer, which is wrapped in a tf.Class container.
 //   - Terminal Handling: Automatically injects a 'void' return if no explicit
-func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionStatement, avoid map[string]struct{}) {
+func (t *FuncHandler) DefineFunc(fqClsName string, fn *ast.FunctionDefinitionStatement, avoid map[string]struct{}) {
 	// new level for function block
 	t.st.Vars.AddFunc()
 	defer t.st.Vars.RemoveFunc()
 
-	name := fmt.Sprintf("%s.%s", className, fn.Name)
+	fqFuncName := fmt.Sprintf("%s.%s", fqClsName, fn.Name)
 	var f *ir.Func
-	f = t.st.Classes[className].Methods[name]
+	f = t.st.Classes[fqClsName].Methods[fqFuncName]
 
-	if _, ok := avoid[fn.Name]; ok {
+	if _, ok := avoid[fqFuncName]; ok {
 		// @todo: not sure about its placement here, could have been handled
 		// while declaring
-		errorutils.Abort(errorutils.MethodRedeclaration, fn.Name)
+		errorutils.Abort(errorutils.MethodRedeclaration, fqFuncName)
 		return
 	}
 
-	clsAliasNameSplit := strings.Split(className, ".")
-	clsAliasName := clsAliasNameSplit[len(clsAliasNameSplit)-1]
 	var instance value.Value
-	if clsAliasName == fn.Name {
+	if isConstructor(fqFuncName, fqClsName) {
 		// constructor: init Types
 		// @todo: basic checks about constructor
-		// t.initTypes(bh, className)
+		// t.initTypes(bh, fqClsName)
 	}
 	bh := bc.NewBlockHolder(bc.VarBlock{Block: f.NewBlock("")}, f.NewBlock(""))
 	old := bh.N
@@ -139,20 +139,20 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	for i, p := range f.Params {
 		if i < len(fn.Parameters) {
 			pt := fn.Parameters[i].Type
-			paramType := tf.NewType(pt.Get(), pt.GetUnderlyingType())
+			paramType := tf.NewType(t.st.ResolveAlias(pt.Get()), t.st.ResolveAlias(pt.GetUnderlyingType()))
 			t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(bh, paramType, p))
 		} else {
-			clsMeta := t.st.Classes[className]
+			clsMeta := t.st.Classes[fqClsName]
 			if clsMeta == nil {
-				errorutils.Abort(errorutils.UnknownClass, className)
+				errorutils.Abort(errorutils.UnknownClass, fqClsName)
 			}
 			cls := &tf.Class{
-				Name: className,
+				Name: fqClsName,
 				UDT:  clsMeta.UDT.(*types.PointerType),
 			}
 			cls.Update(bh, p)
-			if clsAliasName == fn.Name {
-				t.DefineConstructor(className, cls, bh, fn, avoid)
+			if isConstructor(fqFuncName, fqClsName) {
+				t.DefineConstructor(fqClsName, cls, bh, fn, avoid)
 				instance = cls.Load(bh)
 			}
 			t.st.Vars.AddNewVar(p.LocalName, cls)
@@ -161,7 +161,8 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 
 	t.m.GetBlockHandler().(*block.BlockHandler).ProcessBlock(f, bh, fn.Body)
 	bh.V.NewBr(old)
-	if clsAliasName == fn.Name {
+
+	if isConstructor(fqFuncName, fqClsName) {
 		bh.N.NewRet(instance)
 		return
 	}
@@ -169,6 +170,12 @@ func (t *FuncHandler) DefineFunc(className string, fn *ast.FunctionDefinitionSta
 	if fn.ReturnType == nil {
 		bh.N.NewRet(nil)
 	}
+}
+
+func isConstructor(fqFuncName string, fqClsName string) bool {
+	fName := strings.Split(fqFuncName, ".")
+	cName := strings.Split(fqClsName, ".")
+	return fName[len(fName)-1] == cName[len(cName)-1]
 }
 
 // DefineMainFunc generates the entry point for the executable. Unlike standard

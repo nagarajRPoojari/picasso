@@ -148,7 +148,8 @@ void test_netio_read_basic(void) {
     char* addr = "127.0.0.1";
     int port = 8000;
 
-    int lld = __public__net_listen(strings_alloc(addr, 9), port, 4096);
+    int lld = __public__net_listen(strings_alloc(addr, 9), port, 
+        4096, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0);
     TEST_ASSERT(lld >= 0);
 
     thread(__test_netio_read_basic, 3, NULL, count, lld);

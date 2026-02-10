@@ -44,8 +44,8 @@ func (t *ClassHandler) DefineClassFuncs(cls ast.ClassDeclarationStatement) {
 //   - Opaque Completion: Updates the underlying LLVM struct type (stored in
 //     clsMeta.UDT) with the finalized field list, completing the type definition.
 func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
-	aliasClsName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(cls.Name)
-	clsMeta := t.st.Classes[aliasClsName]
+	fqName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(cls.Name)
+	clsMeta := t.st.Classes[fqName]
 
 	fieldTypes := make([]types.Type, 0)
 	vars := make(map[string]struct{}, 0)
@@ -58,11 +58,11 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg 
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
-			t.defineField(i, aliasClsName, clsMeta, &fieldTypes, vars, st)
+			t.defineField(i, fqName, clsMeta, &fieldTypes, vars, st)
 			i++
 
 		case ast.FunctionDefinitionStatement:
-			t.defineMethod(i, aliasClsName, clsMeta, &fieldTypes, funcs, st)
+			t.defineMethod(i, fqName, clsMeta, &fieldTypes, funcs, st)
 			i++
 		}
 	}
@@ -79,38 +79,38 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg 
 }
 
 // defineField registers all needed info about class field in class metadata
-func (t *ClassHandler) defineField(i int, aliasClsName string, clsMeta *typedef.MetaClass, fieldTypes *[]types.Type, vars map[string]struct{}, st ast.VariableDeclarationStatement) {
-	aliasVarName := fmt.Sprintf("%s.%s", aliasClsName, st.Identifier)
-	if _, ok := vars[aliasVarName]; ok {
+func (t *ClassHandler) defineField(i int, fqName string, clsMeta *typedef.MetaClass, fieldTypes *[]types.Type, vars map[string]struct{}, st ast.VariableDeclarationStatement) {
+	fqVarName := fmt.Sprintf("%s.%s", fqName, st.Identifier)
+	if _, ok := vars[fqVarName]; ok {
 		errorutils.Abort(errorutils.VariableRedeclaration, st.Identifier)
 	}
 
-	clsMeta.FieldIndexMap[aliasVarName] = i
-	clsMeta.VarAST[aliasVarName] = &st
+	clsMeta.FieldIndexMap[fqVarName] = i
+	clsMeta.VarAST[fqVarName] = &st
 
-	*fieldTypes = append(*fieldTypes, t.st.TypeHandler.GetLLVMType(st.ExplicitType.Get()))
-	vars[aliasVarName] = struct{}{}
+	*fieldTypes = append(*fieldTypes, t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ExplicitType.Get())))
+	vars[fqVarName] = struct{}{}
 
 	if st.ExplicitType.GetUnderlyingType() != "" {
-		clsMeta.ArrayVarsEleTypes[i] = t.st.TypeHandler.GetLLVMType(st.ExplicitType.GetUnderlyingType())
+		clsMeta.ArrayVarsEleTypes[i] = t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ExplicitType.GetUnderlyingType()))
 	}
 
 	// mark access mode
 	if st.IsInternal {
-		clsMeta.InternalFields[aliasVarName] = struct{}{}
+		clsMeta.InternalFields[fqVarName] = struct{}{}
 	}
 }
 
 // defineField registers all needed info about class method in class metadata
-func (t *ClassHandler) defineMethod(i int, aliasClsName string, clsMeta *typedef.MetaClass, fieldTypes *[]types.Type, funcs map[string]struct{}, st ast.FunctionDefinitionStatement) {
-	aliasFuncName := fmt.Sprintf("%s.%s", aliasClsName, st.Name)
-	if _, ok := funcs[aliasFuncName]; ok {
+func (t *ClassHandler) defineMethod(i int, fqName string, clsMeta *typedef.MetaClass, fieldTypes *[]types.Type, funcs map[string]struct{}, st ast.FunctionDefinitionStatement) {
+	fqFuncName := fmt.Sprintf("%s.%s", fqName, st.Name)
+	if _, ok := funcs[fqFuncName]; ok {
 		errorutils.Abort(errorutils.MethodRedeclaration, st.Name)
 	}
 
 	var retType types.Type
 	if st.ReturnType != nil {
-		retType = t.st.TypeHandler.GetLLVMType(st.ReturnType.Get())
+		retType = t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ReturnType.Get()))
 	} else {
 		// empty string is expected to give a void type
 		retType = t.st.TypeHandler.GetLLVMType("")
@@ -118,18 +118,18 @@ func (t *ClassHandler) defineMethod(i int, aliasClsName string, clsMeta *typedef
 
 	args := make([]types.Type, 0)
 	for _, p := range st.Parameters {
-		args = append(args, t.st.TypeHandler.GetLLVMType(p.Type.Get()))
+		args = append(args, t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(p.Type.Get())))
 	}
 
 	args = append(args, clsMeta.UDT)
 	funcType := types.NewFunc(retType, args...)
 	*fieldTypes = append(*fieldTypes, types.NewPointer(funcType))
 
-	clsMeta.FieldIndexMap[aliasFuncName] = i
-	funcs[aliasFuncName] = struct{}{}
+	clsMeta.FieldIndexMap[fqFuncName] = i
+	funcs[fqFuncName] = struct{}{}
 
 	// mark access mode
 	if st.IsInternal {
-		clsMeta.InternalFields[aliasFuncName] = struct{}{}
+		clsMeta.InternalFields[fqFuncName] = struct{}{}
 	}
 }

@@ -20,6 +20,9 @@ func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableD
 		errorutils.Abort(errorutils.VariableRedeclaration, st.Identifier)
 	}
 
+	tp := t.st.ResolveAlias(st.ExplicitType.Get())
+	utp := t.st.ResolveAlias(st.ExplicitType.GetUnderlyingType())
+
 	var v tf.Var
 	if st.AssignedValue == nil {
 		var init value.Value
@@ -27,16 +30,16 @@ func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableD
 			// atomic data types are special class types & are not expected to be initialized with
 			// new keyword. e.g, say x: atomic int; should do the instantiaion job though it is just
 			// a declaration. therefore instantiate with NewClass.
-			meta := t.st.Classes[st.ExplicitType.Get()]
-			c := tf.NewClass(bh, st.ExplicitType.Get(), meta.UDT)
+			meta := t.st.Classes[tp]
+			c := tf.NewClass(bh, tp, meta.UDT)
 			init = c.Load(bh)
 		}
-		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), init)
+		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(tp, utp), init)
 	} else {
 		_v := expHandler.ProcessExpression(bh, st.AssignedValue)
 		v = _v
-		casted := t.st.TypeHandler.ImplicitTypeCast(bh, st.ExplicitType.Get(), v.Load(bh))
-		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(st.ExplicitType.Get(), st.ExplicitType.GetUnderlyingType()), casted)
+		casted := t.st.TypeHandler.ImplicitTypeCast(bh, tp, v.Load(bh))
+		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(tp, utp), casted)
 
 	}
 	t.st.Vars.AddNewVar(st.Identifier, v)
