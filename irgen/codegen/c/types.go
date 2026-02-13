@@ -23,6 +23,8 @@ func (t *Interface) initArrayTypes(_ *ir.Module) {
 		types.NewPointer(types.I64), // shape (i64*)
 		types.I64,                   // length
 		types.I64,                   // rank
+		types.I64,                   // capacity
+		types.I32,                   // elesize
 	)
 
 	t.Types[TYPE_STRING] = types.NewStruct(

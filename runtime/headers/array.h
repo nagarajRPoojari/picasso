@@ -9,6 +9,8 @@ typedef struct {
     int64_t* shape; 
     int64_t length; 
     int64_t rank;  
+    int64_t capacity;  
+    int32_t elem_size;
 } __public__array_t;
 
 /**
@@ -20,6 +22,12 @@ typedef struct {
  * Example: __public__alloc_array(sizeof(int), 3, 2, 3, 4) creates a 2x3x4 jagged array
  */
 __public__array_t* __public__alloc_array(int32_t elem_size, int32_t rank, ...);
+
+/**
+ * @brief extend the length by 1, allocate 2*capacity if capacity is not enough 
+ * @param __public__array_t array to extend
+ */
+void __public__extend_array(__public__array_t* arr, int32_t unused);
 
 /**
  * @brief Get a sub-array pointer from a jagged array

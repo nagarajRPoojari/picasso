@@ -432,6 +432,8 @@ func (t *TypeHandler) GetLLVMType(_type string) types.Type {
 			types.NewPointer(types.I64), // shape (i64*)
 			types.I64,                   // length
 			types.I64,                   // rank
+			types.I64,                   // capacity
+			types.I32,                   // elesize
 		)
 
 		s.SetName("array")

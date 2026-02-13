@@ -45,6 +45,8 @@ const (
 	FUNC_GET_SUBARRAY = "__public__get_subarray"
 	FUNC_SET_SUBARRAY = "__public__set_subarray"
 
+	FUNC_EXTEND_ARRAY = "__public__extend_array"
+
 	FUNC_STRING_ALLOC = "__public__strings_alloc_from_raw"
 
 	TYPE_ARRAY   = "array"

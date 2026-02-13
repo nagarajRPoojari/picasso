@@ -6,6 +6,7 @@ go_library(
     importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/array",
     visibility = ["//visibility:public"],
     deps = [
+        "//irgen/codegen/c",
         "//irgen/codegen/libs/func",
         "//irgen/codegen/libs/type",
         "//irgen/codegen/type",

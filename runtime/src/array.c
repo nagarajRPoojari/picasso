@@ -1,6 +1,7 @@
 #include "platform.h"
 #include "array.h"
 #include "alloc.h"
+#include "sigerr.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
@@ -45,8 +46,10 @@ static __public__array_t* __alloc_array_recursive(int32_t elem_size, int32_t ran
         arr->shape = NULL;
     }
     
+    arr->capacity = count;
     arr->length = count;
     arr->rank = rank;
+    arr->elem_size = elem_size;
     
     memset(arr->data, 0, data_size);
     
@@ -86,6 +89,36 @@ __public__array_t* __public__alloc_array(int32_t elem_size, int32_t rank, ...) {
     
     release(__arena__, dims);
     return result;
+}
+
+/**
+ * @brief extend the length by 1, allocate 2*capacity if capacity is not enough 
+ * @param __public__array_t array to extend
+ */
+void __public__extend_array(__public__array_t* arr, int32_t unused) {
+    (void)unused;
+    
+    if (arr == NULL) {
+        __public__runtime_error("===== array is NULL in extend_array");
+    }
+    
+    int old = arr->length;
+
+    arr->length++;
+    if(arr->length <= arr->capacity) {
+        return;
+    }
+
+    int64_t new_cap = arr->capacity * 2;
+    arr->capacity = new_cap;
+    char* data = (char*)allocate(__arena__, new_cap * arr->elem_size);
+    
+    memcpy(data, arr->data, (arr->length - 1) * arr->elem_size);
+    
+    release(__arena__, arr->data);
+    arr->data = data;
+
+    printf("extending from %d to %d \n", old, arr->length);
 }
 
 int64_t __public__len(__public__array_t* arr) {

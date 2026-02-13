@@ -46,6 +46,9 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	t.Funcs[FUNC_ARRAY_ALLOC] = mod.NewFunc(FUNC_ARRAY_ALLOC, types.NewPointer(t.Types[TYPE_ARRAY]), ir.NewParam("", types.I32), ir.NewParam("", types.I32))
 	t.Funcs[FUNC_ARRAY_ALLOC].Sig.Variadic = true
 
+	// @extend_array
+	t.Funcs[FUNC_EXTEND_ARRAY] = mod.NewFunc(FUNC_EXTEND_ARRAY, types.Void, ir.NewParam("", types.NewPointer(t.Types[TYPE_ARRAY])), ir.NewParam("", types.I32))
+
 	// @get_subarray
 	t.Funcs[FUNC_GET_SUBARRAY] = mod.NewFunc(FUNC_GET_SUBARRAY, types.NewPointer(t.Types[TYPE_ARRAY]),
 		ir.NewParam("arr", types.NewPointer(t.Types[TYPE_ARRAY])),
