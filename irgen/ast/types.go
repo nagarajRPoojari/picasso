@@ -71,6 +71,17 @@ func (t *ListType) GetUnderlyingType() string {
 	}
 }
 
+// GetRank returns the number of dimensions for the list type.
+// Example: For [][]int, it returns 2; for [][][]int, it returns 3.
+func (t *ListType) GetRank() int {
+	switch underlying := t.Underlying.(type) {
+	case *ListType:
+		return 1 + underlying.GetRank()
+	default:
+		return 1
+	}
+}
+
 // Get returns the generic string identifier for list structures.
 func (t *ListType) Get() string { return "array" }
 

@@ -33,6 +33,12 @@ func (t *ExpressionHandler) ProcessIndexingExpression(bh *bc.BlockHolder, ex ast
 		indices = append(indices, c.Load(bh))
 	}
 	arr := base.(*tf.Array)
-	v := arr.LoadByIndex(bh, indices)
-	return t.st.TypeHandler.BuildVar(bh, tf.NewType(arr.ElementTypeString), v)
+
+	if len(indices) < arr.Rank {
+		subarray := arr.LoadSubarrayByIndex(bh, indices)
+		return subarray
+	} else {
+		v := arr.LoadByIndex(bh, indices)
+		return t.st.TypeHandler.BuildVar(bh, tf.NewType(arr.ElementTypeString), v)
+	}
 }

@@ -5,27 +5,42 @@
 #include <string.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 extern __thread arena_t* __arena__;
 
 /**
- * @brief allocate block of memory for array through GC_MALLOC 
- *
- * @param count length of array
- * @param elem_size size of each element
+ * @brief Internal helper to allocate array with dimensions
+ * @param elem_size size of each element (for leaf arrays)
+ * @param rank number of dimensions
+ * @param dims array of dimension sizes
+ * @param dim_index current dimension being processed
  */
-__public__array_t* __public__alloc_array(int count, int elem_size, int rank) {
-    size_t data_size = (size_t)count * elem_size;
+static __public__array_t* __alloc_array_recursive(int32_t elem_size, int32_t rank, int64_t* dims, int dim_index) {
+    if (dim_index >= rank) {
+        return NULL;
+    }
+    
+    int64_t count = dims[dim_index];
     size_t shape_size = (size_t)rank * sizeof(int64_t);
+    size_t data_size;
+    
+    if (rank > 1) {
+        data_size = (size_t)count * sizeof(__public__array_t*);
+    } else {
+        data_size = (size_t)count * elem_size;
+    }
+    
     size_t total_size = sizeof(__public__array_t) + data_size + shape_size;
-
     __public__array_t* arr = (__public__array_t*)allocate(__arena__, total_size);
 
+    // Set data pointer right after the struct
+    arr->data = (char*)(arr + 1);
     
-    arr->data = (char*)(arr + 1); 
-    
+    // Set shape pointer after data and copy dimensions
     if (rank > 0) {
         arr->shape = (int64_t*)(arr->data + data_size);
+        memcpy(arr->shape, dims, rank * sizeof(int64_t));
     } else {
         arr->shape = NULL;
     }
@@ -33,12 +48,88 @@ __public__array_t* __public__alloc_array(int count, int elem_size, int rank) {
     arr->length = count;
     arr->rank = rank;
     
-    memset(arr->data, 0, data_size); 
+    memset(arr->data, 0, data_size);
+    
+    if (rank > 1) {
+        __public__array_t** sub_arrays = (__public__array_t**)arr->data;
+        for (int64_t i = 0; i < count; i++) {
+            sub_arrays[i] = __alloc_array_recursive(elem_size, rank - 1, dims + 1, 0);
+        }
+    }
     return arr;
+}
+
+/**
+ * @brief allocate block of memory for array with pre-allocated subarrays
+ * @param elem_size size of each element (for leaf arrays)
+ * @param rank number of dimensions
+ * @param ... variable number of dimension sizes (int64_t)
+ *
+ * Example: __public__alloc_array(sizeof(int), 3, 2, 3, 4) creates a 2x3x4 array
+ */
+__public__array_t* __public__alloc_array(int32_t elem_size, int32_t rank, ...) {
+    if (rank <= 0) {
+        return NULL;
+    }
+    
+    // Collect dimensions from varargs
+    int64_t* dims = (int64_t*)allocate(__arena__, rank * sizeof(int64_t));
+    va_list args;
+    va_start(args, rank);
+    for (int i = 0; i < rank; i++) {
+        dims[i] = va_arg(args, int64_t);
+    }
+    va_end(args);
+    
+    // Allocate array recursively
+    __public__array_t* result = __alloc_array_recursive(elem_size, rank, dims, 0);
+    
+    release(__arena__, dims);
+    return result;
 }
 
 int64_t __public__len(__public__array_t* arr) {
     return arr->length;
+}
+
+/**
+ * @brief Get a sub-array pointer from a jagged array
+ * @param arr The parent array (must have rank > 1)
+ * @param index The index to access
+ * @return Pointer to the sub-array at the given index
+ */
+__public__array_t* __public__get_subarray(__public__array_t* arr, int64_t index) {
+    if (arr == NULL || arr->rank <= 1) {
+        return NULL;
+    }
+    
+    if (index < 0 || index >= arr->length) {
+        return NULL;
+    }
+    
+    // Cast data to array of pointers
+    __public__array_t** sub_arrays = (__public__array_t**)arr->data;
+    return sub_arrays[index];
+}
+
+/**
+ * @brief Set a sub-array pointer in a jagged array
+ * @param arr The parent array (must have rank > 1)
+ * @param index The index to set
+ * @param sub_arr The sub-array to store at the given index
+ */
+void __public__set_subarray(__public__array_t* arr, int64_t index, __public__array_t* sub_arr) {
+    if (arr == NULL || arr->rank <= 1) {
+        return;
+    }
+    
+    if (index < 0 || index >= arr->length) {
+        return;
+    }
+    
+    // Cast data to array of pointers
+    __public__array_t** sub_arrays = (__public__array_t**)arr->data;
+    sub_arrays[index] = sub_arr;
 }
 
 /** @deprecated */
