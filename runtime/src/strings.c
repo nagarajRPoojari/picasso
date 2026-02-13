@@ -329,3 +329,40 @@ int __public__strings_compare(__public__string_t* str1, __public__string_t* str2
 
     return (int)(str1->size - str2->size);
 }
+
+/**
+ * @brief append character to given string
+ * @param str string
+ * @param ch characted to be appended
+ */
+void __public__strings_append(__public__string_t* str, int8_t ch) {
+    int64_t size = ++str->size;
+    int8_t* data = (int8_t*)allocate(__arena__, size + 1);
+    memcpy(data, str->data, size * sizeof(char));
+    data[size-1] = ch;
+    data[size] = '\0'; // only to provide backward compatibility with c code
+
+    release(__arena__, str->data);
+    str->data = data;
+}
+
+/**
+ * @brief append string to given string
+ * @param str1 string1
+ * @param str2 string2
+ */
+void __public__strings_join(__public__string_t* str1, __public__string_t* str2) {
+    int64_t size = str1->size + str2->size;
+    int8_t* data = (int8_t*)allocate(__arena__, size + 1);
+
+    memcpy(data, str1->data, str1->size * sizeof(char));
+
+    memcpy(data + str1->size, str2->data, str2->size * sizeof(char));
+    
+    data[size] = '\0'; // only to provide backward compatibility with c code
+
+    release(__arena__, str1->data);
+    str1->data = data;
+    str1->size = size;
+}
+

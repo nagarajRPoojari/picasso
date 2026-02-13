@@ -8,6 +8,14 @@ class StringBuilder {
         this.s = s;
     }
 
+    fn append(ch: uint8) {
+        _strings.append(this.s, ch);
+    }
+
+    fn join(str: string) {
+        _strings.join(this.s, str);
+    }
+
     fn set(s: string) {
         this.s = s;
     }

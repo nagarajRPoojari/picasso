@@ -1,32 +1,16 @@
 using "builtin/syncio";
-using "builtin/net";
 using "builtin/array";
-
-
-class Test {
-    say x: [][]int;
-    fn Test() {}
-}
+using "picasso/strings";
 
 fn start() {
-    say arr: [][][]int = array.create(int, 10, 20, 89);
-    arr[0][2][1] = 890;
+    say x: strings.StringBuilder = new strings.StringBuilder("hello");
+    x.print();
 
-    syncio.printf(">> %p \n", arr[0]);
-    
-    arr[0] = array.create(int, 10, 28);
-    say x: [][]int = arr[0];
+    x.append(78);
 
-    syncio.printf(">> %d \n", x[2][1]);
+    x.print();
 
-    say c: start.Test = new start.Test();
+    x.join("hello how are you");
 
-    c.x = array.create(int, 10, 20);
-    syncio.printf("c.x %p \n", c.x);
-    c.x[0] = array.create(int, 299);
-
-    c.x[0][1] = 90;
-
-    syncio.printf("---> %d \n", c.x[0, 1]);
-
-}       
+    x.print();
+}
