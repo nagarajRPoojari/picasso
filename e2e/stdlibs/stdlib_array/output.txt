@@ -18,5 +18,5 @@ intArr[8]=0
 intArr[8]=8
 intArr[9]=0
 intArr[9]=9
-length: 40
+length: 10
 shape: 10
