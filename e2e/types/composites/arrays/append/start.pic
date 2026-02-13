@@ -1,0 +1,65 @@
+using "builtin/syncio";
+using "builtin/array";
+
+fn start() {
+    // test 1: append to int array
+    syncio.printf("=== Test 1: Append integers ===\n");
+    say intArr: []int = array.create(int, 3);
+    intArr[0] = 10;
+    intArr[1] = 20;
+    intArr[2] = 30;
+    
+    syncio.printf("Initial array length: %d\n", array.len(intArr));
+    foreach i in 0..array.len(intArr) {
+        syncio.printf("intArr[%d] = %d\n", i, intArr[i]);
+    }
+    
+    // append new elements
+    array.append(intArr, 40);
+    array.append(intArr, 50);
+    array.append(intArr, 60);
+    
+    syncio.printf("After append, length: %d\n", array.len(intArr));
+    foreach i in 0..array.len(intArr) {
+        syncio.printf("intArr[%d] = %d\n", i, intArr[i]);
+    }
+    
+    // test 2: append to string array
+    syncio.printf("\n=== Test 2: Append strings ===\n");
+    say strArr: []string = array.create(string, 2);
+    strArr[0] = "hello";
+    strArr[1] = "world";
+    
+    syncio.printf("Initial array length: %d\n", array.len(strArr));
+    foreach i in 0..array.len(strArr) {
+        syncio.printf("strArr[%d] = %s\n", i, strArr[i]);
+    }
+    
+    array.append(strArr, "foo");
+    array.append(strArr, "bar");
+    
+    syncio.printf("After append, length: %d\n", array.len(strArr));
+    foreach i in 0..array.len(strArr) {
+        syncio.printf("strArr[%d] = %s\n", i, strArr[i]);
+    }
+    
+    // test 3: multiple appends with capacity expansion
+    syncio.printf("\n=== Test 3: Multiple appends ===\n");
+    say nums: []int = array.create(int, 2);
+    nums[0] = 1;
+    nums[1] = 2;
+    
+    syncio.printf("Initial: length=%d\n", array.len(nums));
+    
+    // append enough to trigger multiple capacity expansions
+    foreach i in 3..10 {
+        array.append(nums, i);
+    }
+    
+    syncio.printf("Final: length=%d\n", array.len(nums));
+    foreach i in 0..array.len(nums) {
+        syncio.printf("nums[%d] = %d\n", i, nums[i]);
+    }
+    
+    syncio.printf("\n=== All tests passed ===\n");
+}

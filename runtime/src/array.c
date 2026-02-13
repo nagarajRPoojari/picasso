@@ -101,8 +101,6 @@ void __public__extend_array(__public__array_t* arr, int32_t unused) {
     if (arr == NULL) {
         __public__runtime_error("===== array is NULL in extend_array");
     }
-    
-    int old = arr->length;
 
     arr->length++;
     if(arr->length <= arr->capacity) {
@@ -117,8 +115,6 @@ void __public__extend_array(__public__array_t* arr, int32_t unused) {
     
     release(__arena__, arr->data);
     arr->data = data;
-
-    printf("extending from %d to %d \n", old, arr->length);
 }
 
 int64_t __public__len(__public__array_t* arr) {
