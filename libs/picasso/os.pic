@@ -119,6 +119,63 @@ class FileSystem {
     fn symlink(target: string, linkPath: string): int {
         return os.link(target, linkPath);
     }
+
+    fn readFile(path: string, mode: string): []uint8 {
+        // Open the file
+        say fd: string = syncio.fopen(path, mode);
+        if(fd == null) {
+            syncio.printf("Failed to open file: %s\n", path);
+            return null;
+        }
+        
+        // Read in chunks until EOF
+        say chunkSize: int = 4096;
+        say result: []uint8 = array.create(uint8, 0);
+        say totalRead: int = 0;
+        say offset: int = 0;
+        
+        while(1) {
+            // Allocate chunk buffer
+            say chunk: []uint8 = array.create(uint8, chunkSize);
+            if(chunk == null) {
+                syncio.printf("Failed to allocate chunk buffer\n");
+                syncio.fclose(fd);
+                return null;
+            }
+            
+            // Read chunk
+            say bytesRead: int = syncio.fread(fd, chunk, chunkSize, offset);
+            if(bytesRead < 0) {
+                syncio.printf("Failed to read file\n");
+                syncio.fclose(fd);
+                return null;
+            }
+            
+            // EOF reached
+            if(bytesRead == 0) {
+                break;
+            }
+            
+            // Append chunk to result
+            say i: int = 0;
+            while(i < bytesRead) {
+                array.append(result, chunk[i]);
+                i = i + 1;
+            }
+            
+            totalRead = totalRead + bytesRead;
+            offset = offset + bytesRead;
+            
+            // If we read less than chunk size, we've reached EOF
+            if(bytesRead < chunkSize) {
+                break;
+            }
+        }
+        
+        // Close file
+        syncio.fclose(fd);
+        return result;
+    }
 }
 
 class Process {

@@ -2,6 +2,7 @@
 #include "array.h"
 #include "alloc.h"
 #include "sigerr.h"
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
@@ -32,15 +33,15 @@ static __public__array_t* __alloc_array_recursive(int32_t elem_size, int32_t ran
         data_size = (size_t)count * elem_size;
     }
     
-    size_t total_size = sizeof(__public__array_t) + data_size + shape_size;
+    size_t total_size = sizeof(__public__array_t) + shape_size;
     __public__array_t* arr = (__public__array_t*)allocate(__arena__, total_size);
-
-    // Set data pointer right after the struct
-    arr->data = (char*)(arr + 1);
+    char* dt = (char*)allocate(__arena__, data_size);
+    assert(total_size != 0);
     
-    // Set shape pointer after data and copy dimensions
+    arr->data = dt;
+    
     if (rank > 0) {
-        arr->shape = (int64_t*)(arr->data + data_size);
+        arr->shape = (int64_t*)(arr + 1);
         memcpy(arr->shape, dims, rank * sizeof(int64_t));
     } else {
         arr->shape = NULL;
@@ -77,6 +78,7 @@ __public__array_t* __public__alloc_array(int32_t elem_size, int32_t rank, ...) {
     
     // Collect dimensions from varargs
     int64_t* dims = (int64_t*)allocate(__arena__, rank * sizeof(int64_t));
+    assert(rank != 0);
     va_list args;
     va_start(args, rank);
     for (int i = 0; i < rank; i++) {
@@ -107,10 +109,10 @@ void __public__extend_array(__public__array_t* arr, int32_t unused) {
         return;
     }
 
-    int64_t new_cap = arr->capacity * 2;
+    int64_t new_cap = arr->capacity > 0 ? arr->capacity * 2 : 1;
     arr->capacity = new_cap;
     char* data = (char*)allocate(__arena__, new_cap * arr->elem_size);
-    
+    assert(new_cap * arr->elem_size != 0);
     memcpy(data, arr->data, (arr->length - 1) * arr->elem_size);
     
     release(__arena__, arr->data);

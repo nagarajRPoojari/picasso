@@ -312,12 +312,11 @@ func (t *generator) resolveStdLibImports(tree ast.BlockStatement, stdLibImports 
 // into the current module (A). This is the key to fixing the transitive dependency issue.
 func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm *LLVM, declared map[string]struct{}) {
 	pkgFullName := pkg.Name
-	pkgAliasName := pkg.Alias
 
-	if _, ok := declared[pkgAliasName]; ok {
+	if _, ok := declared[pkgFullName]; ok {
 		return
 	}
-	declared[pkgAliasName] = struct{}{}
+	declared[pkgFullName] = struct{}{}
 
 	packageAST := ast.BlockStatement{}
 

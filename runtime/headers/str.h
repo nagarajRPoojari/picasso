@@ -135,4 +135,7 @@ void __public__strings_append(__public__string_t* str, int8_t ch);
  * @param str2 string2
  */
 void __public__strings_join(__public__string_t* str1, __public__string_t* str2);
+
+
+__public__string_t* __public__strings_substring(__public__string_t* s, int64_t start, int64_t end);
 #endif

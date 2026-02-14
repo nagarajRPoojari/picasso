@@ -9,6 +9,7 @@ go_library(
         "//irgen/codegen/libs/array",
         "//irgen/codegen/libs/func",
         "//irgen/codegen/libs/io",
+        "//irgen/codegen/libs/strings",
         "//irgen/codegen/libs/type",
     ],
 )

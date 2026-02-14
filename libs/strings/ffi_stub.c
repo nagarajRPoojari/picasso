@@ -11,4 +11,5 @@ void* __ffi_force[] = {
     (void*)__public__strings_compare,
     (void*)__public__strings_append,
     (void*)__public__strings_join,
+    (void*)__public__strings_substring,
 };

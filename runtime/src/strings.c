@@ -366,3 +366,19 @@ void __public__strings_join(__public__string_t* str1, __public__string_t* str2) 
     str1->size = size;
 }
 
+__public__string_t* __public__strings_substring(__public__string_t* s, int64_t start, int64_t end) {
+    if( start < 0 || end > s->size) {
+        return NULL;
+    }
+    
+    int64_t size = end - start;
+    int8_t* data = (int8_t*)allocate(__arena__, size + 1);
+    memcpy(data, s->data + start, size * sizeof(char));
+    data[size] = '\0';
+
+    __public__string_t* res = allocate(__arena__, sizeof(__public__string_t));
+    res->data = data;
+    res->size = size;
+
+    return res;
+}
