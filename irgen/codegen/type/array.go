@@ -15,13 +15,13 @@ import (
 	errorsx "github.com/nagarajRPoojari/picasso/irgen/error"
 )
 
-// Array struct describes a 1D runtime Array object.
 type Array struct {
 	Ptr       value.Value
 	ElemType  types.Type
 	ArrayType *types.StructType
 
 	ElementTypeString string
+	Rank              int // Number of dimensions (compile-time known)
 }
 
 var ARRAYSTRUCT = types.NewStruct(
@@ -29,6 +29,8 @@ var ARRAYSTRUCT = types.NewStruct(
 	types.NewPointer(types.I64), // shape (i64*)
 	types.I64,                   // length
 	types.I64,                   // rank
+	types.I64,                   // capacity
+	types.I32,                   // elesize
 )
 
 func init() {
@@ -38,36 +40,18 @@ func init() {
 // Assuming bh, c, value, types, and constant are correctly defined/imported.
 func NewArray(bh *bc.BlockHolder, elemType types.Type, eleSize value.Value, dims []value.Value, ElementTypeString string) *Array {
 	allocFn := c.Instance.Funcs[c.FUNC_ARRAY_ALLOC]
-
-	totalLen := dims[0]
-	for i := 1; i < len(dims); i++ {
-		totalLen = bh.N.NewMul(totalLen, dims[i])
-	}
-
-	// Rank is fine as I32 for the call, as the C function expects an 'int' (typically 32-bit).
 	rankVal := constant.NewInt(types.I32, int64(len(dims)))
 
-	structAlloc := bh.N.NewCall(allocFn, totalLen, eleSize, rankVal)
-	expectedPtrType := types.NewPointer(ARRAYSTRUCT)
-	structPtr := bh.N.NewBitCast(structAlloc, expectedPtrType)
-
-	shapeFieldPtr := bh.N.NewGetElementPtr(ARRAYSTRUCT, structPtr, // Use structPtr here
-		constant.NewInt(types.I32, 0),
-		constant.NewInt(types.I32, 1), // Index 1 is 'shape'
-	)
-	shapeBufPtr := bh.N.NewLoad(types.NewPointer(types.I64), shapeFieldPtr)
-
-	for i, d := range dims {
-		elemPtr := bh.N.NewGetElementPtr(types.I64, shapeBufPtr, constant.NewInt(types.I32, int64(i)))
-
-		bh.N.NewStore(d, elemPtr)
-	}
+	args := []value.Value{eleSize, rankVal}
+	args = append(args, dims...)
+	structAlloc := bh.N.NewCall(allocFn, args...)
 
 	return &Array{
 		Ptr:               structAlloc,
 		ElemType:          elemType,
 		ArrayType:         ARRAYSTRUCT,
 		ElementTypeString: ElementTypeString,
+		Rank:              len(dims),
 	}
 }
 
@@ -147,11 +131,11 @@ func (a *Array) LoadShapeArray(block *bc.BlockHolder) *Array {
 	b := block.N
 
 	rank := a.LoadRank(block).Load(block)
-	elemSize := constant.NewInt(types.I64, 8)
+	elemSize := constant.NewInt(types.I32, 8)
 
 	rankVal := constant.NewInt(types.I32, 1)
 
-	structAlloc := b.NewCall(c.Instance.Funcs[c.FUNC_ARRAY_ALLOC], rank, elemSize, rankVal)
+	structAlloc := b.NewCall(c.Instance.Funcs[c.FUNC_ARRAY_ALLOC], elemSize, rankVal, rank)
 	arrayPtr := b.NewBitCast(structAlloc, types.NewPointer(ARRAYSTRUCT))
 
 	origShapePtr := a.LoadShapePtr(block)
@@ -187,66 +171,170 @@ func (a *Array) LoadShapeArray(block *bc.BlockHolder) *Array {
 		ElemType:          types.I64,
 		ArrayType:         ARRAYSTRUCT,
 		ElementTypeString: "int64",
+		Rank:              1,
 	}
 }
 
-// IndexOffset computes linear offset with bounds checks
-func (a *Array) IndexOffset(block *bc.BlockHolder, indices []value.Value) value.Value {
-	shapePtr := a.LoadShapePtr(block)
-	var offset value.Value = constant.NewInt(types.I64, 0)
+// StoreByIndex updates element value at given index in a jagged array
+func (a *Array) StoreByIndex(block *bc.BlockHolder, indices []value.Value, val value.Value) {
+	b := block.N
+	currentArray := a.Ptr
 
-	for i := range indices {
+	for i := 0; i < len(indices)-1; i++ {
 		idx := indices[i]
 
-		// index >= 0
 		checkIntCond(block, idx, constant.NewInt(types.I64, 0), enum.IPredSGE, "array index < 0")
+		b = block.N
 
-		// index < shape[i]
-		shapeElemPtr := block.N.NewGetElementPtr(types.I64, shapePtr, constant.NewInt(types.I64, int64(i)))
-		dimVal := block.N.NewLoad(types.I64, shapeElemPtr)
+		lengthPtr := b.NewGetElementPtr(a.ArrayType, currentArray,
+			constant.NewInt(types.I32, 0),
+			constant.NewInt(types.I32, 2),
+		)
+		length := b.NewLoad(types.I64, lengthPtr)
+		checkIntCond(block, idx, length, enum.IPredSLT, "array index out of bounds\n")
+		b = block.N
 
-		checkIntCond(block, idx, dimVal, enum.IPredSLT, "array index out of bounds\n")
-
-		var prod value.Value = constant.NewInt(types.I64, 1)
-		for j := i + 1; j < len(indices); j++ {
-			nextDimPtr := block.N.NewGetElementPtr(types.I64, shapePtr, constant.NewInt(types.I64, int64(j)))
-			nextDim := block.N.NewLoad(types.I64, nextDimPtr)
-			prod = block.N.NewMul(prod, nextDim)
-		}
-
-		offset = block.N.NewAdd(offset, block.N.NewMul(idx, prod))
+		getSubarrayFn := c.Instance.Funcs[c.FUNC_GET_SUBARRAY]
+		currentArray = b.NewCall(getSubarrayFn, currentArray, idx)
 	}
 
-	return offset
-}
+	lastIdx := indices[len(indices)-1]
 
-// StoreByIndex updates element value at given index
-func (a *Array) StoreByIndex(block *bc.BlockHolder, indices []value.Value, val value.Value) {
-	offset := a.IndexOffset(block, indices)
-	dataPtrField := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
+	checkIntCond(block, lastIdx, constant.NewInt(types.I64, 0), enum.IPredSGE, "array index < 0")
+	b = block.N
+	lengthPtr := b.NewGetElementPtr(a.ArrayType, currentArray,
+		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 2),
+	)
+	length := b.NewLoad(types.I64, lengthPtr)
+	checkIntCond(block, lastIdx, length, enum.IPredSLT, "array index out of bounds\n")
+	b = block.N
+
+	dataPtrField := b.NewGetElementPtr(a.ArrayType, currentArray,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 0),
 	)
-	raw := block.N.NewLoad(types.NewPointer(types.I8), dataPtrField)
-	elemsPtr := block.N.NewBitCast(raw, types.NewPointer(a.ElemType))
-
-	elemPtr := block.N.NewGetElementPtr(a.ElemType, elemsPtr, offset)
-	block.N.NewStore(val, elemPtr)
+	raw := b.NewLoad(types.NewPointer(types.I8), dataPtrField)
+	elemsPtr := b.NewBitCast(raw, types.NewPointer(a.ElemType))
+	elemPtr := b.NewGetElementPtr(a.ElemType, elemsPtr, lastIdx)
+	b.NewStore(val, elemPtr)
 }
 
-// LoadByIndex retrieves element value at given index
+// StoreSubarrayByIndex stores a subarray at given index (partial indexing)
+func (a *Array) StoreSubarrayByIndex(block *bc.BlockHolder, indices []value.Value, subarray *Array) {
+	b := block.N
+	currentArray := a.Ptr
+
+	for i := 0; i < len(indices)-1; i++ {
+		idx := indices[i]
+
+		checkIntCond(block, idx, constant.NewInt(types.I64, 0), enum.IPredSGE, "array index < 0")
+		b = block.N
+
+		lengthPtr := b.NewGetElementPtr(a.ArrayType, currentArray,
+			constant.NewInt(types.I32, 0),
+			constant.NewInt(types.I32, 2),
+		)
+		length := b.NewLoad(types.I64, lengthPtr)
+		checkIntCond(block, idx, length, enum.IPredSLT, "array index out of bounds\n")
+		b = block.N
+
+		getSubarrayFn := c.Instance.Funcs[c.FUNC_GET_SUBARRAY]
+		currentArray = b.NewCall(getSubarrayFn, currentArray, idx)
+	}
+
+	lastIdx := indices[len(indices)-1]
+
+	checkIntCond(block, lastIdx, constant.NewInt(types.I64, 0), enum.IPredSGE, "array index < 0")
+	b = block.N
+	lengthPtr := b.NewGetElementPtr(a.ArrayType, currentArray,
+		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 2),
+	)
+	length := b.NewLoad(types.I64, lengthPtr)
+	checkIntCond(block, lastIdx, length, enum.IPredSLT, "array index out of bounds\n")
+	b = block.N
+
+	// Store the subarray using set_subarray
+	setSubarrayFn := c.Instance.Funcs[c.FUNC_SET_SUBARRAY]
+	b.NewCall(setSubarrayFn, currentArray, lastIdx, subarray.Ptr)
+}
+
+// LoadByIndex retrieves element value at given index in a jagged array
 func (a *Array) LoadByIndex(block *bc.BlockHolder, indices []value.Value) value.Value {
-	offset := a.IndexOffset(block, indices)
+	b := block.N
+	currentArray := a.Ptr
 
-	dataPtrField := block.N.NewGetElementPtr(a.ArrayType, a.Ptr,
+	for i := 0; i < len(indices)-1; i++ {
+		idx := indices[i]
+
+		checkIntCond(block, idx, constant.NewInt(types.I64, 0), enum.IPredSGE, "array index < 0")
+		b = block.N
+
+		lengthPtr := b.NewGetElementPtr(a.ArrayType, currentArray,
+			constant.NewInt(types.I32, 0),
+			constant.NewInt(types.I32, 2),
+		)
+		length := b.NewLoad(types.I64, lengthPtr)
+		checkIntCond(block, idx, length, enum.IPredSLT, "array index out of bounds\n")
+		b = block.N
+
+		getSubarrayFn := c.Instance.Funcs[c.FUNC_GET_SUBARRAY]
+		currentArray = b.NewCall(getSubarrayFn, currentArray, idx)
+	}
+
+	lastIdx := indices[len(indices)-1]
+
+	checkIntCond(block, lastIdx, constant.NewInt(types.I64, 0), enum.IPredSGE, "array index < 0")
+	b = block.N
+	lengthPtr := b.NewGetElementPtr(a.ArrayType, currentArray,
+		constant.NewInt(types.I32, 0),
+		constant.NewInt(types.I32, 2),
+	)
+	length := b.NewLoad(types.I64, lengthPtr)
+	checkIntCond(block, lastIdx, length, enum.IPredSLT, "array index out of bounds\n")
+	b = block.N
+
+	dataPtrField := b.NewGetElementPtr(a.ArrayType, currentArray,
 		constant.NewInt(types.I32, 0),
 		constant.NewInt(types.I32, 0),
 	)
-	raw := block.N.NewLoad(types.NewPointer(types.I8), dataPtrField)
-	elemsPtr := block.N.NewBitCast(raw, types.NewPointer(a.ElemType))
+	raw := b.NewLoad(types.NewPointer(types.I8), dataPtrField)
+	elemsPtr := b.NewBitCast(raw, types.NewPointer(a.ElemType))
+	elemPtr := b.NewGetElementPtr(a.ElemType, elemsPtr, lastIdx)
+	return b.NewLoad(a.ElemType, elemPtr)
+}
 
-	elemPtr := block.N.NewGetElementPtr(a.ElemType, elemsPtr, offset)
-	return block.N.NewLoad(a.ElemType, elemPtr)
+// LoadSubarrayByIndex retrieves a subarray at given index (partial indexing)
+func (a *Array) LoadSubarrayByIndex(block *bc.BlockHolder, indices []value.Value) *Array {
+	b := block.N
+	currentArray := a.Ptr
+
+	for i := 0; i < len(indices); i++ {
+		idx := indices[i]
+
+		checkIntCond(block, idx, constant.NewInt(types.I64, 0), enum.IPredSGE, "array index < 0")
+		b = block.N
+
+		lengthPtr := b.NewGetElementPtr(a.ArrayType, currentArray,
+			constant.NewInt(types.I32, 0),
+			constant.NewInt(types.I32, 2),
+		)
+		length := b.NewLoad(types.I64, lengthPtr)
+		checkIntCond(block, idx, length, enum.IPredSLT, "array index out of bounds\n")
+		b = block.N
+
+		getSubarrayFn := c.Instance.Funcs[c.FUNC_GET_SUBARRAY]
+		currentArray = b.NewCall(getSubarrayFn, currentArray, idx)
+	}
+
+	return &Array{
+		Ptr:               currentArray,
+		ElemType:          a.ElemType,
+		ArrayType:         a.ArrayType,
+		ElementTypeString: a.ElementTypeString,
+		Rank:              a.Rank - len(indices),
+	}
 }
 
 func checkIntCond(block *bc.BlockHolder, v1, v2 value.Value, pred enum.IPred, errMsg string) {

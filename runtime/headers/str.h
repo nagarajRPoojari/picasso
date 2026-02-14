@@ -121,4 +121,21 @@ size_t ptr_to_hex(const void *p, char tmp[32]);
  */
 size_t f64_to_dec(double v, char tmp[64]);
 
+/**
+ * @brief append character to given string
+ * @param str string
+ * @param str characted to be appended
+ */
+void __public__strings_append(__public__string_t* str, int8_t ch);
+
+
+/**
+ * @brief append string to given string
+ * @param str1 string1
+ * @param str2 string2
+ */
+void __public__strings_join(__public__string_t* str1, __public__string_t* str2);
+
+
+__public__string_t* __public__strings_substring(__public__string_t* s, int64_t start, int64_t end);
 #endif

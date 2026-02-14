@@ -37,10 +37,18 @@ func (t *StatementHandler) DeclareVariable(bh *bc.BlockHolder, st *ast.VariableD
 		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(tp, utp), init)
 	} else {
 		_v := expHandler.ProcessExpression(bh, st.AssignedValue)
-		v = _v
-		casted := t.st.TypeHandler.ImplicitTypeCast(bh, tp, v.Load(bh))
-		v = t.st.TypeHandler.BuildVar(bh, tf.NewType(tp, utp), casted)
 
+		if tp == "array" {
+			if arr, ok := _v.(*tf.Array); ok {
+				v = arr
+			} else {
+				casted := t.st.TypeHandler.ImplicitTypeCast(bh, tp, _v.Load(bh))
+				v = t.st.TypeHandler.BuildVar(bh, tf.NewType(tp, utp), casted)
+			}
+		} else {
+			casted := t.st.TypeHandler.ImplicitTypeCast(bh, tp, _v.Load(bh))
+			v = t.st.TypeHandler.BuildVar(bh, tf.NewType(tp, utp), casted)
+		}
 	}
 	t.st.Vars.AddNewVar(st.Identifier, v)
 }

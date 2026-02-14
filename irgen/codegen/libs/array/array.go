@@ -4,6 +4,7 @@ import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
 	function "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/func"
 	_types "github.com/nagarajRPoojari/picasso/irgen/codegen/libs/type"
 	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
@@ -23,6 +24,7 @@ func (t *ArrayHandler) ListAllFuncs() map[string]function.Func {
 	funcs["create"] = t.create
 	funcs["len"] = t.len
 	funcs["shape"] = t.shape
+	funcs["append"] = t.append
 	return funcs
 }
 
@@ -35,6 +37,24 @@ func (t *ArrayHandler) create(_ *ir.Func, th *tf.TypeHandler, module *ir.Module,
 		dims = append(dims, toInt)
 	}
 	return typedef.NewArray(bh, args[0].Type(), size.Load(bh), dims, args[0].NativeTypeString())
+}
+
+func (t *ArrayHandler) append(_ *ir.Func, th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
+	arr := args[0].(*tf.Array)
+	extendFn := c.Instance.Funcs[c.FUNC_EXTEND_ARRAY]
+	// Get the new length before extending
+	lastIdx := arr.Len(bh).Load(bh)
+
+	bh.N.NewCall(extendFn, arr.Ptr)
+
+	if arr.Rank > 1 {
+		arr.StoreSubarrayByIndex(bh, []value.Value{lastIdx}, args[1].(*tf.Array))
+	} else {
+		needed := arr.ElementTypeString
+		casted := th.ImplicitTypeCast(bh, needed, args[1].Load(bh))
+		arr.StoreByIndex(bh, []value.Value{lastIdx}, casted)
+	}
+	return nil
 }
 
 func (t *ArrayHandler) len(_ *ir.Func, th *tf.TypeHandler, module *ir.Module, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {

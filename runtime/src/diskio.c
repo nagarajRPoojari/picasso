@@ -286,7 +286,7 @@ __public__array_t* __public__ascan(int n) {
     task_t *t = current_task;
 
     /* +1 for NUL */
-    __public__array_t* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
+    __public__array_t* buf = __public__alloc_array(sizeof(size_t), 1, (size_t)n + 1);
     if (!buf)
         return NULL;
 
@@ -573,7 +573,7 @@ ssize_t __public__asyncio_fwrite(char* f, __public__array_t* buf, int n, int off
 __public__array_t* __public__syncio_scan(int n) {
     if (n <= 0) return NULL;
 
-    __public__array_t* buf = __public__alloc_array((size_t)n + 1, sizeof(size_t), 1);
+    __public__array_t* buf = __public__alloc_array(sizeof(size_t), 1, (size_t)n + 1);
     if (!buf) return NULL;
 
     ssize_t r;

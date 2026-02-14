@@ -43,10 +43,26 @@ func (t *Interface) initRuntime(mod *ir.Module) {
 	t.Funcs[FUNC_RUNTIME_INIT] = mod.NewFunc(FUNC_RUNTIME_INIT, types.Void)
 
 	// @array_alloc
-	t.Funcs[FUNC_ARRAY_ALLOC] = mod.NewFunc(FUNC_ARRAY_ALLOC, types.NewPointer(t.Types[TYPE_ARRAY]), ir.NewParam("", types.I32), ir.NewParam("", types.I32), ir.NewParam("", types.I32))
+	t.Funcs[FUNC_ARRAY_ALLOC] = mod.NewFunc(FUNC_ARRAY_ALLOC, types.NewPointer(t.Types[TYPE_ARRAY]), ir.NewParam("", types.I32), ir.NewParam("", types.I32))
+	t.Funcs[FUNC_ARRAY_ALLOC].Sig.Variadic = true
+
+	// @extend_array
+	t.Funcs[FUNC_EXTEND_ARRAY] = mod.NewFunc(FUNC_EXTEND_ARRAY, types.Void, ir.NewParam("", types.NewPointer(t.Types[TYPE_ARRAY])), ir.NewParam("", types.I32))
+
+	// @get_subarray
+	t.Funcs[FUNC_GET_SUBARRAY] = mod.NewFunc(FUNC_GET_SUBARRAY, types.NewPointer(t.Types[TYPE_ARRAY]),
+		ir.NewParam("arr", types.NewPointer(t.Types[TYPE_ARRAY])),
+		ir.NewParam("index", types.I64))
+
+	// @set_subarray
+	t.Funcs[FUNC_SET_SUBARRAY] = mod.NewFunc(FUNC_SET_SUBARRAY, types.Void,
+		ir.NewParam("arr", types.NewPointer(t.Types[TYPE_ARRAY])),
+		ir.NewParam("index", types.I64),
+		ir.NewParam("sub_arr", types.NewPointer(t.Types[TYPE_ARRAY])))
 
 	// @string_alloc
 	t.Funcs[FUNC_STRING_ALLOC] = mod.NewFunc(FUNC_STRING_ALLOC, types.NewPointer(t.Types[TYPE_STRING]), ir.NewParam("", types.I32))
+	t.Funcs[FUNC_STRING_SUBSTRING] = mod.NewFunc(FUNC_STRING_SUBSTRING, types.NewPointer(t.Types[TYPE_STRING]), ir.NewParam("", types.I64), ir.NewParam("", types.I64))
 
 	t.Funcs[__UTILS__FUNC_DEBUG_ARRAY_INFO] = mod.NewFunc(
 		__UTILS__FUNC_DEBUG_ARRAY_INFO,

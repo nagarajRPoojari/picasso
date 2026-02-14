@@ -141,11 +141,19 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 		if ele, ok := ft.ElemType.(*types.StructType); ok {
 			if ele.Name() == constants.ARRAY {
 				f := bh.N.NewLoad(types.NewPointer(tf.ARRAYSTRUCT), fieldPtr)
+
+				// Get rank from AST type
+				rank := 0
+				if listType, ok := classMeta.VarAST[fieldFqName].ExplicitType.(*ast.ListType); ok {
+					rank = listType.GetRank()
+				}
+
 				return &tf.Array{
 					Ptr:               f,
 					ArrayType:         tf.ARRAYSTRUCT,
 					ElemType:          classMeta.ArrayVarsEleTypes[idx],
 					ElementTypeString: classMeta.VarAST[fieldFqName].ExplicitType.GetUnderlyingType(),
+					Rank:              rank,
 				}
 			}
 

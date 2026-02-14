@@ -1,0 +1,93 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class Test {
+    fn Test() {}
+
+    fn testJagged2DArray() {
+        syncio.printf("=== Testing 2D Jagged Array ===\n");
+        
+        say arr: [][]int = array.create(int, 3, 4);
+        
+        arr[0, 0] = 10;
+        arr[0, 1] = 11;
+        arr[1, 2] = 25;
+        arr[2, 3] = 37;
+        
+        syncio.printf("arr[0,0] = %d\n", arr[0, 0]);
+        syncio.printf("arr[0,1] = %d\n", arr[0, 1]);
+        syncio.printf("arr[1,2] = %d\n", arr[1, 2]);
+        syncio.printf("arr[2,3] = %d\n", arr[2, 3]);
+        
+        // test partial indexing - get subarray
+        say row0: []int = arr[0];
+        say row1: []int = arr[1];
+        
+        syncio.printf("row0[0] = %d\n", row0[0]);
+        syncio.printf("row0[1] = %d\n", row0[1]);
+        
+        // modify through subarray reference
+        row1[0] = 100;
+        syncio.printf("row1[0] = %d\n", row1[0]);
+        syncio.printf("arr[1,0] = %d (should be 100)\n", arr[1, 0]);
+    }
+
+    fn testJagged3DArray() {
+        syncio.printf("\n=== Testing 3D Jagged Array ===\n");
+        
+        // create a 2x3x4 jagged array
+        say arr: [][][]int = array.create(int, 2, 3, 4);
+        
+        // test full indexing
+        arr[0, 0, 0] = 1;
+        arr[0, 1, 2] = 12;
+        arr[1, 2, 3] = 123;
+        
+        syncio.printf("arr[0,0,0] = %d\n", arr[0, 0, 0]);
+        syncio.printf("arr[0,1,2] = %d\n", arr[0, 1, 2]);
+        syncio.printf("arr[1,2,3] = %d\n", arr[1, 2, 3]);
+        
+        // test partial indexing - get 2D subarray
+        say plane0: [][]int = arr[0];
+        plane0[0, 1] = 99;
+        syncio.printf("plane0[0,1] = %d\n", plane0[0, 1]);
+        syncio.printf("arr[0,0,1] = %d (should be 99)\n", arr[0, 0, 1]);
+        
+        // test partial indexing - get 1D subarray
+        say row: []int = plane0[1];
+        row[3] = 88;
+        syncio.printf("row[3] = %d\n", row[3]);
+        syncio.printf("arr[0,1,3] = %d (should be 88)\n", arr[0, 1, 3]);
+    }
+
+    fn testJaggedArrayIteration() {
+        syncio.printf("\n=== Testing Jagged Array Iteration ===\n");
+        
+        say arr: [][]int = array.create(int, 2, 3);
+        
+        // fill array
+        say shape: []int = array.shape(arr);
+        foreach i in 0..shape[0] {
+            foreach j in 0..shape[1] {
+                arr[i, j] = i * 10 + j;
+            }
+        }
+        
+        // iterate using partial indexing
+        foreach i in 0..shape[0] {
+            say row: []int = arr[i];
+            say rowShape: []int = array.shape(row);
+            foreach j in 0..rowShape[0] {
+                syncio.printf("arr[%d][%d] = %d\n", i, j, row[j]);
+            }
+        }
+    }
+}
+
+fn start() {
+    say test: start.Test = new start.Test();
+    
+    test.testJagged2DArray();
+    test.testJagged3DArray();
+    test.testJaggedArrayIteration();
+}

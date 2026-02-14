@@ -109,11 +109,18 @@ func (t *StatementHandler) processArrayFieldAssignment(bh *bc.BlockHolder, expHa
 	}
 
 	rhs := expHandler.ProcessExpression(bh, st.AssignedValue)
+	arr := base.(*tf.Array)
 
-	needed := base.(*tf.Array).ElementTypeString
-
-	casted := t.st.TypeHandler.ImplicitTypeCast(bh, needed, rhs.Load(bh))
-
-	c := t.st.TypeHandler.BuildVar(bh, tf.NewType(needed), casted)
-	base.(*tf.Array).StoreByIndex(bh, indices, c.Load(bh))
+	if len(indices) < arr.Rank {
+		rhsArray, ok := rhs.(*tf.Array)
+		if !ok {
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "partial array indexing requires array value on RHS")
+		}
+		arr.StoreSubarrayByIndex(bh, indices, rhsArray)
+	} else {
+		needed := arr.ElementTypeString
+		casted := t.st.TypeHandler.ImplicitTypeCast(bh, needed, rhs.Load(bh))
+		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(needed), casted)
+		arr.StoreByIndex(bh, indices, c.Load(bh))
+	}
 }
