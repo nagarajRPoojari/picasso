@@ -159,7 +159,7 @@ __public__array_t* __public__asyncio_scan(int n);
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__asyncio_printf(const char* fmt, ...);
+ssize_t __public__asyncio_printf(__public__string_t* fmt, ...);
 
 /**
  * @brief Read up to n bytes from a file at a given offset, suspending the current task.
