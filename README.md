@@ -8,58 +8,23 @@ Picasso combines the performance of compiled languages with the ease of use of m
 
 ## Key Features
 
-### Compiled Native Code
-- Direct compilation to native machine code
-- No virtual machine overhead
-- Optimized for performance-critical applications
+- **Compiled Native Code**: Direct compilation to native machine code without virtual machine overhead.
 
-### Procedural with Object Support
-- Clean procedural programming model
-- Full support for classes and objects
-- Method-based object orientation
+- **Procedural with Object Support**: Clean procedural programming with full support for classes and objects.
 
-### Rich Type System
-- **Signed integers**: `int8`, `int16`, `int32`, `int64`
-- **Unsigned integers**: `uint8`, `uint16`, `uint32`, `uint64`
-- **Floating point**: `float`, `double`
-- **Strings**: First-class string type with built-in operations
-- **Atomics**: Lock-free atomic operations for all integer types
-- **Arrays**: Dynamic arrays with automatic memory management
-- **Classes**: User-defined types with methods and fields
+- **Rich Type System**: Signed/unsigned integers (`int8` to `int64`, `uint8` to `uint64`), floating point (`float`, `double`), strings, atomics, dynamic arrays, and user-defined classes.
 
-### Built-in Concurrency
-- Lightweight green threads with the `thread()` function
-- No explicit async/await syntax required
-- Automatic scheduling and context switching
-- Scale to hundreds of thousands of concurrent tasks
+- **Built-in Concurrency**: Lightweight green threads with `thread()` function - no explicit async/await required. Scale to hundreds of thousands of concurrent tasks.
 
-### Automatic Memory Management
-- Garbage collected runtime
-- Allocate memory without manual cleanup
-- No memory leaks or dangling pointers
+- **Automatic Memory Management**: Garbage collected runtime - allocate and forget.
 
-### C Interoperability
-- Foreign Function Interface (FFI) for C libraries
-- Easy integration with existing C codebases
-- Extend functionality with native C code
+- **C Interoperability**: Foreign Function Interface (FFI) for seamless integration with C libraries.
 
-### Modular Design
-- Simple module system with `using` statements
-- Package management built into the language
-- Clear namespace separation
+- **Modular Design**: Simple module system with `using` statements and clear namespace separation.
 
-### Cross-Platform Support
-- Linux (aarch64/arm64)
-- macOS (aarch64/arm64)
-- Optimized for modern ARM architectures
+- **Cross-Platform Support**: Linux and macOS on aarch64/arm64 architectures.
 
-### Comprehensive Standard Library
-- **Network I/O**: TCP sockets, client/server programming
-- **File I/O**: Synchronous file operations
-- **OS Integration**: Platform-specific system calls
-- **Synchronization**: Mutexes and atomic operations
-- **String Manipulation**: Rich string processing utilities
-- **Array Operations**: Dynamic array management
+- **Comprehensive Standard Library**: Network I/O, file I/O, OS integration, synchronization primitives, string manipulation, and array operations.
 
 ## Syntax Examples
 
@@ -75,7 +40,7 @@ fn start() {
 
 ### Classes and Objects
 
-```picasso
+```python
 using "builtin/syncio";
 
 class Person {
@@ -100,7 +65,7 @@ fn start() {
 
 ### Control Flow
 
-```picasso
+```python
 using "builtin/syncio";
 
 fn start() {
@@ -130,7 +95,7 @@ fn start() {
 
 ### Arrays
 
-```picasso
+```python
 using "builtin/syncio";
 using "builtin/array";
 
@@ -152,7 +117,7 @@ fn start() {
 
 ### Concurrency
 
-```picasso
+```python
 using "builtin/syncio";
 
 class Worker {
@@ -177,7 +142,7 @@ fn start() {
 
 ### Atomic Operations
 
-```picasso
+```python
 using "builtin/syncio";
 using "builtin/atomics";
 
@@ -195,7 +160,7 @@ fn start() {
 
 ### Network Programming
 
-```picasso
+```python
 using "builtin/syncio";
 using "builtin/net";
 using "builtin/array";
@@ -237,7 +202,7 @@ fn start() {
 
 ### File I/O
 
-```picasso
+```python
 using "builtin/syncio";
 using "builtin/array";
 
@@ -260,7 +225,7 @@ fn start() {
 
 ### Module System
 
-```picasso
+```python
 // math.pic
 using "builtin/syncio";
 
@@ -273,7 +238,7 @@ class Calculator {
 }
 ```
 
-```picasso
+```python
 // start.pic
 using "builtin/syncio";
 using "math" as m;
@@ -289,7 +254,7 @@ fn start() {
 
 Variables are declared using the `say` keyword:
 
-```picasso
+```python
 say x: int = 10;
 say name: string = "Alice";
 say numbers: []int = array.create(int, 5);
@@ -301,7 +266,7 @@ say person: start.Person = new start.Person("Bob", 25);
 - **Public fields/methods**: Use `say` keyword (accessible from other modules)
 - **Internal fields/methods**: Use `say internal` keyword (module-private)
 
-```picasso
+```python
 class Example {
     say publicField: int;
     say internal privateField: int;
@@ -316,58 +281,9 @@ class Example {
 
 ## Built-in Libraries
 
-### syncio
-Synchronous I/O operations including console output and file operations.
-
-### net
-Network programming with TCP sockets, client/server support.
-
-### array
-Dynamic array operations including creation, length, and append.
-
-### strings
-String manipulation utilities including formatting, comparison, and substring operations.
-
-### atomics
-Lock-free atomic operations for concurrent programming.
-
-### types
-Type conversion and type-related utilities.
-
-## Building and Running
-
-The project uses Bazel as its build system. Example test cases can be found in the `e2e/` directory.
-
-## Project Structure
-
-```
-.
-├── cli/              # Command-line interface
-├── docs/             # Documentation
-├── e2e/              # End-to-end tests
-├── irgen/            # IR generation
-├── libs/             # Standard library implementations
-├── runtime/          # Runtime system
-│   ├── headers/      # Runtime headers
-│   └── src/          # Runtime source code
-└── examples/         # Example programs
-```
-
-## Design Philosophy
-
-Picasso is designed with the following principles:
-
-1. **Performance First**: Compiled to native code with minimal runtime overhead
-2. **Developer Productivity**: Automatic memory management and built-in concurrency
-3. **Simplicity**: Clean syntax without unnecessary complexity
-4. **Safety**: Strong type system with compile-time checks
-5. **Interoperability**: Easy integration with C libraries
-6. **Modern Architecture**: Optimized for ARM64 processors
-
-## License
-
-See LICENSE file for details.
-
-## Contributing
-
-Contributions are welcome. Please see CONTRIBUTING.md for guidelines.
+- **syncio**: Synchronous I/O operations including console output and file operations.
+- **net**: Network programming with TCP sockets, client/server support.
+- **array**: Dynamic array operations including creation, length, and append.
+- **strings**: String manipulation utilities including formatting, comparison, and substring operations.
+- **atomics**: Lock-free atomic operations for concurrent programming.
+- **types**: Type conversion and type-related utilities.
