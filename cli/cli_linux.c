@@ -9,6 +9,84 @@
 #include <limits.h>
 #include <errno.h>
 
+#include <time.h>
+#include <stdarg.h>
+
+typedef enum {
+    LOG_DEBUG = 0,
+    LOG_INFO = 1,
+    LOG_WARN = 2,
+    LOG_ERROR = 3,
+    LOG_FATAL = 4
+} LogLevel;
+
+static LogLevel g_log_level = LOG_INFO;
+
+#define COLOR_RESET   "\033[0m"
+#define COLOR_DEBUG   "\033[36m"  /* Cyan */
+#define COLOR_INFO    "\033[32m"  /* Green */
+#define COLOR_WARN    "\033[33m"  /* Yellow */
+#define COLOR_ERROR   "\033[31m"  /* Red */
+#define COLOR_FATAL   "\033[35m"  /* Magenta */
+
+static const char* log_level_string(LogLevel level) {
+    switch (level) {
+        case LOG_DEBUG: return "DEBUG";
+        case LOG_INFO:  return "INFO";
+        case LOG_WARN:  return "WARN";
+        case LOG_ERROR: return "ERROR";
+        case LOG_FATAL: return "FATAL";
+        default:        return "UNKNOWN";
+    }
+}
+
+static const char* log_level_color(LogLevel level) {
+    switch (level) {
+        case LOG_DEBUG: return COLOR_DEBUG;
+        case LOG_INFO:  return COLOR_INFO;
+        case LOG_WARN:  return COLOR_WARN;
+        case LOG_ERROR: return COLOR_ERROR;
+        case LOG_FATAL: return COLOR_FATAL;
+        default:        return COLOR_RESET;
+    }
+}
+
+static void log(LogLevel level, const char *fmt, ...) {
+    if (level < g_log_level) return;
+
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    char time_buf[32];
+    strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_info);
+
+    FILE *stream = (level >= LOG_ERROR) ? stderr : stdout;
+
+    fprintf(stream, "%s[%s] [%s]%s ",
+            log_level_color(level),
+            time_buf,
+            log_level_string(level),
+            COLOR_RESET);
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stream, fmt, args);
+    va_end(args);
+
+    fprintf(stream, "\n");
+    fflush(stream);
+}
+
+static void init_logging() {
+    const char *log_level_env = getenv("PICASSO_LOG_LEVEL");
+    if (log_level_env) {
+        if (strcmp(log_level_env, "DEBUG") == 0) g_log_level = LOG_DEBUG;
+        else if (strcmp(log_level_env, "INFO") == 0) g_log_level = LOG_INFO;
+        else if (strcmp(log_level_env, "WARN") == 0) g_log_level = LOG_WARN;
+        else if (strcmp(log_level_env, "ERROR") == 0) g_log_level = LOG_ERROR;
+        else if (strcmp(log_level_env, "FATAL") == 0) g_log_level = LOG_FATAL;
+    }
+}
+
 static void die(const char *msg) {
     perror(msg);
     exit(1);
@@ -43,7 +121,7 @@ static void run_cmd(char *const argv[]) {
         die("waitpid");
 
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-        fprintf(stderr, "command failed: %s\n", argv[0]);
+        log(LOG_ERROR, "command failed: %s", argv[0]);
         exit(1);
     }
 }
@@ -73,7 +151,7 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
                 die("stub path too long");
 
             if(access(stub, R_OK) != 0)  {
-                fprintf(stderr, "warning: %s missing ffi_stub.c, skipping\n", tuDir);
+                log(LOG_WARN, "%s missing ffi_stub.c, skipping", tuDir);
                 continue;
             }
         }
@@ -175,18 +253,21 @@ static void generate_ffi_irs(const char *dir, const char *buildDir) {
 
 /* main */
 int main(int argc, char **argv) {
+    init_logging();
+
     if (argc < 2) {
-        fprintf(stderr, "usage: picasso <build|exec> <project-dir>\n");
+        log(LOG_ERROR, "usage: picasso <build|exec|clean> <project-dir>");
         return 1;
     }
 
     if (!strcmp(argv[1], "build")) {
         if (argc != 3) {
-            fprintf(stderr, "picasso build <project root dir>\n");
+            log(LOG_ERROR, "picasso build <project root dir>");
             return 1;
         }
 
         const char *dir = argv[2];
+        log(LOG_INFO, "Starting build for project: %s", dir);
 
         char buildDir[PATH_MAX];
         snprintf(buildDir, sizeof(buildDir), "%s/build", dir);
@@ -194,6 +275,7 @@ int main(int argc, char **argv) {
         run_cmd((char *[]){"mkdir", "-p", buildDir, NULL});
 
         /* project FFI IR + objects */
+        log(LOG_INFO, "Generating FFI IRs for project");
         generate_ffi_irs(dir, buildDir);
 
         /* stdlib FFI IRs */
@@ -209,6 +291,7 @@ int main(int argc, char **argv) {
         char tmpDir[PATH_MAX];
         snprintf(tmpDir, sizeof(tmpDir), "%s/build/tmp", dir);
 
+        log(LOG_INFO, "Generating stdlib FFI IRs");
         generate_ffi_irs_from_root(
             libsDir,
             tmpDir,
@@ -218,10 +301,12 @@ int main(int argc, char **argv) {
         );
 
         /* language IR generation */
+        log(LOG_INFO, "Running IR generation");
         char *irgen[] = { IRGEN_BIN, "gen", (char *)dir, NULL };
         run_cmd(irgen);
 
         /* .ll → .bc */
+        log(LOG_INFO, "Converting .ll to .bc");
         char *ll_to_bc[] = {
             "sh", "-c",
             "set -e; for f in \"$1\"/*.ll; do "
@@ -235,6 +320,7 @@ int main(int argc, char **argv) {
         run_cmd(ll_to_bc);
 
         /* .bc → .o */
+        log(LOG_INFO, "Compiling .bc to .o")
         char *bc_to_o[] = {
             "sh", "-c",
             "set -e; for f in \"$1\"/*.bc; do "
@@ -248,6 +334,7 @@ int main(int argc, char **argv) {
         run_cmd(bc_to_o);
 
         /* final link */
+        log(LOG_INFO, "Linking final executable");
         char *link[] = {
             "sh", "-c",
             "set -e; "
@@ -269,22 +356,40 @@ int main(int argc, char **argv) {
         };
         run_cmd(link);
 
-
+        log(LOG_INFO, "Build completed successfully");
         return 0;
     }
 
     if (!strcmp(argv[1], "exec")) {
         if (argc != 3) {
-            fprintf(stderr, "picasso exec <project root dir>\n");
+            log(LOG_ERROR, "picasso exec <project root dir>");
             return 1;
         }
 
+        log(LOG_INFO, "Executing project: %s", argv[2]);
         char exe[PATH_MAX];
         snprintf(exe, sizeof(exe), "%s/build/a.out", argv[2]);
         execl(exe, exe, (char *)NULL);
         die("exec");
     }
 
-    fprintf(stderr, "unknown command\n");
+    if (!strcmp(argv[1], "clean")) {
+        if (argc != 3) {
+            log(LOG_ERROR, "picasso clean <project root dir>");
+            return 1;
+        }
+
+        log(LOG_INFO, "Cleaning project: %s", argv[2]);
+        char buildDir[PATH_MAX];
+        snprintf(buildDir, sizeof(buildDir), "%s/build", argv[2]);
+        char libDir[PATH_MAX];
+        snprintf(libDir, sizeof(libDir), "%s/picasso", argv[2]);
+        run_cmd((char*[]){"rm", "-rf", buildDir,  NULL});
+        run_cmd((char*[]){"rm", "-rf", libDir,  NULL});
+        log(LOG_INFO, "Clean completed successfully");
+        return 0;
+    }
+
+    log(LOG_ERROR, "unknown command: %s", argv[1]);
     return 1;
 }

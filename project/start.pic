@@ -1,16 +1,38 @@
 using "builtin/syncio";
+using "builtin/net";
 using "builtin/array";
-using "picasso/strings";
+using "picasso/os";
+
+class Server {
+    say addr: string;
+    say port: int16;
+    
+    fn Server(addr: string, port: int16) {
+        this.addr = addr;
+        this.port = port;
+    }
+    
+    fn start() {
+        say fd: int = net.listen(this.addr, this.port, 4096, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0);
+        
+        if (fd < 0) {
+            syncio.printf("Failed to start server\n");
+            return;
+        }
+        
+        syncio.printf("Server listening on %s:%d\n", this.addr, this.port);
+        
+        say clientFd: int = net.accept(fd);
+        say buf: []uint8 = array.create(uint8, 1024);
+        say n: int = net.read(clientFd, buf, 1024);
+        
+        if (n > 0) {
+            net.write(clientFd, buf, n);
+        }
+    }
+}
 
 fn start() {
-    say x: strings.StringBuilder = new strings.StringBuilder("hello");
-    x.print();
-
-    x.append(78);
-
-    x.print();
-
-    x.join("hello how are you");
-
-    x.print();
+    // say server: start.Server = new start.Server("127.0.0.1", 8080);
+    // server.start();
 }

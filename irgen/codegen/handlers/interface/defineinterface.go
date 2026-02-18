@@ -8,6 +8,7 @@ import (
 	errorutils "github.com/nagarajRPoojari/picasso/irgen/codegen/error"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/utils/logger"
 )
 
 // DefineInterfaceUDT finalizes the interface's structural definition by resolving
@@ -26,6 +27,7 @@ import (
 //   - Opaque Resolution: Finalizes the previously declared opaque struct by
 //     assigning the calculated fieldTypes, effectively closing the type definition.
 func (t *InterfaceHandler) DefineInterfaceUDT(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
+	logger.Debug(t.st.ModuleName, "declaring opaque interface %s of module:%s", ifs.Name, sourcePkg.Alias)
 	fqInterfaceName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
 
 	mc := t.st.Classes[fqInterfaceName]

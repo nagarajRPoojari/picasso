@@ -11,21 +11,25 @@ import (
 	interfaceh "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/interface"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/utils/logger"
 )
 
 func (t *Pipeline) predeclareClasses(sourcePkg state.PackageEntry) {
+	logger.Debug(t.st.ModuleName, "predeclaring classes of module:%s", sourcePkg.Alias)
 	Loop(t.tree, func(st ast.ClassDeclarationStatement) {
 		t.m.GetClassHandler().(*class.ClassHandler).DeclareOpaqueClass(st, sourcePkg)
 	})
 }
 
 func (t *Pipeline) predeclareInterfraces(sourcePkg state.PackageEntry) {
+	logger.Debug(t.st.ModuleName, "predeclaring interfaces of module:%s", sourcePkg.Alias)
 	Loop(t.tree, func(st ast.InterfaceDeclarationStatement) {
 		t.m.GetInterfaceHandler().(*interfaceh.InterfaceHandler).DeclareInterface(st, sourcePkg)
 	})
 }
 
 func (t *Pipeline) registerTypes() {
+	logger.Debug(t.st.ModuleName, "registering predefined types")
 	for tpc, udt := range t.st.CI.Types {
 		t.st.Module.NewTypeDef(tpc, udt)
 		mc := &typedef.MetaClass{
@@ -59,6 +63,7 @@ func (t *Pipeline) declareClassFields(sourcePkg state.PackageEntry) {
 }
 
 func (t *Pipeline) declareInterfaceFields(sourcePkg state.PackageEntry) {
+	logger.Debug(t.st.ModuleName, "declaring interface fields of module:%s", sourcePkg.Alias)
 	roots := make([]ast.InterfaceDeclarationStatement, 0)
 
 	for _, i := range t.tree.Body {
@@ -74,24 +79,28 @@ func (t *Pipeline) declareInterfaceFields(sourcePkg state.PackageEntry) {
 }
 
 func (t *Pipeline) declareClassFuncs(sourcePkg state.PackageEntry) {
+	logger.Debug(t.st.ModuleName, "declaring class funcs of module:%s", sourcePkg.Alias)
 	for _, i := range t.st.TypeHeirarchy.ClassRoots {
 		t.m.GetClassHandler().(*class.ClassHandler).DeclareClassFuncs(i, sourcePkg)
 	}
 }
 
 func (t *Pipeline) declareInterfaceFuncs(sourcePkg state.PackageEntry) {
+	logger.Debug(t.st.ModuleName, "declaring interface funcs of module:%s", sourcePkg.Alias)
 	for _, i := range t.st.TypeHeirarchy.InterfaceRoots {
 		t.m.GetInterfaceHandler().(*interfaceh.InterfaceHandler).DeclareClassFuncs(i, sourcePkg)
 	}
 }
 
 func (t *Pipeline) defineClasses() {
+	logger.Debug(t.st.ModuleName, "defining classes")
 	for _, i := range t.st.TypeHeirarchy.ClassRoots {
 		t.m.GetClassHandler().(*class.ClassHandler).DefineClassFuncs(i)
 	}
 }
 
 func (t *Pipeline) defineMain() {
+	logger.Debug(t.st.ModuleName, "defining main func")
 	Loop(t.tree, func(st ast.FunctionDefinitionStatement) {
 		if st.Name == constants.MAIN {
 			f := t.st.Module.NewFunc(constants.MAIN, types.NewPointer(types.I8), ir.NewParam("", types.NewPointer(types.I8)))

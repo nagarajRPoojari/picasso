@@ -20,6 +20,7 @@ import (
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/tools"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/utils"
 	"github.com/nagarajRPoojari/picasso/irgen/parser"
+	"github.com/nagarajRPoojari/picasso/irgen/utils/logger"
 )
 
 type generator struct {
@@ -110,7 +111,7 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 	}
 
 	if _, ok := t.visitingPkgs[pkgName]; ok {
-		panic(fmt.Sprintf("Cyclic dependency detected involving package: %s", pkgName))
+		logger.Fatal("%s", fmt.Sprintf("Cyclic dependency detected involving package: %s", pkgName))
 	}
 	t.visitingPkgs[pkgName] = struct{}{}
 
@@ -123,7 +124,7 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 	tree, ok := t.packages[pkgName]
 	if !ok {
 		// package exists but not modified, so no rebuild needed
-		fmt.Println("<= [skip] ", pkgName)
+		logger.Warn(pkgName, "[skip] %s", pkgName)
 
 		delete(t.visitingPkgs, pkgName)
 		t.builtPkgs[pkgName] = struct{}{}
@@ -155,7 +156,7 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 	llvm.AddImportEntry(state.PackageEntry{Name: pkgName, Alias: pkgName})
 
 	// Compile
-	fmt.Println("=> [compile] ", pkgName)
+	logger.Info(pkgName, "[compile] %s", pkgName)
 	t.compile(tree, llvm)
 
 	// Dump
@@ -177,13 +178,13 @@ func (t *generator) buildFFIPackage(pkg state.PackageEntry) {
 	// Read original .ll file
 	input, err := os.ReadFile(path)
 	if err != nil {
-		panic(err)
+		logger.Fatal("%s", err.Error())
 	}
 
 	// Parse LLVM IR
 	mod, err := asm.ParseBytes(path, input)
 	if err != nil {
-		panic(err)
+		logger.Fatal("%s", err.Error())
 	}
 
 	t.ffiModules[pkg.Name] = mod
@@ -215,14 +216,14 @@ func (t *generator) buildStdLib(pkg state.PackageEntry) {
 			return
 		}
 
-		panic(err)
+		logger.Fatal("%s", err.Error())
 	}
 
 	// Parse LLVM IR
 	data := normalizeOpaquePointers(input)
 	mod, err := asm.ParseBytes(path, data)
 	if err != nil {
-		panic(err)
+		logger.Fatal("%s", err.Error())
 	}
 
 	t.ffiModules[pkg.Name] = mod
@@ -324,7 +325,7 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 		// load from exports
 		err := utils.LoadFromFile(filepath.Join(t.outputDir, fmt.Sprintf("%s.exports", pkgFullName)), &packageAST)
 		if err != nil {
-			panic(fmt.Errorf("error while loading exports: %v", err))
+			logger.Fatal("%s", fmt.Errorf("error while loading exports: %v", err).Error())
 		}
 	} else {
 		packageAST = t.packages[pkgFullName]
@@ -428,9 +429,13 @@ func walk(root string, fn fs.WalkDirFunc) error {
 func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]struct{}) {
 	rootDir := projectDir
 
+	if os.Getenv("PICASSO_INCLUDE") == "" {
+		logger.Fatal("", "PICASSO_INCLUDE is unset")
+	}
+
 	err := os.Symlink(filepath.Join(os.Getenv("PICASSO_INCLUDE"), "picasso"), filepath.Join(rootDir, "picasso"))
 	if err != nil {
-		// i can assume its linked already so, move on.
+		logger.Warn("", " assuming symlink to libs")
 	}
 
 	modifiedPkgAST := make(map[string]ast.BlockStatement)
@@ -468,7 +473,7 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 	})
 
 	if err != nil {
-		panic(err)
+		logger.Fatal("%s", err.Error())
 	}
 
 	cachedBuilder := tools.NewBuildCache(allPkgImports, projectDir)
@@ -512,7 +517,7 @@ func LoadPackages(projectDir string) (map[string]ast.BlockStatement, map[string]
 	})
 
 	if err != nil {
-		panic(err)
+		logger.Fatal("%s", err.Error())
 	}
 
 	utils.SaveToFile(filepath.Join(projectDir, BUILD, "build.meta"), tools.LastBuildTime{Time: time.Now()})

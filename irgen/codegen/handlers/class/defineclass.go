@@ -10,6 +10,7 @@ import (
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/utils/logger"
 )
 
 // DefineClassFuncs triggers the emission of concrete LLVM IR function bodies for
@@ -44,6 +45,7 @@ func (t *ClassHandler) DefineClassFuncs(cls ast.ClassDeclarationStatement) {
 //   - Opaque Completion: Updates the underlying LLVM struct type (stored in
 //     clsMeta.UDT) with the finalized field list, completing the type definition.
 func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
+	logger.Debug(t.st.ModuleName, "defining class %s of module:%s", cls.Name, sourcePkg.Alias)
 	fqName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(cls.Name)
 	clsMeta := t.st.Classes[fqName]
 

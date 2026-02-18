@@ -8,6 +8,7 @@ import (
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/utils/logger"
 )
 
 // DeclareOpaqueClass registers a new User-Defined Type (UDT) within the LLVM module.
@@ -21,7 +22,7 @@ import (
 //   - Maps the class name to its MetaClass metadata in the global state for
 //     future field lookups and method dispatch.
 func (t *ClassHandler) DeclareOpaqueClass(cls ast.ClassDeclarationStatement, sourcePkg state.PackageEntry) {
-
+	logger.Debug(t.st.ModuleName, "declaring opaque class %s of module:%s", cls.Name, sourcePkg.Alias)
 	clsName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(cls.Name)
 
 	if _, ok := t.st.Classes[clsName]; ok {
