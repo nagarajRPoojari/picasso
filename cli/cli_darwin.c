@@ -124,6 +124,83 @@ static void run_cmd(char *const argv[]) {
     }
 }
 
+static const char* find_clang() {
+    static char clang_path[PATH_MAX] = {0};
+    if (clang_path[0] != '\0') return clang_path;
+
+    /* Check environment variable first */
+    const char *env_clang = getenv("PICASSO_CLANG");
+    if (env_clang && access(env_clang, X_OK) == 0) {
+        strncpy(clang_path, env_clang, sizeof(clang_path) - 1);
+        return clang_path;
+    }
+
+    /* Try common locations for LLVM 14+ */
+    const char *candidates[] = {
+        "/opt/homebrew/opt/llvm@14/bin/clang",
+        "/opt/homebrew/opt/llvm@15/bin/clang",
+        "/opt/homebrew/opt/llvm@16/bin/clang",
+        "/opt/homebrew/opt/llvm/bin/clang",
+        "/usr/local/opt/llvm@14/bin/clang",
+        "/usr/local/opt/llvm@15/bin/clang",
+        "/usr/local/opt/llvm@16/bin/clang",
+        "/usr/local/opt/llvm/bin/clang",
+        "clang",  /* fallback to PATH */
+        NULL
+    };
+
+    for (int i = 0; candidates[i] != NULL; i++) {
+        if (access(candidates[i], X_OK) == 0) {
+            strncpy(clang_path, candidates[i], sizeof(clang_path) - 1);
+            log(LOG_DEBUG, "Found clang at: %s", clang_path);
+            return clang_path;
+        }
+    }
+
+    log(LOG_ERROR, "Could not find clang. Set PICASSO_CLANG environment variable.");
+    exit(1);
+}
+
+static const char* get_sdk_path() {
+    static char sdk_path[PATH_MAX] = {0};
+    if (sdk_path[0] != '\0') return sdk_path;
+
+    /* Check environment variable first */
+    const char *env_sdk = getenv("PICASSO_SDK_PATH");
+    if (env_sdk && access(env_sdk, R_OK) == 0) {
+        strncpy(sdk_path, env_sdk, sizeof(sdk_path) - 1);
+        return sdk_path;
+    }
+
+    /* Use xcrun to find SDK path dynamically */
+    FILE *fp = popen("xcrun --sdk macosx --show-sdk-path 2>/dev/null", "r");
+    if (fp) {
+        if (fgets(sdk_path, sizeof(sdk_path), fp) != NULL) {
+            /* Remove trailing newline */
+            size_t len = strlen(sdk_path);
+            if (len > 0 && sdk_path[len - 1] == '\n') {
+                sdk_path[len - 1] = '\0';
+            }
+            pclose(fp);
+            if (access(sdk_path, R_OK) == 0) {
+                log(LOG_DEBUG, "Found SDK at: %s", sdk_path);
+                return sdk_path;
+            }
+        }
+        pclose(fp);
+    }
+
+    /* Fallback to common location */
+    const char *fallback = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk";
+    if (access(fallback, R_OK) == 0) {
+        strncpy(sdk_path, fallback, sizeof(sdk_path) - 1);
+        return sdk_path;
+    }
+
+    log(LOG_ERROR, "Could not find macOS SDK. Set PICASSO_SDK_PATH environment variable.");
+    exit(1);
+}
+
 static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir, const char *ffiObjDir, const char *runtimeIncDir, int gen_objects) {
     DIR *d = opendir(ffiRoot);
     if (!d && !runtimeIncDir) return;
@@ -158,13 +235,19 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
             die("outLL path too long");
 
         /* clang -S -emit-llvm */
-        char *clang_ll[20];
+        const char *clang = find_clang();
+        const char *sdk = get_sdk_path();
+        
+        char ffi_include[PATH_MAX];
+        snprintf(ffi_include, sizeof(ffi_include), "%s/usr/include/ffi", sdk);
+
+        char *clang_ll[24];
         int i = 0;
 
-        clang_ll[i++] = "/opt/homebrew/opt/llvm@14/bin/clang";
+        clang_ll[i++] = (char *)clang;
         clang_ll[i++] = "-S";
         clang_ll[i++] = "-emit-llvm";
-        clang_ll[i++] = "-g"; 
+        clang_ll[i++] = "-g";
 
         if (runtimeIncDir) {
             clang_ll[i++] = "-I";
@@ -175,7 +258,7 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
         clang_ll[i++] = (char *)tuDir;
 
         clang_ll[i++] = "-I";
-        clang_ll[i++] = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi/*.h";
+        clang_ll[i++] = ffi_include;
 
         clang_ll[i++] = (char *)stub;
 
@@ -322,13 +405,31 @@ int main(int argc, char **argv) {
 
         /* .bc → .o */
         log(LOG_INFO, "Compiling .bc to .o");
-        /* .bc → .o using clang for proper Mach-O */
-        char *bc_to_o[] = {
-            "sh", "-c",
+        
+        /* Detect target architecture */
+        const char *target_arch = getenv("PICASSO_TARGET_ARCH");
+        if (!target_arch) {
+            #if defined(__aarch64__) || defined(__arm64__)
+                target_arch = "arm64-apple-darwin";
+            #elif defined(__x86_64__)
+                target_arch = "x86_64-apple-darwin";
+            #else
+                target_arch = "arm64-apple-darwin";  /* default to arm64 */
+            #endif
+        }
+        
+        const char *clang = find_clang();
+        char bc_to_o_cmd[PATH_MAX * 2];
+        snprintf(bc_to_o_cmd, sizeof(bc_to_o_cmd),
             "set -e; for f in \"$1\"/*.bc; do "
             "b=$(basename \"$f\" .bc); "
-            "/opt/homebrew/opt/llvm@16/bin/clang -target arm64-apple-darwin -c \"$f\" -o \"$1/$b.o\"; "
+            "\"%s\" -target %s -c \"$f\" -o \"$1/$b.o\"; "
             "done",
+            clang, target_arch);
+        
+        char *bc_to_o[] = {
+            "sh", "-c",
+            bc_to_o_cmd,
             "sh",
             buildDir,
             NULL
@@ -337,8 +438,13 @@ int main(int argc, char **argv) {
 
         /* final link */
         log(LOG_INFO, "Linking final executable");
-        char *link[] = {
-            "sh", "-c",
+        
+        const char *sdk = get_sdk_path();
+        char ffi_include[PATH_MAX];
+        snprintf(ffi_include, sizeof(ffi_include), "%s/usr/include/ffi", sdk);
+        
+        char link_cmd[PATH_MAX * 3];
+        snprintf(link_cmd, sizeof(link_cmd),
             "set -e; "
             "OBJS=$1/*.o; "
             "FFI_OBJS=\"\"; "
@@ -346,12 +452,17 @@ int main(int argc, char **argv) {
             "  FFI_OBJS=$1/tmp/ffi-obj/*.o; "
             "fi; "
             "cc $OBJS $FFI_OBJS "
-            "-isysroot $(xcrun --sdk macosx --show-sdk-path) "
+            "-isysroot %s "
             RUNTIME_LIB_PATH
             " -o $1/a.out "
             " -rdynamic "
-            " -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi "
+            " -I%s "
             " -lffi -lpthread -lm",
+            sdk, ffi_include);
+        
+        char *link[] = {
+            "sh", "-c",
+            link_cmd,
             "sh",
             buildDir,
             NULL

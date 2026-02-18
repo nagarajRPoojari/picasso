@@ -1,38 +1,38 @@
 using "builtin/syncio";
-using "builtin/net";
 using "builtin/array";
-using "picasso/os";
 
-class Server {
-    say addr: string;
-    say port: int16;
-    
-    fn Server(addr: string, port: int16) {
-        this.addr = addr;
-        this.port = port;
-    }
-    
-    fn start() {
-        say fd: int = net.listen(this.addr, this.port, 4096, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0);
-        
-        if (fd < 0) {
-            syncio.printf("Failed to start server\n");
-            return;
-        }
-        
-        syncio.printf("Server listening on %s:%d\n", this.addr, this.port);
-        
-        say clientFd: int = net.accept(fd);
-        say buf: []uint8 = array.create(uint8, 1024);
-        say n: int = net.read(clientFd, buf, 1024);
-        
-        if (n > 0) {
-            net.write(clientFd, buf, n);
-        }
+using "utils";
+
+class Utils {
+    fn Utils() {}
+
+    fn sum(a: int, b: int): int {
+        return a + b;
     }
 }
 
+class Test {
+    fn Test() {}
+
+    fn testSelfModuleClassAccess() {
+        say u: start.Utils = new start.Utils();
+        say x: int = 10;
+        say y: int = 20;
+        syncio.printf("%d+%d=%d\n", x, y,u.sum(x, y));
+    }
+
+    fn testCrossModuleClassAccess() {
+        say u: utils.Utils = new utils.Utils();
+        say x: int = 10;
+        say y: int = 20;
+        syncio.printf("%d+%d=%d\n", x, y,u.sum(x, y));
+    }
+}
+
+
 fn start() {
-    // say server: start.Server = new start.Server("127.0.0.1", 8080);
-    // server.start();
+   say test: start.Test = new start.Test();
+
+   test.testSelfModuleClassAccess();
+   test.testCrossModuleClassAccess();
 }

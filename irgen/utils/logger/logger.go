@@ -16,6 +16,7 @@ const (
 	WARN
 	ERROR
 	FATAL
+	NONE
 )
 
 func (l LogLevel) String() string {
@@ -81,7 +82,7 @@ func init() {
 
 // New creates a new Logger with default settings
 func New() *Logger {
-	level := INFO
+	level := NONE
 	if envLevel := os.Getenv("PICASSO_LOG_LEVEL"); envLevel != "" {
 		switch envLevel {
 		case "DEBUG":

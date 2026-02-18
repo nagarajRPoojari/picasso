@@ -126,6 +126,115 @@ static void run_cmd(char *const argv[]) {
     }
 }
 
+static const char* find_clang() {
+    static char clang_path[PATH_MAX] = {0};
+    if (clang_path[0] != '\0') return clang_path;
+
+    /* Check environment variable first */
+    const char *env_clang = getenv("PICASSO_CLANG");
+    if (env_clang && access(env_clang, X_OK) == 0) {
+        strncpy(clang_path, env_clang, sizeof(clang_path) - 1);
+        return clang_path;
+    }
+
+    /* Try common locations for clang */
+    const char *candidates[] = {
+        "clang-16",
+        "clang-15",
+        "clang-14",
+        "clang",
+        "/usr/bin/clang-16",
+        "/usr/bin/clang-15",
+        "/usr/bin/clang-14",
+        "/usr/bin/clang",
+        NULL
+    };
+
+    for (int i = 0; candidates[i] != NULL; i++) {
+        if (access(candidates[i], X_OK) == 0 || strchr(candidates[i], '/') == NULL) {
+            /* If no slash, it's in PATH, just use it */
+            strncpy(clang_path, candidates[i], sizeof(clang_path) - 1);
+            log(LOG_DEBUG, "Using clang: %s", clang_path);
+            return clang_path;
+        }
+    }
+
+    log(LOG_ERROR, "Could not find clang. Set PICASSO_CLANG environment variable.");
+    exit(1);
+}
+
+static const char* find_llvm_tool(const char *tool_name) {
+    static char tool_paths[3][PATH_MAX] = {{0}};
+    static int tool_index = 0;
+    
+    char *result = tool_paths[tool_index % 3];
+    tool_index++;
+    
+    if (result[0] != '\0') return result;
+
+    /* Check environment variable first */
+    char env_var[64];
+    snprintf(env_var, sizeof(env_var), "PICASSO_%s", tool_name);
+    /* Convert to uppercase */
+    for (char *p = env_var; *p; p++) {
+        if (*p >= 'a' && *p <= 'z') *p = *p - 'a' + 'A';
+        if (*p == '-') *p = '_';
+    }
+    
+    const char *env_tool = getenv(env_var);
+    if (env_tool && access(env_tool, X_OK) == 0) {
+        strncpy(result, env_tool, PATH_MAX - 1);
+        return result;
+    }
+
+    /* Try versioned and unversioned tools */
+    char candidates[8][PATH_MAX];
+    snprintf(candidates[0], PATH_MAX, "%s-16", tool_name);
+    snprintf(candidates[1], PATH_MAX, "%s-15", tool_name);
+    snprintf(candidates[2], PATH_MAX, "%s-14", tool_name);
+    snprintf(candidates[3], PATH_MAX, "%s", tool_name);
+    snprintf(candidates[4], PATH_MAX, "/usr/bin/%s-16", tool_name);
+    snprintf(candidates[5], PATH_MAX, "/usr/bin/%s-15", tool_name);
+    snprintf(candidates[6], PATH_MAX, "/usr/bin/%s-14", tool_name);
+    snprintf(candidates[7], PATH_MAX, "/usr/bin/%s", tool_name);
+
+    for (int i = 0; i < 8; i++) {
+        if (access(candidates[i], X_OK) == 0 || strchr(candidates[i], '/') == NULL) {
+            strncpy(result, candidates[i], PATH_MAX - 1);
+            log(LOG_DEBUG, "Using %s: %s", tool_name, result);
+            return result;
+        }
+    }
+
+    log(LOG_ERROR, "Could not find %s. Set %s environment variable.", tool_name, env_var);
+    exit(1);
+}
+
+static void find_lib_paths(char *lib_paths, size_t size) {
+    /* Check environment variable first */
+    const char *env_libs = getenv("PICASSO_LIB_PATHS");
+    if (env_libs) {
+        strncpy(lib_paths, env_libs, size - 1);
+        return;
+    }
+
+    /* Detect architecture and set appropriate library paths */
+    const char *arch_lib = NULL;
+    
+    #if defined(__aarch64__) || defined(__arm64__)
+        arch_lib = "/usr/lib/aarch64-linux-gnu";
+    #elif defined(__x86_64__)
+        arch_lib = "/usr/lib/x86_64-linux-gnu";
+    #elif defined(__i386__)
+        arch_lib = "/usr/lib/i386-linux-gnu";
+    #else
+        arch_lib = "/usr/lib";
+    #endif
+
+    /* Build library path string */
+    snprintf(lib_paths, size, "-L%s -L/usr/lib -L/usr/local/lib", arch_lib);
+}
+
 static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir, const char *ffiObjDir, const char *runtimeIncDir, int gen_objects) {
     DIR *d = opendir(ffiRoot);
     if (!d && !runtimeIncDir) return;
@@ -161,10 +270,12 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
             die("outLL path too long");
 
         /* clang -S -emit-llvm */
+        const char *clang = find_clang();
+        
         char *clang_ll[20];
         int i = 0;
 
-        clang_ll[i++] = "clang";
+        clang_ll[i++] = (char *)clang;
         clang_ll[i++] = "-S";
         clang_ll[i++] = "-emit-llvm";
         clang_ll[i++] = "-g0";
@@ -307,12 +418,19 @@ int main(int argc, char **argv) {
 
         /* .ll → .bc */
         log(LOG_INFO, "Converting .ll to .bc");
-        char *ll_to_bc[] = {
-            "sh", "-c",
+        
+        const char *llvm_as = find_llvm_tool("llvm-as");
+        char ll_to_bc_cmd[PATH_MAX * 2];
+        snprintf(ll_to_bc_cmd, sizeof(ll_to_bc_cmd),
             "set -e; for f in \"$1\"/*.ll; do "
             "b=$(basename \"$f\" .ll); "
-            "llvm-as-16 \"$f\" -o \"$1/$b.bc\"; "
+            "\"%s\" \"$f\" -o \"$1/$b.bc\"; "
             "done",
+            llvm_as);
+        
+        char *ll_to_bc[] = {
+            "sh", "-c",
+            ll_to_bc_cmd,
             "sh",
             buildDir,
             NULL
@@ -320,13 +438,20 @@ int main(int argc, char **argv) {
         run_cmd(ll_to_bc);
 
         /* .bc → .o */
-        log(LOG_INFO, "Compiling .bc to .o")
-        char *bc_to_o[] = {
-            "sh", "-c",
+        log(LOG_INFO, "Compiling .bc to .o");
+        
+        const char *llc = find_llvm_tool("llc");
+        char bc_to_o_cmd[PATH_MAX * 2];
+        snprintf(bc_to_o_cmd, sizeof(bc_to_o_cmd),
             "set -e; for f in \"$1\"/*.bc; do "
             "b=$(basename \"$f\" .bc); "
-            "llc-16 -filetype=obj \"$f\" -o \"$1/$b.o\"; "
+            "\"%s\" -filetype=obj \"$f\" -o \"$1/$b.o\"; "
             "done",
+            llc);
+        
+        char *bc_to_o[] = {
+            "sh", "-c",
+            bc_to_o_cmd,
             "sh",
             buildDir,
             NULL
@@ -335,8 +460,22 @@ int main(int argc, char **argv) {
 
         /* final link */
         log(LOG_INFO, "Linking final executable");
-        char *link[] = {
-            "sh", "-c",
+        
+        char lib_paths[512];
+        find_lib_paths(lib_paths, sizeof(lib_paths));
+        
+        /* Detect architecture for unwind library */
+        const char *unwind_arch = "";
+        #if defined(__aarch64__) || defined(__arm64__)
+            unwind_arch = "-lunwind-aarch64";
+        #elif defined(__x86_64__)
+            unwind_arch = "-lunwind-x86_64";
+        #elif defined(__i386__)
+            unwind_arch = "-lunwind-x86";
+        #endif
+        
+        char link_cmd[PATH_MAX * 3];
+        snprintf(link_cmd, sizeof(link_cmd),
             "set -e; "
             "OBJS=\"$1\"/*.o; "
             "FFI_OBJS=\"\"; "
@@ -347,9 +486,14 @@ int main(int argc, char **argv) {
             RUNTIME_LIB_PATH
             " -o \"$1/a.out\" "
             "-rdynamic "
-            "-L/usr/lib/aarch64-linux-gnu -L/usr/lib "
-            "-lffi -luring -lunwind -lunwind-aarch64 "
+            "%s "
+            "-lffi -luring -lunwind %s "
             "-lpthread -lm",
+            lib_paths, unwind_arch);
+        
+        char *link[] = {
+            "sh", "-c",
+            link_cmd,
             "sh",
             buildDir,
             NULL

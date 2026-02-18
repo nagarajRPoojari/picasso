@@ -111,7 +111,7 @@ func (t *generator) buildPackage(pkg state.PackageEntry) {
 	}
 
 	if _, ok := t.visitingPkgs[pkgName]; ok {
-		logger.Fatal("%s", fmt.Sprintf("Cyclic dependency detected involving package: %s", pkgName))
+		logger.Fatal(pkgName, "%s", fmt.Sprintf("Cyclic dependency detected involving package: %s", pkgName))
 	}
 	t.visitingPkgs[pkgName] = struct{}{}
 
@@ -178,13 +178,13 @@ func (t *generator) buildFFIPackage(pkg state.PackageEntry) {
 	// Read original .ll file
 	input, err := os.ReadFile(path)
 	if err != nil {
-		logger.Fatal("%s", err.Error())
+		logger.Fatal(pkg.Alias, "%s", err.Error())
 	}
 
 	// Parse LLVM IR
 	mod, err := asm.ParseBytes(path, input)
 	if err != nil {
-		logger.Fatal("%s", err.Error())
+		logger.Fatal(pkg.Alias, "%s", err.Error())
 	}
 
 	t.ffiModules[pkg.Name] = mod
@@ -216,14 +216,14 @@ func (t *generator) buildStdLib(pkg state.PackageEntry) {
 			return
 		}
 
-		logger.Fatal("%s", err.Error())
+		logger.Fatal(pkg.Alias, "%s", err.Error())
 	}
 
 	// Parse LLVM IR
 	data := normalizeOpaquePointers(input)
 	mod, err := asm.ParseBytes(path, data)
 	if err != nil {
-		logger.Fatal("%s", err.Error())
+		logger.Fatal(pkg.Alias, "%s", err.Error())
 	}
 
 	t.ffiModules[pkg.Name] = mod
@@ -325,7 +325,7 @@ func (t *generator) recursiveTransitiveDeclaration(pkg state.PackageEntry, llvm 
 		// load from exports
 		err := utils.LoadFromFile(filepath.Join(t.outputDir, fmt.Sprintf("%s.exports", pkgFullName)), &packageAST)
 		if err != nil {
-			logger.Fatal("%s", fmt.Errorf("error while loading exports: %v", err).Error())
+			logger.Fatal(pkg.Alias, "%s", fmt.Errorf("error while loading exports: %v", err).Error())
 		}
 	} else {
 		packageAST = t.packages[pkgFullName]
