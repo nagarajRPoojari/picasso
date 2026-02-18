@@ -1,16 +1,38 @@
 using "builtin/syncio";
 using "builtin/array";
-using "picasso/strings";
+
+using "utils";
+
+class Utils {
+    fn Utils() {}
+
+    fn sum(a: int, b: int): int {
+        return a + b;
+    }
+}
+
+class Test {
+    fn Test() {}
+
+    fn testSelfModuleClassAccess() {
+        say u: start.Utils = new start.Utils();
+        say x: int = 10;
+        say y: int = 20;
+        syncio.printf("%d+%d=%d\n", x, y,u.sum(x, y));
+    }
+
+    fn testCrossModuleClassAccess() {
+        say u: utils.Utils = new utils.Utils();
+        say x: int = 10;
+        say y: int = 20;
+        syncio.printf("%d+%d=%d\n", x, y,u.sum(x, y));
+    }
+}
+
 
 fn start() {
-    say x: strings.StringBuilder = new strings.StringBuilder("hello");
-    x.print();
+   say test: start.Test = new start.Test();
 
-    x.append(78);
-
-    x.print();
-
-    x.join("hello how are you");
-
-    x.print();
+   test.testSelfModuleClassAccess();
+   test.testCrossModuleClassAccess();
 }

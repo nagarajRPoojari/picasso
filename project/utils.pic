@@ -1,15 +1,7 @@
-using "builtin/syncio";
-using "dummy/dummy";
-
 class Utils {
-    fn Utils() {
-    }
+    fn Utils() {}
 
-    fn giveOne(): int {
-        say x: dummy.Dummy = new dummy.Dummy();
-
-        syncio.printf(" this is in utils.Utils.giveOne \n");  
-
-        return 1 + x.giveTwo();
+    fn sum(a: int, b: int): int {
+        return a + b;
     }
 }

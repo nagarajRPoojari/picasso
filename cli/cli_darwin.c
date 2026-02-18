@@ -7,6 +7,83 @@
 #include <sys/wait.h>
 #include <limits.h>
 #include <errno.h>
+#include <time.h>
+#include <stdarg.h>
+
+typedef enum {
+    LOG_DEBUG = 0,
+    LOG_INFO = 1,
+    LOG_WARN = 2,
+    LOG_ERROR = 3,
+    LOG_FATAL = 4
+} LogLevel;
+
+static LogLevel g_log_level = LOG_INFO;
+
+#define COLOR_RESET   "\033[0m"
+#define COLOR_DEBUG   "\033[36m"  /* Cyan */
+#define COLOR_INFO    "\033[32m"  /* Green */
+#define COLOR_WARN    "\033[33m"  /* Yellow */
+#define COLOR_ERROR   "\033[31m"  /* Red */
+#define COLOR_FATAL   "\033[35m"  /* Magenta */
+
+static const char* log_level_string(LogLevel level) {
+    switch (level) {
+        case LOG_DEBUG: return "DEBUG";
+        case LOG_INFO:  return "INFO";
+        case LOG_WARN:  return "WARN";
+        case LOG_ERROR: return "ERROR";
+        case LOG_FATAL: return "FATAL";
+        default:        return "UNKNOWN";
+    }
+}
+
+static const char* log_level_color(LogLevel level) {
+    switch (level) {
+        case LOG_DEBUG: return COLOR_DEBUG;
+        case LOG_INFO:  return COLOR_INFO;
+        case LOG_WARN:  return COLOR_WARN;
+        case LOG_ERROR: return COLOR_ERROR;
+        case LOG_FATAL: return COLOR_FATAL;
+        default:        return COLOR_RESET;
+    }
+}
+
+static void log(LogLevel level, const char *fmt, ...) {
+    if (level < g_log_level) return;
+
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    char time_buf[32];
+    strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_info);
+
+    FILE *stream = (level >= LOG_ERROR) ? stderr : stdout;
+
+    fprintf(stream, "%s[%s] [%s]%s ",
+            log_level_color(level),
+            time_buf,
+            log_level_string(level),
+            COLOR_RESET);
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stream, fmt, args);
+    va_end(args);
+
+    fprintf(stream, "\n");
+    fflush(stream);
+}
+
+static void init_logging() {
+    const char *log_level_env = getenv("PICASSO_LOG_LEVEL");
+    if (log_level_env) {
+        if (strcmp(log_level_env, "DEBUG") == 0) g_log_level = LOG_DEBUG;
+        else if (strcmp(log_level_env, "INFO") == 0) g_log_level = LOG_INFO;
+        else if (strcmp(log_level_env, "WARN") == 0) g_log_level = LOG_WARN;
+        else if (strcmp(log_level_env, "ERROR") == 0) g_log_level = LOG_ERROR;
+        else if (strcmp(log_level_env, "FATAL") == 0) g_log_level = LOG_FATAL;
+    }
+}
 
 static void die(const char *msg) {
     perror(msg);
@@ -42,9 +119,86 @@ static void run_cmd(char *const argv[]) {
         die("waitpid");
 
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-        fprintf(stderr, "command failed: %s\n", argv[0]);
+        log(LOG_ERROR, "command failed: %s", argv[0]);
         exit(1);
     }
+}
+
+static const char* find_clang() {
+    static char clang_path[PATH_MAX] = {0};
+    if (clang_path[0] != '\0') return clang_path;
+
+    /* Check environment variable first */
+    const char *env_clang = getenv("PICASSO_CLANG");
+    if (env_clang && access(env_clang, X_OK) == 0) {
+        strncpy(clang_path, env_clang, sizeof(clang_path) - 1);
+        return clang_path;
+    }
+
+    /* Try common locations for LLVM 14+ */
+    const char *candidates[] = {
+        "/opt/homebrew/opt/llvm@14/bin/clang",
+        "/opt/homebrew/opt/llvm@15/bin/clang",
+        "/opt/homebrew/opt/llvm@16/bin/clang",
+        "/opt/homebrew/opt/llvm/bin/clang",
+        "/usr/local/opt/llvm@14/bin/clang",
+        "/usr/local/opt/llvm@15/bin/clang",
+        "/usr/local/opt/llvm@16/bin/clang",
+        "/usr/local/opt/llvm/bin/clang",
+        "clang",  /* fallback to PATH */
+        NULL
+    };
+
+    for (int i = 0; candidates[i] != NULL; i++) {
+        if (access(candidates[i], X_OK) == 0) {
+            strncpy(clang_path, candidates[i], sizeof(clang_path) - 1);
+            log(LOG_DEBUG, "Found clang at: %s", clang_path);
+            return clang_path;
+        }
+    }
+
+    log(LOG_ERROR, "Could not find clang. Set PICASSO_CLANG environment variable.");
+    exit(1);
+}
+
+static const char* get_sdk_path() {
+    static char sdk_path[PATH_MAX] = {0};
+    if (sdk_path[0] != '\0') return sdk_path;
+
+    /* Check environment variable first */
+    const char *env_sdk = getenv("PICASSO_SDK_PATH");
+    if (env_sdk && access(env_sdk, R_OK) == 0) {
+        strncpy(sdk_path, env_sdk, sizeof(sdk_path) - 1);
+        return sdk_path;
+    }
+
+    /* Use xcrun to find SDK path dynamically */
+    FILE *fp = popen("xcrun --sdk macosx --show-sdk-path 2>/dev/null", "r");
+    if (fp) {
+        if (fgets(sdk_path, sizeof(sdk_path), fp) != NULL) {
+            /* Remove trailing newline */
+            size_t len = strlen(sdk_path);
+            if (len > 0 && sdk_path[len - 1] == '\n') {
+                sdk_path[len - 1] = '\0';
+            }
+            pclose(fp);
+            if (access(sdk_path, R_OK) == 0) {
+                log(LOG_DEBUG, "Found SDK at: %s", sdk_path);
+                return sdk_path;
+            }
+        }
+        pclose(fp);
+    }
+
+    /* Fallback to common location */
+    const char *fallback = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk";
+    if (access(fallback, R_OK) == 0) {
+        strncpy(sdk_path, fallback, sizeof(sdk_path) - 1);
+        return sdk_path;
+    }
+
+    log(LOG_ERROR, "Could not find macOS SDK. Set PICASSO_SDK_PATH environment variable.");
+    exit(1);
 }
 
 static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir, const char *ffiObjDir, const char *runtimeIncDir, int gen_objects) {
@@ -72,7 +226,7 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
                 die("stub path too long");
 
             if(access(stub, R_OK) != 0)  {
-                fprintf(stderr, "warning: %s missing ffi_stub.c, skipping\n", tuDir);
+                log(LOG_WARN, "%s missing ffi_stub.c, skipping", tuDir);
                 continue;
             }
         }
@@ -81,13 +235,19 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
             die("outLL path too long");
 
         /* clang -S -emit-llvm */
-        char *clang_ll[20];
+        const char *clang = find_clang();
+        const char *sdk = get_sdk_path();
+        
+        char ffi_include[PATH_MAX];
+        snprintf(ffi_include, sizeof(ffi_include), "%s/usr/include/ffi", sdk);
+
+        char *clang_ll[24];
         int i = 0;
 
-        clang_ll[i++] = "/opt/homebrew/opt/llvm@14/bin/clang";
+        clang_ll[i++] = (char *)clang;
         clang_ll[i++] = "-S";
         clang_ll[i++] = "-emit-llvm";
-        clang_ll[i++] = "-g"; 
+        clang_ll[i++] = "-g";
 
         if (runtimeIncDir) {
             clang_ll[i++] = "-I";
@@ -98,7 +258,7 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
         clang_ll[i++] = (char *)tuDir;
 
         clang_ll[i++] = "-I";
-        clang_ll[i++] = "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi/*.h";
+        clang_ll[i++] = ffi_include;
 
         clang_ll[i++] = (char *)stub;
 
@@ -177,18 +337,21 @@ static void generate_ffi_irs(const char *dir, const char *buildDir) {
 
 /* main */
 int main(int argc, char **argv) {
+    init_logging();
+
     if (argc < 2) {
-        fprintf(stderr, "usage: picasso <build|exec> <project-dir>\n");
+        log(LOG_ERROR, "usage: picasso <build|exec|clean> <project-dir>");
         return 1;
     }
 
     if (!strcmp(argv[1], "build")) {
         if (argc != 3) {
-            fprintf(stderr, "picasso build <project root dir>\n");
+            log(LOG_ERROR, "picasso build <project root dir>");
             return 1;
         }
 
         const char *dir = argv[2];
+        log(LOG_INFO, "Starting build for project: %s", dir);
 
         char buildDir[PATH_MAX];
         snprintf(buildDir, sizeof(buildDir), "%s/build", dir);
@@ -196,6 +359,7 @@ int main(int argc, char **argv) {
         run_cmd((char *[]){"mkdir", "-p", buildDir, NULL});
 
         /* project FFI IR + objects */
+        log(LOG_INFO, "Generating FFI IRs for project");
         generate_ffi_irs(dir, buildDir);
 
         /* stdlib FFI IRs */
@@ -211,6 +375,7 @@ int main(int argc, char **argv) {
         char tmpDir[PATH_MAX];
         snprintf(tmpDir, sizeof(tmpDir), "%s/build/tmp", dir);
 
+        log(LOG_INFO, "Generating stdlib FFI IRs");
         generate_ffi_irs_from_root(
             libsDir,
             tmpDir,
@@ -220,10 +385,12 @@ int main(int argc, char **argv) {
         );
 
         /* language IR generation */
+        log(LOG_INFO, "Running IR generation");
         char *irgen[] = { IRGEN_BIN, "gen", (char *)dir, NULL };
         run_cmd(irgen);
 
         /* .ll → .bc */
+        log(LOG_INFO, "Converting .ll to .bc");
         char *ll_to_bc[] = {
             "sh", "-c",
             "set -e; for f in \"$1\"/*.ll; do "
@@ -237,13 +404,32 @@ int main(int argc, char **argv) {
         run_cmd(ll_to_bc);
 
         /* .bc → .o */
-        /* .bc → .o using clang for proper Mach-O */
-        char *bc_to_o[] = {
-            "sh", "-c",
+        log(LOG_INFO, "Compiling .bc to .o");
+        
+        /* Detect target architecture */
+        const char *target_arch = getenv("PICASSO_TARGET_ARCH");
+        if (!target_arch) {
+            #if defined(__aarch64__) || defined(__arm64__)
+                target_arch = "arm64-apple-darwin";
+            #elif defined(__x86_64__)
+                target_arch = "x86_64-apple-darwin";
+            #else
+                target_arch = "arm64-apple-darwin";  /* default to arm64 */
+            #endif
+        }
+        
+        const char *clang = find_clang();
+        char bc_to_o_cmd[PATH_MAX * 2];
+        snprintf(bc_to_o_cmd, sizeof(bc_to_o_cmd),
             "set -e; for f in \"$1\"/*.bc; do "
             "b=$(basename \"$f\" .bc); "
-            "/opt/homebrew/opt/llvm@16/bin/clang -target arm64-apple-darwin -c \"$f\" -o \"$1/$b.o\"; "
+            "\"%s\" -target %s -c \"$f\" -o \"$1/$b.o\"; "
             "done",
+            clang, target_arch);
+        
+        char *bc_to_o[] = {
+            "sh", "-c",
+            bc_to_o_cmd,
             "sh",
             buildDir,
             NULL
@@ -251,8 +437,14 @@ int main(int argc, char **argv) {
         run_cmd(bc_to_o);
 
         /* final link */
-        char *link[] = {
-            "sh", "-c",
+        log(LOG_INFO, "Linking final executable");
+        
+        const char *sdk = get_sdk_path();
+        char ffi_include[PATH_MAX];
+        snprintf(ffi_include, sizeof(ffi_include), "%s/usr/include/ffi", sdk);
+        
+        char link_cmd[PATH_MAX * 3];
+        snprintf(link_cmd, sizeof(link_cmd),
             "set -e; "
             "OBJS=$1/*.o; "
             "FFI_OBJS=\"\"; "
@@ -260,33 +452,57 @@ int main(int argc, char **argv) {
             "  FFI_OBJS=$1/tmp/ffi-obj/*.o; "
             "fi; "
             "cc $OBJS $FFI_OBJS "
-            "-isysroot $(xcrun --sdk macosx --show-sdk-path) "
+            "-isysroot %s "
             RUNTIME_LIB_PATH
             " -o $1/a.out "
             " -rdynamic "
-            " -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/ffi "
+            " -I%s "
             " -lffi -lpthread -lm",
+            sdk, ffi_include);
+        
+        char *link[] = {
+            "sh", "-c",
+            link_cmd,
             "sh",
             buildDir,
             NULL
         };
         run_cmd(link);
 
+        log(LOG_INFO, "Build completed successfully");
         return 0;
     }
 
     if (!strcmp(argv[1], "exec")) {
         if (argc != 3) {
-            fprintf(stderr, "picasso exec <project root dir>\n");
+            log(LOG_ERROR, "picasso exec <project root dir>");
             return 1;
         }
 
+        log(LOG_INFO, "Executing project: %s", argv[2]);
         char exe[PATH_MAX];
         snprintf(exe, sizeof(exe), "%s/build/a.out", argv[2]);
         execl(exe, exe, (char *)NULL);
         die("exec");
     }
 
-    fprintf(stderr, "unknown command\n");
+    if (!strcmp(argv[1], "clean")) {
+        if (argc != 3) {
+            log(LOG_ERROR, "picasso clean <project root dir>");
+            return 1;
+        }
+
+        log(LOG_INFO, "Cleaning project: %s", argv[2]);
+        char buildDir[PATH_MAX];
+        snprintf(buildDir, sizeof(buildDir), "%s/build", argv[2]);
+        char libDir[PATH_MAX];
+        snprintf(libDir, sizeof(libDir), "%s/picasso", argv[2]);
+        run_cmd((char*[]){"rm", "-rf", buildDir,  NULL});
+        run_cmd((char*[]){"rm", "-rf", libDir,  NULL});
+        log(LOG_INFO, "Clean completed successfully");
+        return 0;
+    }
+
+    log(LOG_ERROR, "unknown command: %s", argv[1]);
     return 1;
 }

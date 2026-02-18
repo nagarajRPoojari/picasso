@@ -46,6 +46,7 @@ done
 if [[ -n "$IRGEN_PATH" ]]; then
     mkdir -p "$WORK_DIR/irgen/irgen_"
     ln -sf "$IRGEN_PATH" "$WORK_DIR/irgen/irgen_/irgen"
+    exec "$IRGEN_PATH" 
 fi
 
 if [[ -n "$RUNTIME_LIB_PATH" ]]; then

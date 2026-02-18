@@ -13,6 +13,7 @@ import (
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
 	tf "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
+	"github.com/nagarajRPoojari/picasso/irgen/utils/logger"
 )
 
 // DeclareInterface registers a symbolic interface type within the global state
@@ -31,7 +32,7 @@ import (
 //   - Type Registration: Informs the TypeHandler of the new interface type,
 //     enabling its use as a valid type for parameters and variables.
 func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
-
+	logger.Debug(t.st.ModuleName, "declaring interface %s of module:%s", ifs.Name, sourcePkg.Alias)
 	ifName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(ifs.Name)
 	fqName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
 

@@ -9,6 +9,84 @@
 #include <limits.h>
 #include <errno.h>
 
+#include <time.h>
+#include <stdarg.h>
+
+typedef enum {
+    LOG_DEBUG = 0,
+    LOG_INFO = 1,
+    LOG_WARN = 2,
+    LOG_ERROR = 3,
+    LOG_FATAL = 4
+} LogLevel;
+
+static LogLevel g_log_level = LOG_INFO;
+
+#define COLOR_RESET   "\033[0m"
+#define COLOR_DEBUG   "\033[36m"  /* Cyan */
+#define COLOR_INFO    "\033[32m"  /* Green */
+#define COLOR_WARN    "\033[33m"  /* Yellow */
+#define COLOR_ERROR   "\033[31m"  /* Red */
+#define COLOR_FATAL   "\033[35m"  /* Magenta */
+
+static const char* log_level_string(LogLevel level) {
+    switch (level) {
+        case LOG_DEBUG: return "DEBUG";
+        case LOG_INFO:  return "INFO";
+        case LOG_WARN:  return "WARN";
+        case LOG_ERROR: return "ERROR";
+        case LOG_FATAL: return "FATAL";
+        default:        return "UNKNOWN";
+    }
+}
+
+static const char* log_level_color(LogLevel level) {
+    switch (level) {
+        case LOG_DEBUG: return COLOR_DEBUG;
+        case LOG_INFO:  return COLOR_INFO;
+        case LOG_WARN:  return COLOR_WARN;
+        case LOG_ERROR: return COLOR_ERROR;
+        case LOG_FATAL: return COLOR_FATAL;
+        default:        return COLOR_RESET;
+    }
+}
+
+static void log(LogLevel level, const char *fmt, ...) {
+    if (level < g_log_level) return;
+
+    time_t now = time(NULL);
+    struct tm *tm_info = localtime(&now);
+    char time_buf[32];
+    strftime(time_buf, sizeof(time_buf), "%Y-%m-%d %H:%M:%S", tm_info);
+
+    FILE *stream = (level >= LOG_ERROR) ? stderr : stdout;
+
+    fprintf(stream, "%s[%s] [%s]%s ",
+            log_level_color(level),
+            time_buf,
+            log_level_string(level),
+            COLOR_RESET);
+
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stream, fmt, args);
+    va_end(args);
+
+    fprintf(stream, "\n");
+    fflush(stream);
+}
+
+static void init_logging() {
+    const char *log_level_env = getenv("PICASSO_LOG_LEVEL");
+    if (log_level_env) {
+        if (strcmp(log_level_env, "DEBUG") == 0) g_log_level = LOG_DEBUG;
+        else if (strcmp(log_level_env, "INFO") == 0) g_log_level = LOG_INFO;
+        else if (strcmp(log_level_env, "WARN") == 0) g_log_level = LOG_WARN;
+        else if (strcmp(log_level_env, "ERROR") == 0) g_log_level = LOG_ERROR;
+        else if (strcmp(log_level_env, "FATAL") == 0) g_log_level = LOG_FATAL;
+    }
+}
+
 static void die(const char *msg) {
     perror(msg);
     exit(1);
@@ -43,9 +121,118 @@ static void run_cmd(char *const argv[]) {
         die("waitpid");
 
     if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-        fprintf(stderr, "command failed: %s\n", argv[0]);
+        log(LOG_ERROR, "command failed: %s", argv[0]);
         exit(1);
     }
+}
+
+static const char* find_clang() {
+    static char clang_path[PATH_MAX] = {0};
+    if (clang_path[0] != '\0') return clang_path;
+
+    /* Check environment variable first */
+    const char *env_clang = getenv("PICASSO_CLANG");
+    if (env_clang && access(env_clang, X_OK) == 0) {
+        strncpy(clang_path, env_clang, sizeof(clang_path) - 1);
+        return clang_path;
+    }
+
+    /* Try common locations for clang */
+    const char *candidates[] = {
+        "clang-16",
+        "clang-15",
+        "clang-14",
+        "clang",
+        "/usr/bin/clang-16",
+        "/usr/bin/clang-15",
+        "/usr/bin/clang-14",
+        "/usr/bin/clang",
+        NULL
+    };
+
+    for (int i = 0; candidates[i] != NULL; i++) {
+        if (access(candidates[i], X_OK) == 0 || strchr(candidates[i], '/') == NULL) {
+            /* If no slash, it's in PATH, just use it */
+            strncpy(clang_path, candidates[i], sizeof(clang_path) - 1);
+            log(LOG_DEBUG, "Using clang: %s", clang_path);
+            return clang_path;
+        }
+    }
+
+    log(LOG_ERROR, "Could not find clang. Set PICASSO_CLANG environment variable.");
+    exit(1);
+}
+
+static const char* find_llvm_tool(const char *tool_name) {
+    static char tool_paths[3][PATH_MAX] = {{0}};
+    static int tool_index = 0;
+    
+    char *result = tool_paths[tool_index % 3];
+    tool_index++;
+    
+    if (result[0] != '\0') return result;
+
+    /* Check environment variable first */
+    char env_var[64];
+    snprintf(env_var, sizeof(env_var), "PICASSO_%s", tool_name);
+    /* Convert to uppercase */
+    for (char *p = env_var; *p; p++) {
+        if (*p >= 'a' && *p <= 'z') *p = *p - 'a' + 'A';
+        if (*p == '-') *p = '_';
+    }
+    
+    const char *env_tool = getenv(env_var);
+    if (env_tool && access(env_tool, X_OK) == 0) {
+        strncpy(result, env_tool, PATH_MAX - 1);
+        return result;
+    }
+
+    /* Try versioned and unversioned tools */
+    char candidates[8][PATH_MAX];
+    snprintf(candidates[0], PATH_MAX, "%s-16", tool_name);
+    snprintf(candidates[1], PATH_MAX, "%s-15", tool_name);
+    snprintf(candidates[2], PATH_MAX, "%s-14", tool_name);
+    snprintf(candidates[3], PATH_MAX, "%s", tool_name);
+    snprintf(candidates[4], PATH_MAX, "/usr/bin/%s-16", tool_name);
+    snprintf(candidates[5], PATH_MAX, "/usr/bin/%s-15", tool_name);
+    snprintf(candidates[6], PATH_MAX, "/usr/bin/%s-14", tool_name);
+    snprintf(candidates[7], PATH_MAX, "/usr/bin/%s", tool_name);
+
+    for (int i = 0; i < 8; i++) {
+        if (access(candidates[i], X_OK) == 0 || strchr(candidates[i], '/') == NULL) {
+            strncpy(result, candidates[i], PATH_MAX - 1);
+            log(LOG_DEBUG, "Using %s: %s", tool_name, result);
+            return result;
+        }
+    }
+
+    log(LOG_ERROR, "Could not find %s. Set %s environment variable.", tool_name, env_var);
+    exit(1);
+}
+
+static void find_lib_paths(char *lib_paths, size_t size) {
+    /* Check environment variable first */
+    const char *env_libs = getenv("PICASSO_LIB_PATHS");
+    if (env_libs) {
+        strncpy(lib_paths, env_libs, size - 1);
+        return;
+    }
+
+    /* Detect architecture and set appropriate library paths */
+    const char *arch_lib = NULL;
+    
+    #if defined(__aarch64__) || defined(__arm64__)
+        arch_lib = "/usr/lib/aarch64-linux-gnu";
+    #elif defined(__x86_64__)
+        arch_lib = "/usr/lib/x86_64-linux-gnu";
+    #elif defined(__i386__)
+        arch_lib = "/usr/lib/i386-linux-gnu";
+    #else
+        arch_lib = "/usr/lib";
+    #endif
+
+    /* Build library path string */
+    snprintf(lib_paths, size, "-L%s -L/usr/lib -L/usr/local/lib", arch_lib);
 }
 
 static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir, const char *ffiObjDir, const char *runtimeIncDir, int gen_objects) {
@@ -73,7 +260,7 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
                 die("stub path too long");
 
             if(access(stub, R_OK) != 0)  {
-                fprintf(stderr, "warning: %s missing ffi_stub.c, skipping\n", tuDir);
+                log(LOG_WARN, "%s missing ffi_stub.c, skipping", tuDir);
                 continue;
             }
         }
@@ -83,10 +270,12 @@ static void generate_ffi_irs_from_root( const char *ffiRoot, const char *tmpDir,
             die("outLL path too long");
 
         /* clang -S -emit-llvm */
+        const char *clang = find_clang();
+        
         char *clang_ll[20];
         int i = 0;
 
-        clang_ll[i++] = "clang";
+        clang_ll[i++] = (char *)clang;
         clang_ll[i++] = "-S";
         clang_ll[i++] = "-emit-llvm";
         clang_ll[i++] = "-g0";
@@ -175,18 +364,21 @@ static void generate_ffi_irs(const char *dir, const char *buildDir) {
 
 /* main */
 int main(int argc, char **argv) {
+    init_logging();
+
     if (argc < 2) {
-        fprintf(stderr, "usage: picasso <build|exec> <project-dir>\n");
+        log(LOG_ERROR, "usage: picasso <build|exec|clean> <project-dir>");
         return 1;
     }
 
     if (!strcmp(argv[1], "build")) {
         if (argc != 3) {
-            fprintf(stderr, "picasso build <project root dir>\n");
+            log(LOG_ERROR, "picasso build <project root dir>");
             return 1;
         }
 
         const char *dir = argv[2];
+        log(LOG_INFO, "Starting build for project: %s", dir);
 
         char buildDir[PATH_MAX];
         snprintf(buildDir, sizeof(buildDir), "%s/build", dir);
@@ -194,6 +386,7 @@ int main(int argc, char **argv) {
         run_cmd((char *[]){"mkdir", "-p", buildDir, NULL});
 
         /* project FFI IR + objects */
+        log(LOG_INFO, "Generating FFI IRs for project");
         generate_ffi_irs(dir, buildDir);
 
         /* stdlib FFI IRs */
@@ -209,6 +402,7 @@ int main(int argc, char **argv) {
         char tmpDir[PATH_MAX];
         snprintf(tmpDir, sizeof(tmpDir), "%s/build/tmp", dir);
 
+        log(LOG_INFO, "Generating stdlib FFI IRs");
         generate_ffi_irs_from_root(
             libsDir,
             tmpDir,
@@ -218,16 +412,25 @@ int main(int argc, char **argv) {
         );
 
         /* language IR generation */
+        log(LOG_INFO, "Running IR generation");
         char *irgen[] = { IRGEN_BIN, "gen", (char *)dir, NULL };
         run_cmd(irgen);
 
         /* .ll → .bc */
-        char *ll_to_bc[] = {
-            "sh", "-c",
+        log(LOG_INFO, "Converting .ll to .bc");
+        
+        const char *llvm_as = find_llvm_tool("llvm-as");
+        char ll_to_bc_cmd[PATH_MAX * 2];
+        snprintf(ll_to_bc_cmd, sizeof(ll_to_bc_cmd),
             "set -e; for f in \"$1\"/*.ll; do "
             "b=$(basename \"$f\" .ll); "
-            "llvm-as-16 \"$f\" -o \"$1/$b.bc\"; "
+            "\"%s\" \"$f\" -o \"$1/$b.bc\"; "
             "done",
+            llvm_as);
+        
+        char *ll_to_bc[] = {
+            "sh", "-c",
+            ll_to_bc_cmd,
             "sh",
             buildDir,
             NULL
@@ -235,12 +438,20 @@ int main(int argc, char **argv) {
         run_cmd(ll_to_bc);
 
         /* .bc → .o */
-        char *bc_to_o[] = {
-            "sh", "-c",
+        log(LOG_INFO, "Compiling .bc to .o");
+        
+        const char *llc = find_llvm_tool("llc");
+        char bc_to_o_cmd[PATH_MAX * 2];
+        snprintf(bc_to_o_cmd, sizeof(bc_to_o_cmd),
             "set -e; for f in \"$1\"/*.bc; do "
             "b=$(basename \"$f\" .bc); "
-            "llc-16 -filetype=obj \"$f\" -o \"$1/$b.o\"; "
+            "\"%s\" -filetype=obj \"$f\" -o \"$1/$b.o\"; "
             "done",
+            llc);
+        
+        char *bc_to_o[] = {
+            "sh", "-c",
+            bc_to_o_cmd,
             "sh",
             buildDir,
             NULL
@@ -248,8 +459,23 @@ int main(int argc, char **argv) {
         run_cmd(bc_to_o);
 
         /* final link */
-        char *link[] = {
-            "sh", "-c",
+        log(LOG_INFO, "Linking final executable");
+        
+        char lib_paths[512];
+        find_lib_paths(lib_paths, sizeof(lib_paths));
+        
+        /* Detect architecture for unwind library */
+        const char *unwind_arch = "";
+        #if defined(__aarch64__) || defined(__arm64__)
+            unwind_arch = "-lunwind-aarch64";
+        #elif defined(__x86_64__)
+            unwind_arch = "-lunwind-x86_64";
+        #elif defined(__i386__)
+            unwind_arch = "-lunwind-x86";
+        #endif
+        
+        char link_cmd[PATH_MAX * 3];
+        snprintf(link_cmd, sizeof(link_cmd),
             "set -e; "
             "OBJS=\"$1\"/*.o; "
             "FFI_OBJS=\"\"; "
@@ -260,31 +486,54 @@ int main(int argc, char **argv) {
             RUNTIME_LIB_PATH
             " -o \"$1/a.out\" "
             "-rdynamic "
-            "-L/usr/lib/aarch64-linux-gnu -L/usr/lib "
-            "-lffi -luring -lunwind -lunwind-aarch64 "
+            "%s "
+            "-lffi -luring -lunwind %s "
             "-lpthread -lm",
+            lib_paths, unwind_arch);
+        
+        char *link[] = {
+            "sh", "-c",
+            link_cmd,
             "sh",
             buildDir,
             NULL
         };
         run_cmd(link);
 
-
+        log(LOG_INFO, "Build completed successfully");
         return 0;
     }
 
     if (!strcmp(argv[1], "exec")) {
         if (argc != 3) {
-            fprintf(stderr, "picasso exec <project root dir>\n");
+            log(LOG_ERROR, "picasso exec <project root dir>");
             return 1;
         }
 
+        log(LOG_INFO, "Executing project: %s", argv[2]);
         char exe[PATH_MAX];
         snprintf(exe, sizeof(exe), "%s/build/a.out", argv[2]);
         execl(exe, exe, (char *)NULL);
         die("exec");
     }
 
-    fprintf(stderr, "unknown command\n");
+    if (!strcmp(argv[1], "clean")) {
+        if (argc != 3) {
+            log(LOG_ERROR, "picasso clean <project root dir>");
+            return 1;
+        }
+
+        log(LOG_INFO, "Cleaning project: %s", argv[2]);
+        char buildDir[PATH_MAX];
+        snprintf(buildDir, sizeof(buildDir), "%s/build", argv[2]);
+        char libDir[PATH_MAX];
+        snprintf(libDir, sizeof(libDir), "%s/picasso", argv[2]);
+        run_cmd((char*[]){"rm", "-rf", buildDir,  NULL});
+        run_cmd((char*[]){"rm", "-rf", libDir,  NULL});
+        log(LOG_INFO, "Clean completed successfully");
+        return 0;
+    }
+
+    log(LOG_ERROR, "unknown command: %s", argv[1]);
     return 1;
 }

@@ -18,6 +18,7 @@ go_library(
         "//irgen/codegen/handlers/state",
         "//irgen/codegen/handlers/utils",
         "//irgen/codegen/type",
+        "//irgen/utils/logger",
         "@com_github_llir_llvm//ir",
         "@com_github_llir_llvm//ir/types",
     ],
