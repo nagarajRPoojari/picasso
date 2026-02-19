@@ -86,21 +86,56 @@ static void init_logging() {
 }
 
 static void die(const char *msg) {
+    log(LOG_FATAL, "die: %s", msg);
     perror(msg);
     exit(1);
 }
 
 static void get_tool_root(char *out, size_t sz) {
+    const char *home = getenv("PICASSO_HOME");
+    if (home) {
+        snprintf(out, sz, "%s", home);
+        log(LOG_INFO, "PICASSO_HOME found: %s", home);
+        return;
+    }
+
+    log(LOG_WARN, "PICASSO_HOME not not found, defaulting to RUNFILES_DIR");
     const char *runfiles = getenv("RUNFILES_DIR");
     if (runfiles) {
-        if (snprintf(out, sz, "%s/_main", runfiles) >= (int)sz)
-            die("toolRoot path too long");
-    } else {
-        if (getcwd(out, sz) == NULL) {
-            perror("getcwd");
-            exit(1);
-        }
+        snprintf(out, sz, "%s/_main", runfiles);
+        log(LOG_INFO, "RUNFILES_DIR found: %s", runfiles);
+        return;
     }
+    
+    if (getcwd(out, sz) == NULL) {
+        log(LOG_FATAL, "src files not found");
+        perror("getcwd");
+        exit(1);
+    }
+}
+
+static void get_irgen(char *out, size_t sz) {
+    const char *home = getenv("PICASSO_IRGEN");
+    if (home) {
+        snprintf(out, sz, "%s", home);
+        log(LOG_INFO, "PICASSO_IRGEN found: %s", home);
+        return;
+    }
+    log(LOG_WARN, "PICASSO_IRGEN not not found, defaulting to IRGEN_BIN");
+    log(LOG_INFO, "IRGEN_BIN found: %s", IRGEN_BIN);
+    snprintf(out, sz, "%s", IRGEN_BIN);
+}
+
+static void get_runtimelib(char *out, size_t sz) {
+    const char *home = getenv("PICASSO_RUNTIME_LIB");
+    if (home) {
+        snprintf(out, sz, "%s", home);
+        log(LOG_INFO, "PICASSO_RUNTIME_LIB found: %s", home);
+        return;
+    }
+    log(LOG_WARN, "PICASSO_RUNTIME_LIB not not found, defaulting to RUNTIME_LIB_PATH");
+    log(LOG_INFO, "IRGEN_BIN found: %s", RUNTIME_LIB_PATH);
+    snprintf(out, sz, "%s", RUNTIME_LIB_PATH);
 }
 
 static void run_cmd(char *const argv[]) {
@@ -138,13 +173,7 @@ static const char* find_clang() {
     /* Try common locations for LLVM 14+ */
     const char *candidates[] = {
         "/opt/homebrew/opt/llvm@14/bin/clang",
-        "/opt/homebrew/opt/llvm@15/bin/clang",
-        "/opt/homebrew/opt/llvm@16/bin/clang",
-        "/opt/homebrew/opt/llvm/bin/clang",
         "/usr/local/opt/llvm@14/bin/clang",
-        "/usr/local/opt/llvm@15/bin/clang",
-        "/usr/local/opt/llvm@16/bin/clang",
-        "/usr/local/opt/llvm/bin/clang",
         "clang",  /* fallback to PATH */
         NULL
     };
@@ -386,7 +415,21 @@ int main(int argc, char **argv) {
 
         /* language IR generation */
         log(LOG_INFO, "Running IR generation");
-        char *irgen[] = { IRGEN_BIN, "gen", (char *)dir, NULL };
+        
+        /* Set PICASSO_INCLUDE environment variable if not already set */
+        if (getenv("PICASSO_INCLUDE") == NULL) {
+            char picassoInclude[PATH_MAX];
+            snprintf(picassoInclude, sizeof(picassoInclude), "%s/libs", toolRoot);
+            if (setenv("PICASSO_INCLUDE", picassoInclude, 0) != 0) {
+                log(LOG_WARN, "Failed to set PICASSO_INCLUDE");
+            } else {
+                log(LOG_INFO, "PICASSO_INCLUDE set to: %s", picassoInclude);
+            }
+        }
+        
+        char irgenPath[PATH_MAX];
+        get_irgen(irgenPath, sizeof(irgenPath));
+        char *irgen[] = { irgenPath, "gen", (char *)dir, NULL };
         run_cmd(irgen);
 
         /* .ll → .bc */
@@ -406,26 +449,13 @@ int main(int argc, char **argv) {
         /* .bc → .o */
         log(LOG_INFO, "Compiling .bc to .o");
         
-        /* Detect target architecture */
-        const char *target_arch = getenv("PICASSO_TARGET_ARCH");
-        if (!target_arch) {
-            #if defined(__aarch64__) || defined(__arm64__)
-                target_arch = "arm64-apple-darwin";
-            #elif defined(__x86_64__)
-                target_arch = "x86_64-apple-darwin";
-            #else
-                target_arch = "arm64-apple-darwin";  /* default to arm64 */
-            #endif
-        }
-        
-        const char *clang = find_clang();
+        /* Use llc to compile .bc to .o (handles LLVM version compatibility) */
         char bc_to_o_cmd[PATH_MAX * 2];
         snprintf(bc_to_o_cmd, sizeof(bc_to_o_cmd),
             "set -e; for f in \"$1\"/*.bc; do "
             "b=$(basename \"$f\" .bc); "
-            "\"%s\" -target %s -c \"$f\" -o \"$1/$b.o\"; "
-            "done",
-            clang, target_arch);
+            "llc -filetype=obj \"$f\" -o \"$1/$b.o\"; "
+            "done");
         
         char *bc_to_o[] = {
             "sh", "-c",
@@ -444,6 +474,8 @@ int main(int argc, char **argv) {
         snprintf(ffi_include, sizeof(ffi_include), "%s/usr/include/ffi", sdk);
         
         char link_cmd[PATH_MAX * 3];
+        char runtimeLib[PATH_MAX];
+        get_runtimelib(runtimeLib, sizeof(runtimeLib));
         snprintf(link_cmd, sizeof(link_cmd),
             "set -e; "
             "OBJS=$1/*.o; "
@@ -453,12 +485,12 @@ int main(int argc, char **argv) {
             "fi; "
             "cc $OBJS $FFI_OBJS "
             "-isysroot %s "
-            RUNTIME_LIB_PATH
+            "%s"
             " -o $1/a.out "
             " -rdynamic "
             " -I%s "
             " -lffi -lpthread -lm",
-            sdk, ffi_include);
+            sdk, runtimeLib, ffi_include);
         
         char *link[] = {
             "sh", "-c",

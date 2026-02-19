@@ -6,7 +6,7 @@ import (
 )
 
 var genCmd = &cobra.Command{
-	Use:   "gen [source_file] [output_path]",
+	Use:   "gen [source dir]",
 	Short: "Compiles Picasso source code into Intermediate Representation",
 	Long: `gen generates IR files for given project directory
 Example:
