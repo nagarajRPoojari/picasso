@@ -148,11 +148,12 @@ func (t *ExpressionHandler) ProcessMemberExpression(bh *bc.BlockHolder, ex ast.M
 					rank = listType.GetRank()
 				}
 
+				udlType := t.st.ResolveAlias(classMeta.VarAST[fieldFqName].ExplicitType.GetUnderlyingType())
 				return &tf.Array{
 					Ptr:               f,
 					ArrayType:         tf.ARRAYSTRUCT,
 					ElemType:          classMeta.ArrayVarsEleTypes[idx],
-					ElementTypeString: classMeta.VarAST[fieldFqName].ExplicitType.GetUnderlyingType(),
+					ElementTypeString: udlType,
 					Rank:              rank,
 				}
 			}

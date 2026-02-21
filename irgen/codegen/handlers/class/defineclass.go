@@ -10,7 +10,6 @@ import (
 	funcs "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/func"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
-	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
 	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 	"github.com/nagarajRPoojari/picasso/irgen/utils/logger"
 )
@@ -196,12 +195,70 @@ func (t *ClassHandler) validateInterfaceMethodSignature(className, methodName st
 		return // Method not in interface, skip validation
 	}
 
-	// Compute hash of class method signature
-	classMethodHash := utils.HashFuncSig(classMethod.Parameters, classMethod.ReturnType)
+	// Get interface method parameters and return type from stored metadata
+	interfaceParams := interfaceMethod.Parameters
+	interfaceRetType := interfaceMethod.ReturnType
 
-	// Compare with interface method hash
-	if classMethodHash != interfaceMethod.Hash {
+	// Compare parameter count
+	if len(classMethod.Parameters) != len(interfaceParams) {
 		errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
-			fmt.Sprintf("Method signature mismatch: %s.%s does not match interface signature", className, methodName))
+			fmt.Sprintf("Method signature mismatch: %s.%s parameter count differs", className, methodName))
+	}
+
+	// Compare each parameter type (with alias resolution and fuzzy matching)
+	for i, classParam := range classMethod.Parameters {
+		interfaceParam := interfaceParams[i]
+
+		classType := ""
+		if classParam.Type != nil {
+			classType = t.st.ResolveAlias(classParam.Type.Get())
+		}
+
+		interfaceType := ""
+		if interfaceParam.Type != nil {
+			interfaceTypeRaw := interfaceParam.Type.Get()
+			interfaceType = t.st.ResolveAlias(interfaceTypeRaw)
+
+			// If resolution didn't change the type, try fuzzy matching
+			// e.g., http_simple.HTTPContext should match picasso.http_simple.HTTPContext
+			if interfaceType == interfaceTypeRaw && classType != interfaceType {
+				// Check if classType ends with interfaceType
+				if strings.HasSuffix(classType, "."+interfaceType) {
+					interfaceType = classType // Use the resolved class type
+				}
+			}
+		}
+
+		if classType != interfaceType {
+			errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
+				fmt.Sprintf("Method signature mismatch: %s.%s parameter %d type mismatch (expected %s, got %s)",
+					className, methodName, i, interfaceType, classType))
+		}
+	}
+
+	// Compare return types (with alias resolution and fuzzy matching)
+	classRetType := ""
+	if classMethod.ReturnType != nil {
+		classRetType = t.st.ResolveAlias(classMethod.ReturnType.Get())
+	}
+
+	interfaceRetTypeResolved := ""
+	if interfaceRetType != nil {
+		interfaceRetTypeRaw := interfaceRetType.Get()
+		interfaceRetTypeResolved = t.st.ResolveAlias(interfaceRetTypeRaw)
+
+		// If resolution didn't change the type, try fuzzy matching
+		if interfaceRetTypeResolved == interfaceRetTypeRaw && classRetType != interfaceRetTypeResolved {
+			// Check if classRetType ends with interfaceRetTypeResolved
+			if strings.HasSuffix(classRetType, "."+interfaceRetTypeResolved) {
+				interfaceRetTypeResolved = classRetType // Use the resolved class type
+			}
+		}
+	}
+
+	if classRetType != interfaceRetTypeResolved {
+		errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
+			fmt.Sprintf("Method signature mismatch: %s.%s return type mismatch (expected %s, got %s)",
+				className, methodName, interfaceRetTypeResolved, classRetType))
 	}
 }

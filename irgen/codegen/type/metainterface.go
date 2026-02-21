@@ -3,12 +3,15 @@ package typedef
 import (
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
+	"github.com/nagarajRPoojari/picasso/irgen/ast"
 )
 
 type MethodSig struct {
-	Name     string
-	Hash     uint32
-	FuncType *ir.Func
+	Name       string
+	Hash       uint32
+	FuncType   *ir.Func
+	Parameters []ast.Parameter
+	ReturnType ast.Type
 }
 
 type MetaInterface struct {

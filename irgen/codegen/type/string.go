@@ -34,9 +34,12 @@ func NewString(block *bc.BlockHolder, init value.Value) *String {
 		s = constantToGoString(c)
 	}
 
+	// Allocate space for a pointer to STRINGSTRUCT (not pointer to pointer)
+	v := block.N.NewAlloca(init.Type())
+	block.N.NewStore(init, v)
 	return &String{
 		NativeType: types.NewPointer(STRINGSTRUCT),
-		Value:      init,
+		Value:      v,
 		GoVal:      s,
 	}
 }
@@ -53,9 +56,10 @@ func (s *String) Update(block *bc.BlockHolder, v value.Value) {
 	block.N.NewStore(v, s.Value)
 }
 
-// return i8*
+// Load returns the string pointer by loading from the slot
+// Returns: %string* (pointer to string struct)
 func (s *String) Load(block *bc.BlockHolder) value.Value {
-	return s.Value
+	return block.N.NewLoad(s.NativeType, s.Value)
 }
 
 func (s *String) Constant() constant.Constant {
