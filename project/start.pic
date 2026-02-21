@@ -1,38 +1,180 @@
 using "builtin/syncio";
-using "builtin/array";
+using "builtin/types";
 
-using "utils";
+// Define an interface with multiple methods
+interface Animal {
+    fn speak(): int {
+        return -1;
+    }
 
-class Utils {
-    fn Utils() {}
+    fn getName(): int {
+        return -1;
+    }
 
-    fn sum(a: int, b: int): int {
-        return a + b;
+    fn getAge(): int {
+        return -1;
+    }
+    
+}
+
+// First implementation: Dog
+class Dog: start.Animal {
+    fn Dog() {}
+    
+    fn speak(): int {
+        syncio.printf("Woof!\n");
+        return 100;
+    }
+    
+    fn getAge(): int {
+        return 3;
+    }
+    
+    fn getName(): int {
+        syncio.printf("Buddy\n");
+        return 200;
+    }
+    
+    // Dog-specific method (not in interface)
+    fn wagTail(): int {
+        syncio.printf("Wagging tail!\n");
+        return 300;
     }
 }
 
-class Test {
-    fn Test() {}
-
-    fn testSelfModuleClassAccess() {
-        say u: start.Utils = new start.Utils();
-        say x: int = 10;
-        say y: int = 20;
-        syncio.printf("%d+%d=%d\n", x, y,u.sum(x, y));
+// Second implementation: Cat
+class Cat: start.Animal {
+    fn Cat() {}
+    
+    fn speak(): int {
+        syncio.printf("Meow!\n");
+        return 101;
     }
-
-    fn testCrossModuleClassAccess() {
-        say u: utils.Utils = new utils.Utils();
-        say x: int = 10;
-        say y: int = 20;
-        syncio.printf("%d+%d=%d\n", x, y,u.sum(x, y));
+    
+    fn getAge(): int {
+        return 5;
+    }
+    
+    fn getName(): int {
+        syncio.printf("Whiskers\n");
+        return 201;
+    }
+    
+    // Cat-specific method (not in interface)
+    fn purr(): int {
+        syncio.printf("Purring...\n");
+        return 301;
     }
 }
 
+// Third implementation: Bird
+class Bird: start.Animal {
+    fn Bird() {}
+    
+    fn speak(): int {
+        syncio.printf("Tweet!\n");
+        return 102;
+    }
+    
+    fn getAge(): int {
+        return 2;
+    }
+    
+    fn getName(): int {
+        syncio.printf("Tweety\n");
+        return 202;
+    }
+    
+    // Bird-specific method (not in interface)
+    fn fly(): int {
+        syncio.printf("Flying high!\n");
+        return 302;
+    }
+}
+
+// Helper class that takes interface as parameter
+class AnimalShelter {
+    fn AnimalShelter(animal: start.Animal) {
+        syncio.printf("=== Animal Shelter Info ===\n");
+        syncio.printf("Name: ");
+        animal.getName();
+        syncio.printf("Age: %d\n", animal.getAge());
+        syncio.printf("Sound: ");
+        say result: int = animal.speak();
+        syncio.printf("Speak returned: %d\n", result);
+        syncio.printf("========================\n\n");
+    }
+}
 
 fn start() {
-   say test: start.Test = new start.Test();
-
-   test.testSelfModuleClassAccess();
-   test.testCrossModuleClassAccess();
+    syncio.printf("=== Interface Implementation Test ===\n\n");
+    
+    // Test 1: Direct interface variable assignment
+    syncio.printf("Test 1: Dog as Animal interface\n");
+    say dog: start.Animal = new start.Dog();
+    syncio.printf("Type: %s\n", types.type(dog));
+    syncio.printf("Calling speak(): ");
+    say dogSpeak: int = dog.speak();
+    syncio.printf("Return value: %d\n", dogSpeak);
+    syncio.printf("Calling getAge(): %d\n", dog.getAge());
+    syncio.printf("Calling getName(): ");
+    dog.getName();
+    syncio.printf("\n");
+    
+    // Test 2: Cat as interface
+    syncio.printf("Test 2: Cat as Animal interface\n");
+    say cat: start.Animal = new start.Cat();
+    syncio.printf("Type: %s\n", types.type(cat));
+    syncio.printf("Calling speak(): ");
+    say catSpeak: int = cat.speak();
+    syncio.printf("Return value: %d\n", catSpeak);
+    syncio.printf("Calling getAge(): %d\n", cat.getAge());
+    syncio.printf("Calling getName(): ");
+    cat.getName();
+    syncio.printf("\n");
+    
+    // Test 3: Bird as interface
+    syncio.printf("Test 3: Bird as Animal interface\n");
+    say bird: start.Animal = new start.Bird();
+    syncio.printf("Type: %s\n", types.type(bird));
+    syncio.printf("Calling speak(): ");
+    say birdSpeak: int = bird.speak();
+    syncio.printf("Return value: %d\n", birdSpeak);
+    syncio.printf("Calling getAge(): %d\n", bird.getAge());
+    syncio.printf("Calling getName(): ");
+    bird.getName();
+    syncio.printf("\n");
+    
+    // Test 4: Passing to function that accepts interface
+    syncio.printf("Test 4: Passing Dog to AnimalShelter\n");
+    say shelter1: start.AnimalShelter = new start.AnimalShelter(new start.Dog());
+    
+    syncio.printf("Test 5: Passing Cat to AnimalShelter\n");
+    say shelter2: start.AnimalShelter = new start.AnimalShelter(new start.Cat());
+    
+    syncio.printf("Test 6: Passing Bird to AnimalShelter\n");
+    say shelter3: start.AnimalShelter = new start.AnimalShelter(new start.Bird());
+    
+    // Test 7: Multiple calls on same interface variable
+    syncio.printf("Test 7: Multiple calls on same interface\n");
+    say animal: start.Animal = new start.Dog();
+    syncio.printf("First call: %d\n", animal.speak());
+    syncio.printf("Second call: %d\n", animal.speak());
+    syncio.printf("Third call: %d\n", animal.getAge());
+    syncio.printf("\n");
+    
+    // Test 8: Reassigning interface variable
+    syncio.printf("Test 8: Reassigning interface variable\n");
+    say pet: start.Animal = new start.Dog();
+    syncio.printf("Pet as Dog: ");
+    pet.speak();
+    pet = new start.Cat();
+    syncio.printf("Pet as Cat: ");
+    pet.speak();
+    pet = new start.Bird();
+    syncio.printf("Pet as Bird: ");
+    pet.speak();
+    syncio.printf("\n");
+    
+    syncio.printf("=== All Tests Complete ===\n");
 }

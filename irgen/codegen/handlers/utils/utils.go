@@ -50,6 +50,82 @@ func HashFuncSig(params, ret any) uint32 {
 	return h
 }
 
+// HashFuncSigResolved computes hash after resolving type aliases
+// This ensures that http.HTTPContext and picasso.http_simple.HTTPContext hash the same
+func HashFuncSigResolved(params, ret any, resolver func(string) string) uint32 {
+	// Deep copy and resolve type names in parameters
+	resolvedParams := resolveTypes(params, resolver)
+	resolvedRet := resolveTypes(ret, resolver)
+
+	h := uint32(2166136261)
+	hashValue(&h, reflect.ValueOf(resolvedParams))
+	hashValue(&h, reflect.ValueOf(resolvedRet))
+	return h
+}
+
+// resolveTypes recursively resolves type names in AST structures
+func resolveTypes(v any, resolver func(string) string) any {
+	if v == nil || resolver == nil {
+		return v
+	}
+
+	val := reflect.ValueOf(v)
+	if !val.IsValid() {
+		return v
+	}
+
+	switch val.Kind() {
+	case reflect.Slice, reflect.Array:
+		result := reflect.MakeSlice(val.Type(), val.Len(), val.Cap())
+		for i := 0; i < val.Len(); i++ {
+			resolved := resolveTypes(val.Index(i).Interface(), resolver)
+			result.Index(i).Set(reflect.ValueOf(resolved))
+		}
+		return result.Interface()
+
+	case reflect.Struct:
+		result := reflect.New(val.Type()).Elem()
+		for i := 0; i < val.NumField(); i++ {
+			field := val.Field(i)
+			fieldType := val.Type().Field(i)
+
+			// Check if this is a Type field that needs resolution
+			if fieldType.Name == "Type" && field.Kind() == reflect.Interface {
+				if !field.IsNil() {
+					// Get the underlying type value
+					typeVal := field.Interface()
+					if typeGetter, ok := typeVal.(interface{ Get() string }); ok {
+						// Resolve the type name
+						resolvedName := resolver(typeGetter.Get())
+						// Create a new type with resolved name
+						newType := &resolvedType{name: resolvedName}
+						result.Field(i).Set(reflect.ValueOf(newType))
+						continue
+					}
+				}
+			}
+
+			// Recursively resolve other fields
+			resolved := resolveTypes(field.Interface(), resolver)
+			if result.Field(i).CanSet() {
+				result.Field(i).Set(reflect.ValueOf(resolved))
+			}
+		}
+		return result.Interface()
+	}
+
+	return v
+}
+
+// resolvedType is a simple type wrapper for resolved type names
+type resolvedType struct {
+	name string
+}
+
+func (r *resolvedType) Get() string {
+	return r.name
+}
+
 const fnv32Prime = 16777619
 
 func fnv(h *uint32, b byte) {

@@ -28,7 +28,7 @@ import (
 //     assigning the calculated fieldTypes, effectively closing the type definition.
 func (t *InterfaceHandler) DefineInterfaceUDT(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
 	logger.Debug(t.st.ModuleName, "declaring opaque interface %s of module:%s", ifs.Name, sourcePkg.Alias)
-	fqInterfaceName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
+	fqInterfaceName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(ifs.Name)
 
 	mc := t.st.Classes[fqInterfaceName]
 

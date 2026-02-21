@@ -34,9 +34,8 @@ import (
 func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
 	logger.Debug(t.st.ModuleName, "declaring interface %s of module:%s", ifs.Name, sourcePkg.Alias)
 	ifName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(ifs.Name)
-	fqName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
 
-	if _, ok := t.st.Classes[fqName]; ok {
+	if _, ok := t.st.Classes[ifName]; ok {
 		errorutils.Abort(errorutils.TypeRedeclaration, ifName)
 	}
 
@@ -47,17 +46,19 @@ func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatemen
 
 	// interface is treated just like a class but instantiation is prevented
 	mc := tf.NewMetaClass(types.NewPointer(udt), "")
-	t.st.Classes[fqName] = mc
+	t.st.Classes[ifName] = mc
 
 	mi := tf.NewMetaInterface()
 	mi.UDT = types.NewPointer(udt)
 
-	t.st.Interfaces[fqName] = mi
+	t.st.Interfaces[ifName] = mi
 
 	// register current interface type with TypeHandler. this allows current interface
 	// to be identified as a valid type in future while building vars & type
 	// conversions.
-	t.st.TypeHandler.RegisterInterface(fqName, mi)
+	t.st.TypeHandler.RegisterInterface(ifName, mi)
+
+	t.st.TypeHandler.RegisterClass(ifName, mc)
 }
 
 // DeclareClassFuncs populates the interface with its defined method signatures.
@@ -75,26 +76,26 @@ func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatemen
 //   - Global Symbol Management: Registers methods in the GlobalFuncList to
 //     prevent duplicate linkage symbols and enable cross-module accessibility
 func (t *InterfaceHandler) DeclareClassFuncs(ifs ast.InterfaceDeclarationStatement, sourcePkg state.PackageEntry) {
-	fqName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
+	fqName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(ifs.Name)
 	for _, stI := range ifs.Body {
 		switch st := stI.(type) {
 		case ast.FunctionDefinitionStatement:
 			// store function signature for interface
 
 			fqClsName := identifier.NewIdentifierBuilder(sourcePkg.Name).Attach(ifs.Name)
-			aliasClsName := identifier.NewIdentifierBuilder(sourcePkg.Alias).Attach(ifs.Name)
 
 			params := make([]*ir.Param, 0)
+			argsTypes := make([]ast.Type, 0)
 			for _, p := range st.Parameters {
+				argsTypes = append(argsTypes, p.Type)
 				params = append(params, ir.NewParam(p.Name, t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(p.Type.Get()))))
 			}
 
 			// at the end pass `this` parameter representing current object
-			udt := t.st.Classes[aliasClsName].UDT
+			udt := t.st.Classes[fqClsName].UDT
 			params = append(params, ir.NewParam(constants.THIS, udt))
 
 			fqFuncName := fmt.Sprintf("%s.%s", fqClsName, st.Name)
-			aliasFuncName := fmt.Sprintf("%s.%s", aliasClsName, st.Name)
 
 			var retType types.Type
 			if st.ReturnType != nil {
@@ -105,7 +106,7 @@ func (t *InterfaceHandler) DeclareClassFuncs(ifs ast.InterfaceDeclarationStateme
 
 			// store current functions so that later during class instantiation instance
 			// can be made pointing to the functions.
-			if _, ok := t.st.Classes[aliasClsName].Methods[aliasFuncName]; !ok {
+			if _, ok := t.st.Classes[fqClsName].Methods[fqFuncName]; !ok {
 				f, ok := t.st.GlobalFuncList[fqFuncName]
 				if !ok {
 					f = t.st.Module.NewFunc(fqFuncName, retType, params...)
@@ -114,13 +115,18 @@ func (t *InterfaceHandler) DeclareClassFuncs(ifs ast.InterfaceDeclarationStateme
 					// store method signature to validate implementation in
 					// implementor classes
 					t.st.Interfaces[fqName].Methods[st.Name] = tf.MethodSig{
-						Hash:     utils.HashFuncSig(st.Parameters, st.ReturnType),
-						Name:     st.Name,
-						FuncType: f,
+						Hash:       utils.HashFuncSig(st.Parameters, st.ReturnType),
+						Name:       st.Name,
+						FuncType:   f,
+						Parameters: st.Parameters,
+						ReturnType: st.ReturnType,
 					}
 				}
-				t.st.Classes[aliasClsName].Methods[aliasFuncName] = f
-				t.st.Classes[aliasClsName].Returns[aliasFuncName] = st.ReturnType
+				t.st.Classes[fqClsName].Methods[fqFuncName] = f
+				t.st.Classes[fqClsName].Returns[fqFuncName] = st.ReturnType
+			}
+			if _, ok := t.st.Classes[fqClsName].MethodArgs[fqFuncName]; !ok {
+				t.st.Classes[fqClsName].MethodArgs[fqFuncName] = argsTypes
 			}
 		}
 	}

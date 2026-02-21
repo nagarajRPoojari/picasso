@@ -1,0 +1,4 @@
+Hello!
+Result: 100
+Hola!
+Result: 200

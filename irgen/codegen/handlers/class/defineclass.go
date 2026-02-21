@@ -2,6 +2,7 @@ package class
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/picasso/irgen/ast"
@@ -56,6 +57,52 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg 
 	// map each fields with corresponding udt struct index
 	i := 0
 
+	// If this class implements an interface, define interface methods first
+	// to ensure they're at the same indices as in the interface struct
+	if clsMeta.Implements != "" {
+		interfaceClassMeta := t.st.Classes[clsMeta.Implements]
+		interfaceMeta := t.st.Interfaces[clsMeta.Implements]
+		if interfaceClassMeta != nil && interfaceMeta != nil {
+			// Build a map of index -> method name from interface's FieldIndexMap
+			interfaceMethodsByIndex := make(map[int]string)
+			for methodFqName, idx := range interfaceClassMeta.FieldIndexMap {
+				// Extract just the method name from the fully qualified name
+				parts := strings.Split(methodFqName, ".")
+				methodName := parts[len(parts)-1]
+				interfaceMethodsByIndex[idx] = methodName
+			}
+
+			// Define interface methods in order by their index
+			for idx := 0; idx < len(interfaceMethodsByIndex); idx++ {
+				methodName, ok := interfaceMethodsByIndex[idx]
+				if !ok {
+					continue
+				}
+
+				// Find the method in the class body
+				var found bool
+				for _, stI := range cls.Body {
+					if st, ok := stI.(ast.FunctionDefinitionStatement); ok {
+						if st.Name == methodName {
+							// Validate method signature matches interface
+							t.validateInterfaceMethodSignature(fqName, methodName, &st, interfaceMeta)
+							t.defineMethod(i, fqName, clsMeta, &fieldTypes, funcs, st)
+							i++
+							found = true
+							break
+						}
+					}
+				}
+
+				// If interface method not found in class, abort
+				if !found {
+					errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
+						fmt.Sprintf("%s.%s must implement interface method %s", fqName, methodName, methodName))
+				}
+			}
+		}
+	}
+
 	// Opaque resolution: define concrete types of all fields
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
@@ -64,8 +111,12 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg 
 			i++
 
 		case ast.FunctionDefinitionStatement:
-			t.defineMethod(i, fqName, clsMeta, &fieldTypes, funcs, st)
-			i++
+			// Skip if already defined as interface method
+			fqFuncName := fmt.Sprintf("%s.%s", fqName, st.Name)
+			if _, ok := funcs[fqFuncName]; !ok {
+				t.defineMethod(i, fqName, clsMeta, &fieldTypes, funcs, st)
+				i++
+			}
 		}
 	}
 
@@ -133,5 +184,81 @@ func (t *ClassHandler) defineMethod(i int, fqName string, clsMeta *typedef.MetaC
 	// mark access mode
 	if st.IsInternal {
 		clsMeta.InternalFields[fqFuncName] = struct{}{}
+	}
+}
+
+// validateInterfaceMethodSignature checks if a class method's signature matches the interface method
+func (t *ClassHandler) validateInterfaceMethodSignature(className, methodName string, classMethod *ast.FunctionDefinitionStatement, interfaceMeta *typedef.MetaInterface) {
+	// Get the interface method signature
+	interfaceMethod, ok := interfaceMeta.Methods[methodName]
+	if !ok {
+		return // Method not in interface, skip validation
+	}
+
+	// Get interface method parameters and return type from stored metadata
+	interfaceParams := interfaceMethod.Parameters
+	interfaceRetType := interfaceMethod.ReturnType
+
+	// Compare parameter count
+	if len(classMethod.Parameters) != len(interfaceParams) {
+		errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
+			fmt.Sprintf("Method signature mismatch: %s.%s parameter count differs", className, methodName))
+	}
+
+	// Compare each parameter type (with alias resolution and fuzzy matching)
+	for i, classParam := range classMethod.Parameters {
+		interfaceParam := interfaceParams[i]
+
+		classType := ""
+		if classParam.Type != nil {
+			classType = t.st.ResolveAlias(classParam.Type.Get())
+		}
+
+		interfaceType := ""
+		if interfaceParam.Type != nil {
+			interfaceTypeRaw := interfaceParam.Type.Get()
+			interfaceType = t.st.ResolveAlias(interfaceTypeRaw)
+
+			// If resolution didn't change the type, try fuzzy matching
+			// e.g., http_simple.HTTPContext should match picasso.http_simple.HTTPContext
+			if interfaceType == interfaceTypeRaw && classType != interfaceType {
+				// Check if classType ends with interfaceType
+				if strings.HasSuffix(classType, "."+interfaceType) {
+					interfaceType = classType // Use the resolved class type
+				}
+			}
+		}
+
+		if classType != interfaceType {
+			errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
+				fmt.Sprintf("Method signature mismatch: %s.%s parameter %d type mismatch (expected %s, got %s)",
+					className, methodName, i, interfaceType, classType))
+		}
+	}
+
+	// Compare return types (with alias resolution and fuzzy matching)
+	classRetType := ""
+	if classMethod.ReturnType != nil {
+		classRetType = t.st.ResolveAlias(classMethod.ReturnType.Get())
+	}
+
+	interfaceRetTypeResolved := ""
+	if interfaceRetType != nil {
+		interfaceRetTypeRaw := interfaceRetType.Get()
+		interfaceRetTypeResolved = t.st.ResolveAlias(interfaceRetTypeRaw)
+
+		// If resolution didn't change the type, try fuzzy matching
+		if interfaceRetTypeResolved == interfaceRetTypeRaw && classRetType != interfaceRetTypeResolved {
+			// Check if classRetType ends with interfaceRetTypeResolved
+			if strings.HasSuffix(classRetType, "."+interfaceRetTypeResolved) {
+				interfaceRetTypeResolved = classRetType // Use the resolved class type
+			}
+		}
+	}
+
+	if classRetType != interfaceRetTypeResolved {
+		errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
+			fmt.Sprintf("Method signature mismatch: %s.%s return type mismatch (expected %s, got %s)",
+				className, methodName, interfaceRetTypeResolved, classRetType))
 	}
 }

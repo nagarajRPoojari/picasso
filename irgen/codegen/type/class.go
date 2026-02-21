@@ -219,8 +219,9 @@ func ensureInterfaceType(block *bc.BlockHolder, th *TypeHandler, v value.Value, 
 
 	for _, cls := range th.InterfaceUDTS[utils.GetTypeString(target)].ImplementedBy {
 		clsUDT := th.ClassUDTS[cls]
-		if ret, err := ensureClassType(block, th, v, clsUDT.UDT); err == nil {
-			return ret, nil
+		if _, err := ensureClassType(block, th, v, clsUDT.UDT); err == nil {
+			// Found a matching implementation, bitcast to the target interface type
+			return block.N.NewBitCast(v, target), nil
 		}
 	}
 	return nil, fmt.Errorf("ensureType: cannot convert %v -> %v", v.Type(), target)

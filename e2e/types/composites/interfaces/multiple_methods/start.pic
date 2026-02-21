@@ -1,0 +1,96 @@
+using "builtin/syncio";
+
+interface Calculator {
+    fn add(a: int, b: int): int {
+        return -1;
+    }
+    
+    fn subtract(a: int, b: int): int {
+        return -1;
+    }
+    
+    fn multiply(a: int, b: int): int {
+        return -1;
+    }
+    
+    fn divide(a: int, b: int): int {
+        return -1;
+    }
+}
+
+class BasicCalculator: start.Calculator {
+    fn BasicCalculator() {}
+    
+    fn add(a: int, b: int): int {
+        return a + b;
+    }
+
+    fn divide(a: int, b: int): int {
+        return a / b;
+    }
+
+    fn subtract(a: int, b: int): int {
+        return a - b;
+    }
+    
+    fn multiply(a: int, b: int): int {
+        return a * b;
+    }
+    
+}
+
+class ScientificCalculator: start.Calculator {
+    fn ScientificCalculator() {}
+    
+    fn add(a: int, b: int): int {
+        syncio.printf("Scientific add: ");
+        return a + b;
+    }
+    
+    fn subtract(a: int, b: int): int {
+        syncio.printf("Scientific subtract: ");
+        return a - b;
+    }
+    
+    fn multiply(a: int, b: int): int {
+        syncio.printf("Scientific multiply: ");
+        return a * b;
+    }
+    
+    fn divide(a: int, b: int): int {
+        syncio.printf("Scientific divide: ");
+        return a / b;
+    }
+}
+
+fn testCalculator(calc: start.Calculator, x: int, y: int) {
+    syncio.printf("Testing with %d and %d:\n", x, y);
+    syncio.printf("  Add: %d\n", calc.add(x, y));
+    syncio.printf("  Subtract: %d\n", calc.subtract(x, y));
+    syncio.printf("  Multiply: %d\n", calc.multiply(x, y));
+    syncio.printf("  Divide: %d\n", calc.divide(x, y));
+}
+
+fn start() {
+    syncio.printf("=== Multiple Methods Interface Test ===\n\n");
+    
+    syncio.printf("Test 1: BasicCalculator\n");
+    say calc1: start.Calculator = new start.BasicCalculator();
+    testCalculator(calc1, 20, 4);
+    syncio.printf("\n");
+    
+    syncio.printf("Test 2: ScientificCalculator\n");
+    say calc2: start.Calculator = new start.ScientificCalculator();
+    testCalculator(calc2, 15, 3);
+    syncio.printf("\n");
+    
+    syncio.printf("Test 3: Direct method calls\n");
+    say calc3: start.Calculator = new start.BasicCalculator();
+    say sum: int = calc3.add(100, 50);
+    say diff: int = calc3.subtract(100, 50);
+    say prod: int = calc3.multiply(100, 50);
+    say quot: int = calc3.divide(100, 50);
+    syncio.printf("Sum: %d, Diff: %d, Prod: %d, Quot: %d\n", sum, diff, prod, quot);
+    
+    syncio.printf("\n=== All Tests Complete ===\n");
+}

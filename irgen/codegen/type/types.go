@@ -2,6 +2,7 @@ package typedef
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
@@ -78,12 +79,14 @@ const (
 type TypeHandler struct {
 	ClassUDTS     map[string]*MetaClass
 	InterfaceUDTS map[string]*MetaInterface
+	AliasResolver func(string) string // Function to resolve aliases to fully qualified names
 }
 
 func NewTypeHandler() *TypeHandler {
 	return &TypeHandler{
 		ClassUDTS:     make(map[string]*MetaClass),
 		InterfaceUDTS: make(map[string]*MetaInterface),
+		AliasResolver: nil, // Will be set by State
 	}
 }
 
@@ -354,6 +357,17 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 			init = constant.NewNull(udt.UDT.(*types.PointerType))
 		}
 		targetType = utils.GetTypeString(init.Type())
+		c := &Class{
+			Name: targetType,
+			UDT:  udt.UDT.(*types.PointerType),
+		}
+
+		intf := &InterfaceH{
+			Class: *c,
+			th:    t,
+		}
+		intf.Update(bh, init)
+		return intf
 	}
 
 	if udt, ok := t.ClassUDTS[targetType]; ok {
@@ -367,9 +381,6 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 		c.Update(bh, init)
 		return c
 	}
-
-	fmt.Printf("_type: %v\n", _type)
-	fmt.Printf("t.ClassUDTS: %v\n", t.ClassUDTS)
 
 	panic("where")
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidNativeType, _type)
@@ -440,16 +451,39 @@ func (t *TypeHandler) GetLLVMType(_type string) types.Type {
 		return types.NewPointer(s)
 	}
 
-	// Check if already registered
-	if k, ok := t.ClassUDTS[_type]; ok {
+	// Resolve alias if resolver is available
+	resolvedType := _type
+	if t.AliasResolver != nil {
+		resolvedType = t.AliasResolver(_type)
+	}
+
+	// Check if already registered with resolved name
+	if k, ok := t.ClassUDTS[resolvedType]; ok {
 		return k.UDT
 	}
 
-	if k, ok := t.InterfaceUDTS[_type]; ok {
+	if k, ok := t.InterfaceUDTS[resolvedType]; ok {
 		return k.UDT
 	}
 
-	fmt.Printf("_type: %v\n", _type)
+	// If resolution failed, try fuzzy matching by checking if the type name
+	// ends with the requested type (e.g., "http_simple.HTTPContext" should match "picasso.http_simple.HTTPContext")
+	if resolvedType == _type {
+		// Resolution didn't change the type, try fuzzy match
+		suffix := "." + _type
+		for fqName, meta := range t.ClassUDTS {
+			if strings.HasSuffix(fqName, suffix) {
+				return meta.UDT
+			}
+		}
+		for fqName, meta := range t.InterfaceUDTS {
+			if strings.HasSuffix(fqName, suffix) {
+				return meta.UDT
+			}
+		}
+	}
+
+	fmt.Printf("_type: %v (resolved: %v)\n", _type, resolvedType)
 	fmt.Printf("t.ClassUDTS: %v\n", t.ClassUDTS)
 
 	panic("ehllo")
@@ -529,6 +563,9 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 	}
 
 	if k, ok := t.InterfaceUDTS[target]; ok {
+		if utils.GetTypeString(k.UDT) == target {
+			return v
+		}
 		ret, err := ensureInterfaceType(bh, t, v, k.UDT)
 		if err != nil {
 			panic(err)
@@ -536,17 +573,34 @@ func (t *TypeHandler) ImplicitTypeCast(bh *bc.BlockHolder, target string, v valu
 		return ret
 	}
 
-	if k, ok := t.ClassUDTS[target]; ok {
+	// Resolve target type name
+	resolvedTarget := target
+	if t.AliasResolver != nil {
+		resolvedTarget = t.AliasResolver(target)
+	}
+
+	if k, ok := t.ClassUDTS[resolvedTarget]; ok {
 		ret, err := ensureClassType(bh, t, v, k.UDT)
 		if err != nil {
 			panic(err)
 		}
 		return ret
 	}
-	fmt.Printf("target: %v\n", target)
-	fmt.Printf("t.ClassUDTS: %v\n", t.ClassUDTS)
 
-	panic("bro")
+	// Try fuzzy matching if resolution didn't work
+	if resolvedTarget == target {
+		suffix := "." + target
+		for fqName, meta := range t.ClassUDTS {
+			if strings.HasSuffix(fqName, suffix) {
+				ret, err := ensureClassType(bh, t, v, meta.UDT)
+				if err != nil {
+					panic(err)
+				}
+				return ret
+			}
+		}
+	}
+
 	errorutils.Abort(errorutils.TypeError, errorutils.InvalidTargetType, target)
 	return nil
 }

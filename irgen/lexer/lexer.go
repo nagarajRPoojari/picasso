@@ -80,7 +80,7 @@ func newLexer(path string, reader *bufio.Reader) *lexer {
 		patterns: []RegexPattern{
 			{regexp.MustCompile(`\s+`), skipHandler},
 			{regexp.MustCompile(`\/\/.*`), commentHandler},
-			{regexp.MustCompile(`"[^"]*"`), stringHandler},
+			{regexp.MustCompile(`"(?:[^"\\]|\\.)*"`), stringHandler},
 			{regexp.MustCompile(`[0-9]+(\.[0-9]+)?`), numberHandler},
 			{regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*`), symbolHandler},
 

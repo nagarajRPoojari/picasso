@@ -1,0 +1,33 @@
+using "builtin/syncio";
+
+interface DataProcessor {
+    fn process(data: int): int {
+        return -1;
+    }
+    
+    fn validate(input: int): int {
+        return -1;
+    }
+}
+
+// This class has wrong signature for 'validate' method - should fail compilation
+// validate should take 'int' but this takes no parameters
+class BadProcessor: start.DataProcessor {
+    fn BadProcessor() {}
+    
+    fn process(data: int): int {
+        syncio.printf("Processing: %d\n", data);
+        return data * 2;
+    }
+    
+    // Wrong signature: should be validate(input: int): int
+    fn validate(): int {
+        syncio.printf("Validating...\n");
+        return 1;
+    }
+}
+
+fn start() {
+    say p: start.DataProcessor = new start.BadProcessor();
+    p.process(42);
+}

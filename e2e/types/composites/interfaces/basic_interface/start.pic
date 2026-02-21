@@ -1,0 +1,35 @@
+using "builtin/syncio";
+
+interface Greeter {
+    fn greet(): int {
+        return -1;
+    }
+}
+
+class EnglishGreeter: start.Greeter {
+    fn EnglishGreeter() {}
+    
+    fn greet(): int {
+        syncio.printf("Hello!\n");
+        return 100;
+    }
+}
+
+class SpanishGreeter: start.Greeter {
+    fn SpanishGreeter() {}
+    
+    fn greet(): int {
+        syncio.printf("Hola!\n");
+        return 200;
+    }
+}
+
+fn start() {
+    say g1: start.Greeter = new start.EnglishGreeter();
+    say result1: int = g1.greet();
+    syncio.printf("Result: %d\n", result1);
+    
+    say g2: start.Greeter = new start.SpanishGreeter();
+    say result2: int = g2.greet();
+    syncio.printf("Result: %d\n", result2);
+}

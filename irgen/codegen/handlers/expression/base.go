@@ -80,7 +80,7 @@ func (t *ExpressionHandler) ProcessExpression(bh *bc.BlockHolder, expI ast.Expre
 
 	case ast.MemberExpression:
 		if m, ok := ex.Member.(ast.SymbolExpression); ok {
-			if ret, ok := t.loopUpTypeTable(bh, fmt.Sprintf("%s.%s", m.Value, ex.Property)); ok {
+			if ret, ok := t.loopUpTypeTable(bh, t.st.ResolveAlias(fmt.Sprintf("%s.%s", m.Value, ex.Property))); ok {
 				return ret
 			}
 		}

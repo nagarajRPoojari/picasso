@@ -47,6 +47,7 @@ const (
 
 	FUNC_EXTEND_ARRAY     = "__public__extend_array"
 	FUNC_STRING_SUBSTRING = "__public__strings_substring"
+	FUNC_STRING_FORMAT    = "__public__strings_format"
 	FUNC_STRING_ALLOC     = "__public__strings_alloc_from_raw"
 
 	TYPE_ARRAY   = "array"

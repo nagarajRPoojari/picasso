@@ -34,13 +34,16 @@ func (t *ClassHandler) DeclareOpaqueClass(cls ast.ClassDeclarationStatement, sou
 	if _, ok := t.st.GlobalTypeList[clsName]; !ok {
 		t.st.GlobalTypeList[clsName] = t.st.Module.NewTypeDef(clsName, udt)
 	}
-	mc := tf.NewMetaClass(types.NewPointer(udt), cls.Implements)
+
+	implements := t.st.ResolveAlias(cls.Implements)
+
+	mc := tf.NewMetaClass(types.NewPointer(udt), implements)
 	t.st.Classes[clsName] = mc
 
 	// assumed that all interfaces are defined first
-	if cls.Implements != "" {
+	if implements != "" {
 		errorutils.Assert(t.st.Interfaces != nil, "interfaces USTs are expected to be initialized before class UDT")
-		t.st.Interfaces[cls.Implements].ImplementedBy = append(t.st.Interfaces[cls.Implements].ImplementedBy, clsName)
+		t.st.Interfaces[implements].ImplementedBy = append(t.st.Interfaces[implements].ImplementedBy, clsName)
 	}
 
 	// register current class type with TypeHandler. this allows current class

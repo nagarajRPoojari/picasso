@@ -1,0 +1,82 @@
+using "builtin/syncio";
+using "utils";
+
+// Implement interface from another module
+class Circle: utils.Shape {
+    fn Circle() {}
+    
+    fn area(): int {
+        return 314;
+    }
+    
+    fn perimeter(): int {
+        return 62;
+    }
+    
+    fn describe(): int {
+        syncio.printf("Circle: radius 10\n");
+        return 2;
+    }
+}
+
+class Triangle: utils.Shape {
+    fn Triangle() {}
+    
+    fn area(): int {
+        return 6;
+    }
+    
+    fn perimeter(): int {
+        return 12;
+    }
+    
+    fn describe(): int {
+        syncio.printf("Triangle: 3-4-5\n");
+        return 3;
+    }
+}
+
+// Function that accepts interface from another module
+class ShapeCalculator {
+    fn ShapeCalculator(shape: utils.Shape) {
+        syncio.printf("=== Shape Info ===\n");
+        shape.describe();
+        syncio.printf("Area: %d\n", shape.area());
+        syncio.printf("Perimeter: %d\n", shape.perimeter());
+        syncio.printf("==================\n\n");
+    }
+}
+
+fn start() {
+    syncio.printf("=== Cross-Module Interface Test ===\n\n");
+    
+    // Test 1: Use interface variable with implementation from same module
+    syncio.printf("Test 1: Circle (local implementation)\n");
+    say s1: utils.Shape = new start.Circle();
+    syncio.printf("Area: %d\n", s1.area());
+    syncio.printf("Perimeter: %d\n", s1.perimeter());
+    s1.describe();
+    syncio.printf("\n");
+    
+    // Test 2: Use interface variable with implementation from different module
+    syncio.printf("Test 2: Rectangle (utils module implementation)\n");
+    say s2: utils.Shape = new utils.Rectangle();
+    syncio.printf("Area: %d\n", s2.area());
+    syncio.printf("Perimeter: %d\n", s2.perimeter());
+    s2.describe();
+    syncio.printf("\n");
+    
+    // Test 3: Pass local implementation to function
+    syncio.printf("Test 3: Pass Circle to ShapeCalculator\n");
+    say calc1: start.ShapeCalculator = new start.ShapeCalculator(new start.Circle());
+    
+    // Test 4: Pass cross-module implementation to function
+    syncio.printf("Test 4: Pass Rectangle to ShapeCalculator\n");
+    say calc2: start.ShapeCalculator = new start.ShapeCalculator(new utils.Rectangle());
+    
+    // Test 5: Pass Triangle to function
+    syncio.printf("Test 5: Pass Triangle to ShapeCalculator\n");
+    say calc3: start.ShapeCalculator = new start.ShapeCalculator(new start.Triangle());
+    
+    syncio.printf("=== All Tests Complete ===\n");
+}
