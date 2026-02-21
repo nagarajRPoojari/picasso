@@ -1,0 +1,32 @@
+using "builtin/syncio";
+
+interface Shape {
+    fn area(): int {
+        return -1;
+    }
+    
+    fn perimeter(): int {
+        return -1;
+    }
+    
+    fn describe(): int {
+        return -1;
+    }
+}
+
+class Rectangle: utils.Shape {
+    fn Rectangle() {}
+    
+    fn area(): int {
+        return 20;
+    }
+    
+    fn perimeter(): int {
+        return 18;
+    }
+    
+    fn describe(): int {
+        syncio.printf("Rectangle: 5x4\n");
+        return 1;
+    }
+}

@@ -58,6 +58,8 @@ func (t *InterfaceHandler) DeclareInterface(ifs ast.InterfaceDeclarationStatemen
 	// to be identified as a valid type in future while building vars & type
 	// conversions.
 	t.st.TypeHandler.RegisterInterface(fqName, mi)
+
+	t.st.TypeHandler.RegisterClass(fqName, mc)
 }
 
 // DeclareClassFuncs populates the interface with its defined method signatures.

@@ -229,10 +229,88 @@ func (t *ExpressionHandler) callClassMethod(bh *bc.BlockHolder, ex ast.CallExpre
 	// validate baseVar
 	cls, ok := baseVar.(*tf.Class)
 	if !ok {
-		errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "member access base is not a Class type")
+		return t.callInterfaceMethod(baseVar, bh, ex, m)
 	}
 	if cls == nil || cls.Ptr == nil {
 		errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "class or class.Ptr is nil for class")
+	}
+
+	// validate class registration
+	classMeta := t.st.Classes[cls.Name]
+	if classMeta == nil {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "unknown class metadata: "+cls.Name)
+	}
+
+	// validate accessebility
+	methodFqName := fmt.Sprintf("%s.%s", cls.Name, m.Property)
+	idx, ok := classMeta.FieldIndexMap[methodFqName]
+
+	// to check whether access is comming from method in own class or elsewhere.
+	// this decides access scope of that function.
+	if resolveRootMember(m) != constants.THIS {
+		if _, ok := classMeta.InternalFields[methodFqName]; ok {
+			errorutils.Abort(errorutils.FieldNotAccessible, cls.Name, m.Property)
+		}
+	}
+	if !ok {
+		errorutils.Abort(errorutils.UnknownMethod, m.Property)
+	}
+
+	fieldType := classMeta.StructType().Fields[idx]
+
+	// Load the function pointer directly from the struct field (single load)
+	fnVal := cls.LoadField(bh, idx, fieldType)
+	if fnVal == nil {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("function pointer is nil for %s.%s", cls.Name, m.Member))
+	}
+
+	var funcType *types.FuncType
+	if ptrType, ok := fieldType.(*types.PointerType); ok {
+		funcType, ok = ptrType.ElemType.(*types.FuncType)
+		if !ok {
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("expected pointer-to-function, got pointer to %T", ptrType.ElemType))
+		}
+	} else {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, fmt.Sprintf("expected pointer-to-function type for field, got %T", fieldType))
+	}
+
+	// Build args
+	args := make([]value.Value, 0, len(ex.Arguments)+1)
+	for i, argExp := range ex.Arguments {
+		v := t.ProcessExpression(bh, argExp)
+		raw := v.Load(bh)
+		expected := classMeta.MethodArgs[methodFqName][i]
+		raw = t.st.TypeHandler.ImplicitTypeCast(bh, t.st.ResolveAlias(expected.Get()), raw)
+		args = append(args, raw)
+	}
+
+	// Append `this` pointer as last arg
+	thisPtr := cls.Load(bh)
+	args = append(args, thisPtr)
+
+	// Call
+	ret := bh.N.NewCall(fnVal, args...)
+
+	// Return handling
+	retType := funcType.RetType
+	if retType == types.Void {
+		return nil
+	}
+
+	// @todo: not tested
+	tp := classMeta.Returns[methodFqName]
+	return t.st.TypeHandler.BuildVar(bh, tf.NewType(t.st.ResolveAlias(tp.Get()), t.st.ResolveAlias(tp.GetUnderlyingType())), ret)
+
+}
+
+func (t *ExpressionHandler) callInterfaceMethod(baseVar tf.Var, bh *bc.BlockHolder, ex ast.CallExpression, m ast.MemberExpression) tf.Var {
+	// validate baseVar
+	cls, ok := baseVar.(*tf.InterfaceH)
+	if !ok {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "member access base is neither a Interface type nor a Class type")
+	}
+	if cls == nil || cls.Ptr == nil {
+		errorutils.Abort(errorutils.InternalError, errorutils.InternalFuncCallError, "Interface or Interface.Ptr is nil for class")
 	}
 
 	// validate class registration

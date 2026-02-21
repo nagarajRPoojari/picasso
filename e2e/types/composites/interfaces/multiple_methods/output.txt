@@ -1,0 +1,20 @@
+=== Multiple Methods Interface Test ===
+
+Test 1: BasicCalculator
+Testing with 20 and 4:
+  Add: 24
+  Subtract: 16
+  Multiply: 80
+  Divide: 5
+
+Test 2: ScientificCalculator
+Testing with 15 and 3:
+  Scientific add: Add: 18
+  Scientific subtract: Subtract: 12
+  Scientific multiply: Multiply: 45
+  Scientific divide: Divide: 5
+
+Test 3: Direct method calls
+Sum: 150, Diff: 50, Prod: 5000, Quot: 2
+
+=== All Tests Complete ===

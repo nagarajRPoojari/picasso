@@ -354,6 +354,17 @@ func (t *TypeHandler) BuildVar(bh *bc.BlockHolder, _type Type, init value.Value)
 			init = constant.NewNull(udt.UDT.(*types.PointerType))
 		}
 		targetType = utils.GetTypeString(init.Type())
+		c := &Class{
+			Name: targetType,
+			UDT:  udt.UDT.(*types.PointerType),
+		}
+
+		intf := &InterfaceH{
+			Class: *c,
+			th:    t,
+		}
+		intf.Update(bh, init)
+		return intf
 	}
 
 	if udt, ok := t.ClassUDTS[targetType]; ok {

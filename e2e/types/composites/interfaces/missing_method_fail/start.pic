@@ -1,0 +1,37 @@
+using "builtin/syncio";
+
+interface Printer {
+    fn print(): int {
+        return -1;
+    }
+    
+    fn reset(): int {
+        return -1;
+    }
+    
+    fn getStatus(): int {
+        return -1;
+    }
+}
+
+// This class is missing the 'reset' method - should fail compilation
+class BrokenPrinter: start.Printer {
+    fn BrokenPrinter() {}
+    
+    fn print(): int {
+        syncio.printf("Printing...\n");
+        return 1;
+    }
+    
+    // Missing: fn reset(): int
+    
+    fn getStatus(): int {
+        syncio.printf("Status: OK\n");
+        return 0;
+    }
+}
+
+fn start() {
+    say p: start.Printer = new start.BrokenPrinter();
+    p.print();
+}

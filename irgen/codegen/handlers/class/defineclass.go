@@ -2,6 +2,7 @@ package class
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/picasso/irgen/ast"
@@ -9,6 +10,7 @@ import (
 	funcs "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/func"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
 	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 	"github.com/nagarajRPoojari/picasso/irgen/utils/logger"
 )
@@ -56,6 +58,52 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg 
 	// map each fields with corresponding udt struct index
 	i := 0
 
+	// If this class implements an interface, define interface methods first
+	// to ensure they're at the same indices as in the interface struct
+	if clsMeta.Implements != "" {
+		interfaceClassMeta := t.st.Classes[clsMeta.Implements]
+		interfaceMeta := t.st.Interfaces[clsMeta.Implements]
+		if interfaceClassMeta != nil && interfaceMeta != nil {
+			// Build a map of index -> method name from interface's FieldIndexMap
+			interfaceMethodsByIndex := make(map[int]string)
+			for methodFqName, idx := range interfaceClassMeta.FieldIndexMap {
+				// Extract just the method name from the fully qualified name
+				parts := strings.Split(methodFqName, ".")
+				methodName := parts[len(parts)-1]
+				interfaceMethodsByIndex[idx] = methodName
+			}
+
+			// Define interface methods in order by their index
+			for idx := 0; idx < len(interfaceMethodsByIndex); idx++ {
+				methodName, ok := interfaceMethodsByIndex[idx]
+				if !ok {
+					continue
+				}
+
+				// Find the method in the class body
+				var found bool
+				for _, stI := range cls.Body {
+					if st, ok := stI.(ast.FunctionDefinitionStatement); ok {
+						if st.Name == methodName {
+							// Validate method signature matches interface
+							t.validateInterfaceMethodSignature(fqName, methodName, &st, interfaceMeta)
+							t.defineMethod(i, fqName, clsMeta, &fieldTypes, funcs, st)
+							i++
+							found = true
+							break
+						}
+					}
+				}
+
+				// If interface method not found in class, abort
+				if !found {
+					errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
+						fmt.Sprintf("%s.%s must implement interface method %s", fqName, methodName, methodName))
+				}
+			}
+		}
+	}
+
 	// Opaque resolution: define concrete types of all fields
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
@@ -64,8 +112,12 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg 
 			i++
 
 		case ast.FunctionDefinitionStatement:
-			t.defineMethod(i, fqName, clsMeta, &fieldTypes, funcs, st)
-			i++
+			// Skip if already defined as interface method
+			fqFuncName := fmt.Sprintf("%s.%s", fqName, st.Name)
+			if _, ok := funcs[fqFuncName]; !ok {
+				t.defineMethod(i, fqName, clsMeta, &fieldTypes, funcs, st)
+				i++
+			}
 		}
 	}
 
@@ -133,5 +185,23 @@ func (t *ClassHandler) defineMethod(i int, fqName string, clsMeta *typedef.MetaC
 	// mark access mode
 	if st.IsInternal {
 		clsMeta.InternalFields[fqFuncName] = struct{}{}
+	}
+}
+
+// validateInterfaceMethodSignature checks if a class method's signature matches the interface method
+func (t *ClassHandler) validateInterfaceMethodSignature(className, methodName string, classMethod *ast.FunctionDefinitionStatement, interfaceMeta *typedef.MetaInterface) {
+	// Get the interface method signature
+	interfaceMethod, ok := interfaceMeta.Methods[methodName]
+	if !ok {
+		return // Method not in interface, skip validation
+	}
+
+	// Compute hash of class method signature
+	classMethodHash := utils.HashFuncSig(classMethod.Parameters, classMethod.ReturnType)
+
+	// Compare with interface method hash
+	if classMethodHash != interfaceMethod.Hash {
+		errorutils.Abort(errorutils.UnImplementedInterfaceMethod,
+			fmt.Sprintf("Method signature mismatch: %s.%s does not match interface signature", className, methodName))
 	}
 }

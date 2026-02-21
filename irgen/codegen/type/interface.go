@@ -41,6 +41,15 @@ func (s *InterfaceH) Update(bh *bc.BlockHolder, v value.Value) {
 		return
 	}
 
+	// Try to convert the value to the target interface type
+	// This handles interface implementations (e.g., %start.Test* -> %start.Name*)
+	if s.th != nil {
+		// Use ensureType which will bitcast if the class implements the interface
+		val := ensureType(bh, s.th, v, s.UDT)
+		block.NewStore(val, s.Ptr)
+		return
+	}
+
 	errorutils.Abort(errorutils.InternalError,
 		fmt.Sprintf("Type mismatch in Update. Expected %s or %s, got %s",
 			s.UDT, s.UDT.ElemType, v.Type()))
