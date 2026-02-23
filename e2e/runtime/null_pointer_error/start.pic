@@ -1,0 +1,22 @@
+using "builtin/syncio";
+
+class Person {
+    say name: string;
+    say age: int;
+    
+    fn Person(name: string, age: int) {
+        this.name = name;
+        this.age = age;
+    }
+    
+    fn getName(): string {
+        return this.name;
+    }
+}
+
+fn start() {
+    say p: start.Person = null;
+    
+    // This should cause a null pointer error
+    syncio.printf("Name: %s\n", p.getName());
+}

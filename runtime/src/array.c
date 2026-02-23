@@ -24,6 +24,7 @@ static __public__array_t* __alloc_array_recursive(int32_t elem_size, int32_t ran
     }
     
     int64_t count = dims[dim_index];
+    assert(count != 0);
     size_t shape_size = (size_t)rank * sizeof(int64_t);
     size_t data_size;
     

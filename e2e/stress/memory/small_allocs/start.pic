@@ -1,0 +1,31 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class MemoryStress {
+    fn MemoryStress() {}
+    
+    fn testManySmallAllocations() {
+        say count: int = 1000;
+        say arrays: [][]int = array.create(int, 1000, 1000);
+        
+        foreach i in 0..count {
+            arrays[i] = array.create(int, 10);
+            foreach j in 0..10 {
+                arrays[i][j] = i * 10 + j;
+            }
+        }
+        
+        // Verify some allocations
+        syncio.printf("Small allocs: arrays[0][0]=%d, arrays[999][9]=%d\n", 
+                     arrays[0][0], arrays[999][9]);
+    }
+    
+}
+
+fn start() {
+    say stress: start.MemoryStress = new start.MemoryStress();
+    
+    syncio.printf("=== Memory Stress Test ===\n");
+    stress.testManySmallAllocations();
+    syncio.printf("=== All stress tests completed ===\n");
+}

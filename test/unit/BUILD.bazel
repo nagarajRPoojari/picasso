@@ -1,0 +1,87 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//visibility:private"])
+
+COMMON_COPTS = [
+    "-std=c11",
+    "-g",
+    "-O0",
+    "-fno-omit-frame-pointer",
+    # "-Wl,-force_load,$(locations //:runtime_lib_test)",
+] + select({
+    "//:linux": [
+        "-D_GNU_SOURCE",
+        "-D_POSIX_C_SOURCE=200809L",
+    ],
+    "//:macos": [
+        "-D_DARWIN_C_SOURCE",
+    ],
+})
+
+LINUX_ONLY = select({
+    "@platforms//os:linux": [],
+    "//conditions:default": ["@platforms//:incompatible"],
+})
+
+COMMON_DEPS = [
+    "//test/unity:unity",
+    "//:runtime_lib_test",
+    "//:system_libs",
+]
+
+COMMON_LINKOPTS = [
+    "-rdynamic",
+]
+
+cc_test(
+    name = "alloc_test",
+    srcs = ["alloc_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "syncio_test",
+    srcs = ["syncio_test.c"],
+    copts = COMMON_COPTS,
+    data = ["//test:data"],
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "array_test",
+    srcs = ["array_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "atomic_test",
+    srcs = ["atomic_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "str_test",
+    srcs = ["str_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+test_suite(
+    name = "all",
+    tests = [
+        ":alloc_test",
+        ":array_test",
+        ":atomic_test",
+        ":str_test",
+        ":syncio_test",
+    ],
+    visibility = ["//visibility:public"],
+)

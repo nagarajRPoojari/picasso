@@ -1,0 +1,29 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class MemoryStress {
+    fn MemoryStress() {}
+
+    fn testMixedSizes() {
+        say small: []int = array.create(int, 10);
+        say medium: []int = array.create(int, 100);
+        say large: []int = array.create(int, 1000);
+        
+        small[5] = 5;
+        medium[50] = 50;
+        large[500] = 500;
+        
+        syncio.printf("Mixed sizes: small[5]=%d, medium[50]=%d, large[500]=%d\n",
+                     small[5], medium[50], large[500]);
+    }
+}
+
+fn start() {
+    say stress: start.MemoryStress = new start.MemoryStress();
+    
+    syncio.printf("=== Memory Stress Test ===\n");
+    
+    stress.testMixedSizes();
+    
+    syncio.printf("=== All stress tests completed ===\n");
+}

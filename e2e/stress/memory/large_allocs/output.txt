@@ -1,0 +1,3 @@
+=== Memory Stress Test ===
+Large allocs: arr1[9999]=9999, arr2[9999]=19998, arr3[9999]=29997
+=== All stress tests completed ===

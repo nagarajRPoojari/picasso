@@ -1,0 +1,47 @@
+using "builtin/syncio";
+using "builtin/sync";
+using "builtin/atomics";
+
+class Counter {
+    say value: atomic<int>;
+    
+    fn Counter() {
+        this.value = atomics.create(int, 0);
+    }
+    
+    fn increment() {
+        atomics.add(this.value, 1);
+    }
+    
+    fn getValue(): int {
+        return atomics.load(this.value);
+    }
+}
+
+class Test {
+    fn Test() {}
+    fn worker(counter: start.Counter, iterations: int) {
+        foreach i in 0..iterations {
+            counter.increment();
+        }
+    }
+}
+fn start() {
+    say counter: start.Counter = new start.Counter();
+    say numThreads: int = 5;
+    say iterations: int = 100;
+    
+
+    say t: start.Test = new start.Test();
+    // Spawn multiple threads
+    foreach i in 0..numThreads {
+        thread(t.worker, counter, iterations);
+    }
+    
+    // Wait a bit for threads to complete
+    // In real implementation, would use proper synchronization
+    say expected: int = numThreads * iterations;
+    
+    syncio.printf("Expected: %d\n", expected);
+    syncio.printf("Got: %d\n", counter.getValue());
+}

@@ -1,155 +1,50 @@
-load("@rules_cc//cc:cc_test.bzl", "cc_test")
+package(default_visibility = ["//visibility:public"])
 
-package(default_visibility = ["//visibility:private"])
+filegroup(
+    name = "data",
+    srcs = glob(["data/*"]),
+    visibility = ["//visibility:public"],
+)
 
-COMMON_COPTS = [
-    "-std=c11",
-    "-g",
-    "-O0",
-    "-fno-omit-frame-pointer",
-    # "-Wl,-force_load,$(locations //:runtime_lib_test)",
-] + select({
-    "//:linux": [
-        "-D_GNU_SOURCE",
-        "-D_POSIX_C_SOURCE=200809L",
+test_suite(
+    name = "unit",
+    tests = [
+        "//test/unit:all",
     ],
-    "//:macos": [
-        "-D_DARWIN_C_SOURCE",
+    visibility = ["//visibility:public"],
+)
+
+test_suite(
+    name = "integration",
+    tests = [
+        "//test/integration:all",
     ],
-})
-
-LINUX_ONLY = select({
-    "@platforms//os:linux": [],
-    "//conditions:default": ["@platforms//:incompatible"],
-})
-
-COMMON_DEPS = [
-    "//test/unity:unity",
-    "//:runtime_lib_test",
-    "//:system_libs",
-]
-
-COMMON_LINKOPTS = [
-    "-rdynamic",
-]
-
-cc_test(
-    name = "alloc_test",
-    srcs = ["unit/alloc_test.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
+    visibility = ["//visibility:public"],
 )
 
-cc_test(
-    name = "asyncio_test_ascan",
-    srcs = ["integration/asyncio_test/ascan.c"],
-    copts = COMMON_COPTS,
-    data = glob(["data/*"]),
-    linkopts = COMMON_LINKOPTS,
-    target_compatible_with = LINUX_ONLY,
-    deps = COMMON_DEPS,
+test_suite(
+    name = "e2e",
+    tests = [
+        "//e2e:all_tests",
+    ],
+    visibility = ["//visibility:public"],
 )
 
-cc_test(
-    name = "asyncio_test_afread",
-    srcs = ["integration/asyncio_test/afread.c"],
-    copts = COMMON_COPTS,
-    data = glob(["data/*"]),
-    linkopts = COMMON_LINKOPTS,
-    target_compatible_with = LINUX_ONLY,
-    deps = COMMON_DEPS,
+test_suite(
+    name = "stress",
+    tests = [
+        "//test/stress:all",
+    ],
+    visibility = ["//visibility:public"],
 )
 
-cc_test(
-    name = "asyncio_test_aprintf",
-    srcs = ["integration/asyncio_test/aprintf.c"],
-    copts = COMMON_COPTS,
-    data = glob(["data/*"]),
-    linkopts = COMMON_LINKOPTS,
-    target_compatible_with = LINUX_ONLY,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "asyncio_test_afwrite",
-    srcs = ["integration/asyncio_test/afwrite.c"],
-    copts = COMMON_COPTS,
-    data = glob(["data/*"]),
-    linkopts = COMMON_LINKOPTS,
-    target_compatible_with = LINUX_ONLY,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "scheduler_test",
-    srcs = ["integration/scheduler_test.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "syncio_test",
-    srcs = ["unit/syncio_test.c"],
-    copts = COMMON_COPTS,
-    data = glob(["data/*"]),
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "array_test",
-    srcs = ["unit/array_test.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "atomic_test",
-    srcs = ["unit/atomic_test.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "netio_test_read",
-    srcs = ["integration/netio_test/anread.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "netio_test_write",
-    srcs = ["integration/netio_test/anwrite.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "sync_rwmutex_rlock_test",
-    srcs = ["integration/sync/rwmutex/rlock.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "sync_rwmutex_rwlock_test",
-    srcs = ["integration/sync/rwmutex/rwlock.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-)
-
-cc_test(
-    name = "sync_mutex_test",
-    srcs = ["integration/sync/mutex.c"],
-    copts = COMMON_COPTS,
-    linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
+test_suite(
+    name = "all",
+    tests = [
+        ":unit",
+        ":integration",
+        "//test/stress:all",
+        "//e2e:all_tests",
+    ],
+    visibility = ["//visibility:public"],
 )

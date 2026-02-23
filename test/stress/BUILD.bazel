@@ -1,0 +1,112 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//visibility:private"])
+
+COMMON_COPTS = [
+    "-std=c11",
+    "-g",
+    "-O0",
+    "-fno-omit-frame-pointer",
+] + select({
+    "//:linux": [
+        "-D_GNU_SOURCE",
+        "-D_POSIX_C_SOURCE=200809L",
+    ],
+    "//:macos": [
+        "-D_DARWIN_C_SOURCE",
+    ],
+})
+
+COMMON_DEPS = [
+    "//test/unity:unity",
+    "//:runtime_lib_test",
+    "//:system_libs",
+]
+
+COMMON_LINKOPTS = [
+    "-rdynamic",
+]
+
+cc_test(
+    name = "alloc_stress_test",
+    srcs = ["alloc_stress_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress", "manual"],
+)
+
+cc_test(
+    name = "scheduler_many_short_tasks_test",
+    srcs = ["scheduler/many_short_tasks_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "scheduler_nested_spawning_test",
+    srcs = ["scheduler/nested_spawning_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "scheduler_compute_heavy_test",
+    srcs = ["scheduler/compute_heavy_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "scheduler_task_yielding_test",
+    srcs = ["scheduler/task_yielding_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "scheduler_mixed_workload_test",
+    srcs = ["scheduler/mixed_workload_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "scheduler_rapid_cycles_test",
+    srcs = ["scheduler/rapid_cycles_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+test_suite(
+    name = "all",
+    tests = [
+        ":alloc_stress_test",
+        ":scheduler_many_short_tasks_test",
+        ":scheduler_nested_spawning_test",
+        ":scheduler_compute_heavy_test",
+        ":scheduler_task_yielding_test",
+        ":scheduler_mixed_workload_test",
+        ":scheduler_rapid_cycles_test",
+    ],
+    visibility = ["//visibility:public"],
+)

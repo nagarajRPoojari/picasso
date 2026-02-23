@@ -69,4 +69,7 @@ func (t *Interface) initAtomicTypes(_ *ir.Module) {
 	t.Types[TYPE_RWMUTEX] = types.NewStruct()
 
 	t.Types[TYPE_MUTEX] = types.NewStruct()
+	
+	t.Types[TYPE_WAITGROUP] = types.NewStruct()
+
 }

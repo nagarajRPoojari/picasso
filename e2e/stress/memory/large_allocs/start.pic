@@ -1,0 +1,32 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class MemoryStress {
+    fn MemoryStress() {}
+
+    fn testLargeAllocations() {
+        say size: int = 10000;
+        say arr1: []int = array.create(int, size);
+        say arr2: []int = array.create(int, size);
+        say arr3: []int = array.create(int, size);
+        
+        // Fill arrays
+        foreach i in 0..size {
+            arr1[i] = i;
+            arr2[i] = i * 2;
+            arr3[i] = i * 3;
+        }
+        
+        // Verify
+        syncio.printf("Large allocs: arr1[9999]=%d, arr2[9999]=%d, arr3[9999]=%d\n",
+                     arr1[9999], arr2[9999], arr3[9999]);
+    }
+}
+
+fn start() {
+    say stress: start.MemoryStress = new start.MemoryStress();
+    
+    syncio.printf("=== Memory Stress Test ===\n");
+    stress.testLargeAllocations();
+    syncio.printf("=== All stress tests completed ===\n");
+}

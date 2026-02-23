@@ -1,0 +1,202 @@
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
+
+package(default_visibility = ["//visibility:private"])
+
+COMMON_COPTS = [
+    "-std=c11",
+    "-g",
+    "-O0",
+    "-fno-omit-frame-pointer",
+    # "-Wl,-force_load,$(locations //:runtime_lib_test)",
+] + select({
+    "//:linux": [
+        "-D_GNU_SOURCE",
+        "-D_POSIX_C_SOURCE=200809L",
+    ],
+    "//:macos": [
+        "-D_DARWIN_C_SOURCE",
+    ],
+})
+
+LINUX_ONLY = select({
+    "@platforms//os:linux": [],
+    "//conditions:default": ["@platforms//:incompatible"],
+})
+
+COMMON_DEPS = [
+    "//test/unity:unity",
+    "//:runtime_lib_test",
+    "//:system_libs",
+]
+
+COMMON_LINKOPTS = [
+    "-rdynamic",
+]
+
+cc_test(
+    name = "asyncio_test_ascan",
+    srcs = ["asyncio_test/ascan.c"],
+    copts = COMMON_COPTS,
+    data = ["//test:data"],
+    linkopts = COMMON_LINKOPTS,
+    target_compatible_with = LINUX_ONLY,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "asyncio_test_afread",
+    srcs = ["asyncio_test/afread.c"],
+    copts = COMMON_COPTS,
+    data = ["//test:data"],
+    linkopts = COMMON_LINKOPTS,
+    target_compatible_with = LINUX_ONLY,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "asyncio_test_aprintf",
+    srcs = ["asyncio_test/aprintf.c"],
+    copts = COMMON_COPTS,
+    data = ["//test:data"],
+    linkopts = COMMON_LINKOPTS,
+    target_compatible_with = LINUX_ONLY,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "asyncio_test_afwrite",
+    srcs = ["asyncio_test/afwrite.c"],
+    copts = COMMON_COPTS,
+    data = ["//test:data"],
+    linkopts = COMMON_LINKOPTS,
+    target_compatible_with = LINUX_ONLY,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "scheduler_test",
+    srcs = ["scheduler_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "netio_test_read",
+    srcs = ["netio_test/anread.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "netio_test_write",
+    srcs = ["netio_test/anwrite.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "sync_rwmutex_rlock_test",
+    srcs = ["sync/rwmutex/rlock.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "sync_rwmutex_rwlock_test",
+    srcs = ["sync/rwmutex/rwlock.c"],
+ 
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "sync_mutex_test",
+    srcs = ["sync/mutex.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "gc_test",
+    srcs = ["gc_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "waitgroup_add_with_delta",
+    srcs = ["sync/waitgroup/add_with_delta.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "waitgroup_basic",
+    srcs = ["sync/waitgroup/basic.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "waitgroup_immediate_return",
+    srcs = ["sync/waitgroup/immediate_return.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "waitgroup_incremental_add",
+    srcs = ["sync/waitgroup/incremental_add.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "waitgroup_multiple_waiters",
+    srcs = ["sync/waitgroup/multiple_waiters.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+cc_test(
+    name = "waitgroup_reuse",
+    srcs = ["sync/waitgroup/reuse.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+)
+
+test_suite(
+    name = "all",
+    tests = [
+        ":asyncio_test_ascan",
+        ":asyncio_test_afread",
+        ":asyncio_test_aprintf",
+        ":asyncio_test_afwrite",
+        ":scheduler_test",
+        ":netio_test_read",
+        ":netio_test_write",
+        ":sync_rwmutex_rlock_test",
+        ":sync_rwmutex_rwlock_test",
+        ":sync_mutex_test",
+        ":waitgroup_basic",
+        ":waitgroup_immediate_return",
+        ":waitgroup_incremental_add",
+        ":waitgroup_multiple_waiters",
+        ":waitgroup_reuse",
+        ":gc_test",
+    ],
+    visibility = ["//visibility:public"],
+)

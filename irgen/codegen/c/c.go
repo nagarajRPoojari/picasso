@@ -54,6 +54,7 @@ const (
 	TYPE_STRING  = "string"
 	TYPE_RWMUTEX = "rwmutex"
 	TYPE_MUTEX   = "mutex"
+	TYPE_WAITGROUP   = "waitgroup"
 
 	// Runtime Type Names
 	// These identifiers are used when declaring opaque or alias types in LLVM IR.
