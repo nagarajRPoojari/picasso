@@ -76,4 +76,45 @@ void __public__sync_mutex_lock(__public__mutex_t* mtx);
  */
 void __public__sync_mutex_unlock(__public__mutex_t* mtx);
 
+typedef struct __public__waitgroup {
+    _Atomic int64_t count;
+    pthread_mutex_t lock;
+    safe_queue_t waiters;
+}__public__waitgroup_t;
+
+/**
+ * @brief Create a new wait group
+ * @return Pointer to the created wait group
+ */
+__public__waitgroup_t* __public__sync_waitgroup_create();
+
+/**
+ * @brief Add delta to the WaitGroup counter
+ * @param wg Pointer to the wait group
+ * @param delta Value to add to the counter (can be negative)
+ *
+ * Add adds delta, which may be negative, to the WaitGroup counter.
+ * If the counter becomes zero, all tasks blocked on Wait are released.
+ * If the counter goes negative, Add panics (asserts).
+ */
+void __public__sync_waitgroup_add(__public__waitgroup_t* wg, int64_t delta);
+
+/**
+ * @brief Decrement the WaitGroup counter by one
+ * @param wg Pointer to the wait group
+ *
+ * Done decrements the WaitGroup counter by one.
+ * Equivalent to calling Add(-1).
+ */
+void __public__sync_waitgroup_done(__public__waitgroup_t* wg);
+
+/**
+ * @brief Block until the WaitGroup counter is zero
+ * @param wg Pointer to the wait group
+ *
+ * Wait blocks until the WaitGroup counter is zero.
+ * If the counter is already zero, Wait returns immediately.
+ */
+void __public__sync_waitgroup_wait(__public__waitgroup_t* wg);
+
 #endif

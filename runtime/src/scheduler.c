@@ -378,14 +378,23 @@ void* scheduler_run(void* arg) {
             task_resume(t, kt);
 
             if (t->state == TASK_FINISHED) {
-                /* @verify: this doesn't seems to be efficient way */
                 task_destroy(t);
-                atomic_fetch_sub(&task_count, 1);
-                if(!atomic_load(&task_count)) {
-                    for(int i=0; i<SCHEDULER_THREAD_POOL_SIZE; i++) {
-                        safe_q_push(&kernel_thread_map[i]->ready_q, NULL);
+                int remaining = atomic_fetch_sub(&task_count, 1) - 1;
+                
+                /* Check if all tasks are done */
+                if(remaining == 0) {
+                    /* Small delay to ensure any in-flight task spawns complete */
+                    struct timespec ts = {0, 1000000}; /* 1ms */
+                    nanosleep(&ts, NULL);
+                    
+                    /* Recheck task_count after delay */
+                    if(atomic_load(&task_count) == 0) {
+                        /* Signal all scheduler threads to exit */
+                        for(int i=0; i<SCHEDULER_THREAD_POOL_SIZE; i++) {
+                            safe_q_push(&kernel_thread_map[i]->ready_q, NULL);
+                        }
+                        return NULL;
                     }
-                    return NULL;
                 }
             }
             atomic_fetch_sub(&gc_state.total_threads, 1);

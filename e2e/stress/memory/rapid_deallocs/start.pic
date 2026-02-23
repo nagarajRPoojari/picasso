@@ -1,0 +1,26 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class MemoryStress {
+    fn MemoryStress() {}
+    
+    fn testRapidAllocDealloc() {
+        say iterations: int = 100;
+        
+        foreach i in 0..iterations {
+            say temp: []int = array.create(int, 100);
+            temp[50] = i;
+            // temp goes out of scope and should be collected
+        }
+        
+        syncio.printf("Rapid alloc/dealloc: %d iterations completed\n", iterations);
+    }
+}
+
+fn start() {
+    say stress: start.MemoryStress = new start.MemoryStress();
+    
+    syncio.printf("=== Memory Stress Test ===\n");
+    stress.testRapidAllocDealloc();
+    syncio.printf("=== All stress tests completed ===\n");
+}

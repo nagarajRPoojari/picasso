@@ -30,6 +30,7 @@ __public__rwmutex_t* __public__sync_rwmutex_create() {
  * @param mux Pointer to the read-write mutex
  */
 void __public__sync_rwmutex_rlock(__public__rwmutex_t* mux) {
+    assert(mux != NULL);
     int64_t old;
 
     for (;;) {
@@ -63,6 +64,7 @@ void __public__sync_rwmutex_rlock(__public__rwmutex_t* mux) {
  * @param mux Pointer to the read-write mutex
  */
 void __public__sync_rwmutex_runlock(__public__rwmutex_t* mux) {
+    assert(mux != NULL);
     int64_t prev = atomic_fetch_sub_explicit(
         &mux->state,
         READER_INC,
@@ -85,6 +87,7 @@ void __public__sync_rwmutex_runlock(__public__rwmutex_t* mux) {
  * @param mux Pointer to the read-write mutex
  */
 void __public__sync_rwmutex_rwlock(__public__rwmutex_t* mux) {
+    assert(mux != NULL);
     int64_t old;
 
     for (;;) {
@@ -126,6 +129,7 @@ void __public__sync_rwmutex_rwlock(__public__rwmutex_t* mux) {
  * @param mux Pointer to the read-write mutex
  */
 void __public__sync_rwmutex_rwunlock(__public__rwmutex_t* mux) {
+    assert(mux != NULL);
     pthread_mutex_lock(&mux->lock);
     
     // FLAW: Setting state to 0 here allows new readers to "barge in" 
@@ -164,6 +168,7 @@ __public__mutex_t* __public__sync_mutex_create() {
  * @param mtx Pointer to the mutex
  */
 void __public__sync_mutex_lock(__public__mutex_t* mtx) {
+    assert(mtx != NULL);
     int64_t expected = 0;
 
     // Fast path: try to grab lock immediately
@@ -201,6 +206,7 @@ void __public__sync_mutex_lock(__public__mutex_t* mtx) {
  * @param mtx Pointer to the mutex
  */
 void __public__sync_mutex_unlock(__public__mutex_t* mtx) {
+    assert(mtx != NULL);
     pthread_mutex_lock(&mtx->lock);
 
     // Mark the mutex as free
@@ -214,4 +220,96 @@ void __public__sync_mutex_unlock(__public__mutex_t* mtx) {
     }
 
     pthread_mutex_unlock(&mtx->lock);
+}
+
+
+/**
+ * @brief Create a new wait group
+ * @return Pointer to the created wait group
+ */
+__public__waitgroup_t* __public__sync_waitgroup_create() {
+    assert(__arena__ != NULL);
+    __public__waitgroup_t* wg = (__public__waitgroup_t*)allocate(__arena__, sizeof(__public__waitgroup_t));
+    safe_q_init(&wg->waiters, SCHEDULER_LOCAL_QUEUE_SIZE);
+
+    pthread_mutex_init(&wg->lock, NULL);
+    atomic_store_explicit(&wg->count, 0, memory_order_relaxed);
+
+    return wg;
+}
+
+/**
+ * @brief Add delta to the WaitGroup counter
+ * @param wg Pointer to the wait group
+ * @param delta Value to add to the counter (can be negative)
+ *
+ * If the counter becomes zero, all waiting tasks are woken up.
+ * If the counter becomes negative, the program will assert.
+ */
+void __public__sync_waitgroup_add(__public__waitgroup_t* wg, int64_t delta) {
+    assert(wg != NULL);
+    
+    int64_t new_count = atomic_fetch_add_explicit(&wg->count, delta, memory_order_acq_rel);
+    new_count += delta;
+    
+    // counter must not go negative
+    assert(new_count >= 0 && "WaitGroup counter cannot be negative");
+    
+    // if counter reached zero, wake up all waiting tasks
+    if (new_count == 0 && delta < 0) {
+        pthread_mutex_lock(&wg->lock);
+        
+        task_t *waiter;
+        while ((waiter = safe_q_pop(&wg->waiters)) != NULL) {
+            safe_q_push(&kernel_thread_map[waiter->sched_id]->ready_q, waiter);
+        }
+        
+        pthread_mutex_unlock(&wg->lock);
+    }
+}
+
+/**
+ * @brief Decrement the WaitGroup counter by one
+ * @param wg Pointer to the wait group
+ *
+ * Equivalent to calling Add(-1). When the counter reaches zero,
+ * all tasks blocked in Wait are released.
+ */
+void __public__sync_waitgroup_done(__public__waitgroup_t* wg) {
+    assert(wg != NULL);
+    __public__sync_waitgroup_add(wg, -1);
+}
+
+/**
+ * @brief Block until the WaitGroup counter is zero
+ * @param wg Pointer to the wait group
+ *
+ * Wait blocks the calling task until the WaitGroup counter is zero.
+ * If the counter is already zero, Wait returns immediately.
+ */
+void __public__sync_waitgroup_wait(__public__waitgroup_t* wg) {
+    assert(wg != NULL);
+
+    for (;;) {
+        // Check if counter is already zero (fast path)
+        int64_t count = atomic_load_explicit(&wg->count, memory_order_seq_cst);
+        if (count == 0) {
+            return;
+        }
+        
+        // slow path: enqueue ourselves and yield
+        pthread_mutex_lock(&wg->lock);
+        
+        // double-check after acquiring lock
+        count = atomic_load_explicit(&wg->count, memory_order_seq_cst);
+        if (count == 0) {
+            pthread_mutex_unlock(&wg->lock);
+            return;
+        }
+        
+        safe_q_push(&wg->waiters, current_task);
+        pthread_mutex_unlock(&wg->lock);
+        
+        task_yield(kernel_thread_map[current_task->sched_id]);
+    }
 }

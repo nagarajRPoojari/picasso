@@ -36,20 +36,16 @@ void safe_q_init(safe_queue_t *q, int size) {
  * @param t Task to push.
  */
 void safe_q_push(safe_queue_t *q, task_t *t) {
-    task_node_t *n = allocate(__global__arena__, sizeof(n)); /* need to be freed */
+    task_node_t *n = allocate(__global__arena__, sizeof(task_node_t)); /* need to be freed */
     n->t = t; n->next = NULL;
 
     pthread_mutex_lock(&q->lock);
-    if(q->size_limit <= 0) {
-        pthread_mutex_unlock(&q->lock);
-        return;
-    }
-    q->size_limit--;
-    if (!q->tail) 
+    
+    if (!q->tail)
         q->head = q->tail = n;
     else {
-        q->tail->next = n; 
-        q->tail = n; 
+        q->tail->next = n;
+        q->tail = n;
     }
 
     // signal only one consumer thread about the availability
@@ -65,18 +61,17 @@ void safe_q_push(safe_queue_t *q, task_t *t) {
  * @param q Pointer to the queue.
  * @return Pointer to the task, or NULL if queue is empty.
  */
-task_t *safe_q_pop(safe_queue_t *q) {   
+task_t *safe_q_pop(safe_queue_t *q) {
     pthread_mutex_lock(&q->lock);
 
     task_node_t *n = q->head;
-    if (!n) { 
-        pthread_mutex_unlock(&q->lock); 
-        return NULL; 
+    if (!n) {
+        pthread_mutex_unlock(&q->lock);
+        return NULL;
     }
     q->head = n->next;
-    if (!q->head) 
+    if (!q->head)
         q->tail = NULL;
-    q->size_limit++;
     pthread_mutex_unlock(&q->lock);
 
     task_t *t = n->t;
@@ -105,10 +100,9 @@ task_t *safe_q_pop_wait(safe_queue_t *q) {
 
     task_node_t *n = q->head;
     q->head = n->next;
-    if (!q->head) 
+    if (!q->head)
         q->tail = NULL;
 
-    q->size_limit++;
     pthread_mutex_unlock(&q->lock);
     task_t *t = n->t;
 

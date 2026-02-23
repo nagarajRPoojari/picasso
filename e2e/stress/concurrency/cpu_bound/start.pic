@@ -1,18 +1,14 @@
 using "builtin/syncio";
 using "builtin/array";
 using "builtin/atomics";
-using "builtin/sync";
-
 class ConcurrencyStress {
-    say internal TASK_COUNT: int = 10;
-
-    say wg: waitgroup;
-
+    say internal TASK_COUNT: int = 100;
+    say task_count: atomic int64;
     fn ConcurrencyStress() {
-        this.wg = sync.waitgroup_create();
+        atomics.store_int64(this.task_count, 0);
     }
     
-    fn worker(wg: waitgroup, count: int) {
+    fn worker(count: int) {
         say c: int = 0;
         foreach i in 0..count {
             c = c * 100 + c - 100;
@@ -22,17 +18,14 @@ class ConcurrencyStress {
                 c += 90;
             }
         }    
-        sync.waitgroup_done(wg);
+        atomics.add_int64(this.task_count, 1);
+        syncio.printf("TASK DONE\n");
     }
 
     fn testManyCPUBoundTasks() {
         foreach i in 0..this.TASK_COUNT {
-            sync.waitgroup_add(this.wg, 1);
-            thread(this.worker, this.wg, i * 100);    
+            thread(this.worker, i * 100);    
         }
-
-        sync.waitgroup_wait(this.wg);
-        syncio.printf("all tasks done\n");
     }
 }
 

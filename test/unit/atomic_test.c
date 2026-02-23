@@ -164,6 +164,8 @@ int main(void) {
     RUN_TEST(test_atomic_ptr_basic);
 
     RUN_TEST(test_atomic_int_concurrent);
+    RUN_TEST(test_atomic_int16_t_basic);
+    RUN_TEST(test_atomic_int32_basic);
 
     return UNITY_END();
 }
