@@ -97,6 +97,96 @@ cc_test(
     tags = ["stress"],
 )
 
+cc_test(
+    name = "sync_rwmutex_multiple_writer",
+    srcs = ["sync/rwmutex/multiple_writer_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "sync_rwmutex_long_holders",
+    srcs = ["sync/rwmutex/long_holders_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "sync_rwmutex_randomized_reader_writer",
+    srcs = ["sync/rwmutex/randomized_reader_writer_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "sync_mutex_long_holders",
+    srcs = ["sync/mutex/long_holders_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "sync_waitgroup_multiple_waiters",
+    srcs = ["sync/waitgroup/multiple_waiters.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress"],
+)
+
+cc_test(
+    name = "netio_concurrent_connections",
+    srcs = ["netio/concurrent_connections_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress", "netio"],
+)
+
+cc_test(
+    name = "netio_rapid_cycles",
+    srcs = ["netio/rapid_cycles_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress", "netio"],
+)
+
+cc_test(
+    name = "netio_large_transfer",
+    srcs = ["netio/large_transfer_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress", "netio"],
+)
+
+cc_test(
+    name = "netio_mixed_operations",
+    srcs = ["netio/mixed_operations_test.c"],
+    copts = COMMON_COPTS,
+    linkopts = COMMON_LINKOPTS,
+    deps = COMMON_DEPS,
+    timeout = "long",
+    tags = ["stress", "netio"],
+)
+
 test_suite(
     name = "all",
     tests = [
@@ -107,6 +197,14 @@ test_suite(
         ":scheduler_task_yielding_test",
         ":scheduler_mixed_workload_test",
         ":scheduler_rapid_cycles_test",
+        ":sync_rwmutex_multiple_writer",
+        ":sync_rwmutex_long_holders",
+        ":sync_rwmutex_randomized_reader_writer",
+        ":sync_waitgroup_multiple_waiters",
+        ":netio_concurrent_connections",
+        ":netio_rapid_cycles",
+        ":netio_large_transfer",
+        ":netio_mixed_operations",
     ],
     visibility = ["//visibility:public"],
 )
