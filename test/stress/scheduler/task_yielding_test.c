@@ -17,9 +17,6 @@ extern kernel_thread_t **kernel_thread_map;
 void setUp(void) {}
 void tearDown(void) {}
 
-#define YIELD_TASKS 20
-#define YIELDS_PER_TASK 5
-
 /* Stress levels - configurable via compile-time macros
  * Define one of: STRESS_LEVEL_1, STRESS_LEVEL_2, STRESS_LEVEL_3, STRESS_LEVEL_4
  * Or use default (STRESS_LEVEL_3)
