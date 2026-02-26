@@ -90,6 +90,14 @@ func (t *StatementHandler) processClassFieldAssignment(bh *bc.BlockHolder, expHa
 
 	typeName := t.st.ResolveAlias(classMeta.VarAST[fqName].ExplicitType.Get())
 
+	// to check whether access is comming from method in own class or elsewhere.
+	// this decides access scope of that function.
+	if resolveRootMember(m) != constants.THIS {
+		if _, ok := classMeta.InternalFields[fqName]; ok {
+			errorutils.Abort(errorutils.FieldNotAccessible, cls.Name, m.Property)
+		}
+	}
+
 	// similar to above logic, avoid casting & new var creation logic for array types
 	if typeName != constants.ARRAY {
 		casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
@@ -123,4 +131,18 @@ func (t *StatementHandler) processArrayFieldAssignment(bh *bc.BlockHolder, expHa
 		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(needed), casted)
 		arr.StoreByIndex(bh, indices, c.Load(bh))
 	}
+}
+
+// utility function to get root name of memeber expression
+func resolveRootMember(ex ast.Expression) string {
+	switch st := ex.(type) {
+	case ast.SymbolExpression:
+		return st.Value
+	case ast.MemberExpression:
+		return resolveRootMember(st.Member)
+	case ast.ComputedExpression:
+		return resolveRootMember(st.Member)
+	}
+
+	panic("something gone wrong")
 }

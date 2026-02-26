@@ -38,5 +38,10 @@ class ConcurrencyStress {
 
 fn start() {
     say stress: start.ConcurrencyStress = new start.ConcurrencyStress();
-    stress.testManyCPUBoundTasks();
+    stress.TASK_COUNT = 21;
+
+    // syncio.printf("> %d \n", stress.TASK_COUNT);
+    // stress.testManyCPUBoundTasks();
+
+    say arr: []int = array.create(int, 100);
 }

@@ -7,7 +7,7 @@
 #include "scheduler.h" // external: runtime
 
 
-#define GC_TIMEPERIOD (10 * 1000000)
+#define GC_TIMEPERIOD (100 * 1000000)
 #define MAX_ARENAS 12
 #define MAX_SCHEDULERS 12 
 
@@ -16,7 +16,7 @@
 #endif
 #define GC_ALIGN_MASK (GC_PTR_ALIGNMENT - 1)
 
-
+    
 typedef struct gc_state {
     atomic_int       world_stopped;      // 0 = running, 1 = requested stop
     atomic_int       stopped_count;      // number of threads that have stopped
