@@ -11,6 +11,7 @@ go_library(
         "metainterface.go",
         "null.go",
         "string.go",
+        "tuple.go",
         "type.go",
         "types.go",
         "var.go",

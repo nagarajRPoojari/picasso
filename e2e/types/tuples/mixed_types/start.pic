@@ -1,0 +1,58 @@
+using "builtin/syncio";
+
+class Data {
+    say value: int;
+
+    fn Data(v: int) {
+        this.value = v;
+    }
+}
+
+class Service {
+    fn Service() {}
+
+    fn getPrimitives(): (int, double, bool, string) {
+        return 42, 3.14, true, "hello";
+    }
+
+    fn getMixed(): (int, start.Data, string) {
+        say d: start.Data = new start.Data(100);
+        return 1, d, "test";
+    }
+
+    fn getDoubles(): (double, double, double) {
+        return 1.1, 2.2, 3.3;
+    }
+
+    // Return booleans
+    fn getBools(): (bool, bool) {
+        return true, false;
+    }
+}
+
+fn start() {
+    say svc: start.Service = new start.Service();
+
+    // Test mixed primitive types
+    say i: int, d: double, b: bool, s: string = svc.getPrimitives();
+    syncio.printf("Primitives: i=%d d=%.2f b=%d s=%s\n", i, d, b, s);
+
+    // Test mix of primitive and object
+    say num: int, data: start.Data, msg: string = svc.getMixed();
+    syncio.printf("Mixed: num=%d data.value=%d msg=%s\n", num, data.value, msg);
+
+    // Test multiple doubles
+    say d1: double, d2: double, d3: double = svc.getDoubles();
+    syncio.printf("Doubles: %.1f %.1f %.1f\n", d1, d2, d3);
+
+    // Test booleans
+    say b1: bool, b2: bool = svc.getBools();
+    syncio.printf("Bools: %d %d\n", b1, b2);
+
+    // Test type coercion in assignment
+    say x: int, y: int;
+    x, y = 10, 20;
+    say dx: double, dy: double;
+    dx, dy = x, y;  // int to double coercion
+    syncio.printf("Coercion: dx=%.1f dy=%.1f\n", dx, dy);
+}

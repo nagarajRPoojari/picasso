@@ -1,0 +1,4 @@
+17 / 5 = 3 remainder 2
+parseNumber('42') = 42, 1
+parseNumber('invalid') = 0, 0
+getStats(10, 5, 15) = sum:30 min:5 max:15

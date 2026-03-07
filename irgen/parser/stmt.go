@@ -20,12 +20,62 @@ func parseStmt(p *Parser) ast.Statement {
 }
 
 func parseExpressionStmt(p *Parser) ast.ExpressionStatement {
-	expression := parseExpr(p, default_bp)
-	p.expect(lexer.SEMI_COLON)
+	// Parse first expression - for single assignments this will consume the whole thing
+	// For multi-assignments, we need to detect the pattern
+	firstExpr := parseExpr(p, default_bp)
 
+	// Check if firstExpr is an assignment expression (single assignment case)
+	if assignExpr, ok := firstExpr.(ast.AssignmentExpression); ok {
+		// This is a single assignment that was already parsed
+		p.expect(lexer.SEMI_COLON)
+		return ast.ExpressionStatement{
+			SourceLoc:  ast.SourceLoc(p.currentToken().Src),
+			Expression: assignExpr,
+		}
+	}
+
+	// Check if we have comma after first expression (multiple LHS for assignment)
+	if p.currentTokenKind() == lexer.COMMA {
+		assignees := []ast.Expression{firstExpr}
+
+		// Parse remaining assignees - use assignment bp to stop before '='
+		for p.currentTokenKind() == lexer.COMMA {
+			p.move() // consume comma
+			assignees = append(assignees, parseExpr(p, assignment))
+		}
+
+		// Now we must have '=' for multi-assignment
+		if p.currentTokenKind() == lexer.ASSIGNMENT {
+			p.move() // consume '='
+
+			// Parse RHS values
+			assignedValues := []ast.Expression{}
+			assignedValues = append(assignedValues, parseExpr(p, assignment))
+
+			for p.currentTokenKind() == lexer.COMMA {
+				p.move()
+				assignedValues = append(assignedValues, parseExpr(p, assignment))
+			}
+
+			p.expect(lexer.SEMI_COLON)
+
+			// Create multi-assignment expression
+			return ast.ExpressionStatement{
+				SourceLoc: ast.SourceLoc(p.currentToken().Src),
+				Expression: ast.AssignmentExpression{
+					SourceLoc:      ast.SourceLoc(p.currentToken().Src),
+					Assignees:      assignees,
+					AssignedValues: assignedValues,
+				},
+			}
+		}
+	}
+
+	// Regular expression statement (function call, etc.)
+	p.expect(lexer.SEMI_COLON)
 	return ast.ExpressionStatement{
 		SourceLoc:  ast.SourceLoc(p.currentToken().Src),
-		Expression: expression,
+		Expression: firstExpr,
 	}
 }
 
@@ -45,7 +95,6 @@ func parseBlockStmt(p *Parser) ast.Statement {
 }
 
 func parseVarDeclStmt(p *Parser) ast.Statement {
-	var explicitType ast.Type
 	p.expect(lexer.SAY)
 
 	var isInternal bool
@@ -60,6 +109,10 @@ func parseVarDeclStmt(p *Parser) ast.Statement {
 		p.move()
 	}
 
+	// Parse first identifier
+	identifiers := []string{}
+	explicitTypes := []ast.Type{}
+
 	symbolName := p.currentToken()
 	if p.currentTokenKind() != lexer.IDENTIFIER {
 		errorsx.PanicParserError(
@@ -68,10 +121,11 @@ func parseVarDeclStmt(p *Parser) ast.Statement {
 			p.currentToken().Src.Line,
 			p.currentToken().Src.Col,
 		)
-	} else {
-		p.move()
 	}
+	identifiers = append(identifiers, symbolName.Value)
+	p.move()
 
+	// Check for multiple declarations: say a: int, b: int
 	if p.currentTokenKind() == lexer.COLON {
 		p.move()
 
@@ -81,38 +135,98 @@ func parseVarDeclStmt(p *Parser) ast.Statement {
 			p.move()
 		}
 
-		explicitType = parse_type(p, default_bp)
+		explicitType := parse_type(p, default_bp)
 		if atomic {
 			explicitType.SetAtomic()
 		}
+		explicitTypes = append(explicitTypes, explicitType)
+
+		// Parse additional variable declarations
+		for p.currentTokenKind() == lexer.COMMA {
+			p.move() // consume comma
+
+			nextName := p.expect(lexer.IDENTIFIER).Value
+			identifiers = append(identifiers, nextName)
+
+			if p.currentTokenKind() == lexer.COLON {
+				p.move()
+
+				atomic := false
+				if p.currentTokenKind() == lexer.ATOMIC {
+					atomic = true
+					p.move()
+				}
+
+				nextType := parse_type(p, default_bp)
+				if atomic {
+					nextType.SetAtomic()
+				}
+				explicitTypes = append(explicitTypes, nextType)
+			} else {
+				// No type specified for this variable
+				explicitTypes = append(explicitTypes, nil)
+			}
+		}
 	}
 
-	var assignmentValue ast.Expression
-	if p.currentTokenKind() != lexer.SEMI_COLON {
-		p.expect(lexer.ASSIGNMENT)
-		assignmentValue = parseExpr(p, assignment)
-	} else if explicitType == nil {
+	// Parse assignment values
+	var assignmentValues []ast.Expression
+	if p.currentTokenKind() == lexer.ASSIGNMENT {
+		p.move()
+
+		assignmentValues = append(assignmentValues, parseExpr(p, assignment))
+
+		for p.currentTokenKind() == lexer.COMMA {
+			p.move()
+			assignmentValues = append(assignmentValues, parseExpr(p, assignment))
+		}
+	} else if len(explicitTypes) == 0 || explicitTypes[0] == nil {
 		panic("Missing explicit type for variable declaration.")
 	}
 
 	p.expect(lexer.SEMI_COLON)
 
-	if _, ok := reserved_keywords[symbolName.Value]; ok {
-		errorsx.PanicParserError(
-			"use of reserved keyword",
-			p.currentToken().Src.FilePath,
-			p.currentToken().Src.Line,
-			p.currentToken().Src.Col,
-		)
+	// Check for reserved keywords
+	for _, id := range identifiers {
+		if _, ok := reserved_keywords[id]; ok {
+			errorsx.PanicParserError(
+				"use of reserved keyword",
+				p.currentToken().Src.FilePath,
+				p.currentToken().Src.Line,
+				p.currentToken().Src.Col,
+			)
+		}
 	}
 
+	// Single variable declaration (backward compatibility)
+	if len(identifiers) == 1 {
+		var explicitType ast.Type
+		if len(explicitTypes) > 0 {
+			explicitType = explicitTypes[0]
+		}
+		var assignmentValue ast.Expression
+		if len(assignmentValues) > 0 {
+			assignmentValue = assignmentValues[0]
+		}
+
+		return ast.VariableDeclarationStatement{
+			SourceLoc:     ast.SourceLoc(p.currentToken().Src),
+			Identifier:    identifiers[0],
+			AssignedValue: assignmentValue,
+			ExplicitType:  explicitType,
+			IsStatic:      isStatic,
+			IsInternal:    isInternal,
+		}
+	}
+
+	// Multiple variable declarations
 	return ast.VariableDeclarationStatement{
-		SourceLoc:     ast.SourceLoc(p.currentToken().Src),
-		Identifier:    symbolName.Value,
-		AssignedValue: assignmentValue,
-		ExplicitType:  explicitType,
-		IsStatic:      isStatic,
-		IsInternal:    isInternal,
+		SourceLoc:      ast.SourceLoc(p.currentToken().Src),
+		Identifiers:    identifiers,
+		ExplicitTypes:  explicitTypes,
+		AssignedValues: assignmentValues,
+		IsStatic:       isStatic,
+		IsInternal:     isInternal,
 	}
 }
 
@@ -352,11 +466,33 @@ func parseFuncReturnStmt(p *Parser) ast.Statement {
 			IsVoid:    true,
 		}
 	}
-	exp := parseExpressionStmt(p)
 
+	// Parse multiple return values separated by commas
+	values := []ast.Expression{}
+	values = append(values, parseExpr(p, assignment))
+
+	for p.currentTokenKind() == lexer.COMMA {
+		p.move() // consume comma
+		values = append(values, parseExpr(p, assignment))
+	}
+
+	p.expect(lexer.SEMI_COLON)
+
+	// If single value, use old format for backward compatibility
+	if len(values) == 1 {
+		return ast.ReturnStatement{
+			SourceLoc: ast.SourceLoc(p.currentToken().Src),
+			Value: ast.ExpressionStatement{
+				SourceLoc:  ast.SourceLoc(p.currentToken().Src),
+				Expression: values[0],
+			},
+		}
+	}
+
+	// Multiple values
 	return ast.ReturnStatement{
 		SourceLoc: ast.SourceLoc(p.currentToken().Src),
-		Value:     exp,
+		Values:    values,
 	}
 }
 

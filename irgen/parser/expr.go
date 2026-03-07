@@ -52,13 +52,36 @@ func parsePrefixExpr(p *Parser) ast.Expression {
 }
 
 func parseAssignmentExpr(p *Parser, left ast.Expression, bp BindingPower) ast.Expression {
-	p.move()
-	rhs := parseExpr(p, bp)
+	p.move() // consume '='
 
+	// Check if left side has comma (multiple assignees)
+	// This needs to be handled at statement level, but we'll support it here
+	assignees := []ast.Expression{left}
+
+	// Parse right-hand side values
+	assignedValues := []ast.Expression{}
+	assignedValues = append(assignedValues, parseExpr(p, bp))
+
+	// Check for multiple values on RHS
+	for p.currentTokenKind() == lexer.COMMA {
+		p.move() // consume comma
+		assignedValues = append(assignedValues, parseExpr(p, bp))
+	}
+
+	// Single assignment (backward compatibility)
+	if len(assignedValues) == 1 {
+		return ast.AssignmentExpression{
+			SourceLoc:     ast.SourceLoc(p.currentToken().Src),
+			Assignee:      left,
+			AssignedValue: assignedValues[0],
+		}
+	}
+
+	// Multiple assignments
 	return ast.AssignmentExpression{
-		SourceLoc:     ast.SourceLoc(p.currentToken().Src),
-		Assignee:      left,
-		AssignedValue: rhs,
+		SourceLoc:      ast.SourceLoc(p.currentToken().Src),
+		Assignees:      assignees,
+		AssignedValues: assignedValues,
 	}
 }
 

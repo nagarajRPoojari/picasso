@@ -1,0 +1,39 @@
+using "builtin/syncio";
+
+class Calculator {
+    fn Calculator() {}
+
+    fn compute(): (int, int, int) {
+        return 10, 20, 30;
+    }
+}
+
+fn start() {
+    say calc: start.Calculator = new start.Calculator();
+
+    // Test multi-declaration without initialization
+    say a: int, b: int;
+    syncio.printf("Uninitialized: a=%d b=%d\n", a, b);
+
+    // Test multi-declaration with literal initialization
+    say x: int, y: int = 100, 200;
+    syncio.printf("Literal init: x=%d y=%d\n", x, y);
+
+    // Test multi-declaration with function return
+    say p: int, q: int, r: int = calc.compute();
+    syncio.printf("Function init: p=%d q=%d r=%d\n", p, q, r);
+
+    // Test multi-declaration with mixed types
+    say num: int, flag: bool = 42, true;
+    syncio.printf("Mixed types: num=%d flag=%d\n", num, flag);
+
+    // Test multi-declaration with string
+    say count: int, msg: string = 5, "hello";
+    syncio.printf("With string: count=%d msg=%s\n", count, msg);
+
+    // Test multiple declarations in sequence
+    say i1: int, i2: int = 1, 2;
+    say i3: int, i4: int = 3, 4;
+    say i5: int, i6: int = 5, 6;
+    syncio.printf("Sequence: %d %d %d %d %d %d\n", i1, i2, i3, i4, i5, i6);
+}

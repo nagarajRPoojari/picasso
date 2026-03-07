@@ -1,0 +1,62 @@
+using "builtin/syncio";
+using "builtin/array";
+
+class Point {
+    say x: int, y: int;
+
+    fn Point(x: int, y: int) {
+        this.x = x;
+        this.y = y;
+    }
+}
+
+class Test {
+    fn Test() {}
+
+    fn swap(a: int, b: int): (int, int) {
+        return b, a;
+    }
+
+    fn uneven(): (int, int) {
+        return 1, 2;    
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+
+    // Test simple multi-assignment with literals
+    say a: int, b: int;
+    a, b = 10, 20;
+    syncio.printf("a=%d b=%d\n", a, b);
+
+    // Test multi-assignment from function return
+    a, b = t.swap(a, b);
+    syncio.printf("After swap: a=%d b=%d\n", a, b);
+
+    // Test multi-assignment with class member access
+    say p: start.Point = new start.Point(5, 15);
+    p.x, p.y = 100, 200;
+    syncio.printf("Point: x=%d y=%d\n", p.x, p.y);
+
+    // Test multi-assignment with array elements
+    say arr: []int = array.create(int, 3);
+    arr[0], arr[1], arr[2] = 1, 2, 3;
+    syncio.printf("Array: [%d, %d, %d]\n", arr[0], arr[1], arr[2]);
+
+    // Test mixed assignment (variable, member, array)
+    say c: int = 0;
+    c, p.x, arr[0] = 99, 88, 77;
+    syncio.printf("Mixed: c=%d p.x=%d arr[0]=%d\n", c, p.x, arr[0]);
+
+    // Test chained assignment
+    say x: int, y: int, z: int;
+    x, y, z = 1, 2, 3;
+    syncio.printf("x=%d y=%d z=%d\n", x, y, z);
+    x, y, z = z, x, y;  // Rotate values
+    syncio.printf("After rotate: x=%d y=%d z=%d\n", x, y, z);
+
+    // test uneven unpacking
+    say a1: int, a2: int, a3: int = t.uneven(), 89;
+    syncio.printf("a1: %d, a2: %d, a3: %d\n", a1, a2, a3);
+}

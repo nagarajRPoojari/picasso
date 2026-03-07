@@ -107,8 +107,27 @@ func (t *ClassHandler) DefineClass(cls ast.ClassDeclarationStatement, sourcePkg 
 	for _, stI := range cls.Body {
 		switch st := stI.(type) {
 		case ast.VariableDeclarationStatement:
-			t.defineField(i, fqName, clsMeta, &fieldTypes, vars, st)
-			i++
+			// Check if this is a multiple field declaration
+			// declare each just like individual var declaration
+			if len(st.Identifiers) > 0 {
+				for j := 0; j < len(st.Identifiers); j++ {
+					singleFieldStmt := ast.VariableDeclarationStatement{
+						SourceLoc:    st.SourceLoc,
+						Identifier:   st.Identifiers[j],
+						ExplicitType: st.ExplicitTypes[j],
+						IsStatic:     st.IsStatic,
+						IsAtomic:     st.IsAtomic,
+						IsInternal:   st.IsInternal,
+						Constant:     st.Constant,
+					}
+					t.defineField(i, fqName, clsMeta, &fieldTypes, vars, singleFieldStmt)
+					i++
+				}
+			} else {
+				// Single field declaration
+				t.defineField(i, fqName, clsMeta, &fieldTypes, vars, st)
+				i++
+			}
 
 		case ast.FunctionDefinitionStatement:
 			// Skip if already defined as interface method
@@ -163,7 +182,19 @@ func (t *ClassHandler) defineMethod(i int, fqName string, clsMeta *typedef.MetaC
 
 	var retType types.Type
 	if st.ReturnType != nil {
-		retType = t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ReturnType.Get()))
+		// Check if return type is a tuple
+		if tupleType, ok := st.ReturnType.(*ast.TupleType); ok {
+			// Use helper function to get or create tuple type
+			retType, _ = typedef.GetOrCreateTupleType(
+				tupleType,
+				t.st.Module,
+				t.st.TypeHandler,
+				t.st.ResolveAlias,
+				t.st.GlobalTypeList,
+			)
+		} else {
+			retType = t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ReturnType.Get()))
+		}
 	} else {
 		// empty string is expected to give a void type
 		retType = t.st.TypeHandler.GetLLVMType("")

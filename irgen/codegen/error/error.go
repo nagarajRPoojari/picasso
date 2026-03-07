@@ -43,6 +43,8 @@ const (
 	InvalidConstructorSignature     = "invalid constructor signature for %s"
 	FieldNotAccessible              = "class %s field %s is not accessible"
 	ClassNotAccessible              = "class %s is not accessible for instantiation"
+	TupleUnpackFailed               = "failed to unpack tuple: %s"
+	TuplePackFailed                 = "failed to pack tuple: %s"
 )
 
 const (

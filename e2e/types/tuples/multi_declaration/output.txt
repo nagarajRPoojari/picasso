@@ -1,0 +1,6 @@
+Uninitialized: a=0 b=0
+Literal init: x=100 y=200
+Function init: p=10 q=20 r=30
+Mixed types: num=42 flag=1
+With string: count=5 msg=hello
+Sequence: 1 2 3 4 5 6

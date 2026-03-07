@@ -5,6 +5,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
@@ -212,4 +213,37 @@ func hashValue(h *uint32, v reflect.Value) {
 	default:
 		panic("unsupported kind: " + v.Kind().String())
 	}
+}
+
+// GenerateTupleName creates a unique name for a tuple based on its type signature
+// Must match the implementation in declarefunc.go
+// @todo: check using `.` instead of `_` to avoid name collision with user space
+func GenerateTupleName(fieldTypes []types.Type, typeNames []string) string {
+	parts := make([]string, len(fieldTypes))
+
+	for i, llvmType := range fieldTypes {
+		switch t := llvmType.(type) {
+		case *types.IntType:
+			parts[i] = fmt.Sprintf("i%d", t.BitSize)
+		case *types.FloatType:
+			switch t.Kind {
+			case types.FloatKindFloat:
+				parts[i] = "f32"
+			case types.FloatKindDouble:
+				parts[i] = "f64"
+			case types.FloatKindHalf:
+				parts[i] = "f16"
+			default:
+				parts[i] = "float"
+			}
+		case *types.PointerType:
+			sanitized := strings.ReplaceAll(typeNames[i], ".", "_")
+			sanitized = strings.ReplaceAll(sanitized, "[", "_")
+			sanitized = strings.ReplaceAll(sanitized, "]", "_")
+			parts[i] = sanitized
+		default:
+			parts[i] = "unknown"
+		}
+	}
+	return "tuple_" + strings.Join(parts, "_")
 }

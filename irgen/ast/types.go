@@ -85,9 +85,38 @@ func (t *ListType) GetRank() int {
 // Get returns the generic string identifier for list structures.
 func (t *ListType) Get() string { return "array" }
 
+// TupleType represents a composite type that combines multiple types.
+// Used for multiple return values: fn divide(a: int, b: int): (double, ex.Error)
+type TupleType struct {
+	Atomic bool
+	// Types contains the ordered list of types in the tuple
+	Types []Type
+}
+
+// IsAtomic reports whether the tuple is treated as a atomic unit.
+func (t *TupleType) IsAtomic() bool {
+	return t.Atomic
+}
+
+// SetAtomic marks the tuple as a atomic unit.
+func (t *TupleType) SetAtomic() {
+	t.Atomic = true
+}
+
+// GetUnderlyingType returns empty string as tuples don't have a single underlying type.
+func (t *TupleType) GetUnderlyingType() string {
+	return ""
+}
+
+// Get returns the string representation of the tuple type.
+func (t *TupleType) Get() string {
+	return "tuple"
+}
+
 func init() {
 	gob.Register(&SymbolType{})
 	gob.Register(&ListType{})
+	gob.Register(&TupleType{})
 
 	gob.Register(NumberExpression{})
 	gob.Register(SymbolExpression{})

@@ -31,105 +31,146 @@ import (
 func (t *StatementHandler) AssignVariable(bh *bc.BlockHolder, st *ast.AssignmentExpression) {
 	expHandler := t.m.GetExpressionHandler().(*expression.ExpressionHandler)
 
-	switch m := st.Assignee.(type) {
+	// Normalize to multiple assignment format
+	assignees := st.Assignees
+	var assignedValues []ast.Expression
+
+	if len(st.Assignees) == 0 {
+		// Single assignment - convert to slice format
+		assignees = []ast.Expression{st.Assignee}
+		assignedValues = []ast.Expression{st.AssignedValue}
+	} else {
+		assignedValues = st.AssignedValues
+	}
+
+	// Process RHS values (handles both single and tuple returns)
+	rhsVars := t.processRHSValues(bh, expHandler, assignedValues, len(assignees))
+
+	// Assign to each LHS
+	for i, assignee := range assignees {
+		t.assignToTarget(bh, expHandler, assignee, rhsVars[i])
+	}
+}
+
+// processRHSValues evaluates RHS expressions and handles tuple unpacking
+// Returns a slice of Var values ready for assignment
+func (t *StatementHandler) processRHSValues(bh *bc.BlockHolder, expHandler *expression.ExpressionHandler, assignedValues []ast.Expression, expectedCount int) []tf.Var {
+	var rhsVars []tf.Var
+
+	// Check if RHS is a single expression that returns a tuple
+	if len(assignedValues) == 1 {
+		rhsVar := expHandler.ProcessExpression(bh, assignedValues[0])
+
+		if tuple, ok := rhsVar.(*tf.Tuple); ok {
+			for i := range expectedCount {
+				fieldVal := tuple.GetField(bh, i)
+				rhsVars = append(rhsVars, t.st.TypeHandler.BuildVar(bh, tf.NewType(tuple.TypeNames[i]), fieldVal))
+			}
+		} else {
+			if expectedCount == 1 {
+				rhsVars = append(rhsVars, rhsVar)
+			} else {
+				errorutils.Abort(errorutils.TupleUnpackFailed, "Cannot assign single non-tuple value to multiple variables")
+			}
+		}
+	} else {
+		// Multiple values on RHS - need to handle tuples that may be unpacked
+		for _, expr := range assignedValues {
+			_v := expHandler.ProcessExpression(bh, expr)
+
+			if tuple, ok := _v.(*tf.Tuple); ok {
+				// Unpack tuple fields
+				for i := 0; i < len(tuple.NativeType.Fields); i++ {
+					fieldVal := tuple.GetField(bh, i)
+					rhsVars = append(rhsVars, t.st.TypeHandler.BuildVar(bh, tf.NewType(tuple.TypeNames[i]), fieldVal))
+				}
+			} else {
+				// Single value
+				rhsVars = append(rhsVars, _v)
+			}
+		}
+
+		if len(rhsVars) != expectedCount {
+			errorutils.Abort(errorutils.TupleUnpackFailed, fmt.Sprintf("Assignment count mismatch: %d variables, %d values", expectedCount, len(rhsVars)))
+		}
+	}
+
+	return rhsVars
+}
+
+// assignToTarget assigns a value to a specific target (symbol, member, or computed expression)
+func (t *StatementHandler) assignToTarget(bh *bc.BlockHolder, expHandler *expression.ExpressionHandler, target ast.Expression, rhs tf.Var) {
+	switch m := target.(type) {
 	case ast.SymbolExpression:
-		t.processLocalVarAssignment(bh, expHandler, m, st)
+		v, ok := t.st.Vars.Search(m.Value)
+		if !ok {
+			errorutils.Abort(errorutils.UnknownVariable, target)
+		}
+
+		if v.NativeTypeString() != constants.ARRAY {
+			typeName := v.NativeTypeString()
+			casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
+			castedVar := t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
+			v.Update(bh, castedVar.Load(bh))
+		} else {
+			v.(*tf.Array).UpdateV2(bh, rhs.(*tf.Array))
+		}
 
 	case ast.MemberExpression:
-		t.processClassFieldAssignment(bh, expHandler, m, st)
+		baseVar := expHandler.ProcessExpression(bh, m.Member)
+		if baseVar == nil {
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
+		}
+
+		cls, ok := baseVar.(*tf.Class)
+		if !ok {
+			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "member access base is not a class instance")
+		}
+
+		classMeta := t.st.Classes[cls.Name]
+		structType := classMeta.StructType()
+		fqName := fmt.Sprintf("%s.%s", cls.Name, m.Property)
+		index := classMeta.FieldIndexMap[fqName]
+		fieldType := structType.Fields[index]
+
+		typeName := t.st.ResolveAlias(classMeta.VarAST[fqName].ExplicitType.Get())
+
+		if resolveRootMember(m) != constants.THIS {
+			if _, ok := classMeta.InternalFields[fqName]; ok {
+				errorutils.Abort(errorutils.FieldNotAccessible, cls.Name, m.Property)
+			}
+		}
+
+		if typeName != constants.ARRAY {
+			casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
+			rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
+		}
+		cls.UpdateField(bh, t.st.TypeHandler, index, rhs.Load(bh), fieldType)
 
 	case ast.ComputedExpression:
-		t.processArrayFieldAssignment(bh, expHandler, m, st)
-	}
-}
-
-func (t *StatementHandler) processLocalVarAssignment(bh *bc.BlockHolder, expHandler *expression.ExpressionHandler, m ast.SymbolExpression, st *ast.AssignmentExpression) {
-	assignee := m.Value
-	v, ok := t.st.Vars.Search(assignee)
-	if !ok {
-		errorutils.Abort(errorutils.UnknownVariable, st)
-	}
-	rhs := expHandler.ProcessExpression(bh, st.AssignedValue)
-
-	if v.NativeTypeString() != constants.ARRAY {
-		// do implicit type casting to lhs type.
-		typeName := v.NativeTypeString()
-		casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
-		rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
-		v.Update(bh, rhs.Load(bh))
-	} else {
-		// special case to avoid any new var allocation.
-		// simply updates pointer to point to new address.
-		v.(*tf.Array).UpdateV2(bh, rhs.(*tf.Array))
-	}
-
-}
-
-func (t *StatementHandler) processClassFieldAssignment(bh *bc.BlockHolder, expHandler *expression.ExpressionHandler, m ast.MemberExpression, st *ast.AssignmentExpression) {
-	baseVar := expHandler.ProcessExpression(bh, m.Member)
-
-	if baseVar == nil {
-		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "nil base for member expression")
-	}
-
-	// Base must be a class instance
-	cls, ok := baseVar.(*tf.Class)
-	if !ok {
-		errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "member access base is not a class instance")
-	}
-
-	classMeta := t.st.Classes[cls.Name]
-	structType := classMeta.StructType()
-	meta := t.st.Classes[cls.Name]
-	fqName := fmt.Sprintf("%s.%s", cls.Name, m.Property)
-	index := meta.FieldIndexMap[fqName]
-
-	fieldType := structType.Fields[index]
-
-	rhs := expHandler.ProcessExpression(bh, st.AssignedValue)
-
-	typeName := t.st.ResolveAlias(classMeta.VarAST[fqName].ExplicitType.Get())
-
-	// to check whether access is comming from method in own class or elsewhere.
-	// this decides access scope of that function.
-	if resolveRootMember(m) != constants.THIS {
-		if _, ok := classMeta.InternalFields[fqName]; ok {
-			errorutils.Abort(errorutils.FieldNotAccessible, cls.Name, m.Property)
+		base := expHandler.ProcessExpression(bh, m.Member)
+		indices := make([]value.Value, 0)
+		for _, idx := range m.Indices {
+			v := expHandler.ProcessExpression(bh, idx)
+			casted := t.st.TypeHandler.ImplicitTypeCast(bh, string(tf.INT64), v.Load(bh))
+			c := t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT64), casted)
+			indices = append(indices, c.Load(bh))
 		}
-	}
 
-	// similar to above logic, avoid casting & new var creation logic for array types
-	if typeName != constants.ARRAY {
-		casted := t.st.TypeHandler.ImplicitTypeCast(bh, typeName, rhs.Load(bh))
-		rhs = t.st.TypeHandler.BuildVar(bh, tf.NewType(typeName), casted)
-	}
-	cls.UpdateField(bh, t.st.TypeHandler, index, rhs.Load(bh), fieldType)
-}
+		arr := base.(*tf.Array)
 
-func (t *StatementHandler) processArrayFieldAssignment(bh *bc.BlockHolder, expHandler *expression.ExpressionHandler, m ast.ComputedExpression, st *ast.AssignmentExpression) {
-	base := expHandler.ProcessExpression(bh, m.Member)
-	indices := make([]value.Value, 0)
-	for _, i := range m.Indices {
-		v := expHandler.ProcessExpression(bh, i)
-		casted := t.st.TypeHandler.ImplicitTypeCast(bh, string(tf.INT64), v.Load(bh))
-		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(tf.INT64), casted)
-		indices = append(indices, c.Load(bh))
-	}
-
-	rhs := expHandler.ProcessExpression(bh, st.AssignedValue)
-	arr := base.(*tf.Array)
-
-	if len(indices) < arr.Rank {
-		rhsArray, ok := rhs.(*tf.Array)
-		if !ok {
-			errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "partial array indexing requires array value on RHS")
+		if len(indices) < arr.Rank {
+			rhsArray, ok := rhs.(*tf.Array)
+			if !ok {
+				errorutils.Abort(errorutils.InternalError, errorutils.InternalMemberExprError, "partial array indexing requires array value on RHS")
+			}
+			arr.StoreSubarrayByIndex(bh, indices, rhsArray)
+		} else {
+			needed := arr.ElementTypeString
+			casted := t.st.TypeHandler.ImplicitTypeCast(bh, needed, rhs.Load(bh))
+			c := t.st.TypeHandler.BuildVar(bh, tf.NewType(needed), casted)
+			arr.StoreByIndex(bh, indices, c.Load(bh))
 		}
-		arr.StoreSubarrayByIndex(bh, indices, rhsArray)
-	} else {
-		needed := arr.ElementTypeString
-		casted := t.st.TypeHandler.ImplicitTypeCast(bh, needed, rhs.Load(bh))
-		c := t.st.TypeHandler.BuildVar(bh, tf.NewType(needed), casted)
-		arr.StoreByIndex(bh, indices, c.Load(bh))
 	}
 }
 

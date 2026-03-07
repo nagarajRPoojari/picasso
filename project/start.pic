@@ -2,98 +2,61 @@ using "builtin/syncio";
 using "builtin/array";
 using "builtin/atomics";
 using "builtin/sync";
-using "picasso/ex";
 using "builtin/rterr";
 using "types" as tt;
 
-// class ConcurrencyStress {
-//     say internal TASK_COUNT: int = 10;
-
-//     say wg: waitgroup;
-
-//     fn ConcurrencyStress() {
-//         this.wg = sync.waitgroup_create();
-//     }
-    
-//     fn worker(wg: waitgroup, count: int) {
-//         say c: int = 0;
-//         foreach i in 0..count {
-//             c = c * 100 + c - 100;
-//             if( c > 10 ){
-//                 c -= 29;    
-//             }else {
-//                 c += 90;
-//             }
-//         }    
-//         sync.waitgroup_done(wg);
-//     }
-
-//     fn testManyCPUBoundTasks(err: ex.Error) {
-//         // foreach i in 0..this.TASK_COUNT {
-//         //     sync.waitgroup_add(this.wg, 1);
-//         //     thread(this.worker, this.wg, i * 100);    
-//         // }
-
-//         if( 1 < 2) {
-//             // syncio.printf("hello ???");a
-//             err.raise("oh 1 is less than 2");
-//         }
-
-//         // sync.waitgroup_wait(this.wg);
-//         syncio.printf("all tasks done\n");
-//     }
-// }
-
-// fn start() {
-//     say stress: start.ConcurrencyStress = new start.ConcurrencyStress();
-//     // stress.TASK_COUNT = 21;
-
-//     // syncio.printf("> %d \n", stress.TASK_COUNT);
-
-//     say arr:int = gaurd(stress.testManyCPUBoundTasks()) {
-//         return 102;
-//     }
-
-//     say arr: []int = array.create(int, 100);
-// }
-
-class DenominatorErr: ex.Error {
-    say internal msg: string;
-    fn DenominatorErr(msg: string) {
-        this.msg = msg;
-    }
-    fn toString(): string {
-        return this.msg;    
-    }
-}
+using "picasso/ex";
 
 class Test {
-    fn !Test() {
+
+    say x: int, y: int;
+
+    fn Test() {
         
     }
-    fn !divide(a: int, b: int): double {
+
+    fn divide(a: int, b: int): (double,  ex.Error) {
         if(b==0) {
-            raise(new start.DenominatorErr("this is an error") ,  -1);
-        }    
-        return a / b;
+            return 0.0, new ex.RuntimeError("denominator is zero");
+        }
+        return a / b,  null;
+    }
+
+    fn divide_v2(a: int, b: int): (double,  ex.Error) {
+        if(b==0) {
+            return 0.0,  new ex.RuntimeError("denominator is zero");
+        }
+        return a / b,  null;
+    }
+
+    fn divide_v1(a: int, b: int): (int,  ex.Error) {
+        if(b==0) {
+            return 0,  new ex.RuntimeError("denominator is zero");
+        }
+        return a,  null;
     }
 }
 
 fn start() {
-    say t: start.Test = new start.Test(): err ?  {
-        
-    };
-    say x: ex.ErrorCatcher = new ex.ErrorCatcher();
-    say a: int = 10; //
-    say b: int = 0; // simulating user inputs for simplicity
+    say t: start.Test = new start.Test();
 
-    say ans:double = t.divide(a, b): err ? {
-        if(err ? ex.DenominatorErr) {
-            rterr.error_v2("dead");
-        }else {
-            return -1000;
-        }
-    };
+    say a1: int, b1: start.Test = 10, new start.Test();
 
-    syncio.printf("ans : %f \n", ans);
+    a1, b1.x = 100, 90;
+
+    syncio.printf("a1: %d, b1: %d \n", a1, b1.x);
+
+    // say c: int, d: int = 100, 200;
+
+
+    // syncio.printf("c: %d, d: %d \n", c, d);
+
+    say a: double, err: ex.Error, arr: []int = t.divide(1000, 0), array.create(int, 10);
+
+    // a , err, arr = t.divide(1000, 0), array.create(int, 10);
+
+    // a, c, err = t.divide(10, 0);
+
+    syncio.printf("a: %f, err: %s \n", a, err.toString());
+
 }

@@ -1,0 +1,39 @@
+using "builtin/syncio";
+using "utils";
+
+class LocalData {
+    say value: int;
+
+    fn LocalData(v: int) {
+        this.value = v;
+    }
+}
+
+class Service {
+    fn Service() {}
+
+    // Return tuple with cross-module types
+    fn getMixed(): (start.LocalData, utils.Result) {
+        say local: start.LocalData = new start.LocalData(42);
+        say result: utils.Result = new utils.Result(100, "success");
+        return local, result;
+    }
+}
+
+fn start() {
+    say helper: utils.Helper = new utils.Helper();
+    say svc: start.Service = new start.Service();
+
+    // Test cross-module tuple return
+    say id: int, res: utils.Result = helper.getResult();
+    syncio.printf("Cross-module: id=%d code=%d msg=%s\n", id, res.code, res.message);
+
+    // Test tuple with multiple values from external module
+    say doubled: int, added: int, msg: string = helper.process(5);
+    syncio.printf("Process: doubled=%d added=%d msg=%s\n", doubled, added, msg);
+
+    // Test tuple with mixed local and external types
+    say local: start.LocalData, result: utils.Result = svc.getMixed();
+    syncio.printf("Mixed: local.value=%d result.code=%d result.message=%s\n", 
+                  local.value, result.code, result.message);
+}

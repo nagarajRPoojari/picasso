@@ -10,6 +10,7 @@ import (
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/constants"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/identifier"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/state"
+	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 )
 
 // DeclareFunc registers a method's signature within the LLVM module and the class metadata.
@@ -44,7 +45,19 @@ func (t *FuncHandler) DeclareFunc(cls string, st ast.FunctionDefinitionStatement
 
 	var retType types.Type
 	if st.ReturnType != nil {
-		retType = t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ReturnType.Get()))
+		// Check if return type is a tuple
+		if tupleType, ok := st.ReturnType.(*ast.TupleType); ok {
+			// Use helper function to get or create tuple type
+			retType, _ = typedef.GetOrCreateTupleType(
+				tupleType,
+				t.st.Module,
+				t.st.TypeHandler,
+				t.st.ResolveAlias,
+				t.st.GlobalTypeList,
+			)
+		} else {
+			retType = t.st.TypeHandler.GetLLVMType(t.st.ResolveAlias(st.ReturnType.Get()))
+		}
 	} else {
 		retType = t.st.TypeHandler.GetLLVMType("")
 	}

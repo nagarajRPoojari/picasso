@@ -59,10 +59,15 @@ func (t BinaryExpression) GetSrc() SourceLoc {
 // AssignmentExpression represents the binding of a value to a memory location.
 // Invariants: The Assignee must be a valid l-value (e.g., SymbolExpression,
 // MemberExpression, or ComputedExpression).
+// For multiple assignments: a, b = 100, 200;
 type AssignmentExpression struct {
 	SourceLoc
 	Assignee      Expression
 	AssignedValue Expression
+
+	// For multiple assignments
+	Assignees      []Expression
+	AssignedValues []Expression
 }
 
 func (AssignmentExpression) expr() {}

@@ -19,8 +19,10 @@ go_library(
         "//irgen/codegen/handlers/constants",
         "//irgen/codegen/handlers/expression",
         "//irgen/codegen/handlers/state",
+        "//irgen/codegen/handlers/utils",
         "//irgen/codegen/type",
         "//irgen/codegen/type/block",
+        "@com_github_llir_llvm//ir/types",
         "@com_github_llir_llvm//ir/value",
     ],
 )

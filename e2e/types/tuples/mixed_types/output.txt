@@ -1,0 +1,5 @@
+Primitives: i=42 d=3.14 b=1 s=hello
+Mixed: num=1 data.value=100 msg=test
+Doubles: 1.1 2.2 3.3
+Bools: 1 0
+Coercion: dx=10.0 dy=20.0

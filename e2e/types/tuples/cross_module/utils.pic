@@ -1,0 +1,24 @@
+class Result {
+    say code: int;
+    say message: string;
+
+    fn Result(c: int, m: string) {
+        this.code = c;
+        this.message = m;
+    }
+}
+
+class Helper {
+    fn Helper() {}
+
+    // Return tuple with types from this module
+    fn getResult(): (int, utils.Result) {
+        say r: utils.Result = new utils.Result(200, "OK");
+        return 1, r;
+    }
+
+    // Return tuple with mixed module types
+    fn process(x: int): (int, int, string) {
+        return x * 2, x + 10, "processed";
+    }
+}

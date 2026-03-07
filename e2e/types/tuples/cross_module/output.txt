@@ -1,0 +1,3 @@
+Cross-module: id=1 code=200 msg=OK
+Process: doubled=10 added=15 msg=processed
+Mixed: local.value=42 result.code=100 result.message=success

@@ -1,0 +1,5 @@
+Point: x=10 y=20
+Coords: px=10 py=20
+Rectangle: w=5 h=10 area=50
+Dimensions: w=5 h=10 a=50
+Data: name=test

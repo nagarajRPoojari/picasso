@@ -1,0 +1,62 @@
+using "builtin/syncio";
+
+class Point {
+    // Multiple field declaration
+    say x: int, y: int;
+
+    fn Point(x: int, y: int) {
+        this.x = x;
+        this.y = y;
+    }
+
+    fn getCoords(): (int, int) {
+        return this.x, this.y;
+    }
+}
+
+class Rectangle {
+    // Multiple fields with different types
+    say width: int, height: int, area: int;
+
+    fn Rectangle(w: int, h: int) {
+        this.width = w;
+        this.height = h;
+        this.area = w * h;
+    }
+
+    fn getDimensions(): (int, int, int) {
+        return this.width, this.height, this.area;
+    }
+}
+
+class Data {
+    // Mixed visibility fields
+    say internal id: int, internal code: int;
+    say public: name: string;
+
+    fn Data(id: int, code: int, name: string) {
+        this.id = id;
+        this.code = code;
+        this.name = name;
+    }
+}
+
+fn start() {
+    // Test basic multi-field class
+    say p: start.Point = new start.Point(10, 20);
+    syncio.printf("Point: x=%d y=%d\n", p.x, p.y);
+
+    say px: int, py: int = p.getCoords();
+    syncio.printf("Coords: px=%d py=%d\n", px, py);
+
+    // Test class with multiple fields
+    say r: start.Rectangle = new start.Rectangle(5, 10);
+    syncio.printf("Rectangle: w=%d h=%d area=%d\n", r.width, r.height, r.area);
+
+    say w: int, h: int, a: int = r.getDimensions();
+    syncio.printf("Dimensions: w=%d h=%d a=%d\n", w, h, a);
+
+    // Test mixed visibility
+    say d: start.Data = new start.Data(1, 200, "test");
+    syncio.printf("Data: name=%s\n", d.name);
+}

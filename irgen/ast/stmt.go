@@ -19,6 +19,7 @@ func (t BlockStatement) GetSrc() SourceLoc {
 // VariableDeclarationStatement represents the definition of a new name
 // in the current scope. It tracks metadata like mutability (Constant),
 // visibility (IsStatic), and concurrency hints (IsAtomic).
+// For multiple declarations: say a: int, b: int = 100, 200;
 type VariableDeclarationStatement struct {
 	SourceLoc
 	Identifier    string
@@ -28,6 +29,11 @@ type VariableDeclarationStatement struct {
 	IsStatic      bool
 	IsAtomic      bool
 	IsInternal    bool
+
+	// For multiple variable declarations
+	Identifiers    []string
+	ExplicitTypes  []Type
+	AssignedValues []Expression
 }
 
 func (VariableDeclarationStatement) stmt() {}
@@ -90,9 +96,11 @@ func (t FunctionDeclarationStatement) GetSrc() SourceLoc {
 
 // ReturnStatement terminates the current function execution. It wraps an
 // ExpressionStatement to represent the returned value.
+// For multiple return values, Values contains multiple expressions.
 type ReturnStatement struct {
 	SourceLoc
 	Value  ExpressionStatement
+	Values []Expression // For multiple return values
 	IsVoid bool
 }
 

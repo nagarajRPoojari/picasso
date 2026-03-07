@@ -1,0 +1,18 @@
+using "builtin/syncio";
+
+class Test {
+    fn Test() {}
+
+    fn getTwoValues(): (int, int) {
+        return 10, 20;
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+
+    // This should fail: trying to assign 2 values to 3 variables
+    say a: int, b: int, c: int = t.getTwoValues();
+    
+    syncio.printf("Should not reach here\n");
+}

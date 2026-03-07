@@ -46,6 +46,31 @@ func BuildTypeTokensTable() {
 			Underlying: insideType,
 		}
 	})
+
+	// Support for tuple types: (type1, type2, ...)
+	typeNud(lexer.OPEN_PAREN, primary, func(p *Parser) ast.Type {
+		p.move() // consume '('
+		types := []ast.Type{}
+
+		for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_PAREN {
+			types = append(types, parse_type(p, default_bp))
+
+			if p.currentTokenKind() != lexer.CLOSE_PAREN {
+				p.expect(lexer.COMMA)
+			}
+		}
+
+		p.expect(lexer.CLOSE_PAREN)
+
+		// If only one type, return it directly (not a tuple)
+		if len(types) == 1 {
+			return types[0]
+		}
+
+		return &ast.TupleType{
+			Types: types,
+		}
+	})
 }
 
 func parse_type(p *Parser, bp BindingPower) ast.Type {

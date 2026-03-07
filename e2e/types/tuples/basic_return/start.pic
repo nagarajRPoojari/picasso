@@ -1,0 +1,59 @@
+using "builtin/syncio";
+
+class Math {
+    fn Math() {}
+
+    // Basic tuple return with two integers
+    fn divmod(a: int, b: int): (int, int) {
+        say quotient: int = a / b;
+        say remainder: int = a % b;
+        return quotient, remainder;
+    }
+
+    // Tuple return with different types
+    fn parseNumber(s: string): (int, bool) {
+        if (s == "42") {
+            return 42, true;
+        }
+        return 0, false;
+    }
+
+    // Tuple return with three values
+    fn getStats(x: int, y: int, z: int): (int, int, int) {
+        say sum: int = x + y + z;
+        say min: int = x;
+        if (y < min) {
+            min = y;
+        }
+        if (z < min) {
+            min = z;
+        }
+        say max: int = x;
+        if (y > max) {
+            max = y;
+        }
+        if (z > max) {
+            max = z;
+        }
+        return sum, min, max;
+    }
+}
+
+fn start() {
+    say m: start.Math = new start.Math();
+
+    // Test basic tuple return
+    say q: int, r: int = m.divmod(17, 5);
+    syncio.printf("17 / 5 = %d remainder %d\n", q, r);
+
+    // Test tuple with different types
+    say num: int, ok: bool = m.parseNumber("42");
+    syncio.printf("parseNumber('42') = %d, %d\n", num, ok);
+
+    say num2: int, ok2: bool = m.parseNumber("invalid");
+    syncio.printf("parseNumber('invalid') = %d, %d\n", num2, ok2);
+
+    // Test tuple with three values
+    say sum: int, min: int, max: int = m.getStats(10, 5, 15);
+    syncio.printf("getStats(10, 5, 15) = sum:%d min:%d max:%d\n", sum, min, max);
+}

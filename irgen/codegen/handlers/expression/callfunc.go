@@ -297,8 +297,22 @@ func (t *ExpressionHandler) callClassMethod(bh *bc.BlockHolder, ex ast.CallExpre
 		return nil
 	}
 
-	// @todo: not tested
+	// Check if return type is a tuple
 	tp := classMeta.Returns[methodFqName]
+	if tupleType, ok := tp.(*ast.TupleType); ok {
+		// Return value is a tuple struct - wrap it in a Tuple type
+		typeNames := make([]string, len(tupleType.Types))
+		for i, componentType := range tupleType.Types {
+			typeNames[i] = t.st.ResolveAlias(componentType.Get())
+		}
+		structType, ok := retType.(*types.StructType)
+		if !ok {
+			errorutils.Abort(errorutils.InternalError, "Tuple return type must be a struct type")
+		}
+		return tf.NewTupleFromStruct(bh, ret, structType, typeNames)
+	}
+
+	// Regular single return value
 	return t.st.TypeHandler.BuildVar(bh, tf.NewType(t.st.ResolveAlias(tp.Get()), t.st.ResolveAlias(tp.GetUnderlyingType())), ret)
 
 }

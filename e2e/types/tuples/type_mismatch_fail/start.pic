@@ -1,0 +1,19 @@
+using "builtin/syncio";
+
+class Test {
+    fn Test() {}
+
+    fn getValues(): (int, string) {
+        return 42, "hello";
+    }
+}
+
+fn start() {
+    say t: start.Test = new start.Test();
+
+    // This should fail: wrong return type declaration
+    // Function returns (int, string) but we declare (string, int)
+    say s: string, i: int = t.getValues();
+    
+    syncio.printf("Should not reach here\n");
+}

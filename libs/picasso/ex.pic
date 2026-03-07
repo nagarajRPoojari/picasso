@@ -18,3 +18,14 @@ class ErrorCatcher {
 interface Error {
     fn toString(): string {}
 }
+
+class RuntimeError: ex.Error {
+    say internal msg: string;
+    fn RuntimeError(msg: string) {
+        this.msg = msg;    
+    }
+
+    fn toString(): string {
+        return this.msg;    
+    }    
+}
