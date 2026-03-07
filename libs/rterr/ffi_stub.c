@@ -2,5 +2,5 @@
 
 /* Force references so Clang emits declarations */
 void* __ffi_force[] = {
-    (void*)__public__rterr_error_v2
+    (void*)__public__rterr_die
 };

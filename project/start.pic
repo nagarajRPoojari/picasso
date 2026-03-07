@@ -21,42 +21,12 @@ class Test {
         }
         return a / b,  null;
     }
-
-    fn divide_v2(a: int, b: int): (double,  ex.Error) {
-        if(b==0) {
-            return 0.0,  new ex.RuntimeError("denominator is zero");
-        }
-        return a / b,  null;
-    }
-
-    fn divide_v1(a: int, b: int): (int,  ex.Error) {
-        if(b==0) {
-            return 0,  new ex.RuntimeError("denominator is zero");
-        }
-        return a,  null;
-    }
 }
 
 fn start() {
     say t: start.Test = new start.Test();
-
-    say a1: int, b1: start.Test = 10, new start.Test();
-
-    a1, b1.x = 100, 90;
-
-    syncio.printf("a1: %d, b1: %d \n", a1, b1.x);
-
-    // say c: int, d: int = 100, 200;
-
-
-    // syncio.printf("c: %d, d: %d \n", c, d);
-
-    say a: double, err: ex.Error, arr: []int = t.divide(1000, 0), array.create(int, 10);
-
-    // a , err, arr = t.divide(1000, 0), array.create(int, 10);
-
-    // a, c, err = t.divide(10, 0);
-
-    syncio.printf("a: %f, err: %s \n", a, err.toString());
-
+    say a: double, err: ex.Error = t.divide(10, 0);
+    if( err != null ){
+        rterr.die(err.toString());
+    }
 }

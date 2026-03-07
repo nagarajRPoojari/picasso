@@ -76,7 +76,7 @@ void __public__runtime_error(const char *msg) {
     _exit(1);
 }
 
-void __public__rterr_error_v2(__public__string_t* fmt) {
+void __public__rterr_die(__public__string_t* fmt) {
     assert(fmt != NULL);
     assert(fmt->data != NULL);
     __public__runtime_error(fmt->data);

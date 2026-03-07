@@ -50,7 +50,7 @@ func classifyVar(v tf.Var) ArithKind {
 		return KindFloat
 
 	// pointer
-	case *tf.Array, *tf.Class, *tf.String, *tf.NullVar:
+	case *tf.Array, *tf.Class, *tf.String, *tf.NullVar, *tf.InterfaceH:
 		return KindPointer
 	}
 
@@ -97,6 +97,8 @@ func normalizeOperands(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (v
 
 	k := commonKind(lk, rk)
 	if k == KindInvalid {
+		fmt.Printf("lk: %v\n", lk)
+		fmt.Printf("rk: %v\n", rk)
 		return nil, nil, KindInvalid,
 			fmt.Errorf("incompatible operands for operation")
 	}
