@@ -1,0 +1,20 @@
+using "builtin/syncio";
+using "builtin/rterr";
+
+class ErrorCatcher {
+    say internal e: ex.Error;
+    fn ErrorCatcher() {
+    }    
+
+    fn Set(e: ex.Error) {
+        this.e = e;
+    }
+
+    fn Get(): ex.Error {
+        return this.e;    
+    }
+}
+
+interface Error {
+    fn toString(): string {}
+}

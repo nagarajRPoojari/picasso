@@ -2,46 +2,98 @@ using "builtin/syncio";
 using "builtin/array";
 using "builtin/atomics";
 using "builtin/sync";
+using "picasso/ex";
+using "builtin/rterr";
+using "types" as tt;
 
-class ConcurrencyStress {
-    say internal TASK_COUNT: int = 10;
+// class ConcurrencyStress {
+//     say internal TASK_COUNT: int = 10;
 
-    say wg: waitgroup;
+//     say wg: waitgroup;
 
-    fn ConcurrencyStress() {
-        this.wg = sync.waitgroup_create();
-    }
+//     fn ConcurrencyStress() {
+//         this.wg = sync.waitgroup_create();
+//     }
     
-    fn worker(wg: waitgroup, count: int) {
-        say c: int = 0;
-        foreach i in 0..count {
-            c = c * 100 + c - 100;
-            if( c > 10 ){
-                c -= 29;    
-            }else {
-                c += 90;
-            }
-        }    
-        sync.waitgroup_done(wg);
+//     fn worker(wg: waitgroup, count: int) {
+//         say c: int = 0;
+//         foreach i in 0..count {
+//             c = c * 100 + c - 100;
+//             if( c > 10 ){
+//                 c -= 29;    
+//             }else {
+//                 c += 90;
+//             }
+//         }    
+//         sync.waitgroup_done(wg);
+//     }
+
+//     fn testManyCPUBoundTasks(err: ex.Error) {
+//         // foreach i in 0..this.TASK_COUNT {
+//         //     sync.waitgroup_add(this.wg, 1);
+//         //     thread(this.worker, this.wg, i * 100);    
+//         // }
+
+//         if( 1 < 2) {
+//             // syncio.printf("hello ???");a
+//             err.raise("oh 1 is less than 2");
+//         }
+
+//         // sync.waitgroup_wait(this.wg);
+//         syncio.printf("all tasks done\n");
+//     }
+// }
+
+// fn start() {
+//     say stress: start.ConcurrencyStress = new start.ConcurrencyStress();
+//     // stress.TASK_COUNT = 21;
+
+//     // syncio.printf("> %d \n", stress.TASK_COUNT);
+
+//     say arr:int = gaurd(stress.testManyCPUBoundTasks()) {
+//         return 102;
+//     }
+
+//     say arr: []int = array.create(int, 100);
+// }
+
+class DenominatorErr: ex.Error {
+    say internal msg: string;
+    fn DenominatorErr(msg: string) {
+        this.msg = msg;
     }
+    fn toString(): string {
+        return this.msg;    
+    }
+}
 
-    fn testManyCPUBoundTasks() {
-        foreach i in 0..this.TASK_COUNT {
-            sync.waitgroup_add(this.wg, 1);
-            thread(this.worker, this.wg, i * 100);    
-        }
-
-        sync.waitgroup_wait(this.wg);
-        syncio.printf("all tasks done\n");
+class Test {
+    fn !Test() {
+        
+    }
+    fn !divide(a: int, b: int): double {
+        if(b==0) {
+            raise(new start.DenominatorErr("this is an error") ,  -1);
+        }    
+        return a / b;
     }
 }
 
 fn start() {
-    say stress: start.ConcurrencyStress = new start.ConcurrencyStress();
-    stress.TASK_COUNT = 21;
+    say t: start.Test = new start.Test(): err ?  {
+        
+    };
+    say x: ex.ErrorCatcher = new ex.ErrorCatcher();
+    say a: int = 10; //
+    say b: int = 0; // simulating user inputs for simplicity
 
-    // syncio.printf("> %d \n", stress.TASK_COUNT);
-    // stress.testManyCPUBoundTasks();
+    say ans:double = t.divide(a, b): err ? {
+        if(err ? ex.DenominatorErr) {
+            rterr.error_v2("dead");
+        }else {
+            return -1000;
+        }
+    };
 
-    say arr: []int = array.create(int, 100);
+    syncio.printf("ans : %f \n", ans);
 }

@@ -29,182 +29,197 @@ COMMON_LINKOPTS = [
 
 cc_test(
     name = "alloc_stress_test",
+    timeout = "long",
     srcs = ["alloc_stress_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
+    tags = [
+        "manual",
+        "stress",
+    ],
     deps = COMMON_DEPS,
-    timeout = "long",
-    tags = ["stress", "manual"],
 )
 
 cc_test(
     name = "scheduler_many_short_tasks_test",
+    timeout = "long",
     srcs = ["scheduler/many_short_tasks_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "scheduler_nested_spawning_test",
+    timeout = "long",
     srcs = ["scheduler/nested_spawning_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "scheduler_compute_heavy_test",
+    timeout = "long",
     srcs = ["scheduler/compute_heavy_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "scheduler_task_yielding_test",
+    timeout = "long",
     srcs = ["scheduler/task_yielding_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "scheduler_mixed_workload_test",
+    timeout = "long",
     srcs = ["scheduler/mixed_workload_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "scheduler_rapid_cycles_test",
+    timeout = "long",
     srcs = ["scheduler/rapid_cycles_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "sync_rwmutex_multiple_writer",
+    timeout = "long",
     srcs = ["sync/rwmutex/multiple_writer_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "sync_rwmutex_long_holders",
+    timeout = "long",
     srcs = ["sync/rwmutex/long_holders_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "sync_rwmutex_randomized_reader_writer",
+    timeout = "long",
     srcs = ["sync/rwmutex/randomized_reader_writer_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "sync_mutex_long_holders",
+    timeout = "long",
     srcs = ["sync/mutex/long_holders_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "sync_waitgroup_multiple_waiters",
+    timeout = "long",
     srcs = ["sync/waitgroup/multiple_waiters.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
-    deps = COMMON_DEPS,
-    timeout = "long",
     tags = ["stress"],
+    deps = COMMON_DEPS,
 )
 
 cc_test(
     name = "netio_concurrent_connections",
+    timeout = "long",
     srcs = ["netio/concurrent_connections_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
+    tags = [
+        "netio",
+        "stress",
+    ],
     deps = COMMON_DEPS,
-    timeout = "long",
-    tags = ["stress", "netio"],
 )
 
 cc_test(
     name = "netio_rapid_cycles",
+    timeout = "long",
     srcs = ["netio/rapid_cycles_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
+    tags = [
+        "netio",
+        "stress",
+    ],
     deps = COMMON_DEPS,
-    timeout = "long",
-    tags = ["stress", "netio"],
 )
 
 cc_test(
     name = "netio_large_transfer",
+    timeout = "long",
     srcs = ["netio/large_transfer_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
+    tags = [
+        "netio",
+        "stress",
+    ],
     deps = COMMON_DEPS,
-    timeout = "long",
-    tags = ["stress", "netio"],
 )
 
 cc_test(
     name = "netio_mixed_operations",
+    timeout = "long",
     srcs = ["netio/mixed_operations_test.c"],
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
+    tags = [
+        "netio",
+        "stress",
+    ],
     deps = COMMON_DEPS,
-    timeout = "long",
-    tags = ["stress", "netio"],
 )
 
 test_suite(
     name = "all",
     tests = [
         ":alloc_stress_test",
-        ":scheduler_many_short_tasks_test",
-        ":scheduler_nested_spawning_test",
-        ":scheduler_compute_heavy_test",
-        ":scheduler_task_yielding_test",
-        ":scheduler_mixed_workload_test",
-        ":scheduler_rapid_cycles_test",
-        ":sync_rwmutex_multiple_writer",
-        ":sync_rwmutex_long_holders",
-        ":sync_rwmutex_randomized_reader_writer",
-        ":sync_waitgroup_multiple_waiters",
         ":netio_concurrent_connections",
-        ":netio_rapid_cycles",
         ":netio_large_transfer",
         ":netio_mixed_operations",
+        ":netio_rapid_cycles",
+        ":scheduler_compute_heavy_test",
+        ":scheduler_many_short_tasks_test",
+        ":scheduler_mixed_workload_test",
+        ":scheduler_nested_spawning_test",
+        ":scheduler_rapid_cycles_test",
+        ":scheduler_task_yielding_test",
+        ":sync_rwmutex_long_holders",
+        ":sync_rwmutex_multiple_writer",
+        ":sync_rwmutex_randomized_reader_writer",
+        ":sync_waitgroup_multiple_waiters",
     ],
     visibility = ["//visibility:public"],
 )

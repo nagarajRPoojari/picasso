@@ -108,7 +108,6 @@ cc_test(
 cc_test(
     name = "sync_rwmutex_rwlock_test",
     srcs = ["sync/rwmutex/rwlock.c"],
- 
     copts = COMMON_COPTS,
     linkopts = COMMON_LINKOPTS,
     deps = COMMON_DEPS,
@@ -181,22 +180,22 @@ cc_test(
 test_suite(
     name = "all",
     tests = [
-        ":asyncio_test_ascan",
         ":asyncio_test_afread",
-        ":asyncio_test_aprintf",
         ":asyncio_test_afwrite",
-        ":scheduler_test",
+        ":asyncio_test_aprintf",
+        ":asyncio_test_ascan",
+        ":gc_test",
         ":netio_test_read",
         ":netio_test_write",
+        ":scheduler_test",
+        ":sync_mutex_test",
         ":sync_rwmutex_rlock_test",
         ":sync_rwmutex_rwlock_test",
-        ":sync_mutex_test",
         ":waitgroup_basic",
         ":waitgroup_immediate_return",
         ":waitgroup_incremental_add",
         ":waitgroup_multiple_waiters",
         ":waitgroup_reuse",
-        ":gc_test",
     ],
     visibility = ["//visibility:public"],
 )

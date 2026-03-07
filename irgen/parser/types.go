@@ -39,18 +39,6 @@ func BuildTypeTokensTable() {
 
 	typeNud(lexer.OPEN_BRACKET, member, func(p *Parser) ast.Type {
 		p.move()
-		// token := p.currentToken()
-		// var size int
-		// if token.Kind != lexer.NUMBER {
-		// 	panic("expected size of array")
-		// } else {
-		// 	num, err := strconv.Atoi(token.Value)
-		// 	if err != nil {
-		// 		panic("unable to parse size of array")
-		// 	}
-		// 	size = num
-		// 	p.move()
-		// }
 		p.expect(lexer.CLOSE_BRACKET)
 		insideType := parse_type(p, default_bp)
 

@@ -74,6 +74,9 @@ func BuildTokensTable() {
 	led(lexer.EQUALS, relational, parseBinaryExpr)
 	led(lexer.NOT_EQUALS, relational, parseBinaryExpr)
 
+	// instance
+	led(lexer.QUESTION, relational, parseBinaryExpr)
+
 	// Additive & Multiplicitave
 	led(lexer.PLUS, additive, parseBinaryExpr)
 	led(lexer.DASH, additive, parseBinaryExpr)

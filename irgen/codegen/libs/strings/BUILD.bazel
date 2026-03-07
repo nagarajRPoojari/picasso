@@ -11,7 +11,6 @@ go_library(
         "//irgen/codegen/type",
         "//irgen/codegen/type/block",
         "@com_github_llir_llvm//ir",
-        "@com_github_llir_llvm//ir/types",
         "@com_github_llir_llvm//ir/value",
     ],
 )

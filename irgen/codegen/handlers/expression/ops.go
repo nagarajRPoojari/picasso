@@ -227,6 +227,7 @@ func initOpLookUpTables() {
 
 	logical[lexer.AND] = logicalAnd
 	logical[lexer.OR] = logicalOr
+	logical[lexer.QUESTION] = logicalInstanceOf
 
 	bitwise[lexer.BITWISE_AND] = bitwiseAND
 	bitwise[lexer.BITWISE_OR] = bitwiseOR
@@ -525,6 +526,25 @@ func logicalOr(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, e
 		return nil, err
 	}
 	return buildBooleanFromValue(bh, bh.N.NewOr(lb, rb)), nil
+}
+
+func logicalInstanceOf(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+	if lvc, ok := lv.(*tf.Class); ok {
+		if rvc, ok := rv.(*tf.Class); ok {
+			// both are class
+			if lvc.Name == rvc.Name {
+				return buildBooleanFromValue(bh, constant.True), nil
+			}
+		}
+		if rvc, ok := rv.(*tf.InterfaceH); ok {
+			// rhs is interface
+			if th.ClassUDTS[lvc.Name].Implements == rvc.Name {
+				return buildBooleanFromValue(bh, constant.True), nil
+			}
+		}
+		return buildBooleanFromValue(bh, constant.False), nil
+	}
+	return nil, fmt.Errorf("invalid left hand operand for instance of")
 }
 
 // ProcessPrefixExpression generates LLVM IR for unary operations such as

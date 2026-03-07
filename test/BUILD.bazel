@@ -41,10 +41,10 @@ test_suite(
 test_suite(
     name = "all",
     tests = [
-        ":unit",
         ":integration",
-        "//test/stress:all",
+        ":unit",
         "//e2e:all_tests",
+        "//test/stress:all",
     ],
     visibility = ["//visibility:public"],
 )
