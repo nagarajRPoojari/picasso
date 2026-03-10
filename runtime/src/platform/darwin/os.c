@@ -163,7 +163,7 @@ int __public__os_getcwd(char *buf, size_t size) {
  * @return 0 on success, -1 on error.
  */
 int __public__os_chmod(__public__string_t *path, int64_t mode) {
-    return fchmodat(AT_FDCWD, path->data, mode, 0);
+    return fchmodat(AT_FDCWD, path->data, (mode_t)mode, 0);
 }
 
 /**
@@ -176,7 +176,7 @@ int __public__os_chmod(__public__string_t *path, int64_t mode) {
  * @return 0 on success, -1 on error.
  */
 int __public__os_chown(__public__string_t *name, int64_t uid, int64_t gid) {
-    return fchownat(AT_FDCWD, name->data, uid, gid, 0);
+    return fchownat(AT_FDCWD, name->data, (uid_t)uid, (gid_t)gid, 0);
 }
 
 /**
@@ -192,35 +192,35 @@ int __public__os_chdir(__public__string_t *path) {
  * @brief Get user ID.
  * @return UID.
  */
-int __public__os_getuid(void)  { return getuid();  }
+int __public__os_getuid(void)  { return (int)getuid();  }
 /**
  * @brief Get effective user ID.
  * @return Effective UID.
  */
-int __public__os_geteuid(void) { return geteuid(); }
+int __public__os_geteuid(void) { return (int)geteuid(); }
 /**
  * @brief Get group ID.
  * @return GID.
  */
-int __public__os_getgid(void)  { return getgid();  }
+int __public__os_getgid(void)  { return (int)getgid();  }
 /**
  * @brief Get effective group ID.
  * @return Effective GID.
  */
-int __public__os_getegid(void) { return getegid(); }
+int __public__os_getegid(void) { return (int)getegid(); }
 
 /**
  * @brief Set user ID.
  * @param uid User ID.
  * @return 0 on success, -1 on error.
  */
-int __public__os_setuid(int uid) { return setuid(uid); }
+int __public__os_setuid(int uid) { return setuid((uid_t)uid); }
 /**
  * @brief Set group ID.
  * @param gid Group ID.
  * @return 0 on success, -1 on error.
  */
-int __public__os_setgid(int gid) { return setgid(gid); }
+int __public__os_setgid(int gid) { return setgid((gid_t)gid); }
 
 /**
  * @brief Set process group ID.
@@ -392,7 +392,7 @@ int __public__os_fcntl(int fd, int cmd, long arg) {
  * @return 0 on success, -1 on error.
  */
 int __public__os_mkdir(__public__string_t *path, int mode) {
-    return mkdirat(AT_FDCWD, path->data, mode);
+    return mkdirat(AT_FDCWD, path->data, (mode_t)mode);
 }
 
 /**
@@ -406,7 +406,7 @@ int __public__os_mkdir_temp(__public__string_t *path, int mode) {
     if (!dir) return -1;
 
     // mkdtemp creates dir with 0700, fix permissions
-    if (chmod(dir, mode) != 0) return -1;
+    if (chmod(dir, (mode_t)mode) != 0) return -1;
     printf("dir: %s \n", dir);
     return 0;
 }

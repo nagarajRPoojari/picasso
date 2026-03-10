@@ -746,17 +746,17 @@ ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offse
     size_t total = 0;
     char *p = buf->data;
 
-    while (total < n) {
-        ssize_t r = pread(fd, p + total, n - total, offset);
+    while (total < (size_t)n) {
+        ssize_t r = pread(fd, p + total, (size_t)n - total, offset);
         if (r < 0) {
             if (errno == EINTR) continue;
             return -1;
         }
         if (r == 0) break; // EOF
-        total += r;
+        total += (size_t)r;
         offset += r;
     }
-    return total;
+    return (ssize_t)total;
 }
 
 /**
@@ -789,8 +789,8 @@ ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offs
     size_t total = 0;
     const char *p = buf->data;
 
-    while (total < n) {
-        ssize_t w = pwrite(fd, p + total, n - total, offset + total);
+    while (total < (size_t)n) {
+        ssize_t w = pwrite(fd, p + total, (size_t)n - total, offset + (off_t)total);
         if (w < 0) {
             if (errno == EINTR)
                 continue;
@@ -818,7 +818,7 @@ char* __public__syncio_fopen(__public__string_t* filename, __public__string_t* m
         perror("fopen failed");
         return NULL;
     }
-    return f;
+    return (char *)f;
 }
 
 /**

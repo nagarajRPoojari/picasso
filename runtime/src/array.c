@@ -31,7 +31,7 @@ static __public__array_t* __alloc_array_recursive(int32_t elem_size, int32_t ran
     if (rank > 1) {
         data_size = (size_t)count * sizeof(__public__array_t*);
     } else {
-        data_size = (size_t)count * elem_size;
+        data_size = (size_t)count * (size_t)elem_size;
     }
     
     size_t total_size = sizeof(__public__array_t) + shape_size;
@@ -43,7 +43,7 @@ static __public__array_t* __alloc_array_recursive(int32_t elem_size, int32_t ran
     
     if (rank > 0) {
         arr->shape = (int64_t*)(arr + 1);
-        memcpy(arr->shape, dims, rank * sizeof(int64_t));
+        memcpy(arr->shape, dims, (size_t)rank * sizeof(int64_t));
     } else {
         arr->shape = NULL;
     }
@@ -78,7 +78,7 @@ __public__array_t* __public__alloc_array(int32_t elem_size, int32_t rank, ...) {
     }
     
     // Collect dimensions from varargs
-    int64_t* dims = (int64_t*)allocate(__arena__, rank * sizeof(int64_t));
+    int64_t* dims = (int64_t*)allocate(__arena__, (size_t)rank * sizeof(int64_t));
     assert(rank != 0);
     va_list args;
     va_start(args, rank);
@@ -112,7 +112,7 @@ void __public__extend_array(__public__array_t* arr, int32_t unused) {
 
     int64_t new_cap = arr->capacity > 0 ? arr->capacity * 2 : 1;
     arr->capacity = new_cap;
-    char* data = (char*)allocate(__arena__, new_cap * arr->elem_size);
+    char* data = (char*)allocate(__arena__, (size_t)new_cap * (size_t)arr->elem_size);
     assert(new_cap * arr->elem_size != 0);
     memcpy(data, arr->data, (arr->length - 1) * arr->elem_size);
     
@@ -173,16 +173,16 @@ void __public__debug_array_info(__public__array_t* arr) {
 
     printf(" == DEBUG INFO: Final __public__array_t State ==\n");
     printf("     Base Address (a.Ptr): %p\n", (void*)arr);
-    printf("     data (Offset 0):      %p\n", arr->data);
-    printf("     shape (Offset 8):     %p\n", arr->shape);
-    printf("     length (Offset 16):   %ld\n", arr->length);
-    printf("     rank (Offset 24):     %ld\n", arr->rank);
+    printf("     data (Offset 0):      %p\n", (void*)arr->data);
+    printf("     shape (Offset 8):     %p\n", (void*)arr->shape);
+    printf("     length (Offset 16):   %lld\n", arr->length);
+    printf("     rank (Offset 24):     %lld\n", arr->rank);
     
     // Print shape elements if rank > 0
     if (arr->rank > 0 && arr->shape != NULL) {
         printf("     Shape Dims: [");
         for (int i = 0; i < arr->rank; i++) {
-            printf("%ld", arr->shape[i]);
+            printf("%lld", arr->shape[i]);
             if (i < arr->rank - 1) {
                 printf(", ");
             }

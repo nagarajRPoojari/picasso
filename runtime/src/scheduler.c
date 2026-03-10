@@ -48,8 +48,6 @@ void task_trampoline(uintptr_t _t, uintptr_t _p) {
     task_t* t = (task_t*)_t;
     task_payload_t* payload = (task_payload_t*)_p;
 
-    void *retval;
-
     // Dynamically invoke the function with the prepared registers
     ffi_call(&payload->cif, FFI_FN(payload->fn), NULL, payload->arg_values);
 
@@ -68,7 +66,7 @@ void task_trampoline(uintptr_t _t, uintptr_t _p) {
  * @deprecated currently i am not implementing dynamic stack growth
  * @brief Signal handler for SIGSEGV that grows task stacks dynamically.
  */
-void more_stack(int sig, siginfo_t *si, void *unused) {
+void more_stack(int sig __attribute__((unused)), siginfo_t *si __attribute__((unused)), void *unused) {
     platform_ctx_t *ctx = (platform_ctx_t *)unused;
 
     uintptr_t old_stack_base = (uintptr_t)current_task->stack;                  
@@ -78,7 +76,7 @@ void more_stack(int sig, siginfo_t *si, void *unused) {
         sp = old_stack_base;   // clamp to prevent underflow
     }
 
-    uintptr_t old_stack_base_guard = (uintptr_t)current_task->stack - PAGE_SIZE; 
+    uintptr_t old_stack_base_guard = (uintptr_t)current_task->stack - (uintptr_t)PAGE_SIZE;
     size_t    old_stack_size = current_task->stack_size;
     uintptr_t old_stack_top = old_stack_base + old_stack_size;                  
     uintptr_t copy_size = old_stack_top - sp;
@@ -112,7 +110,7 @@ void more_stack(int sig, siginfo_t *si, void *unused) {
  * This ensures the signal handler has a safe stack to run on if the current
  * task stack is corrupted or overflown.
  */
-void init_stack_signal_handler() {
+void init_stack_signal_handler(void) {
     // Initialize the thread-local cleanup queue
     safe_q_init(&old_stack_cleanup_q, 10);
 
@@ -150,7 +148,7 @@ void task_destroy(task_t *t) {
     gc_unregister_root(t);
 
     void* original_base = (char*)t->stack - PAGE_SIZE; 
-    size_t total_size = t->stack_size + PAGE_SIZE;
+    size_t total_size = t->stack_size + (size_t)PAGE_SIZE;
     
     if (munmap(original_base, total_size) != 0) {
         perror("munmap failed in task_destroy");
@@ -166,7 +164,7 @@ volatile sig_atomic_t preempt[SCHEDULER_THREAD_POOL_SIZE];
  * 
  * @param sv Signal value passed by the POSIX timer.
  */
-void force_preempt(int sig, siginfo_t *si, void *uc) {
+void force_preempt(int sig __attribute__((unused)), siginfo_t *si, void *uc __attribute__((unused))) {
     int tid = *(int *)si->si_value.sival_ptr; 
     preempt[tid] = 1;
 }
@@ -249,7 +247,7 @@ void init_timer_signal_handler(void *arg) {
 }
 #endif
 
-task_t* task_create(void (*fn)(), void* payload, kernel_thread_t* kt) {
+task_t* task_create(void (*fn)(void *), void* payload, kernel_thread_t* kt) {
     task_t *t = allocate(__global__arena__, sizeof(task_t));
     platform_ctx_init(&t->ctx);
     
@@ -263,7 +261,7 @@ task_t* task_create(void (*fn)(), void* payload, kernel_thread_t* kt) {
     t->sched_id = kt->id;
 
     // allocate stack + guard page
-    void* mapped = mmap(NULL, t->stack_size + PAGE_SIZE,
+    void* mapped = mmap(NULL, t->stack_size + (size_t)PAGE_SIZE,
                         PROT_READ | PROT_WRITE,
                         MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mapped == MAP_FAILED) { 
@@ -272,7 +270,7 @@ task_t* task_create(void (*fn)(), void* payload, kernel_thread_t* kt) {
     }
 
     // protect guard page
-    if (mprotect(mapped, PAGE_SIZE, PROT_NONE) != 0) {
+    if (mprotect(mapped, (size_t)PAGE_SIZE, PROT_NONE) != 0) {
         perror("mprotect");
         exit(1);
     }
@@ -302,7 +300,7 @@ void task_yield(kernel_thread_t* kt) {
  * Called periodically (e.g., via timer) to allow preemptive multitasking.
  * If the current task’s preempt flag is set, it yields control.
  */
-void self_yield() {
+void self_yield(void) {
     if (!atomic_load_explicit(&gc_state.world_stopped, memory_order_acquire)) {
         if(preempt[current_task->sched_id]) {
             kernel_thread_t* kt = kernel_thread_map[current_task->sched_id];

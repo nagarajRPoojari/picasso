@@ -50,16 +50,16 @@ ssize_t __public__net_accept(int64_t listen_fd) {
     task_t *t = current_task;
 
     t->io = (io_metadata_t){
-        .fd = listen_fd,
+        .fd = (int)listen_fd,
         .op = IO_ACCEPT,
         .io_done = 0,
         .io_err = 0,
     };
 
-    if (netpoll_add(netpoller, listen_fd, NETPOLL_IN | NETPOLL_ONESHOT, t) < 0) {
+    if (netpoll_add(netpoller, (int)listen_fd, NETPOLL_IN | NETPOLL_ONESHOT, t) < 0) {
         if (errno != EEXIST)
             return -1;
-        netpoll_mod(netpoller, listen_fd, NETPOLL_IN | NETPOLL_ONESHOT, t);
+        netpoll_mod(netpoller, (int)listen_fd, NETPOLL_IN | NETPOLL_ONESHOT, t);
     }
 
     unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
@@ -91,19 +91,19 @@ ssize_t __public__net_read(int64_t fd, __public__array_t *buf, size_t len) {
     task_t *t = current_task;
 
     t->io = (io_metadata_t){
-        .fd = fd,
+        .fd = (int)fd,
         .buf = buf->data,
-        .req_n = len,
+        .req_n = (ssize_t)len,
         .offset = 0,
         .op = IO_READ,
         .io_done = 0,
         .io_err = 0,
     };
 
-    if (netpoll_add(netpoller, fd, NETPOLL_IN | NETPOLL_ONESHOT, t) < 0) {
+    if (netpoll_add(netpoller, (int)fd, NETPOLL_IN | NETPOLL_ONESHOT, t) < 0) {
         if (errno != EEXIST)
             return -1;
-        netpoll_mod(netpoller, fd, NETPOLL_IN | NETPOLL_ONESHOT, t);
+        netpoll_mod(netpoller, (int)fd, NETPOLL_IN | NETPOLL_ONESHOT, t);
     }
 
     unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
@@ -135,19 +135,19 @@ ssize_t __public__net_write(int64_t fd, __public__array_t *buf, size_t len) {
     task_t *t = current_task;
 
     t->io = (io_metadata_t){
-        .fd = fd,
+        .fd = (int)fd,
         .buf = buf->data,
-        .req_n = len,
+        .req_n = (ssize_t)len,
         .offset = 0,
         .op = IO_WRITE,
         .io_done = 0,
         .io_err = 0,
     };
 
-    if (netpoll_add(netpoller, fd, NETPOLL_OUT | NETPOLL_ONESHOT, t) < 0) {
+    if (netpoll_add(netpoller, (int)fd, NETPOLL_OUT | NETPOLL_ONESHOT, t) < 0) {
         if (errno != EEXIST)
             return -1;
-        netpoll_mod(netpoller, fd, NETPOLL_OUT | NETPOLL_ONESHOT, t);
+        netpoll_mod(netpoller, (int)fd, NETPOLL_OUT | NETPOLL_ONESHOT, t);
     }
 
     unsafe_ioq_push(&kernel_thread_map[t->sched_id]->wait_q, t);
@@ -182,7 +182,7 @@ ssize_t __public__net_listen(
     int reuse_addr,
     int reuse_port,
     int tcp_nodelay,
-    int tcp_defer_accept,
+    int tcp_defer_accept __attribute__((unused)),
     int tcp_fastopen,
     int keepalive,
     int rcvbuf,
@@ -221,8 +221,8 @@ ssize_t __public__net_listen(
             goto fail;
 
         if (close_on_exec) {
-            int f = fcntl(fd, F_GETFD, 0);
-            if (f < 0 || fcntl(fd, F_SETFD, f | FD_CLOEXEC) < 0)
+            int fd_flags = fcntl(fd, F_GETFD, 0);
+            if (fd_flags < 0 || fcntl(fd, F_SETFD, fd_flags | FD_CLOEXEC) < 0)
                 goto fail;
         }
 
@@ -431,7 +431,7 @@ ssize_t __public__net_dial(__public__string_t *addr, uint16_t port) {
  *
  * @return Never returns.
  */
-void *netio_worker(void *arg) {
+void *netio_worker(void *arg __attribute__((unused))) {
     /* prevent SIGPIPE from killing process */
     signal(SIGPIPE, SIG_IGN);
 
@@ -449,6 +449,9 @@ void *netio_worker(void *arg) {
             t->io.io_err = 0;
 
             switch (t->io.op) {
+            case IO_LISTEN:
+                /* IO_LISTEN should not reach here in normal flow */
+                break;
 
             case IO_CONNECT: {
                 int err = 0;
@@ -511,7 +514,7 @@ void *netio_worker(void *arg) {
                 ssize_t r = recv(
                     t->io.fd,
                     (char *)t->io.buf + t->io.offset,
-                    t->io.req_n - t->io.offset,
+                    (size_t)(t->io.req_n - t->io.offset),
                     0   // no flags: identical to read() for TCP
                 );
 
@@ -543,7 +546,7 @@ void *netio_worker(void *arg) {
                 ssize_t w = send(
                     t->io.fd,
                     (char *)t->io.buf + t->io.offset,
-                    t->io.req_n - t->io.offset,
+                    (size_t)(t->io.req_n - t->io.offset),
                     MSG_NOSIGNAL
                 );
 

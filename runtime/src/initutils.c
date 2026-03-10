@@ -51,15 +51,15 @@ pthread_t sched_threads[SCHEDULER_THREAD_POOL_SIZE];
  * @param fn   Function pointer for the task to execute.
  * @param this Argument to pass to the task function.
  */
-void thread(void (*fn)(), int nargs, ...) {
+void thread(void (*fn)(void), int nargs, ...) {
     task_payload_t *payload = allocate(__global__arena__, sizeof(task_payload_t));
 
     payload->fn = fn;
     payload->nargs = nargs;
 
     // Allocate arrays for FFI types and pointers to values
-    payload->arg_types = allocate(__global__arena__, sizeof(ffi_type*) * nargs);
-    payload->arg_values = allocate(__global__arena__, sizeof(void*) * nargs);
+    payload->arg_types = allocate(__global__arena__, sizeof(ffi_type*) * (size_t)nargs);
+    payload->arg_values = allocate(__global__arena__, sizeof(void*) * (size_t)nargs);
 
     va_list ap;
     va_start(ap, nargs);
@@ -78,7 +78,7 @@ void thread(void (*fn)(), int nargs, ...) {
     if (ffi_prep_cif(
             &payload->cif,
             FFI_DEFAULT_ABI,
-            nargs,
+            (unsigned int)nargs,
             &ffi_type_void,
             payload->arg_types
         ) != FFI_OK) {
@@ -104,7 +104,7 @@ void thread(void (*fn)(), int nargs, ...) {
  * @param fn   Function pointer for the task to execute.
  * @param this Argument to pass to the task function.
  */
- void orphan(void*(*fn)(void*), void *this) {
+ void orphan(void*(*fn)(void*) __attribute__((unused)), void *this __attribute__((unused))) {
     // @depricated
     // int kernel_thread_id = rand() % SCHEDULER_THREAD_POOL_SIZE;
     // task_t *t1 = task_create(fn, this, kernel_thread_map[kernel_thread_id]);
@@ -121,7 +121,7 @@ void thread(void (*fn)(), int nargs, ...) {
  * 
  * @return 0 on success, 1 on failure.
  */
-int init_io() {
+int init_io(void) {
 #if defined(__linux__)
     diskio_ring_map = allocate(__global__arena__, DISKIO_THREAD_POOL_SIZE * sizeof(struct io_uring*));
     if (!diskio_ring_map) {
@@ -180,7 +180,7 @@ int init_io() {
  * 
  * @return 0 on success.
  */
-int init_scheduler() {
+int init_scheduler(void) {
     atomic_init(&task_count, 0);
 
     kernel_thread_map = allocate(__global__arena__, SCHEDULER_THREAD_POOL_SIZE * sizeof(kernel_thread_t*));
@@ -204,14 +204,14 @@ int init_scheduler() {
  * Currently frees only the first kernel thread. In production, all
  * threads and queues should be properly deallocated.
  */
-void clean_scheduler() {
+void clean_scheduler(void) {
     // free(kernel_thread_map[0]);
 }
 
 /**
  * @brief wait for all schedulers to join.
  */
-int wait_for_schedulers() {
+int wait_for_schedulers(void) {
     for (int i = 0; i < SCHEDULER_THREAD_POOL_SIZE; i++) {
         pthread_join(sched_threads[i], NULL);
     }

@@ -43,7 +43,7 @@ int platform_ctx_make(platform_ctx_t *ctx, void (*entry)(uintptr_t, uintptr_t), 
     if (!ctx || !stack) return -1;
     
     uintptr_t top = (uintptr_t)stack + stack_size;
-    top &= ~0x0FL; 
+    top &= ~(uintptr_t)0x0FL;
     top -= 128;
     
     memset(&ctx->reg, 0, sizeof(registers_t));

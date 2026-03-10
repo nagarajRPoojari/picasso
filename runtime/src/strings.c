@@ -38,7 +38,7 @@ __public__array_t* __public__strings_get_bytes(__public__string_t* fmt) {
     size_t count = (size_t)fmt->size;
     arr->shape = (int64_t*)(arr->data + (count * sizeof(char)));
     
-    arr->length = count;
+    arr->length = (int64_t)count;
     arr->rank = 1;
     return arr;
 }
@@ -51,10 +51,10 @@ __public__array_t* __public__strings_get_bytes(__public__string_t* fmt) {
  */
 __public__string_t* __public__strings_alloc_from_arr(__public__array_t* fmt) {
     __public__string_t* s = allocate(__arena__, sizeof(__public__string_t));
-    s->data = allocate(__arena__, fmt->length + 1);
+    s->data = allocate(__arena__, (size_t)fmt->length + 1);
     s->data[fmt->length] = '\0'; // only to provide backward compatibility with c code
-    memcpy(s->data, fmt->data, fmt->length);
-    s->size = fmt->length;
+    memcpy(s->data, fmt->data, (size_t)fmt->length);
+    s->size = (size_t)fmt->length;
 
     return s;
 }
@@ -180,7 +180,7 @@ size_t f64_to_dec(double v, char tmp[64]) {
     for (int k = 0; k < 6; k++) {
         frac *= 10.0;
         int d = (int)frac;
-        tmp[i++] = '0' + d;
+        tmp[i++] = (char)('0' + d);
         frac -= d;
     }
 
@@ -285,7 +285,7 @@ __public__string_t* __public__strings_format(__public__string_t* fmt, ...) {
     __public__string_t *res = allocate(__arena__, sizeof(*res));
 
     res->data = out;
-    res->size = (int64_t)len;
+    res->size = (size_t)len;
     return res;
 }
 
@@ -296,7 +296,7 @@ __public__string_t* __public__strings_format(__public__string_t* fmt, ...) {
  * @return Length of the string
  */
 int __public__strings_length(__public__string_t* str) {
-    return str->size;
+    return (int)str->size;
 }
 
 /**
@@ -306,7 +306,7 @@ int __public__strings_length(__public__string_t* str) {
  */
 uint8_t __public__strings_get(__public__string_t* str, int i) {
     // unsafe, need to do bound check
-    return str->data[i];
+    return (uint8_t)str->data[i];
 }
 
 /**
@@ -318,7 +318,7 @@ uint8_t __public__strings_get(__public__string_t* str, int i) {
 int __public__strings_compare(__public__string_t* str1, __public__string_t* str2) {
     if (str1 == NULL || str2 == NULL) return (str1 == str2) ? 0 : (str1 ? 1 : -1);
 
-    int64_t min = (str1->size < str2->size) ? str1->size : str2->size;
+    int64_t min = (str1->size < str2->size) ? (int64_t)str1->size : (int64_t)str2->size;
 
     for (int64_t i = 0; i < min; i++) {
         unsigned char c1 = (unsigned char)str1->data[i];
@@ -336,9 +336,9 @@ int __public__strings_compare(__public__string_t* str1, __public__string_t* str2
  * @param ch characted to be appended
  */
 void __public__strings_append(__public__string_t* str, int8_t ch) {
-    int64_t size = ++str->size;
-    int8_t* data = (int8_t*)allocate(__arena__, size + 1);
-    memcpy(data, str->data, size * sizeof(char));
+    int64_t size = (int64_t)(++str->size);
+    char* data = (char*)allocate(__arena__, (size_t)size + 1);
+    memcpy(data, str->data, (size_t)size * sizeof(char));
     data[size-1] = ch;
     data[size] = '\0'; // only to provide backward compatibility with c code
 
@@ -352,8 +352,8 @@ void __public__strings_append(__public__string_t* str, int8_t ch) {
  * @param str2 string2
  */
 void __public__strings_join(__public__string_t* str1, __public__string_t* str2) {
-    int64_t size = str1->size + str2->size;
-    int8_t* data = (int8_t*)allocate(__arena__, size + 1);
+    int64_t size = (int64_t)(str1->size + str2->size);
+    char* data = (char*)allocate(__arena__, (size_t)size + 1);
 
     memcpy(data, str1->data, str1->size * sizeof(char));
 
@@ -363,22 +363,22 @@ void __public__strings_join(__public__string_t* str1, __public__string_t* str2) 
 
     release(__arena__, str1->data);
     str1->data = data;
-    str1->size = size;
+    str1->size = (size_t)size;
 }
 
 __public__string_t* __public__strings_substring(__public__string_t* s, int64_t start, int64_t end) {
-    if( start < 0 || end > s->size) {
+    if( start < 0 || end > (int64_t)s->size) {
         return NULL;
     }
     
     int64_t size = end - start;
-    int8_t* data = (int8_t*)allocate(__arena__, size + 1);
-    memcpy(data, s->data + start, size * sizeof(char));
+    char* data = (char*)allocate(__arena__, (size_t)size + 1);
+    memcpy(data, s->data + start, (size_t)size * sizeof(char));
     data[size] = '\0';
 
     __public__string_t* res = allocate(__arena__, sizeof(__public__string_t));
     res->data = data;
-    res->size = size;
+    res->size = (size_t)size;
 
     return res;
 }

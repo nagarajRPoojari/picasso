@@ -38,7 +38,7 @@ static inline void set_prev_inuse(free_chunk_t* fc) {
 }
 
 static inline void unset_prev_inuse(free_chunk_t* fc) {
-    fc->size &= ~__PREV_IN_USE_FLAG_MASK;
+    fc->size &= ~(size_t)__PREV_IN_USE_FLAG_MASK;
 }
 
 static inline bool is_curr_inuse(free_chunk_t* fc) {
@@ -50,27 +50,27 @@ static inline void set_curr_inuse(free_chunk_t* fc) {
 }
 
 static inline void unset_curr_inuse(free_chunk_t* fc) {
-    fc->size &= ~__CURR_IN_USE_FLAG_MASK;
+    fc->size &= ~(size_t)__CURR_IN_USE_FLAG_MASK;
 }
 
-static inline bool is_mmap_alloced(free_chunk_t* fc) {
+__attribute__((unused)) static inline bool is_mmap_alloced(free_chunk_t* fc) {
     return fc->size & __MMAP_ALLOCATED_FLAG_MASK;
 }
 
-static inline void set_mmap_flag(free_chunk_t* fc) {
+__attribute__((unused)) static inline void set_mmap_flag(free_chunk_t* fc) {
     fc->size |= __MMAP_ALLOCATED_FLAG_MASK;
 }
 
 static inline void unset_mmap_flag(free_chunk_t* fc) {
-    fc->size &= ~__MMAP_ALLOCATED_FLAG_MASK;
+    fc->size &= ~(size_t)__MMAP_ALLOCATED_FLAG_MASK;
 }
 
 static inline ssize_t get_size(free_chunk_t* fc) {
-    return fc->size & __CHUNK_SIZE_MASK;
+    return (ssize_t)(fc->size & (size_t)__CHUNK_SIZE_MASK);
 }
 
 static inline ssize_t get_prev_size(free_chunk_t* fc) {
-    return fc->prev_size & __CHUNK_SIZE_MASK;
+    return (ssize_t)(fc->prev_size & (size_t)__CHUNK_SIZE_MASK);
 }
 
 static inline ssize_t get_size_flags(free_chunk_t* fc) {
@@ -82,12 +82,12 @@ static inline ssize_t get_prev_size_flags(free_chunk_t* fc) {
 }
 
 static inline void set_size(free_chunk_t* fc, ssize_t size, ssize_t flags) {
-    fc->size = size | flags;
+    fc->size = (size_t)size | (size_t)flags;
 }
 
 static inline void set_prev_size(free_chunk_t* fc, ssize_t size, ssize_t flags) {
     assert(size != 0);
-    fc->prev_size = size | flags;
+    fc->prev_size = (size_t)size | (size_t)flags;
 }
 
 static inline free_chunk_t* next_chunk(free_chunk_t* fc) {
@@ -133,7 +133,7 @@ static free_chunk_t* alloc_chunk(size_t size) {
     assert(fc != NULL);
     
     /* init fields with default values */
-    set_size(fc, size, __MMAP_ALLOCATED_FLAG_MASK);
+    set_size(fc, (ssize_t)size, __MMAP_ALLOCATED_FLAG_MASK);
     set_fdbk_to(fc, NULL);
     
     return fc;
@@ -163,11 +163,11 @@ static void insert_into_fdlist(free_chunk_t* head, free_chunk_t* p) {
 }
 
 static inline int get_smallbin_index(size_t size) {
-    return (size >> 4) - 1; 
+    return (int)((size >> 4) - 1);
 }
 
 static inline int floor_log2(size_t x) {
-    return (int)(sizeof(size_t) * CHAR_BIT - 1 - __builtin_clzl(x));
+    return (int)(sizeof(size_t) * CHAR_BIT - 1 - (unsigned long)__builtin_clzl(x));
 }
 
 static int get_largebin_index(size_t size) {
@@ -206,10 +206,10 @@ static void grow_heap(arena_t* ar) {
     size_t next_heap_size;
 
     if (HEAP_BASE_SIZE << ar->heap_expo_growth_iters <= HEAP_EXPONENTIAL_GROWTH_LIMIT) {
-        next_heap_size = HEAP_BASE_SIZE << ar->heap_expo_growth_iters;
+        next_heap_size = (size_t)HEAP_BASE_SIZE << ar->heap_expo_growth_iters;
         ar->heap_expo_growth_iters++;
     } else {
-        next_heap_size = HEAP_EXPONENTIAL_GROWTH_LIMIT + HEAP_CONSTANT_GROWTH * ar->heap_constant_growth_iters;
+        next_heap_size = (size_t)HEAP_EXPONENTIAL_GROWTH_LIMIT + (size_t)HEAP_CONSTANT_GROWTH * (size_t)ar->heap_constant_growth_iters;
         ar->heap_constant_growth_iters++;
     }
 
@@ -217,7 +217,7 @@ static void grow_heap(arena_t* ar) {
         perror("heap overflow \n");
     }
 
-    Debug("[%p][=========== heap growing %zu========]\n", ar, next_heap_size);
+    Debug("[%p][=========== heap growing %zu========]\n", (void*)ar, next_heap_size);
 
     free_chunk_t* new_block = alloc_chunk(next_heap_size + HEAP_BOUNDARY_SIZE);
     if(!new_block) {
@@ -225,7 +225,7 @@ static void grow_heap(arena_t* ar) {
     }
     /* override few fields */
     unset_mmap_flag(new_block);
-    set_size(new_block, next_heap_size, __PREV_IN_USE_FLAG_MASK);
+    set_size(new_block, (ssize_t)next_heap_size, __PREV_IN_USE_FLAG_MASK);
     
     ar->top_chunk = new_block;
 
@@ -243,10 +243,10 @@ static void grow_heap(arena_t* ar) {
 
 
 static void insert_into_fastbin(arena_t* ar, free_chunk_t* fc) {
-    size_t size = get_size(fc);
-    int idx = (size >> 4) - 1;
+    size_t size = (size_t)get_size(fc);
+    int idx = (int)((size >> 4) - 1);
     if (idx >= 0 && idx < FASTBINS_COUNT) {
-        Debug("Releasing chunk size: %zu to fastbin  ar->fastbins[idx] = %p \n", size,  ar->fastbins[idx]);
+        Debug("Releasing chunk size: %zu to fastbin  ar->fastbins[idx] = %p \n", size,  (void*)ar->fastbins[idx]);
         fc->fd = ar->fastbins[idx];
         ar->fastbins[idx] = fc;
 
@@ -262,7 +262,7 @@ static void insert_into_fastbin(arena_t* ar, free_chunk_t* fc) {
 }
 
 static void insert_into_smallbin(arena_t* ar, free_chunk_t* fc) {
-    size_t sz = get_size(fc);
+    size_t sz = (size_t)get_size(fc);
     int idx = get_smallbin_index(sz);
     assert(idx >= 0 && idx < SMALLBINS_COUNT);
 
@@ -275,7 +275,7 @@ static void insert_into_smallbin(arena_t* ar, free_chunk_t* fc) {
 }
 
 static void insert_into_largebin(arena_t* ar, free_chunk_t* fc) {
-    size_t size = get_size(fc);
+    size_t size = (size_t)get_size(fc);
     int idx = get_largebin_index(size);
 
     
@@ -288,7 +288,7 @@ static void insert_into_largebin(arena_t* ar, free_chunk_t* fc) {
     
     ceil_chunk = head->next_sizeptr; 
 
-    while (ceil_chunk != head && get_size(ceil_chunk) < size) {
+    while (ceil_chunk != head && (size_t)get_size(ceil_chunk) < size) {
         ceil_chunk = ceil_chunk->next_sizeptr;
     }
     
@@ -332,7 +332,7 @@ static void insert_into_unsortedbin(arena_t* ar, free_chunk_t* fc) {
 }
 
 static free_chunk_t* fastbin_search(arena_t* ar, size_t requested_size) {
-    int idx = (requested_size >> 4) - 1; // Assuming min chunk size 32, or payload of 16
+    int idx = (int)((requested_size >> 4) - 1); // Assuming min chunk size 32, or payload of 16
 
     if (idx >= 0 && idx < FASTBINS_COUNT && ar->fastbins[idx] != NULL) {
         free_chunk_t* victim = ar->fastbins[idx];
@@ -350,7 +350,7 @@ static free_chunk_t* fastbin_search(arena_t* ar, size_t requested_size) {
 }
 
 static free_chunk_t* smallbin_search(arena_t* ar, ssize_t requested_size) {
-    int idx = get_smallbin_index(requested_size);
+    int idx = get_smallbin_index((size_t)requested_size);
 
     if (idx >= 0 && idx < SMALLBINS_COUNT ) {
         free_chunk_t* head = ar->smallbins[idx];
@@ -384,7 +384,7 @@ static free_chunk_t* largebin_search(arena_t* ar, size_t requested_size) {
         while( curr != head ) {
             next = curr->next_sizeptr;
 
-            size_t curr_size = get_size(curr);
+            size_t curr_size = (size_t)get_size(curr);
             
             if(curr_size >= requested_size) {
                 unlink_chunk_from_fdlist(curr);
@@ -399,12 +399,12 @@ static free_chunk_t* largebin_search(arena_t* ar, size_t requested_size) {
                     free_chunk_t* remainder = (free_chunk_t*)((char*)curr + HEADER_SIZE + requested_size);
 
 
-                    set_size(remainder, remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
-                    set_prev_size(next_chunk(remainder), remainder_payload_size, 0);
+                    set_size(remainder, (ssize_t)remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
+                    set_prev_size(next_chunk(remainder), (ssize_t)remainder_payload_size, 0);
                     /* unset_prev_inuse(next_chunk(remainder)) */
                     insert_into_unsortedbin(ar, remainder);
 
-                    set_size(curr, requested_size, get_size_flags(curr));
+                    set_size(curr, (ssize_t)requested_size, get_size_flags(curr));
                     set_curr_inuse(curr);
 
                 }else {
@@ -431,7 +431,7 @@ static free_chunk_t* unsortedbin_search(arena_t* ar, size_t requested_size) {
         next = curr->fd;
 
         unlink_chunk_from_fdlist(curr);
-        size_t curr_size = get_size(curr);
+        size_t curr_size = (size_t)get_size(curr);
 
         if(curr_size >= requested_size) {
             size_t remainder_chunk_size = curr_size - requested_size;
@@ -443,12 +443,12 @@ static free_chunk_t* unsortedbin_search(arena_t* ar, size_t requested_size) {
                 free_chunk_t* remainder = (free_chunk_t*)((char*)curr + HEADER_SIZE + requested_size);
 
 
-                set_size(remainder, remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
-                set_prev_size(next_chunk(remainder), remainder_payload_size, 0);
+                set_size(remainder, (ssize_t)remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
+                set_prev_size(next_chunk(remainder), (ssize_t)remainder_payload_size, 0);
                 /* unset_prev_inuse(next_chunk(remainder)) */
                 insert_into_unsortedbin(ar, remainder);
 
-                set_size(curr, requested_size, get_size_flags(curr));
+                set_size(curr, (ssize_t)requested_size, get_size_flags(curr));
                 set_curr_inuse(curr);
 
             }else {
@@ -476,7 +476,7 @@ static free_chunk_t* carve_from_top_chunk(arena_t* ar, size_t requested_size) {
     if(!ar->top_chunk) grow_heap(ar);
 
     free_chunk_t* curr = ar->top_chunk;
-    size_t curr_size = get_size(curr);
+    size_t curr_size = (size_t)get_size(curr);
 
     if(curr_size >= requested_size) {
         size_t remainder_chunk_size = curr_size - requested_size;
@@ -486,11 +486,11 @@ static free_chunk_t* carve_from_top_chunk(arena_t* ar, size_t requested_size) {
 
             free_chunk_t* remainder = (free_chunk_t*)((char*)curr + HEADER_SIZE + requested_size);
 
-            set_size(remainder, remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
-            set_prev_size(next_chunk(remainder), remainder_payload_size, 0);
+            set_size(remainder, (ssize_t)remainder_payload_size, __PREV_IN_USE_FLAG_MASK);
+            set_prev_size(next_chunk(remainder), (ssize_t)remainder_payload_size, 0);
             /* unset_prev_inuse(next_chunk(remainder)) */
 
-            set_size(curr, requested_size, get_size_flags(curr));
+            set_size(curr, (ssize_t)requested_size, get_size_flags(curr));
             set_curr_inuse(curr);
 
             ar->top_chunk = remainder;
@@ -532,7 +532,7 @@ void* _allocate(arena_t* ar, size_t requested_size) {
 
     /* search in smallbins */
     if(!victim && payload_size < 16 * SMALLBINS_COUNT) {
-        victim = smallbin_search(ar, payload_size);
+        victim = smallbin_search(ar, (ssize_t)payload_size);
     }
 
     if(!victim) {
@@ -580,9 +580,9 @@ static free_chunk_t* forward_coalesce(arena_t* ar, free_chunk_t* fc) {
 
 
     if(next_fc == ar->top_chunk) {
-        size_t updated_size = get_size(fc) + HEADER_SIZE + get_size(next_fc);
-        set_size(fc, updated_size,  get_size_flags(fc));
-        set_prev_size(next_chunk(fc), updated_size, 0);
+        size_t updated_size = (size_t)get_size(fc) + HEADER_SIZE + (size_t)get_size(next_fc);
+        set_size(fc, (ssize_t)updated_size,  get_size_flags(fc));
+        set_prev_size(next_chunk(fc), (ssize_t)updated_size, 0);
         ar->top_chunk = fc;
 
         return NULL;
@@ -591,17 +591,17 @@ static free_chunk_t* forward_coalesce(arena_t* ar, free_chunk_t* fc) {
     unlink_chunk_from_fdlist(next_fc);
     unlink_chunk_from_sortedlist(next_fc);
 
-    size_t updated_size = get_size(fc) + HEADER_SIZE + get_size(next_fc);
-    set_size(fc, updated_size,  get_size_flags(fc));
+    size_t updated_size = (size_t)get_size(fc) + HEADER_SIZE + (size_t)get_size(next_fc);
+    set_size(fc, (ssize_t)updated_size,  get_size_flags(fc));
     
     /* need to update prev_size of next to next chunk */
     next_fc = next_chunk(fc);
-    set_prev_size(next_fc, updated_size, get_prev_size_flags(next_fc));
+    set_prev_size(next_fc, (ssize_t)updated_size, get_prev_size_flags(next_fc));
 
     return fc;
 }
 
-static free_chunk_t* backward_coalesce(arena_t* ar, free_chunk_t* fc) {
+static free_chunk_t* backward_coalesce(arena_t* ar __attribute__((unused)), free_chunk_t* fc) {
     if(is_prev_inuse(fc)) return fc;
 
     free_chunk_t* prev_fc = prev_chunk(fc);
@@ -610,12 +610,12 @@ static free_chunk_t* backward_coalesce(arena_t* ar, free_chunk_t* fc) {
     unlink_chunk_from_fdlist(prev_fc);
     unlink_chunk_from_sortedlist(prev_fc);
     
-    size_t updated_size = get_size(prev_fc) + HEADER_SIZE + get_size(fc);
-    set_size(prev_fc, updated_size,  get_size_flags(prev_fc));
+    size_t updated_size = (size_t)get_size(prev_fc) + HEADER_SIZE + (size_t)get_size(fc);
+    set_size(prev_fc, (ssize_t)updated_size,  get_size_flags(prev_fc));
 
     /* need to update prev_size of next to next chunk */
     fc = next_chunk(prev_fc);
-    set_prev_size(fc, updated_size, get_prev_size_flags(fc));
+    set_prev_size(fc, (ssize_t)updated_size, get_prev_size_flags(fc));
     return prev_fc;
 }
 
@@ -629,7 +629,7 @@ void _release(arena_t* ar, void* ptr) {
     if(!ptr) return;
     
     free_chunk_t* fc = (free_chunk_t*)((char*)ptr - HEADER_SIZE);
-    size_t size = get_size(fc);
+    size_t size = (size_t)get_size(fc);
     
     assert(size != 0);
 

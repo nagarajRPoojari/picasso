@@ -15,13 +15,13 @@
 int main(void) {
     __global__arena__ = gc_create_global_arena();
 
-    srand(time(NULL));
+    srand((unsigned int)time(NULL));
 
     init_io();
     init_scheduler();
 
     gc_init();
-    thread((void (*)())start, 0);
+    thread((void (*)(void))start, 0);
 
     gc_start();
     wait_for_schedulers();

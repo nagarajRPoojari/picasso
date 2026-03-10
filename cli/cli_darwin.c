@@ -74,7 +74,7 @@ static void log(LogLevel level, const char *fmt, ...) {
     fflush(stream);
 }
 
-static void init_logging() {
+static void init_logging(void) {
     const char *log_level_env = getenv("PICASSO_LOG_LEVEL");
     if (log_level_env) {
         if (strcmp(log_level_env, "DEBUG") == 0) g_log_level = LOG_DEBUG;
@@ -159,7 +159,7 @@ static void run_cmd(char *const argv[]) {
     }
 }
 
-static const char* find_clang() {
+static const char* find_clang(void) {
     static char clang_path[PATH_MAX] = {0};
     if (clang_path[0] != '\0') return clang_path;
 
@@ -190,7 +190,7 @@ static const char* find_clang() {
     exit(1);
 }
 
-static const char* get_sdk_path() {
+static const char* get_sdk_path(void) {
     static char sdk_path[PATH_MAX] = {0};
     if (sdk_path[0] != '\0') return sdk_path;
 

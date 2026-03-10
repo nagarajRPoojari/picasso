@@ -30,7 +30,7 @@ static void gc_mark_mem_region(char *start, char *end);
  * @brief Create the global arena for garbage collection.
  * @return Pointer to the created global arena.
  */
-arena_t* gc_create_global_arena() {
+arena_t* gc_create_global_arena(void) {
     arena_t* ar = arena_create();
     global_arena = ar;
     return ar;
@@ -60,7 +60,7 @@ void gc_unregister_root(task_t* t) {
  * @brief Create a new arena for garbage collection.
  * @return Pointer to the created arena.
  */
-arena_t* gc_create_arena() {
+arena_t* gc_create_arena(void) {
     if(arenas_count + 1 > MAX_ARENAS) {
         perror("failed to create new arena: arena count reached max\n");
         return NULL;
@@ -77,16 +77,16 @@ static void mark_chunk_recursive(inuse_chunk_t* ch) {
     if(ch->prev_size & __GC_MARK_FLAG_MASK) return;
 
     char* payload_start = (char*)ch + HEADER_SIZE;
-    char* payload_end = payload_start + (ch->size & __CHUNK_SIZE_MASK);
+    char* payload_end = payload_start + (ch->size & (size_t)__CHUNK_SIZE_MASK);
     gc_mark_mem_region(payload_start, payload_end);
 }
 
-static inuse_chunk_t* find_chunk_in_heap(arena_t* ar, alloced_heap_t* heap, char* ptr){
+static inuse_chunk_t* find_chunk_in_heap(arena_t* ar __attribute__((unused)), alloced_heap_t* heap, char* ptr){
     char* scan = heap->start;
 
     while (scan < heap->end) {
         inuse_chunk_t *chunk = (inuse_chunk_t*)scan;
-        size_t payload_size = chunk->size & __CHUNK_SIZE_MASK;
+        size_t payload_size = chunk->size & (size_t)__CHUNK_SIZE_MASK;
 
         if( !(chunk->size & __CURR_IN_USE_FLAG_MASK) ) {
             scan += HEADER_SIZE + payload_size;
@@ -182,7 +182,7 @@ static void gc_mark_task(platform_ctx_t* ctx) {
     gc_mark_registers(ctx);
 }
 
-static void gc_mark() {
+static void gc_mark(void) {
     wait_q_metadata_t* head = roots->head;
     wait_q_metadata_t* tm = roots->head;
 
@@ -200,7 +200,7 @@ static void gc_mark() {
 }
 
 
-static void gc_sweep() {
+static void gc_sweep(void) {
 
     /*  
         go through all arenas, all heaps 
@@ -218,10 +218,10 @@ static void gc_sweep() {
             while (scan < heap->end) {
 
                 inuse_chunk_t *chunk = (inuse_chunk_t*)scan;
-                size_t payload_size = chunk->size & __CHUNK_SIZE_MASK;
+                size_t payload_size = chunk->size & (size_t)__CHUNK_SIZE_MASK;
 
                 if( chunk->prev_size & __GC_MARK_FLAG_MASK) {
-                    chunk->prev_size &= ~__GC_MARK_FLAG_MASK;
+                    chunk->prev_size &= ~(size_t)__GC_MARK_FLAG_MASK;
                 } else if(chunk->size & __CURR_IN_USE_FLAG_MASK) {
                     release(ar, (char*)chunk + HEADER_SIZE);
                 }
@@ -232,7 +232,7 @@ static void gc_sweep() {
     }
 }
 
-static void gc_collect() {
+static void gc_collect(void) {
     gc_stop_the_world();
     
     gc_mark();
@@ -241,7 +241,7 @@ static void gc_collect() {
     gc_resume_world();
 }
 
-static void* gc_run(void*) {
+static void* gc_run(void* arg __attribute__((unused))) {
     while (1) {
         gc_collect();
         usleep(GC_TIMEPERIOD);
@@ -253,7 +253,7 @@ static void* gc_run(void*) {
 /**
  * @brief Initialize the garbage collector.
  */
-void gc_init() {
+void gc_init(void) {
     roots = (safe_gcqueue_t*)malloc(sizeof(safe_gcqueue_t));
     safe_gcq_init(roots, INT32_MAX);
 }
@@ -261,7 +261,7 @@ void gc_init() {
 /**
  * @brief Start the garbage collector.
  */
-void gc_start() {
+void gc_start(void) {
     assert(roots != NULL);
 
     atomic_store(&gc_state.world_stopped, 0);
@@ -279,7 +279,7 @@ void gc_start() {
 /**
  * @brief Stop all mutator threads for garbage collection.
  */
-void gc_stop_the_world() {
+void gc_stop_the_world(void) {
     pthread_mutex_lock(&gc_state.lock);
     atomic_store(&gc_state.world_stopped, 1);
     
@@ -294,7 +294,7 @@ void gc_stop_the_world() {
 /**
  * @brief Resume all mutator threads after garbage collection.
  */
-void gc_resume_world() {
+void gc_resume_world(void) {
     pthread_mutex_lock(&gc_state.lock);
 
     atomic_store(&gc_state.world_stopped, 0);

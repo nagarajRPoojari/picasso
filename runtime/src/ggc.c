@@ -13,7 +13,7 @@ extern __thread arena_t* __arena__;
  * Must be called once at program startup before any GC-managed allocations.
  * Sets up internal GC data structures and prepares the system for memory management.
  */
-void runtime_init() {
+void runtime_init(void) {
     // GC_INIT();
 }
 
@@ -28,7 +28,7 @@ void runtime_init() {
  */
 void *__public__alloc(long size) {
     /* @todo: update to use allocate & test */
-    return allocate(__arena__, size);
+    return allocate(__arena__, (size_t)size);
 }
 
 /**
@@ -42,7 +42,7 @@ void *__public__alloc(long size) {
  */
 void *lang_alloc_atomic(long size) {
     // return GC_MALLOC_ATOMIC(size);
-    return allocate(__arena__, size);
+    return allocate(__arena__, (size_t)size);
 }
 
 /**
@@ -51,6 +51,6 @@ void *lang_alloc_atomic(long size) {
  * Primarily used for debugging or testing memory usage.
  * Scans all GC roots and reclaims unreachable memory immediately.
  */
-void runtime_collect() {
+void runtime_collect(void) {
     // GC_gcollect();
 }

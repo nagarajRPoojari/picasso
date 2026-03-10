@@ -16,7 +16,7 @@
 
 typedef struct {
     char* data;
-    int64_t size; 
+    size_t size; 
 } __public__string_t;
 
 

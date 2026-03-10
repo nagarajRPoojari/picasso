@@ -9,24 +9,37 @@ using "picasso/ex";
 
 class Test {
 
-    say x: int, y: int;
+    say TASK_COUNT: int = 30000;
 
     fn Test() {
         
     }
 
-    fn divide(a: int, b: int): (double,  ex.Error) {
-        if(b==0) {
-            return 0.0, new ex.RuntimeError("denominator is zero");
+    fn worker(count: int, wg: waitgroup) {
+        say c: int = 0;
+        foreach i in 0..count {    
+            c = c * 100 + c - 100;
+            if (c > 10) {
+                c -= 29;
+            } else {
+                c += 90;
+            }
         }
-        return a / b,  null;
+        sync.waitgroup_done(wg);
+    }
+
+    fn tester() {
+        say wg: waitgroup = sync.waitgroup_create();
+        foreach i in 0..this.TASK_COUNT {
+            sync.waitgroup_add(wg, 1);
+            thread(this.worker, i * 100, wg);
+        }
+        sync.waitgroup_wait(wg);
+        syncio.printf("all tasks done\n");
     }
 }
 
 fn start() {
     say t: start.Test = new start.Test();
-    say a: double, err: ex.Error = t.divide(10, 0);
-    if( err != null ){
-        rterr.die(err.toString());
-    }
+    t.tester();
 }

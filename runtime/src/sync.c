@@ -13,7 +13,7 @@ extern __thread arena_t* __arena__;
  * @brief Create a new read-write mutex
  * @return Pointer to the created read-write mutex
  */
-__public__rwmutex_t* __public__sync_rwmutex_create() {
+__public__rwmutex_t* __public__sync_rwmutex_create(void) {
     assert(__arena__ != NULL);
     __public__rwmutex_t* mux = (__public__rwmutex_t*)allocate(__arena__, sizeof(__public__rwmutex_t));
     safe_q_init(&mux->readers, SCHEDULER_LOCAL_QUEUE_SIZE);
@@ -155,7 +155,7 @@ void __public__sync_rwmutex_rwunlock(__public__rwmutex_t* mux) {
  * @brief Create a new mutex
  * @return Pointer to the created mutex
  */
-__public__mutex_t* __public__sync_mutex_create() {
+__public__mutex_t* __public__sync_mutex_create(void) {
     __public__mutex_t* mux = (__public__mutex_t*)allocate(__arena__, sizeof(__public__mutex_t));
     pthread_mutex_init(&mux->lock, NULL);
     safe_q_init(&mux->waiters, SCHEDULER_LOCAL_QUEUE_SIZE);
@@ -227,7 +227,7 @@ void __public__sync_mutex_unlock(__public__mutex_t* mtx) {
  * @brief Create a new wait group
  * @return Pointer to the created wait group
  */
-__public__waitgroup_t* __public__sync_waitgroup_create() {
+__public__waitgroup_t* __public__sync_waitgroup_create(void) {
     assert(__arena__ != NULL);
     __public__waitgroup_t* wg = (__public__waitgroup_t*)allocate(__arena__, sizeof(__public__waitgroup_t));
     safe_q_init(&wg->waiters, SCHEDULER_LOCAL_QUEUE_SIZE);
