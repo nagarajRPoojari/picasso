@@ -9,22 +9,18 @@ using "picasso/ex";
 
 class Test {
 
-    say TASK_COUNT: int = 30000;
+    say TASK_COUNT: int = 3;
 
     fn Test() {
         
     }
 
     fn worker(count: int, wg: waitgroup) {
-        say c: int = 0;
-        foreach i in 0..count {    
-            c = c * 100 + c - 100;
-            if (c > 10) {
-                c -= 29;
-            } else {
-                c += 90;
-            }
-        }
+        say i: int = 0;
+        while(i < 2) {
+            syncio.printf(""); 
+            i+=1;
+        }   
         sync.waitgroup_done(wg);
     }
 
@@ -37,9 +33,21 @@ class Test {
         sync.waitgroup_wait(wg);
         syncio.printf("all tasks done\n");
     }
-}
+
+    fn daemon(c: int) {
+        say i: int = 0;
+        syncio.printf("Starting loop\n");
+        while(i < 100) {
+            syncio.printf("i = ");
+            syncio.printf("%d", i);
+            syncio.printf("\n");
+            i = i + 1;
+        }
+        syncio.printf("Loop done\n");
+    }
+}   
 
 fn start() {
     say t: start.Test = new start.Test();
-    t.tester();
+    thread(t.daemon, 90);
 }

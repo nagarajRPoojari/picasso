@@ -19,6 +19,7 @@
 #include "gc.h"
 #include "initutils.h"
 #include "sigerr.h"
+#include "utils.h"
 
 __thread task_t* current_task;
 
@@ -60,6 +61,7 @@ void task_trampoline(uintptr_t _t, uintptr_t _p) {
     release(__global__arena__, payload->arg_types);
     release(__global__arena__, payload->arg_values);
     release(__global__arena__, payload);
+    return;
 }
 
 /**
@@ -301,11 +303,16 @@ void task_yield(kernel_thread_t* kt) {
  * If the current task’s preempt flag is set, it yields control.
  */
 void self_yield(void) {
+    /* Safety check: only yield if we're actually in a task context */
+    if (!current_task) {
+        return;
+    }
+    
     if (!atomic_load_explicit(&gc_state.world_stopped, memory_order_acquire)) {
         if(preempt[current_task->sched_id]) {
             kernel_thread_t* kt = kernel_thread_map[current_task->sched_id];
-            safe_q_push(&kt->ready_q, current_task);
             preempt[current_task->sched_id] = 0;
+            safe_q_push(&kt->ready_q, current_task);
             task_yield(kt);
         }
         return;
@@ -357,45 +364,50 @@ void* scheduler_run(void* arg) {
 
     init_error_handlers();
     while (1) {
-        task_t *t;
-        while (1) {
+        task_t *t = safe_q_pop_wait(&kt->ready_q);
+        
+        if(!t) {
+            return NULL;
+        }
+        
+        kt->current = t;
+
+        pthread_mutex_lock(&gc_state.add_lock);
+        atomic_fetch_add(&gc_state.total_threads, 1);
+        pthread_mutex_unlock(&gc_state.add_lock);
+
+        unsafe_ioq_remove(&kt->wait_q, t);
+
+        t->state = TASK_RUNNING;
+        task_resume(t, kt);
+
+        atomic_fetch_sub(&gc_state.total_threads, 1);
+
+        if (t->state == TASK_FINISHED) {
+            int task_id = t->id;  // Save ID before destroying
+            int remaining = atomic_fetch_sub(&task_count, 1) - 1;
+            task_destroy(t);
             
-            t = safe_q_pop_wait(&kt->ready_q);
-            if(!t) {
-                return NULL;
-            }
-            kt->current = t;
-
-            pthread_mutex_lock(&gc_state.add_lock);
-            atomic_fetch_add(&gc_state.total_threads, 1);
-            pthread_mutex_unlock(&gc_state.add_lock);
-
-            unsafe_ioq_remove(&kt->wait_q, t);
-
-            t->state = TASK_RUNNING;
-            task_resume(t, kt);
-
-            if (t->state == TASK_FINISHED) {
-                task_destroy(t);
-                int remaining = atomic_fetch_sub(&task_count, 1) - 1;
+            /* Check if all tasks are done */
+            if(remaining == 0) {
+                /* Longer delay to ensure any in-flight task spawns complete and get scheduled */
+                struct timespec ts = {0, 50000000}; /* 50ms */
+                nanosleep(&ts, NULL);
                 
-                /* Check if all tasks are done */
-                if(remaining == 0) {
-                    /* Small delay to ensure any in-flight task spawns complete */
-                    struct timespec ts = {0, 1000000}; /* 1ms */
-                    nanosleep(&ts, NULL);
-                    
-                    /* Recheck task_count after delay */
-                    if(atomic_load(&task_count) == 0) {
-                        /* Signal all scheduler threads to exit */
-                        for(int i=0; i<SCHEDULER_THREAD_POOL_SIZE; i++) {
-                            safe_q_push(&kernel_thread_map[i]->ready_q, NULL);
-                        }
-                        return NULL;
+                /* Recheck task_count after delay */
+                if(atomic_load(&task_count) == 0) {
+                    /* Signal all scheduler threads to exit */
+                    for(int i=0; i<SCHEDULER_THREAD_POOL_SIZE; i++) {
+                        safe_q_push(&kernel_thread_map[i]->ready_q, NULL);
                     }
+                    
+                    /* Give other threads time to process the NULL signal */
+                    struct timespec ts2 = {0, 10000000}; /* 10ms */
+                    nanosleep(&ts2, NULL);
+                    
+                    return NULL;
                 }
             }
-            atomic_fetch_sub(&gc_state.total_threads, 1);
         }
     }
     return NULL; 

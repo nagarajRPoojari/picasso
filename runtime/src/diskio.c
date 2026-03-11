@@ -16,6 +16,7 @@
 #include "task.h"
 #include "scheduler.h"
 #include "alloc.h"
+#include "utils.h"
 
 extern __thread arena_t* __arena__;
 extern arena_t* __global__arena__;
@@ -701,10 +702,14 @@ ssize_t __public__syncio_printf(__public__string_t* fmt, ...) {
 
     va_end(ap);
 
+    /* handle empty output */
+    if (len == 0 || !out)
+        return 0;
+
     /* write raw bytes */
     size_t total = 0;
-    while (total < (size_t)len) {
-        ssize_t w = write(STDOUT_FILENO, out + total, (size_t)len - total);
+    while (total < len) {
+        ssize_t w = write(STDOUT_FILENO, out + total, len - total);
         if (w < 0) {
             if (errno == EINTR)
                 continue;

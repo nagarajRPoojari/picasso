@@ -1,4 +1,6 @@
 #include "context.h"
+#include "task.h"
+#include "scheduler.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,12 +8,14 @@
 extern void platform_ctx_entry(void);
 
 void task_completed_callback(platform_ctx_t* current, platform_ctx_t* parent) {
-    fflush(stdout);
-    
+    /* Use the parent context that was stored on the stack during task creation */
+    extern __thread task_t* current_task;
+    /* The parent pointer was stored on the stack and should point to the scheduler context */
     if (parent) {
         platform_ctx_switch(current, parent);
     } else {
-        exit(0);
+        printf("[ERROR] No parent context to return to!\n");
+        exit(1);
     }
     
     while(1) {}

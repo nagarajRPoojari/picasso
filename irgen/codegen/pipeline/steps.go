@@ -1,6 +1,8 @@
 package pipeline
 
 import (
+	"fmt"
+
 	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/types"
 	"github.com/nagarajRPoojari/picasso/irgen/ast"
@@ -126,8 +128,9 @@ func (t *Pipeline) insertYields() {
 
 			for _, inst := range blk.Insts {
 				// If this is a call instruction, insert yield BEFORE it
-				switch inst.(type) {
+				switch fn := inst.(type) {
 				case *ir.InstCall:
+					fmt.Printf("fn.Sig().Params: %v\n", fn.Sig().Params)
 					newInsts = append(newInsts, ir.NewCall(yieldFunc))
 				}
 
