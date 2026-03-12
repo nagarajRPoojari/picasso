@@ -1,53 +1,16 @@
+using "c/ffi/coo";
 using "builtin/syncio";
-using "builtin/array";
-using "builtin/atomics";
-using "builtin/sync";
-using "builtin/rterr";
-using "types" as tt;
-
-using "picasso/ex";
-
-class Test {
-
-    say TASK_COUNT: int = 3;
-
-    fn Test() {
-        
-    }
-
-    fn worker(count: int, wg: waitgroup) {
-        say i: int = 0;
-        while(i < 2) {
-            syncio.printf(""); 
-            i+=1;
-        }   
-        sync.waitgroup_done(wg);
-    }
-
-    fn tester() {
-        say wg: waitgroup = sync.waitgroup_create();
-        foreach i in 0..this.TASK_COUNT {
-            sync.waitgroup_add(wg, 1);
-            thread(this.worker, i * 100, wg);
-        }
-        sync.waitgroup_wait(wg);
-        syncio.printf("all tasks done\n");
-    }
-
-    fn daemon(c: int) {
-        say i: int = 0;
-        syncio.printf("Starting loop\n");
-        while(i < 100) {
-            syncio.printf("i = ");
-            syncio.printf("%d", i);
-            syncio.printf("\n");
-            i = i + 1;
-        }
-        syncio.printf("Loop done\n");
-    }
-}   
 
 fn start() {
-    say t: start.Test = new start.Test();
-    thread(t.daemon, 90);
+    // Test 1: Original pointer-based API (existing test)
+    say xy: struct.Coordinate = coo.create(10, 200);
+    coo.dump(xy);
+    
+    // Test 2: Bare struct return with unwrapping (multiple return values)
+    say x: int, y: int = coo.create_value(1920, 1080);
+    syncio.printf("create_value: x=%d y=%d\n", x, y);
+    
+    // Test 3: Wrapper for pointer-based API with unwrapping
+    say width: int, height: int = coo.get_dimensions_wrapper();
+    syncio.printf("dimensions: width=%d height=%d\n", width, height);
 }

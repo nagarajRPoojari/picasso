@@ -2,15 +2,25 @@ package libutils
 
 import (
 	"github.com/llir/llvm/ir"
+	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
 	"github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils"
 	typedef "github.com/nagarajRPoojari/picasso/irgen/codegen/type"
 	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
-// @todo: validate params & raise error
+// CallCFunc handles FFI calls to C functions with support for:
+// 1. Primitive types (pass by value)
+// 2. Struct pointers (pass by reference - class instances)
+// 3. Bare structs (pass/return by value - for multiple returns)
+//
+// Key behaviors:
+// - Arguments: Converts class instances (struct pointers) to bare struct values when C expects struct by value
+// - Returns: Wraps bare struct returns as Tuples for multiple return value support
 func CallCFunc(typeHandler *typedef.TypeHandler, f *ir.Func, bh *bc.BlockHolder, args []typedef.Var) typedef.Var {
 	castedArgs := make([]value.Value, 0)
+
+	// Process arguments
 	for i, arg := range args {
 		if i >= len(f.Sig.Params) {
 			castedArgs = append(castedArgs, arg.Load(bh))
@@ -18,9 +28,79 @@ func CallCFunc(typeHandler *typedef.TypeHandler, f *ir.Func, bh *bc.BlockHolder,
 		}
 
 		expected := f.Sig.Params[i]
-		raw := typeHandler.ImplicitTypeCast(bh, utils.GetTypeString(expected), arg.Load(bh))
-		castedArgs = append(castedArgs, raw)
+		argVal := arg.Load(bh)
+
+		// Handle struct by value: if C expects bare struct but we have a pointer (class instance)
+		// Load the struct value from the pointer
+		if expectedStruct, ok := expected.(*types.StructType); ok {
+			if ptrType, isPtrType := argVal.Type().(*types.PointerType); isPtrType {
+				if _, isStructPtr := ptrType.ElemType.(*types.StructType); isStructPtr {
+					// Load the struct value from the pointer
+					argVal = bh.N.NewLoad(expectedStruct, argVal)
+				}
+			}
+		}
+
+		// Apply implicit type casting
+		argVal = typeHandler.ImplicitTypeCast(bh, utils.GetTypeString(expected), argVal)
+		castedArgs = append(castedArgs, argVal)
 	}
+
 	result := bh.N.NewCall(f, castedArgs...)
+	retType := f.Sig.RetType
+	if retType == types.Void {
+		return nil
+	}
+
+	// If return type is a bare struct (not a pointer), wrap it as a Tuple
+	// This enables multiple return values via struct destructuring
+	if structType, ok := retType.(*types.StructType); ok {
+		// Extract type names from struct fields for tuple creation
+		typeNames := extractTypeNamesFromStruct(structType)
+		// Return Tuple directly - don't go through BuildVar as the struct type may not be registered
+		return typedef.NewTupleFromStruct(bh, result, structType, typeNames)
+	}
+
+	// LLVM sometimes represents small structs as arrays (e.g., {i64, i64} becomes [2 x i64])
+	// Check if this is an array that should be treated as a struct for multiple returns
+	if arrayType, ok := retType.(*types.ArrayType); ok {
+		// Convert array to tuple for multiple return values
+		// Extract each element from the array
+		typeNames := make([]string, arrayType.Len)
+		for i := uint64(0); i < arrayType.Len; i++ {
+			typeNames[i] = utils.GetTypeString(arrayType.ElemType)
+		}
+
+		// Create a synthetic struct type from the array
+		structFields := make([]types.Type, arrayType.Len)
+		for i := range structFields {
+			structFields[i] = arrayType.ElemType
+		}
+		syntheticStruct := types.NewStruct(structFields...)
+
+		// Return as Tuple
+		return typedef.NewTupleFromStruct(bh, result, syntheticStruct, typeNames)
+	}
+
+	// For pointer types (including struct pointers), check if it's a registered class
+	if ptrType, ok := retType.(*types.PointerType); ok {
+		if _, ok := ptrType.ElemType.(*types.StructType); ok {
+			// This is a struct pointer - try to build as a class
+			typeName := utils.GetTypeString(retType)
+			return typeHandler.BuildVar(bh, typedef.NewType(typeName), result)
+		}
+	}
+
+	// For all other types (primitives, simple pointers), build a regular Var
 	return typeHandler.BuildVar(bh, typedef.NewType(utils.GetTypeString(result.Type())), result)
+}
+
+// extractTypeNamesFromStruct extracts type names from a struct's fields
+// This is used to create proper type information for Tuple wrapping
+func extractTypeNamesFromStruct(structType *types.StructType) []string {
+	typeNames := make([]string, len(structType.Fields))
+	for i, field := range structType.Fields {
+		typeNames[i] = utils.GetTypeString(field)
+	}
+	return typeNames
 }

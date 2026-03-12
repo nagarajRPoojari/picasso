@@ -14,6 +14,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "str.h"
+
 /* Function Prototypes */
 /**
  * @brief Get current errno value.
