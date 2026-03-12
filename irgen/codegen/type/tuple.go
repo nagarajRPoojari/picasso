@@ -18,9 +18,10 @@ import (
 // This allows functions to return multiple values by returning a struct.
 type Tuple struct {
 	NativeType *types.StructType // The LLVM struct type
-	Value      value.Value       // Pointer to the allocated struct
+	Value      value.Value       // Pointer to the allocated struct or array value
 	Types      []Var             // The component variables/types
 	TypeNames  []string          // Names of the component types
+	isArray    bool              // True if Value is an array (LLVM's struct representation)
 }
 
 // NewTuple creates a new tuple with the given component types and registered struct type
@@ -54,6 +55,26 @@ func NewTupleFromStruct(block *bc.BlockHolder, structVal value.Value, structType
 		NativeType: structType,
 		Value:      structVal, // Use the struct value directly
 		TypeNames:  typeNames,
+	}
+}
+
+// NewTupleFromArray creates a tuple from an array value
+// Arrays are used by LLVM to represent small structs in function returns
+func NewTupleFromArray(block *bc.BlockHolder, arrayVal value.Value, arrayType *types.ArrayType, typeNames []string) *Tuple {
+	// Create a synthetic struct type that matches the array layout
+	structFields := make([]types.Type, arrayType.Len)
+	for i := range structFields {
+		structFields[i] = arrayType.ElemType
+	}
+	syntheticStruct := types.NewStruct(structFields...)
+
+	// Store the array value so we can extract from it
+	// Arrays use extractvalue with array indices, not struct indices
+	return &Tuple{
+		NativeType: syntheticStruct,
+		Value:      arrayVal, // Store array value directly
+		TypeNames:  typeNames,
+		isArray:    true, // Flag to indicate this is from an array
 	}
 }
 

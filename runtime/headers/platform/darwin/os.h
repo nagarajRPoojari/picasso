@@ -240,7 +240,11 @@ int __public__os_fork(void);
  * @param options Wait options.
  * @return PID or -1 on error.
  */
-int __public__os_waitpid(int pid, int *status, int options);
+typedef struct __public__os_waitpid_rt {
+    int64_t pid;
+    int64_t status;
+} __public__os_waitpid_rt_t;
+__public__os_waitpid_rt_t __public__os_waitpid(int pid, int options);
 
 /**
  * @brief Send a signal to a process.

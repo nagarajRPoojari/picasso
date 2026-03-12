@@ -1,16 +1,17 @@
-using "c/ffi/coo";
 using "builtin/syncio";
+using "builtin/os";
+using "builtin/array";
+using "builtin/strings";
 
-fn start() {
-    // Test 1: Original pointer-based API (existing test)
-    say xy: struct.Coordinate = coo.create(10, 200);
-    coo.dump(xy);
-    
-    // Test 2: Bare struct return with unwrapping (multiple return values)
-    say x: int, y: int = coo.create_value(1920, 1080);
-    syncio.printf("create_value: x=%d y=%d\n", x, y);
-    
-    // Test 3: Wrapper for pointer-based API with unwrapping
-    say width: int, height: int = coo.get_dimensions_wrapper();
-    syncio.printf("dimensions: width=%d height=%d\n", width, height);
+fn start(args: []string) {
+    if(strings.compare(args[1], "init") == 0) {
+        syncio.printf("running init program\n");
+        os.exit(0);
+    }
+
+    say pid: int = os.fork();
+    if(pid == 0) {
+            
+    }
+
 }

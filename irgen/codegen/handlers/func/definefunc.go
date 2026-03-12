@@ -201,11 +201,20 @@ func (t *FuncHandler) DefineMainFunc(fn *ast.FunctionDefinitionStatement, avoid 
 	// t.Init(bh)
 	bh.N.NewCall(t.st.CI.Funcs[c.FUNC_RUNTIME_INIT])
 
-	if len(fn.Parameters) != 0 {
-		errorutils.Abort(errorutils.InvalidMainMethodSignature, "parameters are not allowed in main function")
+	if len(fn.Parameters) == 0 {
+		errorutils.Abort(errorutils.InvalidMainMethodSignature, "args missing main function")
 	}
 	if fn.ReturnType != nil {
 		errorutils.Abort(errorutils.InvalidMainMethodSignature, "expected no return type for main functions")
+	}
+
+	for i, p := range f.Params {
+		if i < len(fn.Parameters) {
+			pt := fn.Parameters[i].Type
+			paramType := tf.NewType(t.st.ResolveAlias(pt.Get()), t.st.ResolveAlias(pt.GetUnderlyingType()))
+			t.st.Vars.AddNewVar(p.LocalName, t.st.TypeHandler.BuildVar(bh, paramType, p))
+			fmt.Printf("p.LocalName: %v\n", p.LocalName)
+		}
 	}
 
 	old := bh.N

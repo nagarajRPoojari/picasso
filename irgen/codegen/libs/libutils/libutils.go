@@ -64,22 +64,22 @@ func CallCFunc(typeHandler *typedef.TypeHandler, f *ir.Func, bh *bc.BlockHolder,
 	// LLVM sometimes represents small structs as arrays (e.g., {i64, i64} becomes [2 x i64])
 	// Check if this is an array that should be treated as a struct for multiple returns
 	if arrayType, ok := retType.(*types.ArrayType); ok {
-		// Convert array to tuple for multiple return values
-		// Extract each element from the array
+		// For arrays, we need to allocate space and store the array, then extract elements
+		// This is because extractvalue works differently for arrays vs structs
+
+		// Allocate space for the array
+		arraySlot := bh.N.NewAlloca(arrayType)
+		bh.N.NewStore(result, arraySlot)
+
+		// Extract type names
 		typeNames := make([]string, arrayType.Len)
 		for i := uint64(0); i < arrayType.Len; i++ {
 			typeNames[i] = utils.GetTypeString(arrayType.ElemType)
 		}
 
-		// Create a synthetic struct type from the array
-		structFields := make([]types.Type, arrayType.Len)
-		for i := range structFields {
-			structFields[i] = arrayType.ElemType
-		}
-		syntheticStruct := types.NewStruct(structFields...)
-
-		// Return as Tuple
-		return typedef.NewTupleFromStruct(bh, result, syntheticStruct, typeNames)
+		// Create a tuple-like wrapper for the array
+		// We'll use a custom array tuple type
+		return typedef.NewTupleFromArray(bh, result, arrayType, typeNames)
 	}
 
 	// For pointer types (including struct pointers), check if it's a registered class

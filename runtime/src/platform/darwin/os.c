@@ -75,8 +75,11 @@ int __public__os_fork(void) {
  * @param options Wait options.
  * @return PID or -1 on error.
  */
-int __public__os_waitpid(int pid, int *status, int options) {
-    return waitpid(pid, status, options);
+__public__os_waitpid_rt_t __public__os_waitpid(int pid, int options) {
+    int64_t status;
+    int64_t res = waitpid(pid, &status, options);
+     __public__os_waitpid_rt_t r;
+    return (__public__os_waitpid_rt_t){res, status};
 }
 
 /**

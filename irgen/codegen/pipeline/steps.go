@@ -103,7 +103,7 @@ func (t *Pipeline) defineMain() {
 	logger.Debug(t.st.ModuleName, "defining main func")
 	Loop(t.tree, func(st ast.FunctionDefinitionStatement) {
 		if st.Name == constants.MAIN {
-			f := t.st.Module.NewFunc(constants.MAIN, types.NewPointer(types.I8), ir.NewParam("", types.NewPointer(types.I8)))
+			f := t.st.Module.NewFunc(constants.MAIN, types.NewPointer(types.I8), ir.NewParam("args", types.NewPointer(c.Instance.Types[c.TYPE_ARRAY])))
 			t.st.MainFunc = f
 			t.m.GetFuncHandler().(*funcs.FuncHandler).DefineMainFunc(&st, make(map[string]struct{}))
 		}
