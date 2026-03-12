@@ -13,6 +13,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "str.h"
 
@@ -78,7 +79,6 @@ int __public__os_fork(void) {
 __public__os_waitpid_rt_t __public__os_waitpid(int pid, int options) {
     int64_t status;
     int64_t res = waitpid(pid, &status, options);
-     __public__os_waitpid_rt_t r;
     return (__public__os_waitpid_rt_t){res, status};
 }
 
@@ -95,22 +95,75 @@ int __public__os_kill(int pid, int sig) {
 /**
  * @brief Execute a program.
  * @param path Executable path.
- * @param argv Argument vector.
- * @param envp Environment.
+ * @param argv Argument vector (array of __public__string_t).
+ * @param envp Environment (array of __public__string_t).
  * @return -1 on error.
  */
-int __public__os_execve(__public__string_t *path, char *const argv[], char *const envp[]) {
-    return execve(path->data, argv, envp);
+int __public__os_execve(__public__string_t *path, __public__array_t* argv, __public__array_t* envp) {
+    // Convert array of __public__string_t to char*[]
+    size_t argc = argv->length;
+    size_t envc = envp->length;
+    
+    char **argv_constructed = (char **)malloc((argc + 1) * sizeof(char *));
+    char **envp_constructed = (char **)malloc((envc + 1) * sizeof(char *));
+    
+    if (!argv_constructed || !envp_constructed) {
+        free(argv_constructed);
+        free(envp_constructed);
+        return -1;
+    }
+    
+    // Extract char* from each __public__string_t in argv
+    __public__string_t **argv_strings = (__public__string_t **)argv->data;
+    for (size_t i = 0; i < argc; i++) {
+        argv_constructed[i] = argv_strings[i]->data;
+    }
+    argv_constructed[argc] = NULL;
+    
+    // Extract char* from each __public__string_t in envp
+    __public__string_t **envp_strings = (__public__string_t **)envp->data;
+    for (size_t i = 0; i < envc; i++) {
+        envp_constructed[i] = envp_strings[i]->data;
+    }
+    envp_constructed[envc] = NULL;
+    
+    int result = execve(path->data, argv_constructed, envp_constructed);
+    
+    // execve only returns on error, but free anyway for completeness
+    free(argv_constructed);
+    free(envp_constructed);
+    
+    return result;
 }
 
 /**
  * @brief Execute a program using PATH lookup.
  * @param file Executable name.
- * @param argv Argument vector.
+ * @param argv Argument vector (array of __public__string_t).
  * @return -1 on error.
  */
-int __public__os_execvp(__public__string_t *file, char *const argv[]) {
-    return execvp(file->data, argv);
+int __public__os_execvp(__public__string_t *file, __public__array_t* argv) {
+    // Convert array of __public__string_t to char*[]
+    size_t argc = argv->length;
+    
+    char **argv_constructed = (char **)malloc((argc + 1) * sizeof(char *));
+    if (!argv_constructed) {
+        return -1;
+    }
+    
+    // Extract char* from each __public__string_t
+    __public__string_t **argv_strings = (__public__string_t **)argv->data;
+    for (size_t i = 0; i < argc; i++) {
+        argv_constructed[i] = argv_strings[i]->data;
+    }
+    argv_constructed[argc] = NULL;
+    
+    int result = execvp(file->data, argv_constructed);
+    
+    // execvp only returns on error, but free anyway for completeness
+    free(argv_constructed);
+    
+    return result;
 }
 
 /**
@@ -157,8 +210,8 @@ int __public__os_unsetenv(__public__string_t *key) {
  * @param size Buffer size.
  * @return 0 on success, -1 on error.
  */
-int __public__os_getcwd(char *buf, size_t size) {
-    return getcwd(buf, size) ? 0 : -1;
+int __public__os_getcwd(char *buf, int64_t size) {
+    return getcwd(buf, (size_t)size) ? 0 : -1;
 }
 
 /**
@@ -260,18 +313,30 @@ int __public__os_setsid(void) { return setsid(); }
  * @param rlim     Output rlimit structure.
  * @return 0 on success, -1 on error.
  */
-int __public__os_getrlimit(int resource, void *rlim) {
-    return getrlimit(resource, (struct rlimit *)rlim);
+__public__os_getrlimit_rt_t __public__os_getrlimit(int resource) {
+    struct rlimit rlim;
+    int result = getrlimit(resource, &rlim);
+    
+    __public__os_getrlimit_rt_t ret;
+    ret.result = (int64_t)result;
+    ret.cur = (int64_t)rlim.rlim_cur;
+    ret.max = (int64_t)rlim.rlim_max;
+    
+    return ret;
 }
 
 /**
  * @brief Set resource limits.
  * @param resource Resource type.
- * @param rlim     Input rlimit structure.
+ * @param cur      Soft limit.
+ * @param max      Hard limit.
  * @return 0 on success, -1 on error.
  */
-int __public__os_setrlimit(int resource, const void *rlim) {
-    return setrlimit(resource, (const struct rlimit *)rlim);
+int __public__os_setrlimit(int resource, int64_t cur, int64_t max) {
+    struct rlimit rlim;
+    rlim.rlim_cur = (rlim_t)cur;
+    rlim.rlim_max = (rlim_t)max;
+    return setrlimit(resource, &rlim);
 }
 
 /**
@@ -311,8 +376,8 @@ int __public__os_close(int fd) {
  * @param n   Bytes to read.
  * @return Bytes read or -1.
  */
-ssize_t __public__os_read(int fd, void *buf, size_t n) {
-    return read(fd, buf, n);
+int64_t __public__os_read(int fd, void *buf, int64_t n) {
+    return (int64_t)read(fd, buf, (size_t)n);
 }
 
 /**
@@ -322,8 +387,8 @@ ssize_t __public__os_read(int fd, void *buf, size_t n) {
  * @param n   Bytes to write.
  * @return Bytes written or -1.
  */
-ssize_t __public__os_write(int fd, const void *buf, size_t n) {
-    return write(fd, buf, n);
+int64_t __public__os_write(int fd, const void *buf, int64_t n) {
+    return (int64_t)write(fd, buf, (size_t)n);
 }
 
 /**
@@ -333,18 +398,36 @@ ssize_t __public__os_write(int fd, const void *buf, size_t n) {
  * @param whence Seek mode.
  * @return New offset or -1.
  */
-off_t __public__os_lseek(int fd, off_t offset, int whence) {
-    return lseek(fd, offset, whence);
+int64_t __public__os_lseek(int fd, int64_t offset, int whence) {
+    return (int64_t)lseek(fd, (off_t)offset, whence);
 }
 
 /**
  * @brief Get file status.
  * @param fd File descriptor.
- * @param st Pointer to struct stat.
- * @return 0 on success or -1 on error.
+ * @return Stat structure with result.
  */
-int __public__os_fstat(int fd, struct stat *st) {
-    return fstat(fd, st);
+__public__os_fstat_rt_t __public__os_fstat(int fd) {
+    struct stat st;
+    int result = fstat(fd, &st);
+    
+    __public__os_fstat_rt_t ret;
+    ret.result = (int64_t)result;
+    ret.dev = (int64_t)st.st_dev;
+    ret.ino = (int64_t)st.st_ino;
+    ret.mode = (int64_t)st.st_mode;
+    ret.nlink = (int64_t)st.st_nlink;
+    ret.uid = (int64_t)st.st_uid;
+    ret.gid = (int64_t)st.st_gid;
+    ret.rdev = (int64_t)st.st_rdev;
+    ret.size = (int64_t)st.st_size;
+    ret.blksize = (int64_t)st.st_blksize;
+    ret.blocks = (int64_t)st.st_blocks;
+    ret.atime = (int64_t)st.st_atime;
+    ret.mtime = (int64_t)st.st_mtime;
+    ret.ctime = (int64_t)st.st_ctime;
+    
+    return ret;
 }
 
 /**
@@ -377,8 +460,8 @@ int __public__os_dup2(int oldfd, int newfd) {
  *
  * @return Result or -1 on error.
  */
-int __public__os_fcntl(int fd, int cmd, long arg) {
-    return fcntl(fd, cmd, arg);
+int64_t __public__os_fcntl(int fd, int cmd, int64_t arg) {
+    return (int64_t)fcntl(fd, cmd, (long)arg);
 }
 
 #ifndef RENAME_EXCL
@@ -486,35 +569,71 @@ int __public__os_symlink(__public__string_t *target, __public__string_t *linkpat
  * @param size Buffer size.
  * @return Bytes read or -1 on error.
  */
-ssize_t __public__os_readlink(__public__string_t *path, char *buf, size_t size) {
-    return readlinkat(AT_FDCWD, path->data, buf, size);
+int64_t __public__os_readlink(__public__string_t *path, char *buf, int64_t size) {
+    return (int64_t)readlinkat(AT_FDCWD, path->data, buf, (size_t)size);
 }
 
 /**
  * @brief Get file status.
  * @param path File path.
- * @param st   Output stat structure.
- * @return 0 on success, -1 on error.
+ * @return Stat structure with result.
  */
-int __public__os_stat(__public__string_t *path, struct stat *st) {
-    return fstatat(AT_FDCWD, path->data, st, 0);
+__public__os_stat_rt_t __public__os_stat(__public__string_t *path) {
+    struct stat st;
+    int result = fstatat(AT_FDCWD, path->data, &st, 0);
+    
+    __public__os_stat_rt_t ret;
+    ret.result = (int64_t)result;
+    ret.dev = (int64_t)st.st_dev;
+    ret.ino = (int64_t)st.st_ino;
+    ret.mode = (int64_t)st.st_mode;
+    ret.nlink = (int64_t)st.st_nlink;
+    ret.uid = (int64_t)st.st_uid;
+    ret.gid = (int64_t)st.st_gid;
+    ret.rdev = (int64_t)st.st_rdev;
+    ret.size = (int64_t)st.st_size;
+    ret.blksize = (int64_t)st.st_blksize;
+    ret.blocks = (int64_t)st.st_blocks;
+    ret.atime = (int64_t)st.st_atime;
+    ret.mtime = (int64_t)st.st_mtime;
+    ret.ctime = (int64_t)st.st_ctime;
+    
+    return ret;
 }
 
 /**
  * @brief Get file status (don't follow symlinks).
  * @param path File path.
- * @param st   Output stat structure.
- * @return 0 on success, -1 on error.
+ * @return Stat structure with result.
  */
-int __public__os_lstat(__public__string_t *path, struct stat *st) {
-    return fstatat(AT_FDCWD, path->data, st, AT_SYMLINK_NOFOLLOW);
+__public__os_stat_rt_t __public__os_lstat(__public__string_t *path) {
+    struct stat st;
+    int result = fstatat(AT_FDCWD, path->data, &st, AT_SYMLINK_NOFOLLOW);
+    
+    __public__os_stat_rt_t ret;
+    ret.result = (int64_t)result;
+    ret.dev = (int64_t)st.st_dev;
+    ret.ino = (int64_t)st.st_ino;
+    ret.mode = (int64_t)st.st_mode;
+    ret.nlink = (int64_t)st.st_nlink;
+    ret.uid = (int64_t)st.st_uid;
+    ret.gid = (int64_t)st.st_gid;
+    ret.rdev = (int64_t)st.st_rdev;
+    ret.size = (int64_t)st.st_size;
+    ret.blksize = (int64_t)st.st_blksize;
+    ret.blocks = (int64_t)st.st_blocks;
+    ret.atime = (int64_t)st.st_atime;
+    ret.mtime = (int64_t)st.st_mtime;
+    ret.ctime = (int64_t)st.st_ctime;
+    
+    return ret;
 }
 
 /*
  * Darwin directory reading.
  * WARNING: layout is struct dirent (NOT linux_dirent64).
  */
-int __public__os_getdents64(int fd, void *buf, size_t size) {
+int __public__os_getdents64(int fd, void *buf, int64_t size) {
     DIR *dir;
     struct dirent *entry;
     char *ptr = buf;
@@ -553,12 +672,12 @@ int __public__os_getdents64(int fd, void *buf, size_t size) {
  * @return Mapped address or MAP_FAILED.
  */
 void *__public__os_mmap(void *addr,
-                        size_t len,
+                        int64_t len,
                         int prot,
                         int flags,
                         int fd,
-                        off_t off) {
-    return mmap(addr, len, prot, flags, fd, off);
+                        int64_t off) {
+    return mmap(addr, (size_t)len, prot, flags, fd, (off_t)off);
 }
 
 /**
@@ -567,20 +686,20 @@ void *__public__os_mmap(void *addr,
  * @param len  Length.
  * @return 0 on success, -1 on error.
  */
-int __public__os_munmap(void *addr, size_t len) {
-    return munmap(addr, len);
+int __public__os_munmap(void *addr, int64_t len) {
+    return munmap(addr, (size_t)len);
 }
 
-size_t __public__os_page_size(void) {
-    return (size_t)sysconf(_SC_PAGESIZE);
+int64_t __public__os_page_size(void) {
+    return (int64_t)sysconf(_SC_PAGESIZE);
 }
 
-int __public__os_mprotect(void *addr, size_t len, int prot) {
-    return mprotect(addr, len, prot);
+int __public__os_mprotect(void *addr, int64_t len, int prot) {
+    return mprotect(addr, (size_t)len, prot);
 }
 
-int __public__os_madvise(void *addr, size_t len, int advice) {
-    return madvise(addr, len, advice);
+int __public__os_madvise(void *addr, int64_t len, int advice) {
+    return madvise(addr, (size_t)len, advice);
 }
 
 /*
@@ -594,13 +713,14 @@ int __public__os_madvise(void *addr, size_t len, int advice) {
 
 int __public__os_futex_wait(int *uaddr,
                             int val,
-                            const struct timespec *timeout) {
+                            const void *timeout) {
+    const struct timespec *ts = (const struct timespec *)timeout;
     uint32_t timeout_us = 0;
 
-    if (timeout) {
+    if (ts) {
         timeout_us = (uint32_t)(
-            timeout->tv_sec * 1000000 +
-            timeout->tv_nsec / 1000
+            ts->tv_sec * 1000000 +
+            ts->tv_nsec / 1000
         );
     }
 

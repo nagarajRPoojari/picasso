@@ -247,6 +247,55 @@ typedef struct __public__os_waitpid_rt {
 __public__os_waitpid_rt_t __public__os_waitpid(int pid, int options);
 
 /**
+ * @brief Return type for os_fstat
+ */
+typedef struct __public__os_fstat_rt {
+    int64_t result;      // 0 on success, -1 on error
+    int64_t dev;         // Device ID
+    int64_t ino;         // Inode number
+    int64_t mode;        // File mode
+    int64_t nlink;       // Number of hard links
+    int64_t uid;         // User ID
+    int64_t gid;         // Group ID
+    int64_t rdev;        // Device ID (if special file)
+    int64_t size;        // Total size in bytes
+    int64_t blksize;     // Block size for filesystem I/O
+    int64_t blocks;      // Number of 512B blocks allocated
+    int64_t atime;       // Access time (seconds)
+    int64_t mtime;       // Modification time (seconds)
+    int64_t ctime;       // Status change time (seconds)
+} __public__os_fstat_rt_t;
+
+/**
+ * @brief Return type for os_stat and os_lstat
+ */
+typedef struct __public__os_stat_rt {
+    int64_t result;      // 0 on success, -1 on error
+    int64_t dev;         // Device ID
+    int64_t ino;         // Inode number
+    int64_t mode;        // File mode
+    int64_t nlink;       // Number of hard links
+    int64_t uid;         // User ID
+    int64_t gid;         // Group ID
+    int64_t rdev;        // Device ID (if special file)
+    int64_t size;        // Total size in bytes
+    int64_t blksize;     // Block size for filesystem I/O
+    int64_t blocks;      // Number of 512B blocks allocated
+    int64_t atime;       // Access time (seconds)
+    int64_t mtime;       // Modification time (seconds)
+    int64_t ctime;       // Status change time (seconds)
+} __public__os_stat_rt_t;
+
+/**
+ * @brief Return type for os_getrlimit
+ */
+typedef struct __public__os_getrlimit_rt {
+    int64_t result;      // 0 on success, -1 on error
+    int64_t cur;         // Soft limit
+    int64_t max;         // Hard limit (ceiling for cur)
+} __public__os_getrlimit_rt_t;
+
+/**
  * @brief Send a signal to a process.
  * @param pid Process ID.
  * @param sig Signal number.
@@ -261,7 +310,7 @@ int __public__os_kill(int pid, int sig);
  * @param envp Environment.
  * @return -1 on error.
  */
-int __public__os_execve(__public__string_t *path, char *const argv[], char *const envp[]);
+int __public__os_execve(__public__string_t *path, __public__array_t* argv, __public__array_t* envp);
 
 /**
  * @brief Execute a program using PATH lookup.
@@ -269,7 +318,7 @@ int __public__os_execve(__public__string_t *path, char *const argv[], char *cons
  * @param argv Argument vector.
  * @return -1 on error.
  */
-int __public__os_execvp(__public__string_t *file, char *const argv[]);
+int __public__os_execvp(__public__string_t *file, __public__array_t* argv);
 
 /**
  * @brief Get environment variable array.
@@ -306,7 +355,7 @@ int __public__os_unsetenv(__public__string_t *key);
  * @param size Buffer size.
  * @return 0 on success, -1 on error.
  */
-int __public__os_getcwd(char *buf, size_t size);
+int __public__os_getcwd(char *buf, int64_t size);
 
 /**
  * @brief Change working directory.
@@ -395,7 +444,7 @@ int __public__os_close(int fd);
  * @param n   Bytes to read.
  * @return Bytes read or -1.
  */
-ssize_t __public__os_read(int fd, void *buf, size_t n);
+int64_t __public__os_read(int fd, void *buf, int64_t n);
 
 /**
  * @brief Write to a file descriptor.
@@ -404,7 +453,7 @@ ssize_t __public__os_read(int fd, void *buf, size_t n);
  * @param n   Bytes to write.
  * @return Bytes written or -1.
  */
-ssize_t __public__os_write(int fd, const void *buf, size_t n);
+int64_t __public__os_write(int fd, const void *buf, int64_t n);
 
 /**
  * @brief Reposition file offset.
@@ -413,7 +462,14 @@ ssize_t __public__os_write(int fd, const void *buf, size_t n);
  * @param whence Seek mode.
  * @return New offset or -1.
  */
-off_t __public__os_lseek(int fd, off_t offset, int whence);
+int64_t __public__os_lseek(int fd, int64_t offset, int whence);
+
+/**
+ * @brief Get file status.
+ * @param fd File descriptor.
+ * @return Stat structure with result.
+ */
+__public__os_fstat_rt_t __public__os_fstat(int fd);
 
 /**
  * @brief Duplicate a file descriptor.
@@ -441,7 +497,7 @@ int __public__os_dup2(int oldfd, int newfd);
  *
  * @return Result or -1 on error.
  */
-int __public__os_fcntl(int fd, int cmd, long arg);
+int64_t __public__os_fcntl(int fd, int cmd, int64_t arg);
 
 /**
  * @brief Map memory.
@@ -455,7 +511,7 @@ int __public__os_fcntl(int fd, int cmd, long arg);
  *
  * @return Mapped address or MAP_FAILED.
  */
-void *__public__os_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t off) ;
+void *__public__os_mmap(void *addr, int64_t len, int prot, int flags, int fd, int64_t off);
 
 /**
  * @brief Unmap memory.
@@ -463,8 +519,80 @@ void *__public__os_mmap(void *addr, size_t len, int prot, int flags, int fd, off
  * @param len  Length.
  * @return 0 on success, -1 on error.
  */
-int __public__os_munmap(void *addr, size_t len);
+int __public__os_munmap(void *addr, int64_t len);
 
+/**
+ * @brief Get page size.
+ * @return Page size in bytes.
+ */
+int64_t __public__os_page_size(void);
+
+/**
+ * @brief Change memory protection.
+ * @param addr Address.
+ * @param len  Length.
+ * @param prot Protection flags.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_mprotect(void *addr, int64_t len, int prot);
+
+/**
+ * @brief Give advice about memory usage.
+ * @param addr   Address.
+ * @param len    Length.
+ * @param advice Advice flags.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_madvise(void *addr, int64_t len, int advice);
+
+/**
+ * @brief Wait on a futex.
+ * @param uaddr   Address of futex.
+ * @param val     Expected value.
+ * @param timeout Timeout (NULL for infinite).
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_futex_wait(int *uaddr, int val, const void *timeout);
+
+/**
+ * @brief Wake one waiter on a futex.
+ * @param uaddr Address of futex.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_futex_wake_one(int *uaddr);
+
+/**
+ * @brief Wake all waiters on a futex.
+ * @param uaddr Address of futex.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_futex_wake_all(int *uaddr);
+
+/**
+ * @brief Install a signal handler.
+ * @param sig     Signal number.
+ * @param handler Handler function.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_signal_install(int sig, void (*handler)(int));
+
+/**
+ * @brief Read directory entries.
+ * @param fd   Directory file descriptor.
+ * @param buf  Buffer for entries.
+ * @param size Buffer size.
+ * @return Bytes read or -1 on error.
+ */
+int __public__os_getdents64(int fd, void *buf, int64_t size);
+
+/**
+ * @brief Rename with flags (macOS renameatx_np wrapper).
+ * @param oldpath Old path.
+ * @param newpath New path.
+ * @param flags   Rename flags.
+ * @return 0 on success, -1 on error.
+ */
+int __public__os_renameat2(__public__string_t *oldpath, __public__string_t *newpath, int flags);
 
 /**
  * @brief Set process group ID.
@@ -496,18 +624,18 @@ int __public__os_setsid(void);
 /**
  * @brief Get resource limits.
  * @param resource Resource type.
- * @param rlim     Output rlimit structure.
- * @return 0 on success, -1 on error.
+ * @return Resource limit structure with result.
  */
-int __public__os_getrlimit(int resource, void *rlim);
+__public__os_getrlimit_rt_t __public__os_getrlimit(int resource);
 
 /**
  * @brief Set resource limits.
  * @param resource Resource type.
- * @param rlim     Input rlimit structure.
+ * @param cur      Soft limit.
+ * @param max      Hard limit.
  * @return 0 on success, -1 on error.
  */
-int __public__os_setrlimit(int resource, const void *rlim);
+int __public__os_setrlimit(int resource, int64_t cur, int64_t max);
 
 /**
  * @brief Create a directory.
@@ -570,23 +698,21 @@ int __public__os_symlink(__public__string_t *target, __public__string_t *linkpat
  * @param size Buffer size.
  * @return Bytes read or -1 on error.
  */
-ssize_t __public__os_readlink(__public__string_t *path, char *buf, size_t size) ;
+int64_t __public__os_readlink(__public__string_t *path, char *buf, int64_t size);
 
 /**
  * @brief Get file status.
  * @param path File path.
- * @param st   Output stat structure.
- * @return 0 on success, -1 on error.
+ * @return Stat structure with result.
  */
-int __public__os_stat(__public__string_t *path, struct stat *st);
+__public__os_stat_rt_t __public__os_stat(__public__string_t *path);
 
 /**
  * @brief Get file status (don't follow symlinks).
  * @param path File path.
- * @param st   Output stat structure.
- * @return 0 on success, -1 on error.
+ * @return Stat structure with result.
  */
-int __public__os_lstat(__public__string_t *path, struct stat *st);
+__public__os_stat_rt_t __public__os_lstat(__public__string_t *path);
 
 /**
  * @brief Check file accessibility.
