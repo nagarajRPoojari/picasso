@@ -207,7 +207,7 @@ class ConcurrencyBench {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     syncio.printf("=== Picasso Performance Benchmark ===\n\n");
     
     say utils: start.BenchmarkUtils = new start.BenchmarkUtils();

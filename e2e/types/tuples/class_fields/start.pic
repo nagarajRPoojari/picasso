@@ -41,7 +41,7 @@ class Data {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     // Test basic multi-field class
     say p: start.Point = new start.Point(10, 20);
     syncio.printf("Point: x=%d y=%d\n", p.x, p.y);

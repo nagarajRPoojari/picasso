@@ -12,7 +12,7 @@ class Test {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     say t: start.Test = new start.Test();
     say x:uint64 = t.testReturnI64AsUI64();
     syncio.printf("x:%u, type:%s\n", x, types.type(x));

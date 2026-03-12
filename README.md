@@ -33,7 +33,7 @@ Picasso combines the performance of compiled languages with the ease of use of m
 ```picasso
 using "builtin/syncio";
 
-fn start() {
+fn start(args: []string) {
     syncio.printf("Hello, World!\n");
 }
 ```
@@ -57,7 +57,7 @@ class Person {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     say person: start.Person = new start.Person("Alice", 30);
     person.greet();
 }
@@ -68,7 +68,7 @@ fn start() {
 ```python
 using "builtin/syncio";
 
-fn start() {
+fn start(args: []string) {
     say x: int = 10;
     
     if (x < 0) {
@@ -99,7 +99,7 @@ fn start() {
 using "builtin/syncio";
 using "builtin/array";
 
-fn start() {
+fn start(args: []string) {
     say numbers: []int = array.create(int, 5);
     
     foreach i in 0..array.len(numbers) {
@@ -132,7 +132,7 @@ class Worker {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     foreach i in 0..10 {
         say worker: start.Worker = new start.Worker(i);
         thread(worker.work);
@@ -146,7 +146,7 @@ fn start() {
 using "builtin/syncio";
 using "builtin/atomics";
 
-fn start() {
+fn start(args: []string) {
     say counter: atomic int64;
     
     atomics.store_int64(counter, int64(0));
@@ -174,7 +174,7 @@ class Server {
         this.port = port;
     }
     
-    fn start() {
+    fn start(args: []string) {
         say fd: int = net.listen(this.addr, this.port, 4096, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0);
         
         if (fd < 0) {
@@ -194,7 +194,7 @@ class Server {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     say server: start.Server = new start.Server("127.0.0.1", 8080);
     server.start();
 }
@@ -206,7 +206,7 @@ fn start() {
 using "builtin/syncio";
 using "builtin/array";
 
-fn start() {
+fn start(args: []string) {
     say file: string = syncio.fopen("data.txt", "w+");
     
     say data: []uint8 = array.create(uint8, 10);
@@ -243,7 +243,7 @@ class Calculator {
 using "builtin/syncio";
 using "math" as m;
 
-fn start() {
+fn start(args: []string) {
     say calc: m.Calculator = new m.Calculator();
     say result: int = calc.add(5, 3);
     syncio.printf("Result: %d\n", result);

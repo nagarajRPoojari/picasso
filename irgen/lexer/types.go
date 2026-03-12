@@ -32,6 +32,8 @@ const (
 	CLOSE_CURLY
 	OPEN_PAREN
 	CLOSE_PAREN
+	OPEN_ATOMIC
+	CLOSE_ATOMIC
 
 	ASSIGNMENT
 	EQUALS
@@ -183,6 +185,10 @@ func TokenKindString(kind TokenKind) string {
 		return "open_paren"
 	case CLOSE_PAREN:
 		return "close_paren"
+	case OPEN_ATOMIC:
+		return "open_atomic"
+	case CLOSE_ATOMIC:
+		return "close_atomic"
 	case ASSIGNMENT:
 		return "assignment"
 	case EQUALS:

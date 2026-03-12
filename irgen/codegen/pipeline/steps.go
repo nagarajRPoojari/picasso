@@ -110,36 +110,6 @@ func (t *Pipeline) defineMain() {
 	})
 }
 
-func (t *Pipeline) insertYields() {
-	m := t.st.Module
-	// Define or get the yield function
-	yieldFunc := c.Instance.Funcs[c.FUNC_SELF_YIELD]
-
-	for _, fn := range m.Funcs {
-		// Skip the yield function itself
-		if fn.Name() == yieldFunc.Name() {
-			continue
-		}
-
-		for _, blk := range fn.Blocks {
-			var newInsts []ir.Instruction
-
-			for _, inst := range blk.Insts {
-				// If this is a call instruction, insert yield BEFORE it
-				switch inst.(type) {
-				case *ir.InstCall:
-					newInsts = append(newInsts, ir.NewCall(yieldFunc))
-				}
-
-				// Then append the original instruction
-				newInsts = append(newInsts, inst)
-			}
-
-			blk.Insts = newInsts
-		}
-	}
-}
-
 func Loop[T ast.Statement](tree ast.BlockStatement, fn func(T)) {
 	for _, stI := range tree.Body {
 		switch st := stI.(type) {

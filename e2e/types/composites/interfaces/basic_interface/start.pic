@@ -24,7 +24,7 @@ class SpanishGreeter: start.Greeter {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     say g1: start.Greeter = new start.EnglishGreeter();
     say result1: int = g1.greet();
     syncio.printf("Result: %d\n", result1);

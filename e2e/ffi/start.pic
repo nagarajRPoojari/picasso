@@ -1,6 +1,6 @@
 using "c/ffi/coo";
 
-fn start() {
+fn start(args: []string) {
     // Test 1: Original pointer-based API (existing test)
     say xy: struct.Coordinate = coo.create(10, 200);
     coo.dump(xy);

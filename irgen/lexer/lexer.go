@@ -88,6 +88,8 @@ func newLexer(path string, reader *bufio.Reader) *lexer {
 			{regexp.MustCompile(`\]`), defaultHandler(CLOSE_BRACKET, "]")},
 			{regexp.MustCompile(`\{`), defaultHandler(OPEN_CURLY, "{")},
 			{regexp.MustCompile(`\}`), defaultHandler(CLOSE_CURLY, "}")},
+			{regexp.MustCompile(`\(\*`), defaultHandler(OPEN_ATOMIC, "(*")},
+			{regexp.MustCompile(`\*\)`), defaultHandler(CLOSE_ATOMIC, "*)")},
 			{regexp.MustCompile(`\(`), defaultHandler(OPEN_PAREN, "(")},
 			{regexp.MustCompile(`\)`), defaultHandler(CLOSE_PAREN, ")")},
 

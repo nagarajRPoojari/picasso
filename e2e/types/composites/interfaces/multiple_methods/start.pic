@@ -71,7 +71,7 @@ fn testCalculator(calc: start.Calculator, x: int, y: int) {
     syncio.printf("  Divide: %d\n", calc.divide(x, y));
 }
 
-fn start() {
+fn start(args: []string) {
     syncio.printf("=== Multiple Methods Interface Test ===\n\n");
     
     syncio.printf("Test 1: BasicCalculator\n");

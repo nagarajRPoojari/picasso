@@ -10,7 +10,7 @@ class Test {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     say t: start.Test = new start.Test();
     say x: uint8 = 190;
     t.testU8ToI32AsParam(x);

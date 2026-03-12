@@ -4,14 +4,28 @@ using "builtin/array";
 using "builtin/strings";
 
 fn start(args: []string) {
-    if(strings.compare(args[1], "init") == 0) {
-        syncio.printf("running init program\n");
-        os.exit(0);
+    if(array.len(args) > 1) {
+        if(strings.compare(args[1], "init") == 0) {
+            syncio.printf("running init program: PID: %d \n",os.getpid());
+            os.exit(0);
+        }   
     }
 
+    syncio.printf("running parent program: PID: %d \n",os.getpid());
     say pid: int = os.fork();
-    if(pid == 0) {
-            
-    }
+    say _args: []string = array.create(string, 2);
 
+    _args[0] = args[0];
+    _args[1] = "init";
+
+
+    (*
+        if(pid == 0) {
+            os.execvp(args[0], _args);
+            os.exit(0);    
+        }
+    *)
 }
+
+// 1. fix logical ops bug
+// 2. support critical section blocker : done

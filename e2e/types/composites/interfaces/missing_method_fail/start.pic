@@ -31,7 +31,7 @@ class BrokenPrinter: start.Printer {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     say p: start.Printer = new start.BrokenPrinter();
     p.print();
 }

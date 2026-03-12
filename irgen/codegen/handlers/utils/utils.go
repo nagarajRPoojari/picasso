@@ -6,10 +6,13 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/types"
 	"github.com/llir/llvm/ir/value"
+	"github.com/nagarajRPoojari/picasso/irgen/codegen/c"
+	bc "github.com/nagarajRPoojari/picasso/irgen/codegen/type/block"
 )
 
 func GetTypeString(t types.Type) string {
@@ -246,4 +249,12 @@ func GenerateTupleName(fieldTypes []types.Type, typeNames []string) string {
 		}
 	}
 	return "tuple_" + strings.Join(parts, "_")
+}
+
+func AddYield(ac *atomic.Int32, bh *bc.BlockHolder) {
+	if ac.Load() > 0 {
+		return
+	}
+	yieldFunc := c.Instance.Funcs[c.FUNC_SELF_YIELD]
+	bh.N.NewCall(yieldFunc)
 }

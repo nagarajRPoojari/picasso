@@ -31,7 +31,7 @@ import (
 //   - Type Safety: Performs implicit type casting of arguments to match the
 //     formal parameters defined in the function signature.
 func (t *ExpressionHandler) CallFunc(bh *bc.BlockHolder, ex ast.CallExpression) tf.Var {
-
+	utils.AddYield(t.st.AC, bh)
 	// check imported base modules for method resolution
 	if ret, ok := t.callLibMethod(bh, ex); ok {
 		return ret

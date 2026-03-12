@@ -215,3 +215,15 @@ func (n BreakStatement) stmt() {}
 func (n BreakStatement) GetSrc() SourceLoc {
 	return n.SourceLoc
 }
+
+// AtomicBlockStatement represents an atomic section where operations
+// are executed atomically without interruption. Syntax: (* ... *)
+type AtomicBlockStatement struct {
+	SourceLoc
+	Body []Statement
+}
+
+func (AtomicBlockStatement) stmt() {}
+func (t AtomicBlockStatement) GetSrc() SourceLoc {
+	return t.SourceLoc
+}

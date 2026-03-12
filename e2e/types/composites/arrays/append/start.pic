@@ -1,7 +1,7 @@
 using "builtin/syncio";
 using "builtin/array";
 
-fn start() {
+fn start(args: []string) {
     // test 1: append to int array
     syncio.printf("=== Test 1: Append integers ===\n");
     say intArr: []int = array.create(int, 3);

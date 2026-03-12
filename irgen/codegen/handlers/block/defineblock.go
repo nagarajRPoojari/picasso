@@ -37,6 +37,9 @@ func (t *BlockHandler) ProcessBlock(fn *ir.Func, bh *bc.BlockHolder, sts []ast.S
 		case ast.ExpressionStatement:
 			t.processExpressionStatement(st, bh, sh)
 
+		case ast.AtomicBlockStatement:
+			t.processAtomicBlock(fn, st, bh)
+
 		case ast.IfStatement:
 			t.processIfElseBlock(fn, bh, &st, nil)
 
@@ -97,4 +100,10 @@ func (t *BlockHandler) getRetType(fn *ir.Func) ast.Type {
 		return clsMeta.Returns[name]
 	}
 	return nil
+}
+
+func (t *BlockHandler) processAtomicBlock(fn *ir.Func, st ast.AtomicBlockStatement, bh *bc.BlockHolder) {
+	t.st.AC.Add(1)
+	t.ProcessBlock(fn, bh, st.Body)
+	t.st.AC.Add(-1)
 }

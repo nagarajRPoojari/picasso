@@ -27,7 +27,7 @@ class BadProcessor: start.DataProcessor {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     say p: start.DataProcessor = new start.BadProcessor();
     p.process(42);
 }

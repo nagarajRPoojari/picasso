@@ -2,6 +2,7 @@ package state
 
 import (
 	"strings"
+	"sync/atomic"
 
 	"github.com/llir/llvm/ir/types"
 
@@ -103,6 +104,9 @@ type State struct {
 
 	// alias to concrete module name map
 	AliasMap map[string]string
+
+	// atomic block count
+	AC *atomic.Int32 // kill me for this overkill
 }
 
 type FFIDeclarations struct {
@@ -132,6 +136,7 @@ func NewCompileState(outputDir string, pkgName string, module *ir.Module) *State
 		LibMethods:        make(map[string]function.Func),
 		CI:                c.Instance,
 		Imports:           make(map[string]PackageEntry),
+		AC:                &atomic.Int32{},
 	}
 }
 

@@ -48,7 +48,7 @@ func (t *Pipeline) Define() {
 
 func (t *Pipeline) Optimize() {
 	// inserts safepoints based on some predefined heuristics.
-	t.insertYields()
+	// t.insertYields()
 }
 
 // Run will be called only for own module which does both

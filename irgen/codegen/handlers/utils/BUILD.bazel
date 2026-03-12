@@ -6,6 +6,8 @@ go_library(
     importpath = "github.com/nagarajRPoojari/picasso/irgen/codegen/handlers/utils",
     visibility = ["//visibility:public"],
     deps = [
+        "//irgen/codegen/c",
+        "//irgen/codegen/type/block",
         "@com_github_llir_llvm//ir/constant",
         "@com_github_llir_llvm//ir/types",
         "@com_github_llir_llvm//ir/value",

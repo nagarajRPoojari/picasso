@@ -14,7 +14,7 @@ class Test {
 
 }
 
-fn start() {
+fn start(args: []string) {
     say t: start.Test = new start.Test();
 
     syncio.printf("r1=%s\n", t.f1(-1, 56)); // params mismatch: should fail

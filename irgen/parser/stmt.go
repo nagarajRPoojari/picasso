@@ -504,3 +504,18 @@ func parseBreakStmt(p *Parser) ast.Statement {
 		SourceLoc: ast.SourceLoc(p.currentToken().Src),
 	}
 }
+
+func parseAtomicBlockStmt(p *Parser) ast.Statement {
+	p.expect(lexer.OPEN_ATOMIC)
+	body := []ast.Statement{}
+
+	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_ATOMIC {
+		body = append(body, parseStmt(p))
+	}
+
+	p.expect(lexer.CLOSE_ATOMIC)
+	return ast.AtomicBlockStatement{
+		SourceLoc: ast.SourceLoc(p.currentToken().Src),
+		Body:      body,
+	}
+}

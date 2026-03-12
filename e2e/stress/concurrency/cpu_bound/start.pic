@@ -29,7 +29,7 @@ class ConcurrencyStress {
     }
 }
 
-fn start() {
+fn start(args: []string) {
     say stress: start.ConcurrencyStress = new start.ConcurrencyStress();
     stress.testManyCPUBoundTasks();
 }
