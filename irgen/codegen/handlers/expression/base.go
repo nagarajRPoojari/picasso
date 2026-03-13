@@ -30,11 +30,12 @@ type ExpressionHandler struct {
 // operator lookup tables (arithmetic, logical, and comparison)
 // used during binary expression processing.
 func NewExpressionHandler(st *state.State, m contract.Mediator) *ExpressionHandler {
-	initOpLookUpTables()
-	return &ExpressionHandler{
+	ex := &ExpressionHandler{
 		st: st,
 		m:  m,
 	}
+	initOpLookUpTables(ex)
+	return ex
 }
 
 // ProcessExpression acts as the central dispatcher for the expression

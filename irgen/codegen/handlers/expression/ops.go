@@ -3,6 +3,7 @@ package expression
 import (
 	"fmt"
 
+	"github.com/llir/llvm/ir"
 	"github.com/llir/llvm/ir/constant"
 	"github.com/llir/llvm/ir/enum"
 	"github.com/llir/llvm/ir/types"
@@ -17,7 +18,7 @@ import (
 	"github.com/nagarajRPoojari/picasso/irgen/lexer"
 )
 
-type BinaryOperation func(th *tf.TypeHandler, bh *bc.BlockHolder, l, r tf.Var) (tf.Var, error)
+type BinaryOperation func(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error)
 
 var arithmatic map[lexer.TokenKind]BinaryOperation
 var comparision map[lexer.TokenKind]BinaryOperation
@@ -166,36 +167,28 @@ func buildBooleanFromValue(bh *bc.BlockHolder, v value.Value) tf.Var {
 //   - Memory Allocation: Automatically allocates stack space (alloca) for the
 //     result, returning a wrapped tf.Var for subsequent use in the pipeline.
 func (t *ExpressionHandler) ProcessBinaryExpression(bh *bc.BlockHolder, ex ast.BinaryExpression) tf.Var {
-	left := t.ProcessExpression(bh, ex.Left)
-
-	right := t.ProcessExpression(bh, ex.Right)
-
-	if left == nil || right == nil {
-		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
-	}
-
 	if op, ok := arithmatic[ex.Operator.Kind]; ok {
-		res, err := op(t.st.TypeHandler, bh, left, right)
+		res, err := op(t.st.TypeHandler, bh, ex.Left, ex.Right)
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
 		return res
 
 	} else if op, ok := comparision[ex.Operator.Kind]; ok {
-		res, err := op(t.st.TypeHandler, bh, left, right)
+		res, err := op(t.st.TypeHandler, bh, ex.Left, ex.Right)
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
 		return res
 
 	} else if op, ok := logical[ex.Operator.Kind]; ok {
-		res, err := op(t.st.TypeHandler, bh, left, right)
+		res, err := op(t.st.TypeHandler, bh, ex.Left, ex.Right)
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
 		return res
 	} else if op, ok := bitwise[ex.Operator.Kind]; ok {
-		res, err := op(t.st.TypeHandler, bh, left, right)
+		res, err := op(t.st.TypeHandler, bh, ex.Left, ex.Right)
 		if err != nil {
 			errorutils.Abort(errorutils.BinaryOperationError, err.Error())
 		}
@@ -208,35 +201,43 @@ func (t *ExpressionHandler) ProcessBinaryExpression(bh *bc.BlockHolder, ex ast.B
 
 // initOpLookUpTables inits lookup table mapping operand token with its
 // corresponding operation
-func initOpLookUpTables() {
+func initOpLookUpTables(ex *ExpressionHandler) {
 	arithmatic = make(map[lexer.TokenKind]BinaryOperation)
 	comparision = make(map[lexer.TokenKind]BinaryOperation)
 	logical = make(map[lexer.TokenKind]BinaryOperation)
 	bitwise = make(map[lexer.TokenKind]BinaryOperation)
 
-	arithmatic[lexer.PLUS] = add
-	arithmatic[lexer.DASH] = sub
-	arithmatic[lexer.STAR] = mul
-	arithmatic[lexer.SLASH] = div
-	arithmatic[lexer.PERCENT] = mod
+	arithmatic[lexer.PLUS] = ex.add
+	arithmatic[lexer.DASH] = ex.sub
+	arithmatic[lexer.STAR] = ex.mul
+	arithmatic[lexer.SLASH] = ex.div
+	arithmatic[lexer.PERCENT] = ex.mod
 
-	comparision[lexer.LESS] = lt
-	comparision[lexer.LESS_EQUALS] = lte
-	comparision[lexer.GREATER] = gt
-	comparision[lexer.GREATER_EQUALS] = gte
-	comparision[lexer.EQUALS] = eq
-	comparision[lexer.NOT_EQUALS] = ne
+	comparision[lexer.LESS] = ex.lt
+	comparision[lexer.LESS_EQUALS] = ex.lte
+	comparision[lexer.GREATER] = ex.gt
+	comparision[lexer.GREATER_EQUALS] = ex.gte
+	comparision[lexer.EQUALS] = ex.eq
+	comparision[lexer.NOT_EQUALS] = ex.ne
 
-	logical[lexer.AND] = logicalAnd
-	logical[lexer.OR] = logicalOr
-	logical[lexer.QUESTION] = logicalInstanceOf
+	logical[lexer.AND] = ex.logicalAnd
+	logical[lexer.OR] = ex.logicalOr
+	logical[lexer.QUESTION] = ex.logicalInstanceOf
 
-	bitwise[lexer.BITWISE_AND] = bitwiseAND
-	bitwise[lexer.BITWISE_OR] = bitwiseOR
-	bitwise[lexer.BITWISE_XOR] = bitwiseXOR
+	bitwise[lexer.BITWISE_AND] = ex.bitwiseAND
+	bitwise[lexer.BITWISE_OR] = ex.bitwiseOR
+	bitwise[lexer.BITWISE_XOR] = ex.bitwiseXOR
 }
 
-func add(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) add(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -263,7 +264,15 @@ func add(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) 
 	return nil, fmt.Errorf("unsupported add operands")
 }
 
-func sub(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) sub(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -290,7 +299,14 @@ func sub(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) 
 	return nil, fmt.Errorf("unsupported sub operands")
 }
 
-func mul(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) mul(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -317,7 +333,15 @@ func mul(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) 
 	return nil, fmt.Errorf("unsupported mul operands")
 }
 
-func div(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) div(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -344,8 +368,14 @@ func div(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) 
 	return nil, fmt.Errorf("unsupported mul operands")
 }
 
-func mod(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) mod(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
 
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -365,8 +395,14 @@ func mod(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) 
 	return nil, fmt.Errorf("unsupported mod operands")
 }
 
-func eq(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) eq(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
 
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -382,8 +418,14 @@ func eq(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
 	return nil, fmt.Errorf("unsupported eq")
 }
 
-func ne(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) ne(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
 
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -399,7 +441,14 @@ func ne(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
 	return nil, fmt.Errorf("unsupported ne")
 }
 
-func lt(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) lt(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -418,8 +467,14 @@ func lt(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
 	return nil, fmt.Errorf("unsupported lt")
 }
 
-func lte(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) lte(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
 
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -436,8 +491,14 @@ func lte(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) 
 	return nil, fmt.Errorf("unsupported lte")
 }
 
-func gt(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) gt(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
 
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -454,8 +515,14 @@ func gt(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
 	return nil, fmt.Errorf("unsupported gt")
 }
 
-func gte(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) gte(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
 
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -503,34 +570,102 @@ func toBool(_ *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (value.Value, error
 	}
 }
 
-func logicalAnd(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) logicalAnd(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	// Short-circuit evaluation: if left is false, result is false without evaluating right
+
+	// Get the parent function to create new blocks
+	fn := bh.N.Parent
+
+	// Evaluate left operand
+	lv := t.ProcessExpression(bh, lex)
+	if lv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 
 	lb, err := toBool(th, bh, lv)
 	if err != nil {
 		return nil, err
 	}
-	rb, err := toBool(th, bh, rv)
+
+	// Create blocks for short-circuit logic
+	rhsBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	leftBlock := bh.N
+
+	bh.N.NewCondBr(lb, rhsBlock.N, endBlock.N)
+	rv := t.ProcessExpression(rhsBlock, rex)
+	if rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+	rb, err := toBool(th, rhsBlock, rv)
 	if err != nil {
 		return nil, err
 	}
+	rhsBlock.N.NewBr(endBlock.N)
 
-	return buildBooleanFromValue(bh, bh.N.NewAnd(lb, rb)), nil
+	// Create phi node in end block to merge results
+	// If we came from leftBlock (left was false), result is false
+	// If we came from rhsBlock (left was true), result is rb
+	phi := endBlock.N.NewPhi(ir.NewIncoming(constant.False, leftBlock), ir.NewIncoming(rb, rhsBlock.N))
+
+	// Update block holder to continue from end block
+	bh.Update(endBlock.V, endBlock.N)
+
+	return buildBooleanFromValue(bh, phi), nil
 }
 
-func logicalOr(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) logicalOr(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	fn := bh.N.Parent
+
+	lv := t.ProcessExpression(bh, lex)
+	if lv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 
 	lb, err := toBool(th, bh, lv)
 	if err != nil {
 		return nil, err
 	}
-	rb, err := toBool(th, bh, rv)
+
+	rhsBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+	endBlock := bc.NewBlockHolder(bh.V, fn.NewBlock(""))
+
+	leftBlock := bh.N
+
+	bh.N.NewCondBr(lb, endBlock.N, rhsBlock.N)
+
+	rv := t.ProcessExpression(rhsBlock, rex)
+	if rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+
+	rb, err := toBool(th, rhsBlock, rv)
 	if err != nil {
 		return nil, err
 	}
-	return buildBooleanFromValue(bh, bh.N.NewOr(lb, rb)), nil
+
+	rhsBlock.N.NewBr(endBlock.N)
+
+	// Create phi node in end block to merge results
+	// If we came from leftBlock (left was true), result is true
+	// If we came from rhsBlock (left was false), result is rb
+	phi := endBlock.N.NewPhi(ir.NewIncoming(constant.True, leftBlock), ir.NewIncoming(rb, rhsBlock.N))
+
+	// Update block holder to continue from end block
+	bh.Update(endBlock.V, endBlock.N)
+
+	return buildBooleanFromValue(bh, phi), nil
 }
 
-func logicalInstanceOf(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) logicalInstanceOf(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+
 	if lvc, ok := lv.(*tf.Class); ok {
 		if rvc, ok := rv.(*tf.Class); ok {
 			// both are class
@@ -616,7 +751,14 @@ func not(th *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (tf.Var, error) {
 	return buildBooleanFromValue(bh, bh.N.NewXor(vb, one)), nil
 }
 
-func bitwiseOR(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) bitwiseOR(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -641,7 +783,15 @@ func bitwiseOR(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, e
 	return nil, fmt.Errorf("unsupported bitwise or operands")
 }
 
-func bitwiseXOR(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) bitwiseXOR(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
@@ -666,7 +816,15 @@ func bitwiseXOR(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, 
 	return nil, fmt.Errorf("unsupported bitwise xor operands")
 }
 
-func bitwiseAND(th *tf.TypeHandler, bh *bc.BlockHolder, lv, rv tf.Var) (tf.Var, error) {
+func (t *ExpressionHandler) bitwiseAND(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+
+	rv := t.ProcessExpression(bh, rex)
+
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+
 	l, r, k, err := normalizeOperands(th, bh, lv, rv)
 	if err != nil {
 		return nil, err
