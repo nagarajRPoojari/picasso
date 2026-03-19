@@ -1,257 +1,135 @@
 package main
 
 import (
+	"bufio"
+	"flag"
 	"fmt"
+	"os"
+	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 )
 
-// BenchmarkUtils class equivalent
-type BenchmarkUtils struct{}
+const limit = 4.0        // abs(z) < 2
+const maxIter = 50       // number of iterations
+const defaultSize = 4000 // bitmap size if not given as command-line argument
 
-func NewBenchmarkUtils() *BenchmarkUtils {
-	return &BenchmarkUtils{}
-}
+var rows [][]byte
+var bytesPerRow int
+var initial_r []float64
+var initial_i []float64
 
-// Fibonacci calculation (recursive)
-func (bu *BenchmarkUtils) Fibonacci(n int) int {
-	if n <= 1 {
-		return n
-	}
-	return bu.Fibonacci(n-1) + bu.Fibonacci(n-2)
-}
+// renderRow returns rendered row of pixels
+// pixels packed in one byte for PBM image
+func renderRow(y0 *int32) []byte {
+	var i, j, x int
+	var res, b byte
+	var Zr1, Zr2, Zi1, Zi2, Tr1, Tr2, Ti1, Ti2 float64
 
-// Fibonacci calculation (iterative)
-func (bu *BenchmarkUtils) FibonacciIterative(n int) int {
-	if n <= 1 {
-		return n
-	}
+	row := make([]byte, bytesPerRow)
 
-	a, b := 0, 1
-	for i := 2; i <= n; i++ {
-		a, b = b, a+b
-	}
+	for xByte := range row {
+		res = 0
+		Ci := initial_i[*y0]
+		for i = 0; i < 8; i += 2 {
+			x = xByte << 3 // * 8
+			Cr1 := initial_r[x+i]
+			Cr2 := initial_r[x+i+1]
 
-	return b
-}
+			Zr1 = Cr1
+			Zi1 = Ci
 
-// Array operations benchmark
-func (bu *BenchmarkUtils) ArrayOperations(size int) int {
-	arr := make([]int, 0)
+			Zr2 = Cr2
+			Zi2 = Ci
 
-	// Append elements
-	for i := 0; i < size; i++ {
-		arr = append(arr, i)
-	}
+			b = 0
 
-	// Sum all elements
-	sum := 0
-	for i := 0; i < len(arr); i++ {
-		sum += arr[i]
-	}
+			for j = 0; j < maxIter; j++ {
+				Tr1 = Zr1 * Zr1
+				Ti1 = Zi1 * Zi1
+				Zi1 = 2*Zr1*Zi1 + Ci
+				Zr1 = Tr1 - Ti1 + Cr1
 
-	return sum
-}
+				if Tr1+Ti1 > limit {
+					b |= 2
+					if b == 3 {
+						break
+					}
+				}
 
-// String operations benchmark
-func (bu *BenchmarkUtils) StringOperations(iterations int) int {
-	count := 0
+				Tr2 = Zr2 * Zr2
+				Ti2 = Zi2 * Zi2
+				Zi2 = 2*Zr2*Zi2 + Ci
+				Zr2 = Tr2 - Ti2 + Cr2
 
-	for i := 0; i < iterations; i++ {
-		temp := fmt.Sprintf("Iteration %d", i)
-		count += len(temp)
-	}
-
-	return count
-}
-
-// Prime number calculation
-func (bu *BenchmarkUtils) IsPrime(n int) int {
-	if n <= 1 {
-		return 0
-	}
-	if n <= 3 {
-		return 1
-	}
-	if n%2 == 0 {
-		return 0
-	}
-	if n%3 == 0 {
-		return 0
-	}
-
-	for i := 5; i*i <= n; i += 6 {
-		if n%i == 0 {
-			return 0
-		}
-		if n%(i+2) == 0 {
-			return 0
-		}
-	}
-
-	return 1
-}
-
-func (bu *BenchmarkUtils) CountPrimes(limit int) int {
-	count := 0
-	for i := 2; i < limit; i++ {
-		if bu.IsPrime(i) == 1 {
-			count++
-		}
-	}
-	return count
-}
-
-// Matrix class
-type Matrix struct {
-	data [][]int
-	rows int
-	cols int
-}
-
-func NewMatrix(rows, cols int) *Matrix {
-	data := make([][]int, rows)
-	for i := range data {
-		data[i] = make([]int, cols)
-	}
-
-	return &Matrix{
-		data: data,
-		rows: rows,
-		cols: cols,
-	}
-}
-
-func (m *Matrix) Set(row, col, value int) {
-	m.data[row][col] = value
-}
-
-func (m *Matrix) Get(row, col int) int {
-	return m.data[row][col]
-}
-
-// MatrixOps class equivalent
-type MatrixOps struct{}
-
-func NewMatrixOps() *MatrixOps {
-	return &MatrixOps{}
-}
-
-func (mo *MatrixOps) Multiply(size int) int {
-	a := NewMatrix(size, size)
-	b := NewMatrix(size, size)
-	c := NewMatrix(size, size)
-
-	// Initialize matrices
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			a.Set(i, j, i+j)
-			b.Set(i, j, i-j)
-		}
-	}
-
-	// Multiply
-	for i := 0; i < size; i++ {
-		for j := 0; j < size; j++ {
-			sum := 0
-			for k := 0; k < size; k++ {
-				sum += a.Get(i, k) * b.Get(k, j)
+				if Tr2+Ti2 > limit {
+					b |= 1
+					if b == 3 {
+						break
+					}
+				}
 			}
-			c.Set(i, j, sum)
+			res = (res << 2) | b
 		}
+		row[xByte] = ^res
 	}
-
-	return c.Get(0, 0)
+	return row
 }
 
-// Counter class
-type Counter struct {
-	value int64
-}
+var yAt int32 = -1
 
-func NewCounter() *Counter {
-	return &Counter{value: 0}
-}
-
-func (c *Counter) Increment() {
-	atomic.AddInt64(&c.value, 1)
-}
-
-func (c *Counter) GetValue() int64 {
-	return atomic.LoadInt64(&c.value)
-}
-
-// ConcurrencyBench class equivalent
-type ConcurrencyBench struct {
-	counter *Counter
-}
-
-func NewConcurrencyBench() *ConcurrencyBench {
-	return &ConcurrencyBench{
-		counter: NewCounter(),
+func renderRows(wg *sync.WaitGroup, s32 int32) {
+	var y int32
+	for y = atomic.AddInt32(&yAt, 1); y < s32; y = atomic.AddInt32(&yAt, 1) {
+		rows[y] = renderRow(&y)
 	}
-}
-
-func (cb *ConcurrencyBench) IncrementWorker(iterations int, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for i := 0; i < iterations; i++ {
-		cb.counter.Increment()
-	}
-}
-
-func (cb *ConcurrencyBench) Run(threads, iterations int) int64 {
-	var wg sync.WaitGroup
-
-	for i := 0; i < threads; i++ {
-		wg.Add(1)
-		go cb.IncrementWorker(iterations, &wg)
-	}
-
-	wg.Wait()
-	return cb.counter.GetValue()
+	wg.Done()
 }
 
 func main() {
-	fmt.Println("=== Go Performance Benchmark ===\n")
+	pool := runtime.NumCPU() * 2
+	runtime.GOMAXPROCS(pool)
 
-	utils := NewBenchmarkUtils()
-	matrixOps := NewMatrixOps()
+	// Get input, if any...
+	size := defaultSize
+	flag.Parse()
+	if flag.NArg() > 0 {
+		size, _ = strconv.Atoi(flag.Arg(0))
+	}
 
-	// Benchmark 1: Fibonacci (recursive)
-	fmt.Println("1. Fibonacci (recursive, n=30)...")
-	fibResult := utils.Fibonacci(30)
-	fmt.Printf("   Result: %d\n\n", fibResult)
+	bytesPerRow = size >> 3
 
-	// Benchmark 2: Fibonacci (iterative)
-	fmt.Println("2. Fibonacci (iterative, n=1000000)...")
-	fibIterResult := utils.FibonacciIterative(1000000)
-	fmt.Printf("   Result: %d\n\n", fibIterResult)
+	// Precompute the initial real and imaginary values for each x and y
+	// coordinate in the image.
+	initial_r = make([]float64, size)
+	initial_i = make([]float64, size)
+	inv := 2.0 / float64(size)
+	for xy := 0; xy < size; xy++ {
+		i := inv * float64(xy)
+		initial_r[xy] = i - 1.5
+		initial_i[xy] = i - 1.0
+	}
 
-	// Benchmark 3: Array operations
-	fmt.Println("3. Array operations (size=100000)...")
-	arrayResult := utils.ArrayOperations(100000)
-	fmt.Printf("   Sum: %d\n\n", arrayResult)
+	rows = make([][]byte, size)
 
-	// Benchmark 4: String operations
-	fmt.Println("4. String operations (iterations=10000)...")
-	stringResult := utils.StringOperations(10000)
-	fmt.Printf("   Total length: %d\n\n", stringResult)
+	/* Wait group for finish */
+	wg := new(sync.WaitGroup)
+	wg.Add(pool)
 
-	// Benchmark 5: Matrix multiplication
-	fmt.Println("5. Matrix multiplication (50x50)...")
-	matrixResult := matrixOps.Multiply(50)
-	fmt.Printf("   Result[0][0]: %d\n\n", matrixResult)
+	// start pool workers, and assign all work
+	for i := 0; i < pool; i++ {
+		go renderRows(wg, int32(size))
+	}
 
-	// Benchmark 6: Prime counting
-	fmt.Println("6. Prime counting (limit=100000)...")
-	primeCount := utils.CountPrimes(100000)
-	fmt.Printf("   Primes found: %d\n\n", primeCount)
+	/* wait for the file workers to finish, then write */
+	wg.Wait()
 
-	// Benchmark 7: Concurrency
-	fmt.Println("7. Concurrent counter (10 threads, 10000 iterations each)...")
-	concBench := NewConcurrencyBench()
-	concurrentResult := concBench.Run(10, 10000)
-	fmt.Printf("   Final count: %d\n\n", concurrentResult)
+	out := bufio.NewWriter(os.Stdout)
+	defer out.Flush()
+	fmt.Fprintf(out, "P4\n%d %d\n", size, size)
 
-	fmt.Println("=== Benchmark Complete ===")
+	for y := 0; y < size; y++ {
+		out.Write(rows[y])
+	}
 }

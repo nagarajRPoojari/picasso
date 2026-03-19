@@ -1,4 +1,3 @@
-bin
 temp*
 dump
 core
@@ -6,3 +5,5 @@ log
 build
 bazel-*
 coverage-html
+bin
+.venv

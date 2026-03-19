@@ -1,253 +1,127 @@
 using "builtin/syncio";
 using "builtin/array";
-using "builtin/atomics";
-using "builtin/strings";
+using "builtin/sync";
 
-// Benchmark utilities class
-class BenchmarkUtils {
-    fn BenchmarkUtils() {}
-    
-    // Fibonacci calculation (recursive)
-    fn fibonacci(n: int): int {
-        if (n <= 1) {
-            return n;
-        }
-        return this.fibonacci(n - 1) + this.fibonacci(n - 2);
-    }
-    
-    // Fibonacci calculation (iterative)
-    fn fibonacciIterative(n: int): int {
-        if (n <= 1) {
-            return n;
-        }
-        
-        say a: int = 0;
-        say b: int = 1;
-        say i: int = 2;
-        
-        while (i <= n) {
-            say temp: int = a + b;
-            a = b;
-            b = temp;
-            i = i + 1;
-        }
-        
-        return b;
-    }
-    
-    // Array operations benchmark
-    fn arrayOperations(size: int): int {
-        say arr: []int = array.create(int, 0);
-        
-        // Append elements
-        foreach i in 0..size {
-            array.append(arr, i);
-        }
-        
-        // Sum all elements
-        say sum: int = 0;
-        foreach i in 0..array.len(arr) {
-            sum = sum + arr[i];
-        }
-        
-        return sum;
-    }
-    
-    // String operations benchmark
-    fn stringOperations(iterations: int): int {
-        say result: string = "";
-        say count: int = 0;
-        
-        foreach i in 0..iterations {
-            say temp: string = strings.format("Iteration %d", i);
-            say len: int = strings.length(temp);
-            count = count + len;
-        }
-        
-        return count;
-    }
-    
-    // Prime number calculation
-    fn isPrime(n: int): int {
-        if (n <= 1) {
-            return 0;
-        }
-        if (n <= 3) {
-            return 1;
-        }
-        if (n % 2 == 0) {
-            return 0;
-        }
-        if (n % 3 == 0) {
-            return 0;
-        }
-        
-        say i: int = 5;
-        while (i * i <= n) {
-            if (n % i == 0) {
-                return 0;
-            }
-            if (n % (i + 2) == 0) {
-                return 0;
-            }
-            i = i + 6;
-        }
-        
-        return 1;
-    }
-    
-    fn countPrimes(limit: int): int {
-        say count: int = 0;
-        foreach i in 2..limit {
-            if (this.isPrime(i) == 1) {
-                count = count + 1;
-            }
-        }
-        return count;
-    }
-}
+class RowWorker {
+    say N: int;
+    say out: [][]uint8;
+    say startRow: int;
+    say endRow: int;
+    say wg: waitgroup;
 
-// Matrix class for matrix operations
-class Matrix {
-    say data: [][]int;
-    say rows: int;
-    say cols: int;
-    
-    fn Matrix(rows: int, cols: int) {
-        this.rows = rows;
-        this.cols = cols;
-        this.data = array.create(int, rows, cols);
+    fn RowWorker(N: int, out: [][]uint8, startRow: int, endRow: int, wg: waitgroup) {
+        this.N = N;
+        this.out = out;
+        this.startRow = startRow;
+        this.endRow = endRow;
+        this.wg = wg;
     }
-    
-    fn set(row: int, col: int, value: int) {
-        this.data[row][col] = value;
-    }
-    
-    fn get(row: int, col: int): int {
-        return this.data[row][col];
-    }
-}
 
-// Matrix operations class
-class MatrixOps {
-    fn MatrixOps() {}
-    
-    fn multiply(size: int): int {
-        say a: start.Matrix = new start.Matrix(size, size);
-        say b: start.Matrix = new start.Matrix(size, size);
-        say c: start.Matrix = new start.Matrix(size, size);
-        
-        // Initialize matrices
-        foreach i in 0..size {
-            foreach j in 0..size {
-                a.set(i, j, i + j);
-                b.set(i, j, i - j);
-            }
-        }
-        
-        // Multiply
-        foreach i in 0..size {
-            foreach j in 0..size {
-                say sum: int = 0;
-                foreach k in 0..size {
-                    sum = sum + (a.get(i, k) * b.get(k, j));
+    fn run() {
+        say bytesPerRow: int = (this.N + int(7)) / int(8);
+        say invN: double = 2.0 / double(this.N);
+        say y: int = this.startRow;
+
+        while (y < this.endRow) {
+            say Ci: double = (double(y) * invN) - 1.0;
+            say xByte: int = 0;
+
+            while (xByte < bytesPerRow) {
+                say res: int = 0;
+                say i: int = 0;
+
+                while (i < int(8)) {
+                    say x0: int = xByte * int(8) + i;
+                    say x1: int = x0 + int(1);
+                    
+                    say Crb0: double = (double(x0) * invN) - 1.5;
+                    say Crb1: double = (double(x1) * invN) - 1.5;
+
+                    say Zr1: double = Crb0;
+                    say Zi1: double = Ci;
+                    say Zr2: double = Crb1;
+                    say Zi2: double = Ci;
+
+                    say b: int = 0;
+                    say j: int = 49;
+
+                    while (j > 0) {
+                        say Zr1_2: double = Zr1 * Zr1;
+                        say Zi1_2: double = Zi1 * Zi1;
+                        say Zr2_2: double = Zr2 * Zr2;
+                        say Zi2_2: double = Zi2 * Zi2;
+
+                        // Use addition for 2.0*Zr*Zi to match Java's internal precision
+                        Zi1 = (Zr1 + Zr1) * Zi1 + Ci;
+                        Zr1 = Zr1_2 - Zi1_2 + Crb0;
+
+                        Zi2 = (Zr2 + Zr2) * Zi2 + Ci;
+                        Zr2 = Zr2_2 - Zi2_2 + Crb1;
+
+                        if ((Zr1 * Zr1 + Zi1 * Zi1) > 4.0) { 
+                            b = b | int(2); 
+                        }
+                        if ((Zr2 * Zr2 + Zi2 * Zi2) > 4.0) { 
+                            b = b | int(1); 
+                        }
+                        
+                        if (b == int(3)) { 
+                            j = 0; 
+                        } else { 
+                            j = j - 1; 
+                        }
+                    }
+                    // Shift and pack
+                    res = (res << int(2)) | b;
+                    i = i + int(2);
                 }
-                c.set(i, j, sum);
+
+                this.out[y][xByte] = uint8(res ^ int(255));
+                xByte = xByte + 1;
             }
+            y = y + 1;
         }
-        
-        return c.get(0, 0);
-    }
-}
-
-// Concurrent counter class
-class Counter {
-    say value: atomic int64;
-    
-    fn Counter() {
-        atomics.store_int64(this.value, int64(0));
-    }
-    
-    fn increment() {
-        atomics.add_int64(this.value, int64(1));
-    }
-    
-    fn getValue(): int64 {
-        return atomics.load_int64(this.value);
-    }
-}
-
-// Concurrency benchmark class
-class ConcurrencyBench {
-    say counter: start.Counter;
-    
-    fn ConcurrencyBench() {
-        this.counter = new start.Counter();
-    }
-    
-    fn incrementWorker(iterations: int) {
-        foreach i in 0..iterations {
-            this.counter.increment();
-        }
-    }
-    
-    fn run(threads: int, iterations: int): int64 {
-        foreach i in 0..threads {
-            thread(this.incrementWorker, iterations);
-        }
-        
-        // Wait a bit for threads to complete
-        // In real implementation, would use proper synchronization
-        say wait: int = 0;
-        while (wait < 1000000) {
-            wait = wait + 1;
-        }
-        
-        return this.counter.getValue();
+        sync.waitgroup_done(this.wg);
     }
 }
 
 fn start(args: []string) {
-    syncio.printf("=== Picasso Performance Benchmark ===\n\n");
+    say N: int = 1000;
+    say bytesPerRow: int = (N + int(7)) / int(8);
+    say out: [][]uint8 = array.create(uint8, N, bytesPerRow);
+    say wg: waitgroup = sync.waitgroup_create();
+
+    say numThreads: int = 1; 
+    say rowsPerThread: int = N / numThreads;
     
-    say utils: start.BenchmarkUtils = new start.BenchmarkUtils();
-    say matrixOps: start.MatrixOps = new start.MatrixOps();
-    
-    // Benchmark 1: Fibonacci (recursive)
-    syncio.printf("1. Fibonacci (recursive, n=30)...\n");
-    say fibResult: int = utils.fibonacci(30);
-    syncio.printf("   Result: %d\n\n", fibResult);
-    
-    // Benchmark 2: Fibonacci (iterative)
-    syncio.printf("2. Fibonacci (iterative, n=1000000)...\n");
-    say fibIterResult: int = utils.fibonacciIterative(1000000);
-    syncio.printf("   Result: %d\n\n", fibIterResult);
-    
-    // Benchmark 3: Array operations
-    syncio.printf("3. Array operations (size=100000)...\n");
-    say arrayResult: int = utils.arrayOperations(100000);
-    syncio.printf("   Sum: %d\n\n", arrayResult);
-    
-    // Benchmark 4: String operations
-    syncio.printf("4. String operations (iterations=10000)...\n");
-    say stringResult: int = utils.stringOperations(10000);
-    syncio.printf("   Total length: %d\n\n", stringResult);
-    
-    // Benchmark 5: Matrix multiplication
-    syncio.printf("5. Matrix multiplication (50x50)...\n");
-    say matrixResult: int = matrixOps.multiply(50);
-    syncio.printf("   Result[0][0]: %d\n\n", matrixResult);
-    
-    // Benchmark 6: Prime counting
-    syncio.printf("6. Prime counting (limit=100000)...\n");
-    say primeCount: int = utils.countPrimes(100000);
-    syncio.printf("   Primes found: %d\n\n", primeCount);
-    
-    // Benchmark 7: Concurrency
-    syncio.printf("7. Concurrent counter (10 threads, 10000 iterations each)...\n");
-    say concBench: start.ConcurrencyBench = new start.ConcurrencyBench();
-    say concurrentResult: int64 = concBench.run(10, 10000);
-    syncio.printf("   Final count: %ld\n\n", concurrentResult);
-    
-    syncio.printf("=== Benchmark Complete ===\n");
+    say workers: []start.RowWorker = array.create(start.RowWorker, numThreads);
+
+    say t: int = 0;
+    while (t < numThreads) {
+        say sRow: int = t * rowsPerThread;
+        say eRow: int = sRow + rowsPerThread;
+        if (t == (numThreads - int(1))) { eRow = N; }
+
+        // Store the worker in the array to keep it alive
+        workers[t] = new start.RowWorker(N, out, sRow, eRow, wg);
+        
+        sync.waitgroup_add(wg, 1);
+        
+        // Pass the instance method from the array-stored object
+        thread(workers[t].run);
+        
+        t = t + 1;
+    }
+
+    // Wait for all threads to finish
+    sync.waitgroup_wait(wg);
+    syncio.printf("P4\n%d %d\n", N, N);
+    say stdout_handle: string = syncio.get_stdout();
+
+    say r: int = 0;
+    while (r < N) {
+        syncio.fwrite(stdout_handle, out[r], bytesPerRow, 0);
+        r = r + 1;
+    }
+    syncio.fflush(stdout_handle);
 }
