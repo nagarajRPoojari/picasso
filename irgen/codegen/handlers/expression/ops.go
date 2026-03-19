@@ -227,6 +227,8 @@ func initOpLookUpTables(ex *ExpressionHandler) {
 	bitwise[lexer.BITWISE_AND] = ex.bitwiseAND
 	bitwise[lexer.BITWISE_OR] = ex.bitwiseOR
 	bitwise[lexer.BITWISE_XOR] = ex.bitwiseXOR
+	bitwise[lexer.BITWIZE_LEFTSHIFT] = ex.bitwiseLeftShift
+	bitwise[lexer.BITWIZE_RIGHTSHIFT] = ex.bitwiseRightShift
 }
 
 func (t *ExpressionHandler) add(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
@@ -799,7 +801,7 @@ func (t *ExpressionHandler) bitwiseXOR(th *tf.TypeHandler, bh *bc.BlockHolder, l
 
 	switch k {
 	case KindFloat:
-		return nil, fmt.Errorf("bitwise or not allowed on float types")
+		return nil, fmt.Errorf("bitwise XOR not allowed on float types")
 	case KindSignedInt:
 		lf := th.ImplicitIntCast(bh, l, types.I64)
 		rf := th.ImplicitIntCast(bh, r, types.I64)
@@ -847,6 +849,60 @@ func (t *ExpressionHandler) bitwiseAND(th *tf.TypeHandler, bh *bc.BlockHolder, l
 	}
 
 	return nil, fmt.Errorf("unsupported bitwise and operands")
+}
+
+func (t *ExpressionHandler) bitwiseLeftShift(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+	rv := t.ProcessExpression(bh, rex)
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+	switch k {
+	case KindFloat:
+		return nil, fmt.Errorf("bitwise left shift not allowed on float types")
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewShl(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewShl(lf, rf)), nil
+	case KindPointer:
+		return nil, fmt.Errorf("bitwise left shift not allowed on pointer types")
+	}
+	return nil, fmt.Errorf("unsupported bitwise left shift operands")
+}
+
+func (t *ExpressionHandler) bitwiseRightShift(th *tf.TypeHandler, bh *bc.BlockHolder, lex, rex ast.Expression) (tf.Var, error) {
+	lv := t.ProcessExpression(bh, lex)
+	rv := t.ProcessExpression(bh, rex)
+	if lv == nil || rv == nil {
+		errorutils.Abort(errorutils.InvalidBinaryExpressionOperand)
+	}
+	l, r, k, err := normalizeOperands(th, bh, lv, rv)
+	if err != nil {
+		return nil, err
+	}
+	switch k {
+	case KindFloat:
+		return nil, fmt.Errorf("bitwise right shift not allowed on float types")
+	case KindSignedInt:
+		lf := th.ImplicitIntCast(bh, l, types.I64)
+		rf := th.ImplicitIntCast(bh, r, types.I64)
+		return buildSignedInt64FromValue(bh, bh.N.NewAShr(lf, rf)), nil
+	case KindUnsignedInt:
+		lf := th.ImplicitUnsignedIntCast(bh, l, types.I64)
+		rf := th.ImplicitUnsignedIntCast(bh, r, types.I64)
+		return buildUnsignedInt64FromValue(bh, bh.N.NewLShr(lf, rf)), nil
+	case KindPointer:
+		return nil, fmt.Errorf("bitwise right shift not allowed on pointer types")
+	}
+	return nil, fmt.Errorf("unsupported bitwise right shift operands")
 }
 
 func toInt64(_ *tf.TypeHandler, bh *bc.BlockHolder, v tf.Var) (value.Value, error) {

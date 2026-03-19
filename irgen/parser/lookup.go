@@ -11,6 +11,7 @@ const (
 	default_bp BindingPower = iota
 	comma
 	assignment
+	bitwise
 	logical
 	relational
 	additive
@@ -56,6 +57,9 @@ func BuildTokensTable() {
 	led(lexer.ASSIGNMENT, assignment, parseAssignmentExpr)
 	led(lexer.PLUS_EQUALS, assignment, parseAssignmentExpr)
 	led(lexer.MINUS_EQUALS, assignment, parseAssignmentExpr)
+
+	led(lexer.BITWIZE_LEFTSHIFT, bitwise, parseBinaryExpr)
+	led(lexer.BITWIZE_RIGHTSHIFT, bitwise, parseBinaryExpr)
 
 	// Logical
 	led(lexer.AND, logical, parseBinaryExpr)

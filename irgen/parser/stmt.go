@@ -237,8 +237,16 @@ func parseFnParamsAndBody(p *Parser) ([]ast.Parameter, ast.Type, []ast.Statement
 	for p.hasTokens() && p.currentTokenKind() != lexer.CLOSE_PAREN {
 		paramName := p.expect(lexer.IDENTIFIER).Value
 		p.expect(lexer.COLON)
-		paramType := parse_type(p, default_bp)
+		var atomic bool
+		if p.currentTokenKind() == lexer.ATOMIC {
+			atomic = true
+			p.move()
+		}
 
+		paramType := parse_type(p, default_bp)
+		if atomic {
+			paramType.SetAtomic()
+		}
 		functionParams = append(functionParams, ast.Parameter{
 			Name: paramName,
 			Type: paramType,
