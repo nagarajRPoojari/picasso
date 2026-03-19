@@ -66,7 +66,7 @@ void *diskio_worker(void *arg) {
  * @brief Submit an asynchronous STDIN read for the current task.
  *
  * Prepares and submits an io_uring read request on STDIN for the
- * current task’s buffer. The read follows normal read(2) semantics:
+ * current task's buffer. The read follows normal read(2) semantics:
  * it may complete with fewer bytes than requested and may block
  * internally if STDIN is a TTY.
  *
@@ -119,7 +119,7 @@ void async_stdin_read(task_t *t) {
 /**
  * @brief Submit an io_uring write request to STDOUT for the current task.
  *
- * Prepares and submits a write request for the current task’s buffer
+ * Prepares and submits a write request for the current task's buffer
  * to STDOUT at the current file offset. The task yields execution
  * to allow other tasks to run while the I/O completes.
  *
@@ -168,7 +168,7 @@ void async_stdout_write() {
 /**
  * @brief Submit an io_uring read request on a file descriptor for the current task.
  *
- * Prepares and submits a read request for the current task’s buffer
+ * Prepares and submits a read request for the current task's buffer
  * from the specified file descriptor at the given offset. The task
  * yields execution to allow other tasks to run while the I/O completes.
  *
@@ -216,7 +216,7 @@ void async_file_read() {
 /**
  * @brief Submit an io_uring write request on a file descriptor for the current task.
  *
- * Prepares and submits a write request for the current task’s buffer
+ * Prepares and submits a write request for the current task's buffer
  * to the specified file descriptor at the given offset. The task
  * yields execution to allow other tasks to run while the I/O completes.
  *
@@ -470,11 +470,11 @@ ssize_t __public__asyncio_printf(__public__string_t* fmt, ...) {
  *
  * @return Number of bytes read on success (ssize_t), or -1 on error.
  */
-ssize_t __public__asyncio_fread(char* f, __public__array_t* buf, int n, int offset) {
-    if (!f || !buf || n <= 0 || offset < 0)
+ssize_t __public__asyncio_fread(__public__string_t* f, __public__array_t* buf, int n, int offset) {
+    if (!f || !f->data || !buf || n <= 0 || offset < 0)
         return -1;
 
-    int fd = fileno((FILE*)f);
+    int fd = fileno((FILE*)f->data);
     if (fd < 0)
         return -1;
 
@@ -522,11 +522,11 @@ ssize_t __public__asyncio_fread(char* f, __public__array_t* buf, int n, int offs
  *
  * @return Number of bytes written on success (ssize_t), or -1 on error.
  */
-ssize_t __public__asyncio_fwrite(char* f, __public__array_t* buf, int n, int offset) {
-    if (!f || !buf || n <= 0 || offset < 0)
+ssize_t __public__asyncio_fwrite(__public__string_t* f, __public__array_t* buf, int n, int offset) {
+    if (!f || !f->data || !buf || n <= 0 || offset < 0)
         return -1;
 
-    int fd = fileno((FILE*)f);
+    int fd = fileno((FILE*)f->data);
     if (fd < 0)
         return -1;
 
@@ -742,12 +742,12 @@ ssize_t __public__syncio_printf(__public__string_t* fmt, ...) {
  * @return Number of bytes actually read on success (0 indicates EOF),
  *         or -1 on error.
  */
-ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offset) {
-    if (!f || !buf || n <= 0 || offset < 0) return -1;
-    
-    int fd = fileno((FILE*)f);
+ssize_t __public__syncio_fread(__public__string_t* f, __public__array_t* buf, int n, int offset) {
+    if (!f || !f->data || !buf || n <= 0 || offset < 0) return -1;
+
+    int fd = fileno((FILE*)f->data);
     if (fd < 0) return -1;
-    
+
     size_t total = 0;
     char *p = buf->data;
 
@@ -757,7 +757,7 @@ ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offse
             if (errno == EINTR) continue;
             return -1;
         }
-        if (r == 0) break; // EOF
+        if (r == 0) break; /* EOF */
         total += (size_t)r;
         offset += r;
     }
@@ -785,26 +785,38 @@ ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offse
  * @return Number of bytes actually written on success,
  *         or -1 on error.
  */
-ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offset) {
-    if (!f || !buf || n <= 0 || offset < 0) return -1;
-    
-    int fd = fileno((FILE*)f);
+ssize_t __public__syncio_fwrite(__public__string_t* f, __public__array_t* buf, int n, int offset) {
+    if (!f || !f->data || !buf || n <= 0 || offset < 0) return -1;
+
+    int fd = fileno((FILE*)f->data);
     if (fd < 0) return -1;
-    
+
     size_t total = 0;
-    const char *p = buf->data;
+    // Advance the pointer by the offset provided
+    const char *p = (const char *)buf->data + offset;
 
     while (total < (size_t)n) {
-        ssize_t w = pwrite(fd, p + total, (size_t)n - total, offset + (off_t)total);
+        // Use write() instead of pwrite()
+        ssize_t w = write(fd, p + total, (size_t)n - total);
         if (w < 0) {
             if (errno == EINTR)
                 continue;
+            perror("write failed"); // This will tell you exactly why it fails in the terminal
             return -1;
         }
         total += (size_t)w;
     }
 
     return (ssize_t)total;
+}
+
+__public__string_t* __public__syncio_get_stdout() {
+    __public__string_t* wrapper = (__public__string_t*)allocate(__arena__, sizeof(__public__string_t));
+    if (!wrapper) return NULL;
+
+    wrapper->data = (char*)stdout; 
+    wrapper->size = 6; // Just a placeholder so it's not "empty"
+    return wrapper;
 }
 
 /**
@@ -817,13 +829,20 @@ ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offs
  *
  * @return Pointer to the opened FILE on success, or NULL on error.
  */
-char* __public__syncio_fopen(__public__string_t* filename, __public__string_t* mode) {
+__public__string_t* __public__syncio_fopen(__public__string_t* filename, __public__string_t* mode) {
     FILE* f = fopen(filename->data, mode->data);
     if (!f) {
         perror("fopen failed");
         return NULL;
     }
-    return (char *)f;
+    __public__string_t* wrapper = (__public__string_t*)allocate(__arena__, sizeof(__public__string_t));
+    if (!wrapper) {
+        fclose(f);
+        return NULL;
+    }
+    wrapper->data = (char*)f;
+    wrapper->size = 0;
+    return wrapper;
 }
 
 /**
@@ -835,9 +854,9 @@ char* __public__syncio_fopen(__public__string_t* filename, __public__string_t* m
  *
  * @return 0 on success, or -1 on error.
  */
-int64_t __public__syncio_fclose(FILE* f) {
-    if (!f) return -1;
-    int ret = fclose(f);
+int64_t __public__syncio_fclose(__public__string_t* f) {
+    if (!f || !f->data) return -1;
+    int ret = fclose((FILE*)f->data);
     if (ret != 0) {
         perror("fclose failed");
         return -1;
@@ -856,9 +875,9 @@ int64_t __public__syncio_fclose(FILE* f) {
  *
  * @return 0 on success, or -1 on error.
  */
-int64_t __public__syncio_fseek(FILE* f, int64_t offset, int whence) {
-    if (!f) return -1;
-    int ret = fseek(f, (long)offset, whence);
+int64_t __public__syncio_fseek(__public__string_t* f, int64_t offset, int whence) {
+    if (!f || !f->data) return -1;
+    int ret = fseek((FILE*)f->data, (long)offset, whence);
     if (ret != 0) {
         perror("fseek failed");
         return -1;
@@ -875,9 +894,9 @@ int64_t __public__syncio_fseek(FILE* f, int64_t offset, int whence) {
  *
  * @return 0 on success, or -1 on error.
  */
-int64_t __public__syncio_fflush(FILE* f) {
-    if (!f) return -1;
-    int ret = fflush(f);
+int64_t __public__syncio_fflush(__public__string_t* f) {
+    if (!f || !f->data) return -1;
+    int ret = fflush((FILE*)f->data);
     if (ret != 0) {
         perror("fflush failed");
         return -1;

@@ -181,7 +181,7 @@ ssize_t __public__asyncio_printf(__public__string_t* fmt, ...);
  *
  * @return Number of bytes read on success (ssize_t), or -1 on error.
  */
-ssize_t __public__asyncio_fread(char* f, __public__array_t* buf, int n, int offset);
+ssize_t __public__asyncio_fread(__public__string_t* f, __public__array_t* buf, int n, int offset);
 
 /**
  * @brief Write up to n bytes to a file at a given offset, suspending the current task.
@@ -203,7 +203,7 @@ ssize_t __public__asyncio_fread(char* f, __public__array_t* buf, int n, int offs
  *
  * @return Number of bytes successfully written on success, or -1 on error.
  */
-ssize_t __public__asyncio_fwrite(char* f, __public__array_t* buf, int n, int offset);
+ssize_t __public__asyncio_fwrite(__public__string_t* f, __public__array_t* buf, int n, int offset);
 #endif
 /**
  * @brief Synchronously read up to n bytes from STDIN.
@@ -265,7 +265,7 @@ ssize_t __public__syncio_printf(__public__string_t* fmt, ...);
  * @return Number of bytes actually read on success (0 indicates EOF),
  *         or -1 on error.
  */
-ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offset);
+ssize_t __public__syncio_fread(__public__string_t* f, __public__array_t* buf, int n, int offset);
 
 /**
  * @brief Synchronously write up to n bytes to a file at a given offset.
@@ -288,7 +288,9 @@ ssize_t __public__syncio_fread(char* f, __public__array_t* buf, int n, int offse
  * @return Number of bytes actually written on success,
  *         or -1 on error.
  */
-ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offset);
+ssize_t __public__syncio_fwrite(__public__string_t* f, __public__array_t* buf, int n, int offset);
+
+__public__string_t* __public__syncio_get_stdout();
 
 /**
  * @brief Synchronously open a file.
@@ -300,7 +302,7 @@ ssize_t __public__syncio_fwrite(char* f, __public__array_t* buf, int n, int offs
  *
  * @return Pointer to the opened FILE on success, or NULL on error.
  */
-char* __public__syncio_fopen(__public__string_t* filename, __public__string_t* mode);
+__public__string_t* __public__syncio_fopen(__public__string_t* filename, __public__string_t* mode);
 
 /**
  * @brief Synchronously close a file.
@@ -311,7 +313,7 @@ char* __public__syncio_fopen(__public__string_t* filename, __public__string_t* m
  *
  * @return 0 on success, or -1 on error.
  */
-int64_t __public__syncio_fclose(FILE* f);
+int64_t __public__syncio_fclose(__public__string_t* f);
 
 /**
  * @brief Synchronously seek to a position in a file.
@@ -324,7 +326,7 @@ int64_t __public__syncio_fclose(FILE* f);
  *
  * @return 0 on success, or -1 on error.
  */
-int64_t __public__syncio_fseek(FILE* f, int64_t offset, int whence);
+int64_t __public__syncio_fseek(__public__string_t* f, int64_t offset, int whence);
 
 /**
  * @brief Synchronously flush a file's output buffer.
@@ -335,5 +337,5 @@ int64_t __public__syncio_fseek(FILE* f, int64_t offset, int whence);
  *
  * @return 0 on success, or -1 on error.
  */
-int64_t __public__syncio_fflush(FILE* f);
+int64_t __public__syncio_fflush(__public__string_t* f);
 #endif
