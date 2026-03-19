@@ -16,6 +16,8 @@ Picasso combines the performance of compiled languages with the ease of use of m
 
 - **Built-in Concurrency**: Lightweight green threads with `thread()` function - no explicit async/await required. Scale to hundreds of thousands of concurrent tasks.
 
+- **Rich set of synchronization primitives**: `waitgroups`, `(* *)` for non-preemptive code blocks.
+  
 - **Automatic Memory Management**: Garbage collected runtime - allocate and forget.
 
 - **C Interoperability**: Foreign Function Interface (FFI) for seamless integration with C libraries.
@@ -138,6 +140,44 @@ fn start(args: []string) {
         thread(worker.work);
     }
 }
+```
+
+### Synchronization
+```java
+using "builtin/syncio";
+using "builtin/sync";
+using "builtin/array";
+
+fn start(args: []string) {
+    say wg: sync.waitgroup = sync.waitgroup_create();
+    
+    say shared_counter: int = 0;
+    say num_workers: int = 100;
+
+    sync.waitgroup_add(wg, num_workers);
+    syncio.printf("Starting %d workers...\n", num_workers);
+
+    foreach i in 0..num_workers {
+        thread(fn() {
+            // --- CRITICAL SECTION ---
+            // We use the non-preemptive block to safely increment 
+            // the shared counter without a Mutex.
+            (*
+                shared_counter = shared_counter + 1;
+            *)
+            // ------------------------
+
+            // Signal task completion
+            sync.waitgroup_done(wg);
+        });
+    }
+
+    sync.waitgroup_wait(wg);
+
+    syncio.printf("Final Counter Value: %d\n", shared_counter);
+    syncio.printf("All threads synchronized successfully.\n");
+}
+
 ```
 
 ### Atomic Operations
