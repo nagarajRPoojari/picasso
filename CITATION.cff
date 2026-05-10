@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Poojari"
+  given-names: "Nagaraj"
+  orcid: "https://orcid.org/0009-0006-1145-8772"
+title: "Picasso: A lightweight programming language for modern workloads"
+doi: 10.5281/zenodo.20106946.
+version: 1.0.0
+date-released: 2026-05-10
+url: "https://github.com/nagarajRPoojari/picasso"
