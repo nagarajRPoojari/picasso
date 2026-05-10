@@ -327,3 +327,17 @@ class Example {
 - **strings**: String manipulation utilities including formatting, comparison, and substring operations.
 - **atomics**: Lock-free atomic operations for concurrent programming.
 - **types**: Type conversion and type-related utilities.
+
+
+# cite 
+```
+@software{Poojari_Picasso_A_lightweight_2026,
+author = {Poojari, Nagaraj},
+doi = {10.5281/zenodo.20106946.},
+month = may,
+title = {{Picasso: A lightweight programming language for modern workloads}},
+url = {https://github.com/nagarajRPoojari/picasso},
+version = {1.0.0},
+year = {2026}
+}
+```
